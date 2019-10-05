@@ -4,6 +4,9 @@ module MICHELSON
   imports MICHELSON-SYNTAX
   imports DOMAINS  
 
+  syntax StackSort ::= Stack(List)
+                     | "FailedStack"
+
   rule I:Instruction ; Is:InstructionList => I ~> Is [structural]
   rule .InstructionList => .K [structural]
   rule {} => .K [structrual]
@@ -27,7 +30,10 @@ module MICHELSON
   rule <k> { _:ParameterDecl _:StorageDecl code B:Block ; } P:Data S:Data => B </k> 
        <stack> Stack(.List => ListItem(Pair P S)) </stack>
 
-  syntax StackSort ::= Stack(List)
+  syntax Error ::= Aborted(Data)
+
+  rule <k> FAILWITH D ~> _ => Aborted(D) </k>
+       <stack> _ => FailedStack </stack>
 
   configuration <k> $PGM:Pgm </k>
                 <stack> Stack(.List) </stack>
