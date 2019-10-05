@@ -37,6 +37,7 @@ module MICHELSON-SYNTAX
   syntax Data ::= VariableAnnotation Data
 
   syntax Block ::= "{" InstructionList "}"
+                 | "{" "}"
 
   syntax DIPMacro ::= r"DII+P" [token]
   syntax DUPMacro ::= r"DUU+P" [token]
@@ -172,7 +173,6 @@ module MICHELSON-SYNTAX
                        | "IF_SOME" Block Block
                        | "SET_CAR" 
                        | "SET_CDR"
-
 
 
   syntax Type ::= ComparableType
