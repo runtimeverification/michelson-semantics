@@ -4,6 +4,11 @@ module MICHELSON
   imports MICHELSON-SYNTAX
   imports DOMAINS  
 
+  syntax Data ::= Bool
+
+  rule True => true [macro]
+  rule False => false [macro]
+
   syntax StackSort ::= Stack(List)
                      | "FailedStack"
 
@@ -37,10 +42,10 @@ module MICHELSON
   rule <k> FAILWITH D ~> _ => Aborted(D) </k>
        <stack> _ => FailedStack </stack>
 
-  rule <k> IF BT BF => BT </k>
+  rule <k> IF BT BF => BT ... </k>
        <stack> Stack(ListItem(true) Ls => Ls) </stack>
 
-  rule <k> IF BT BF => BF </k>
+  rule <k> IF BT BF => BF ... </k>
        <stack> Stack(ListItem(false) Ls => Ls) </stack>
 
   rule <k> LOOP B => B ~> LOOP B ... </k>
@@ -257,6 +262,17 @@ module MICHELSON
 
   rule <k> #ContinueMEM(Stack(ListItem(_) ListItem(_) S)) => . ... </k>
        <stack> Stack(ListItem(-1) => ListItem(false) S) </stack>
+
+  //// Operations on unions
+  rule <k> LEFT _ => . ... </k>
+       <stack> Stack((ListItem(X) => ListItem(Left X)) _) </stack>
+
+  rule <k> RIGHT _ => . ... </k>
+       <stack> Stack((ListItem(X) => ListItem(Right X)) _) </stack>
+
+  //// Operations on lists
+  rule <k> NIL _ => . ... </k> 
+       <stack> Stack((.List => ListItem({ .DataList })) _) </stack>
 
   configuration <k> $PGM:Pgm </k>
                 <stack> Stack(.List) </stack>

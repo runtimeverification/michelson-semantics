@@ -20,7 +20,8 @@ module MICHELSON-SYNTAX
   syntax BytesLiteral ::= r"0x([0-9a-fA-F]{2})+" [token]
   syntax Data ::= Int 
                 | String 
-                | Bool
+                | "True" [token]
+                | "False" [token]
                 | BytesLiteral
                 | "Unit" 
                 | "Pair" Data Data
