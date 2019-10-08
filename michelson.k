@@ -2,7 +2,8 @@ require "michelson-syntax.k"
 
 module MICHELSON
   imports MICHELSON-SYNTAX
-  imports DOMAINS  
+  imports DOMAINS 
+  imports COLLECTIONS
 
   syntax Data ::= Bool
 
@@ -65,7 +66,7 @@ module MICHELSON
        <stack> Stack(Ls => ListItem(D) Ls) </stack>
 
   rule <k> DIP B => B ~> #Push(D) ... </k>
-       <stack> Stack(ListItem(D) Ls => Ls) </stack>
+       <stack> Stack((ListItem(D) => .List) _) </stack>
 
   syntax Data ::= #Lambda(Type, Type, Block)
  
@@ -181,17 +182,19 @@ module MICHELSON
        <stack> Stack(ListItem(_) ListItem(S) _) => FailedStack </stack>
        requires S >Int 256
 
-  rule <k> COMPARE => . ... </k>
-       <stack> Stack(ListItem(I1) ListItem(I2) Ls => ListItem(-1) Ls) </stack>
-       requires I1 <Int I2
+  syntax Int ::= #DoCompare(Data, Data) [function]
+
+  rule #DoCompare(I1:Int, I2:Int) => -1 requires I1 <Int I2
+  rule #DoCompare(I1:Int, I2:Int) => 0 requires I1 ==Int I2
+  rule #DoCompare(I1:Int, I2:Int) => 1 requires I1 >Int I2
+
+  rule #DoCompare(S1:String, S2:String) => -1 requires S1 <String S2
+  rule #DoCompare(S1:String, S2:String) => 0 requires S1 ==String S2
+  rule #DoCompare(S1:String, S2:String) => 1 requires S1 >String S2
+
 
   rule <k> COMPARE => . ... </k>
-       <stack> Stack(ListItem(I1) ListItem(I2) Ls => ListItem(0) Ls) </stack>
-       requires I1 ==Int I2
-
-  rule <k> COMPARE => . ... </k>
-       <stack> Stack(ListItem(I1) ListItem(I2) Ls => ListItem(1) Ls) </stack>
-       requires I1 >Int I2
+       <stack> Stack(ListItem(V1) ListItem(V2) Ls => ListItem(#DoCompare(V1, V2)) Ls) </stack>
 
   syntax String ::= #ConcatAll(DataList, String) [function]
 
@@ -216,17 +219,6 @@ module MICHELSON
        <stack> Stack((ListItem(O) ListItem(L) ListItem(S) => ListItem(None)) _) </stack>
        requires notBool(O >=Int 0 andBool L >=Int 0 andBool (O +Int L) <Int lengthString(S))
 
-  rule <k> COMPARE => . ... </k>
-       <stack> Stack((ListItem(S1) ListItem(S2) => ListItem(-1)) _) </stack>
-       requires S1 <String S2
-
-  rule <k> COMPARE => . ... </k>
-       <stack> Stack((ListItem(S1) ListItem(S2) => ListItem(0)) _) </stack>
-       requires S2 ==String S2
-
-  rule <k> COMPARE => . ... </k>
-       <stack> Stack((ListItem(S1) ListItem(S2) => ListItem(1)) _) </stack>
-       requires S1 >String S2
 
   //// Operations on pairs
   rule <k> PAIR => . ... </k>
@@ -239,29 +231,53 @@ module MICHELSON
        <stack> Stack(ListItem(Pair _ R => R) _) </stack>
 
   //// Operations on sets
+  syntax Data ::= Set
+
   rule <k> EMPTY_SET _ => . ... </k>
-       <stack> Stack((.List => ListItem({.DataList})) _) </stack>
+       <stack> Stack((.List => ListItem(.Set)) _) </stack>
 
   rule <k> MEM => . ... </k> 
-       <stack> Stack((ListItem(X) ListItem({.DataList}) => ListItem(false)) _) </stack>
+       <stack> Stack(((ListItem(X:Data) ListItem(S:Set)) => ListItem(X in S)) _) </stack>
 
-  syntax K ::= #ReplaceStack(StackSort)
-  rule <k> #ReplaceStack(S) => . ... </k>
-       <stack> _ => S </stack>
+  syntax K ::= #InsertIntoSet(Data, DataList, DataList, List) | #ContinueInsert(Data, DataList, DataList, List)
 
-  syntax K ::= #ContinueMEM(StackSort)
+  // True to insert, False to remove.
 
-  rule <k> MEM => COMPARE ~> #ContinueMEM(Stack(ListItem(X) ListItem({ DL:DataList }) S)) ... </k> 
-       <stack> Stack(ListItem(X) ListItem({ D:Data ; DL:DataList }) S) => Stack(ListItem(X) ListItem(D))  </stack>
+  rule <k> UPDATE => . ... </k>
+       <stack> Stack((ListItem(D) ListItem(true) ListItem(S:Set) => ListItem(SetItem(D) S)) _) </stack>
 
-  rule <k> #ContinueMEM(S) => MEM ... </k> 
-       <stack> Stack(ListItem(1)) => S </stack>
+  rule <k> UPDATE => . ... </k>
+       <stack> Stack((ListItem(D) ListItem(false) ListItem(SetItem(D) S) => ListItem(S)) _) </stack>
 
-  rule <k> #ContinueMEM(Stack(ListItem(_) ListItem(_) S)) => . ... </k>
-       <stack> Stack(ListItem(0) => ListItem(true) S) </stack>
+  rule <k> UPDATE => . ... </k>
+       <stack> Stack((ListItem(D) ListItem(false) => .List) ListItem(S:Set) _) </stack>
+       requires notBool(D in S)
 
-  rule <k> #ContinueMEM(Stack(ListItem(_) ListItem(_) S)) => . ... </k>
-       <stack> Stack(ListItem(-1) => ListItem(false) S) </stack>
+  syntax Data ::= #MinimalElement(List) [function]
+  syntax Data ::= #MinimalElementAux(List, Data) [function]
+
+  rule #MinimalElement(ListItem(H) L) => #MinimalElementAux(L, H)
+  rule #MinimalElementAux(.List, M) => M
+  rule #MinimalElementAux(ListItem(H) L, M) => #MinimalElementAux(L, M) requires #DoCompare(M, H) <=Int 0
+  rule #MinimalElementAux(ListItem(H) L, M) => #MinimalElementAux(L, H) requires #DoCompare(M, H) ==Int 1
+
+  rule <k> ITER B => . ... </k>
+       <stack> Stack((ListItem(.Set) => .List) _) </stack>
+
+  rule <k> ITER B => B ~> ITER B ... </k>
+       <stack> Stack((ListItem(S:Set) => ListItem(#MinimalElement(Set2List(S))) ListItem(S -Set SetItem(#MinimalElement(Set2List(S))))) _) </stack>
+       requires size(S) >Int 0
+
+  rule <k> SIZE => . ... </k>
+       <stack> Stack((ListItem(S:Set) => ListItem(size(S))) _) </stack>
+
+  //// Operations on maps
+
+  rule <k> EMPTY_MAP _ _ => . ... </k>
+       <stack> Stack((.List => ListItem(.Map)) _) </stack>
+
+  syntax K ::= #DoGet(Data, DataList)
+
 
   //// Operations on unions
   rule <k> LEFT _ => . ... </k>

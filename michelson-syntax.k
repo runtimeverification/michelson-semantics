@@ -69,7 +69,7 @@ module MICHELSON-SYNTAX
                        | "IF_CONS" Block Block
                        | "SIZE" 
                        | "EMPTY_SET" ComparableType
-                       | "EMPTY_MAP" ComparableType
+                       | "EMPTY_MAP" ComparableType Type
                        | "MAP" Block
                        | "ITER" Block
                        | "MEM" 
