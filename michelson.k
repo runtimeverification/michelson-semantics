@@ -36,11 +36,11 @@ module MICHELSON
   rule <k> { _:ParameterDecl _:StorageDecl code B:Block ; } P:Data S:Data => B </k> 
        <stack> Stack(.List => ListItem(Pair P S)) </stack>
 
-  syntax Error ::= Aborted(Data)
+  syntax Error ::= Aborted(String, KItem)
 
   // Core Instructioons
   //// Control Structures
-  rule <k> FAILWITH D ~> _ => Aborted(D) </k>
+  rule <k> FAILWITH D ~> _ => Aborted("FAILWITH instruction reached", D) </k>
        <stack> _ => FailedStack </stack>
 
   rule <k> IF BT BF => BT ... </k>
@@ -173,7 +173,7 @@ module MICHELSON
        <stack> Stack(ListItem(X) ListItem(S) Ls => ListItem(X <<Int S) Ls) </stack>
        requires S <=Int 256
 
-  rule <k> LSL ~> _ => Aborted("LSL out of range") </k>
+  rule <k> LSL ~> _ => Aborted("LSL out of range", S) </k>
        <stack> Stack(ListItem(_) ListItem(S) _) => FailedStack </stack>
        requires S >Int 256
 
@@ -181,7 +181,7 @@ module MICHELSON
        <stack> Stack(ListItem(X) ListItem(S) Ls => ListItem(X >>Int S) Ls) </stack>
        requires S <=Int 256
 
-  rule <k> LSR ~> _ => Aborted("LSR out of range") </k>
+  rule <k> LSR ~> _ => Aborted("LSR out of range", S) </k>
        <stack> Stack(ListItem(_) ListItem(S) _) => FailedStack </stack>
        requires S >Int 256
 
@@ -410,6 +410,75 @@ module MICHELSON
 
   rule <k> ITER B => B ~> ITER B ... </k>
        <stack> Stack((ListItem(ListItem(L) Ls) => ListItem(L) ListItem(Ls)) _) </stack>
+
+  // Domain Specific operations
+  //// Operations on timestamps
+
+  syntax Data ::= #Timestamp(Int)
+
+  rule <k> ADD => . ... </k>
+       <stack> Stack((ListItem(#Timestamp(I1)) ListItem(I2) => ListItem(#Timestamp(I1 +Int I2))) _) </stack>
+
+  rule <k> ADD => . ... </k>
+       <stack> Stack((ListItem(I1) ListItem(#Timestamp(I2)) => ListItem(#Timestamp(I1 +Int I2))) _) </stack>
+
+  rule <k> SUB => . ... </k>
+       <stack> Stack((ListItem(#Timestamp(I1)) ListItem(I2) => ListItem(#Timestamp(I1 -Int I2))) _) </stack>
+
+  rule <k> SUB => . ... </k>
+       <stack> Stack((ListItem(#Timestamp(I1)) ListItem(#Timestamp(I2)) => ListItem(#Timestamp(I1 -Int I2))) _) </stack>
+
+  rule #DoCompare(#Timestamp(I1), #Timestamp(I2)) => #DoCompare(I1, I2)
+
+  /* Actual compare rule is defined over Data */
+
+  //// Operations on Mutez
+
+  syntax Mutez ::= #Mutez(Int)
+  syntax Data ::= Mutez
+
+  syntax Int ::= "#MutezOverflowLimit" [function]
+  rule #MutezOverflowLimit => 2 ^Int 63 // Signed 64 bit integers.
+
+  syntax K ::= #ValidateMutezAndPush(Mutez)
+
+  rule <k> #ValidateMutezAndPush(#Mutez(I)) => . ... </k>
+       <stack> Stack((.List => ListItem(I)) _) </stack>
+       requires I >=Int 0 andBool I <Int #MutezOverflowLimit [structural]
+
+  rule <k> #ValidateMutezAndPush(#Mutez(I)) ~> _ => Aborted("Mutez out of bounds", I) </k>
+       <stack> Stack(_) => FailedStack </stack>
+       requires notBool(I >=Int 0 andBool I <Int #MutezOverflowLimit) [structural]
+
+  rule <k> ADD => #ValidateMutezAndPush(#Mutez(I1 +Int I2)) ... </k>
+       <stack> Stack((ListItem(#Mutez(I1)) ListItem(#Mutez(I2)) => .List) _) </stack>
+
+  rule <k> SUB => #ValidateMutezAndPush(#Mutez(I1 -Int I2)) ... </k>
+       <stack> Stack((ListItem(#Mutez(I1)) ListItem(#Mutez(I2)) => .List) _) </stack>
+
+  rule <k> MUL => #ValidateMutezAndPush(#Mutez(I1 *Int I2)) ... </k>
+       <stack> Stack((ListItem(#Mutez(I1)) ListItem(I2) => .List) _) </stack>
+
+  rule <k> MUL => #ValidateMutezAndPush(#Mutez(I1 *Int I2)) ... </k>
+       <stack> Stack((ListItem(I1) ListItem(#Mutez(I2)) => .List) _) </stack>
+
+  rule <k> EDIV => . ... </k>
+       <stack> Stack((ListItem(#Mutez(I1)) ListItem(#Mutez(0)) => ListItem(None)) _) </stack>
+
+  rule <k> EDIV => . ... </k>
+       <stack> Stack((ListItem(#Mutez(I1)) ListItem(0) => ListItem(None)) _) </stack>
+
+  rule <k> EDIV => . ... </k>
+       <stack> Stack((ListItem(#Mutez(I1)) ListItem(#Mutez(I2)) => 
+               ListItem(Some (Pair #Mutez(I1 /Int I2) #Mutez(I1 %Int I2)))) _) </stack>
+       requires I2 >Int 0
+
+  rule <k> EDIV => . ... </k>
+       <stack> Stack((ListItem(#Mutez(I1)) ListItem(I2) => 
+               ListItem(Some (Pair #Mutez(I1 /Int I2) #Mutez(I1 %Int I2)))) _) </stack>
+       requires I2 >Int 0
+
+  rule #DoCompare(#Mutez(I1), #Mutez(I2)) => #DoCompare(I1, I2)
 
   configuration <k> $PGM:Pgm </k>
                 <stack> Stack(.List) </stack>
