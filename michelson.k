@@ -81,19 +81,22 @@ module MICHELSON
   ////Stack operations
 
   rule <k> DROP => . ... </k>
-       <stack> Stack(ListItem(_) Ls => Ls) </stack>
+       <stack> Stack((ListItem(_) => .List) _) </stack>
 
   rule <k> DUP => . ... </k>
-       <stack> Stack(ListItem(X) Ls => ListItem(X) ListItem(X) Ls) </stack>
+       <stack> Stack((ListItem(X) => ListItem(X) ListItem(X)) _) </stack>
 
   rule <k> SWAP => . ... </k>
-       <stack> Stack(ListItem(X) ListItem(Y) Ls => ListItem(Y) ListItem(X) Ls) </stack>
+       <stack> Stack((ListItem(X) ListItem(Y) => ListItem(Y) ListItem(X)) _) </stack>
 
   rule <k> PUSH _ X => . ... </k>
-       <stack> Stack(Ls => ListItem(X) Ls) </stack>
+       <stack> Stack((.List => ListItem(X)) _) </stack>
 
   rule <k> UNIT => . ... </k>
-       <stack> Stack(Ls => ListItem(Unit) Ls) </stack>
+       <stack> Stack((.List => ListItem(Unit)) _) </stack>
+
+  rule <k> LAMBDA T1 T2 C => . ... </k>
+       <stack> Stack((.List => ListItem(#Lambda(T1, T2, C))) _) </stack>
 
   //// Generic Comparisons
 
@@ -276,8 +279,73 @@ module MICHELSON
   rule <k> EMPTY_MAP _ _ => . ... </k>
        <stack> Stack((.List => ListItem(.Map)) _) </stack>
 
-  syntax K ::= #DoGet(Data, DataList)
+  rule <k> GET => . ... </k>
+       <stack> Stack((ListItem(X) ListItem(M) => ListItem(None)) _) </stack>
+       requires notBool(X in_keys(M))
 
+  rule <k> GET => . ... </k>
+       <stack> Stack((ListItem(X) ListItem(M) => ListItem(Some {M[X]}:>Data)) _) </stack>
+       requires X in_keys(M)
+
+  rule <k> MEM => . ... </k>
+       <stack> Stack((ListItem(X) ListItem(M) => ListItem(X in_keys(M))) _) </stack>
+
+  rule <k> UPDATE => . ... </k>
+       <stack> Stack((ListItem(K) ListItem(Some V) ListItem(M:Map) => ListItem(M[K <- V])) _) </stack>
+
+  rule <k> UPDATE => . ... </k>
+       <stack> Stack((ListItem(K) ListItem(None) ListItem(M:Map) => ListItem(M[K <- undef])) _) </stack>
+
+  syntax Data ::= GetMinimalKey(Map) [function]
+  syntax Data ::= GetMinimalKeyAux(Map, Data) [function]
+
+  rule GetMinimalKey(K |-> _  M) => GetMinimalKeyAux(M, {K}:>Data)
+  rule GetMinimalKeyAux(K1 |-> _ M, K2) => GetMinimalKeyAux(M, {K1}:>Data) requires #DoCompare({K1}:>Data, K2) <=Int 0
+  rule GetMinimalKeyAux(K1 |-> _ M, K2) => GetMinimalKeyAux(M, K2) requires #DoCompare({K1}:>Data, K2) >Int 0
+  rule GetMinimalKeyAux(.Map, K) => {K}:>Data
+
+  syntax K ::= #PerformMap(Map, Map, Block)
+
+  rule <k> MAP B => #PerformMap(M, .Map, B) ... </k>
+       <stack> Stack((ListItem(M) => .List) _) </stack>
+
+  syntax K ::= #PopNewVal(Data)
+
+  rule <k> #PopNewVal(K) ~> #PerformMap(M1, M2, B) => #PerformMap(M1, K |-> V M2, B) ... </k>
+       <stack> Stack((ListItem(V) => .List) _) </stack>
+
+  rule <k> #PerformMap(K |-> V M1, M2, B) => B ~> #PopNewVal({K}:>Data) ~> #PerformMap(M1, M2, B) ... </k>
+       <stack> Stack((.List => ListItem(Pair {K}:>Data {V}:>Data)) _) </stack>
+
+  rule <k> #PerformMap(.Map, M, _) => . ... </k>
+       <stack> Stack((.List => ListItem(M)) _) </stack>
+
+  rule <k> ITER B => . ... </k>
+       <stack> Stack((ListItem(.Map) => .List) _) </stack>
+
+  rule <k> ITER B => B ~> ITER B ... </k>
+       <stack> Stack((ListItem(M) => ListItem(Pair GetMinimalKey(M) {M[GetMinimalKey(M)]}:>Data) ListItem(M[GetMinimalKey(M) <- undef])) _) </stack>
+       requires size(M) >Int 0
+
+  rule <k> SIZE => . ... </k>
+       <stack> Stack(ListItem(M:Map => size(M)) _) </stack>
+
+  //// Operations on big maps
+  /* Same as maps */
+
+  //// Operations on optional values
+
+  rule <k> SOME => . ... </k>
+       <stack> Stack(ListItem(X => Some X) _) </stack>
+
+  rule <k> NONE _ => . ... </k>
+       <stack> Stack((.List => ListItem(None)) _) </stack>
+
+  rule <k> IF_NONE BT BF => BT ... </k>
+       <stack> Stack((ListItem(None) => .List) _) </stack>
+
+  rule <k> IF_NONE BT BF => BF ... </k>
+       <stack> Stack(ListItem(Some V => V) _) </stack>
 
   //// Operations on unions
   rule <k> LEFT _ => . ... </k>
@@ -286,9 +354,62 @@ module MICHELSON
   rule <k> RIGHT _ => . ... </k>
        <stack> Stack((ListItem(X) => ListItem(Right X)) _) </stack>
 
+  rule <k> IF_LEFT BT BF => BT ... </k>
+       <stack> Stack(ListItem(Left V => V) _) </stack>
+
+  rule <k> IF_LEFT BT BF => BF ... </k>
+       <stack> Stack(ListItem(Right V => V) _) </stack>
+
+  rule <k> IF_RIGHT BT BF => BT ... </k>
+       <stack> Stack(ListItem(Right V => V) _) </stack>
+
+  rule <k> IF_RIGHT BT BF => BF ... </k>
+       <stack> Stack(ListItem(Left V => V) _) </stack>
+
   //// Operations on lists
+ 
+  syntax Data ::= List
+
+  rule <k> CONS => . ... </k>
+       <stack> Stack((ListItem(V) ListItem(L) => ListItem(ListItem(V) L)) _) </stack>
+  
   rule <k> NIL _ => . ... </k> 
-       <stack> Stack((.List => ListItem({ .DataList })) _) </stack>
+       <stack> Stack((.List => ListItem(.List)) _) </stack>
+
+  rule <k> IF_CONS BT BF => BT ... </k>
+       <stack> Stack((ListItem(ListItem(L1) Ls) => ListItem(L1) ListItem(Ls)) _) </stack>
+
+  rule <k> IF_CONS BT BF => BF ... </k>
+       <stack> Stack((ListItem(.List) => .List) _) </stack>
+
+  syntax K ::= #PerformMapList(List, List, Block)
+
+  rule <k> MAP B => #PerformMapList(Ls, .List, B) ... </k>
+       <stack> Stack((ListItem(Ls) => .List) _) </stack>
+
+  syntax K ::= #AddToList(List, List, Block)
+
+  syntax List ::= #ReverseList(List) [function]
+  syntax List ::= #ReverseListAux(List, List) [function]
+
+  rule #ReverseList(L) => #ReverseListAux(L, .List)
+  rule #ReverseListAux(ListItem(L1) Ls, Acc) => #ReverseListAux(Ls, ListItem(L1) Acc)
+  rule #ReverseListAux(.List, Acc) => Acc
+
+  rule <k> #PerformMapList(.List, Acc, B) => . ... </k>
+       <stack> Stack((.List => ListItem(#ReverseList(Acc))) _) </stack>
+
+  rule <k> #PerformMapList(ListItem(L) Ls, Acc, B) => B ~> #AddToList(Ls, Acc, B) ... </k>
+       <stack> Stack((.List => ListItem(L)) _) </stack>
+
+  rule <k> SIZE => . ... </k>
+       <stack> Stack(ListItem(L:List => size(L)) _) </stack>
+
+  rule <k> ITER B => . ... </k>
+       <stack> Stack((ListItem(.List) => .List) _) </stack>
+
+  rule <k> ITER B => B ~> ITER B ... </k>
+       <stack> Stack((ListItem(ListItem(L) Ls) => ListItem(L) ListItem(Ls)) _) </stack>
 
   configuration <k> $PGM:Pgm </k>
                 <stack> Stack(.List) </stack>
