@@ -18,23 +18,36 @@ module MICHELSON
   rule {} => .K [structrual]
   rule { Is:InstructionList } => Is [structural]
 
-  rule <k> { code B:Block ; _:StorageDecl _:ParameterDecl } P:Data S:Data => B </k> // Untyped semantics disregard everything but the code block.
+  rule <k> { code B:Block ; storage St ; parameter Pt ; } P:Data S:Data => B </k> // Untyped semantics disregard everything but the code block.
        <stack> Stack(.List => ListItem(Pair P S)) </stack>
+       <paramtype> _ => Pt </paramtype>
+       <storagetype> _ => St </storagetype>
 
-  rule <k> { code B:Block ; _:ParameterDecl _:StorageDecl } P:Data S:Data => B </k> // Untyped semantics disregard everything but the code block.
+  rule <k> { code B:Block ; parameter Pt; storage St ; } P:Data S:Data => B </k> // Untyped semantics disregard everything but the code block.
        <stack> Stack(.List => ListItem(Pair P S)) </stack>
+       <paramtype> _ => Pt </paramtype>
+       <storagetype> _ => St </storagetype>
 
-  rule <k> { _:StorageDecl code B:Block ; _:ParameterDecl } P:Data S:Data => B </k> 
-       <stack> Stack(.List => ListItem(Pair P S)) </stack>
 
-  rule <k> { _:ParameterDecl code B:Block ; _:StorageDecl } P:Data S:Data => B </k> 
+  rule <k> { storage St ; code B:Block ; parameter Pt ; } P:Data S:Data => B </k> 
        <stack> Stack(.List => ListItem(Pair P S)) </stack>
+       <paramtype> _ => Pt </paramtype>
+       <storagetype> _ => St </storagetype>
 
-  rule <k> { _:StorageDecl _:ParameterDecl code B:Block ; } P:Data S:Data => B </k> 
+  rule <k> { parameter Pt ; code B:Block ; storage St ; } P:Data S:Data => B </k> 
        <stack> Stack(.List => ListItem(Pair P S)) </stack>
+       <paramtype> _ => Pt </paramtype>
+       <storagetype> _ => St </storagetype>
 
-  rule <k> { _:ParameterDecl _:StorageDecl code B:Block ; } P:Data S:Data => B </k> 
+  rule <k> { storage St ; parameter Pt ; code B:Block ; } P:Data S:Data => B </k> 
        <stack> Stack(.List => ListItem(Pair P S)) </stack>
+       <paramtype> _ => Pt </paramtype>
+       <storagetype> _ => St </storagetype>
+
+  rule <k> { parameter Pt ; storage St ; code B:Block ; } P:Data S:Data => B </k> 
+       <stack> Stack(.List => ListItem(Pair P S)) </stack>
+       <paramtype> _ => Pt </paramtype>
+       <storagetype> _ => St </storagetype>
 
   syntax Error ::= Aborted(String, KItem)
 
@@ -414,7 +427,9 @@ module MICHELSON
   // Domain Specific operations
   //// Operations on timestamps
 
-  syntax Data ::= #Timestamp(Int)
+  syntax Timestamp ::= #Timestamp(Int) 
+
+  syntax Data ::= Timestamp 
 
   rule <k> ADD => . ... </k>
        <stack> Stack((ListItem(#Timestamp(I1)) ListItem(I2) => ListItem(#Timestamp(I1 +Int I2))) _) </stack>
@@ -459,7 +474,9 @@ module MICHELSON
                 ListItem(#Address(!_:Int))) _) </stack>
                 requires #IsKeyHashOption(Delegate)
 
-  syntax ContractData ::= #Contract(Address)
+  syntax ContractData ::= #Contract(Address, Type)
+
+  syntax Data ::= ContractData
 
   syntax BlockchainOperation ::= #TransferTokens(Data, Mutez, ContractData)
 
@@ -472,8 +489,51 @@ module MICHELSON
        <stack> Stack((ListItem(O:OptionData => #SetDelegate(O))) _) </stack>
        requires #IsKeyHashOption(O)
 
-//  rule <k> BALANCE => . ... </k>
+  rule <k> BALANCE => . ... </k>
+       <stack> Stack((.List => ListItem(B)) _) </stack>
+       <balance> B </balance>
+
+  rule <k> ADDRESS => . ... </k>
+       <stack> Stack(ListItem(#Contract(A, _) => A) _) </stack>
+
+  rule <k> CONTRACT T => . ... </k>
+       <stack> Stack(ListItem(A => Some #Contract(A, T)) _) </stack>
+       <knownaddrs> ... A |-> #Contract(A, T) ... </knownaddrs>
        
+  rule <k> CONTRACT _ => . ... </k>
+       <stack> Stack(ListItem(A => None) _) </stack> [owise]
+
+  rule <k> SOURCE => . ... </k>
+       <stack> Stack((.List => ListItem(A)) _) </stack>
+       <sourceaddr> A:Address </sourceaddr>
+
+  rule <k> SENDER => . ... </k>
+       <stack> Stack((.List => ListItem(A)) _) </stack>
+       <senderaddr> A:Address </senderaddr>
+
+  rule <k> SELF => . ... </k>
+       <stack> Stack((.List => ListItem(#Contract(A, T))) _) </stack>
+       <paramtype> T </paramtype>
+       <myaddr> A </myaddr>
+
+  rule <k> AMOUNT => . ... </k>
+       <stack> Stack((.List => ListItem(A)) _) </stack>
+       <amount> A:Mutez </amount>
+
+  rule <k> IMPLICIT_ACCOUNT => . ... </k>
+       <stack> Stack(ListItem(#KeyHash(A) => #Contract(#Address(A), unit)) _)  </stack>
+
+  //// Special Operations
+
+  syntax Int ::= "#StepsToQuota"
+  rule #StepsToQuota => 99999999999999 [macro]
+
+  rule <k> STEPS_TO_QUOTA => . ... </k>
+       <stack> Stack((.List => ListItem(#StepsToQuota)) _) </stack>
+
+  rule <k> NOW => . ... </k> 
+       <stack> Stack((.List => ListItem(N)) _) </stack>
+       <now> N:Timestamp </now>
 
   //// Operations on Mutez
 
@@ -522,10 +582,19 @@ module MICHELSON
 
   rule #DoCompare(#Mutez(I1), #Mutez(I2)) => #DoCompare(I1, I2)
 
-  syntax Int ::= "#NotSet"
+//  syntax Int ::= "#NotSet"
+
+  syntax Type ::= "#NotSet"
 
   configuration <k> $PGM:Pgm </k>
+                <paramtype> #NotSet </paramtype>
+                <storagetype> #NotSet </storagetype>
                 <stack> Stack(.List) </stack>
-//                <balance> #NotSet </balance>
-//                <time> #Timestamp(#NotSet) </time>
+                <balance> #Mutez(0) </balance>
+                <amount> #Mutez(0) </amount>
+                <now> #Timestamp(-1) </now>
+                <myaddr> #Address(-1) </myaddr>
+                <knownaddrs> .Map </knownaddrs>
+                <sourceaddr> #Address(-2) </sourceaddr>
+                <senderaddr> #Address(-3) </senderaddr>
 endmodule
