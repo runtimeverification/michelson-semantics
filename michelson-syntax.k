@@ -10,6 +10,7 @@ module MICHELSON-SYNTAX
   syntax ComparableType
   syntax Type
   syntax TypeAnnotation
+  syntax Contract
 
   syntax MapEntry ::= "Elt" Data Data
 
@@ -18,17 +19,27 @@ module MICHELSON-SYNTAX
   syntax InstructionList ::= List{Instruction, ";"}
 
   syntax BytesLiteral ::= r"0x([0-9a-fA-F]{2})+" [token]
+
+  syntax MichelsonBool ::= "True" [token]
+                         | "False" [token] // These just get macro'd to the proper K types.
+ 
+  syntax Pair ::= "Pair" Data Data 
+
+  syntax LeftData ::= "Left" Data
+  syntax RightData ::= "Right" Data
+  syntax OrData ::= LeftData | RightData
+
+  syntax OptionData ::= "Some" Data
+                      | "None"  
+
   syntax Data ::= Int 
                 | String 
-                | "True" [token]
-                | "False" [token]
+                | MichelsonBool
                 | BytesLiteral
                 | "Unit" 
-                | "Pair" Data Data
-                | "Left" Data
-                | "Right" Data
-                | "Some" Data
-                | "None" 
+                | Pair
+                | OrData
+                | OptionData
                 | "{" DataList "}"
                 | "{" MapEntry "}"
                 | Instruction
@@ -112,7 +123,7 @@ module MICHELSON-SYNTAX
 		       | "TRANSFER_TOKENS" 
 	               | "SET_DELEGATE" 
 		       | "CREATE_ACCOUNT" 
-		       | "CREATE_CONTRACT" Block
+		       | "CREATE_CONTRACT" "{" Contract "}"
 		       | "IMPLICIT_ACCOUNT" 
 		       | "NOW" 
 		       | "AMOUNT" 

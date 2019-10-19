@@ -430,11 +430,53 @@ module MICHELSON
 
   rule #DoCompare(#Timestamp(I1), #Timestamp(I2)) => #DoCompare(I1, I2)
 
-  /* Actual compare rule is defined over Data */
+  syntax Address ::= #Address(Int)
+
+  syntax Mutez ::= #Mutez(Int)
+  syntax KeyHash ::= #KeyHash(Int)
+
+  syntax Data ::= KeyHash
+  syntax Data ::= Mutez
+
+  syntax Bool ::= #IsKeyHashOption(OptionData) [function]
+  rule #IsKeyHashOption(Some K:KeyHash) => true
+  rule #IsKeyHashOption(None) => true
+  rule #IsKeyHashOption(_) => false [owise]
+
+  syntax BlockchainOperation ::= #CreateContract(Contract, KeyHash, OptionData, Bool, Bool, Mutez, Data)
+
+  syntax Data ::= BlockchainOperation
+
+  rule <k> CREATE_CONTRACT { C } => . ... </k>
+       <stack> Stack((ListItem(Manager:KeyHash)
+                ListItem(Delegate:OptionData)
+                ListItem(Spendable:Bool)
+                ListItem(Delegatable:Bool)
+                ListItem(Initial:Mutez)
+                ListItem(Storage:Data)
+                =>
+                ListItem(#CreateContract(C, Manager, Delegate, Spendable, Delegatable, Initial, Storage))
+                ListItem(#Address(!_:Int))) _) </stack>
+                requires #IsKeyHashOption(Delegate)
+
+  syntax ContractData ::= #Contract(Address)
+
+  syntax BlockchainOperation ::= #TransferTokens(Data, Mutez, ContractData)
+
+  rule <k> TRANSFER_TOKENS => . ... </k>
+       <stack> Stack((ListItem(D) ListItem(M:Mutez) ListItem(C:ContractData) => ListItem(#TransferTokens(D, M, C))) _) </stack>
+
+  syntax BlockchainOperation ::= #SetDelegate(OptionData)
+
+  rule <k> SET_DELEGATE => . ... </k>
+       <stack> Stack((ListItem(O:OptionData => #SetDelegate(O))) _) </stack>
+       requires #IsKeyHashOption(O)
+
+//  rule <k> BALANCE => . ... </k>
+       
 
   //// Operations on Mutez
 
-  syntax Mutez ::= #Mutez(Int)
   syntax Data ::= Mutez
 
   syntax Int ::= "#MutezOverflowLimit" [function]
@@ -480,6 +522,10 @@ module MICHELSON
 
   rule #DoCompare(#Mutez(I1), #Mutez(I2)) => #DoCompare(I1, I2)
 
+  syntax Int ::= "#NotSet"
+
   configuration <k> $PGM:Pgm </k>
                 <stack> Stack(.List) </stack>
+//                <balance> #NotSet </balance>
+//                <time> #Timestamp(#NotSet) </time>
 endmodule
