@@ -1,7 +1,14 @@
-{ code { CDR ;  
-         NIL operation ;
-         PAIR ;
-         FAILWITH 1
-       }; 
-storage unit;
-parameter unit; } Unit Unit
+$contract { code { CAR ; NIL operation ; FAILWITH Unit ; PAIR }; 
+storage unit ;
+parameter unit ; } ; 
+$paramtype unit ;
+$storagetype unit ;
+$balance 0 ;
+$amount 0 ;
+$now 0 ;
+$myaddr 0 ;
+$knownaddrs ;
+$sourceaddr 0 ;
+$senderaddr 0 ;
+$param Unit ;
+$storage Unit ;

@@ -13,41 +13,68 @@ module MICHELSON
   syntax StackSort ::= Stack(List)
                      | "FailedStack"
 
+  syntax ContractData ::= #Contract(Address, Type)
+  syntax Data ::= ContractData
+
+
+  syntax K ::= #ReadKnownAddrs(ContractInputList)
+  syntax K ::= #LoadContract(Contract)
+  
+  rule <k> $contract {C} ;
+           $paramtype Pt ;
+           $storagetype St ;
+           $balance B ;
+           $amount Amt ;
+           $now N ;
+           $myaddr Addr ;
+           $knownaddrs AddrList ;
+           $sourceaddr SourceAddr ;
+           $senderaddr SenderAddr ;
+           $param P ;
+           $storage S ; => #ReadKnownAddrs(AddrList) ~> #LoadContract(C) </k> 
+       <stack> _ => Stack(ListItem(Pair P S)) </stack>
+       <paramtype> _ => Pt </paramtype>
+       <storagetype> _ => St </storagetype>
+       <balance> #Mutez(_ => B) </balance>
+       <amount> #Mutez(_ => Amt) </amount>
+       <now> #Timestamp(_ => N) </now>
+       <myaddr> #Address(_ => Addr) </myaddr>
+       <sourceaddr> #Address(_ => SourceAddr) </sourceaddr>
+       <senderaddr> #Address(_ => SenderAddr) </senderaddr> [structural]
+
+  rule <k> #ReadKnownAddrs(#ContractInput(A, T) Cs => Cs) ... </k>
+       <knownaddrs> M => M[#Address(A) <- #Contract(#Address(A), T)] </knownaddrs> [structural]
+
+  rule <k> #ReadKnownAddrs(.ContractInputList) => . ... </k> [structural]
+
+  rule <k> #LoadContract(code B ; storage St ; parameter Pt ;) => B </k> 
+       <paramtype> Pt </paramtype>
+       <storagetype> St </storagetype> [structural]
+
+  rule <k> #LoadContract(code B ; parameter Pt; storage St ;) => B </k> 
+       <paramtype> Pt </paramtype>
+       <storagetype> St </storagetype> [structural]
+
+  rule <k> #LoadContract(storage St ; code B ; parameter Pt ;) => B </k> 
+       <paramtype> Pt </paramtype>
+       <storagetype> St </storagetype> [structural]
+
+  rule <k> #LoadContract(parameter Pt ; code B ; storage St ;) => B </k> 
+       <paramtype> Pt </paramtype>
+       <storagetype> St </storagetype> [structural]
+
+  rule <k> #LoadContract(storage St ; parameter Pt ; code B ;) => B </k> 
+       <paramtype> Pt </paramtype>
+       <storagetype> St </storagetype> [structural]
+
+  rule <k> #LoadContract(parameter Pt ; storage St ; code B ;) => B </k> 
+       <paramtype> Pt </paramtype>
+       <storagetype> St </storagetype> [structural]
+
   rule I:Instruction ; Is:InstructionList => I ~> Is [structural]
   rule .InstructionList => .K [structural]
   rule {} => .K [structrual]
   rule { Is:InstructionList } => Is [structural]
-
-  rule <k> { code B:Block ; storage St ; parameter Pt ; } P:Data S:Data => B </k> // Untyped semantics disregard everything but the code block.
-       <stack> Stack(.List => ListItem(Pair P S)) </stack>
-       <paramtype> _ => Pt </paramtype>
-       <storagetype> _ => St </storagetype>
-
-  rule <k> { code B:Block ; parameter Pt; storage St ; } P:Data S:Data => B </k> // Untyped semantics disregard everything but the code block.
-       <stack> Stack(.List => ListItem(Pair P S)) </stack>
-       <paramtype> _ => Pt </paramtype>
-       <storagetype> _ => St </storagetype>
-
-
-  rule <k> { storage St ; code B:Block ; parameter Pt ; } P:Data S:Data => B </k> 
-       <stack> Stack(.List => ListItem(Pair P S)) </stack>
-       <paramtype> _ => Pt </paramtype>
-       <storagetype> _ => St </storagetype>
-
-  rule <k> { parameter Pt ; code B:Block ; storage St ; } P:Data S:Data => B </k> 
-       <stack> Stack(.List => ListItem(Pair P S)) </stack>
-       <paramtype> _ => Pt </paramtype>
-       <storagetype> _ => St </storagetype>
-
-  rule <k> { storage St ; parameter Pt ; code B:Block ; } P:Data S:Data => B </k> 
-       <stack> Stack(.List => ListItem(Pair P S)) </stack>
-       <paramtype> _ => Pt </paramtype>
-       <storagetype> _ => St </storagetype>
-
-  rule <k> { parameter Pt ; storage St ; code B:Block ; } P:Data S:Data => B </k> 
-       <stack> Stack(.List => ListItem(Pair P S)) </stack>
-       <paramtype> _ => Pt </paramtype>
-       <storagetype> _ => St </storagetype>
 
   syntax Error ::= Aborted(String, KItem)
 
@@ -344,7 +371,8 @@ module MICHELSON
        <stack> Stack(ListItem(M:Map => size(M)) _) </stack>
 
   //// Operations on big maps
-  /* Same as maps */
+  
+  // Same as maps
 
   //// Operations on optional values
 
@@ -468,15 +496,12 @@ module MICHELSON
                 ListItem(Spendable:Bool)
                 ListItem(Delegatable:Bool)
                 ListItem(Initial:Mutez)
-                ListItem(Storage:Data)
+                ListItem(Stor:Data)
                 =>
-                ListItem(#CreateContract(C, Manager, Delegate, Spendable, Delegatable, Initial, Storage))
+                ListItem(#CreateContract(C, Manager, Delegate, Spendable, Delegatable, Initial, Stor))
                 ListItem(#Address(!_:Int))) _) </stack>
                 requires #IsKeyHashOption(Delegate)
 
-  syntax ContractData ::= #Contract(Address, Type)
-
-  syntax Data ::= ContractData
 
   syntax BlockchainOperation ::= #TransferTokens(Data, Mutez, ContractData)
 

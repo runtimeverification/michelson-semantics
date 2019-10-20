@@ -230,5 +230,19 @@ module MICHELSON-SYNTAX
                     | StorageDecl ParameterDecl CodeDecl
                     | ParameterDecl StorageDecl CodeDecl
 
-  syntax Pgm ::= "{" Contract "}" Data Data
+  syntax ContractInput ::= #ContractInput(Int, Type)
+  syntax ContractInputList ::= List{ContractInput, " "} 
+
+  syntax Pgm ::= "$contract" "{" Contract "}" ";" 
+                 "$paramtype" Type ";" 
+                 "$storagetype" Type ";" 
+                 "$balance" Int ";" 
+                 "$amount" Int ";" 
+                 "$now" Int ";" 
+                 "$myaddr" Int ";" 
+                 "$knownaddrs" ContractInputList ";" 
+                 "$sourceaddr" Int ";" 
+                 "$senderaddr" Int ";" 
+                 "$param" Data  ";" 
+                 "$storage" Data ";" 
 endmodule

@@ -1,5 +1,4 @@
-{ code { 
-         DROP ;
+$contract { code { DROP ;
          EMPTY_SET int ;
          PUSH bool True ;
          PUSH int 5 ;
@@ -23,6 +22,17 @@
          PUSH int 13 ;
          UPDATE ;
          NIL operation ;
-         PAIR }; 
-storage unit;
-parameter unit; } Unit Unit
+         PAIR  }; 
+storage unit ;
+parameter unit ; } ; 
+$paramtype unit ;
+$storagetype unit ;
+$balance 0 ;
+$amount 0 ;
+$now 0 ;
+$myaddr 0 ;
+$knownaddrs ;
+$sourceaddr 0 ;
+$senderaddr 0 ;
+$param Unit ;
+$storage Unit ;
