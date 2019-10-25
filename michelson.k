@@ -80,8 +80,8 @@ module MICHELSON
 
   // Core Instructioons
   //// Control Structures
-  rule <k> FAILWITH D ~> _ => Aborted("FAILWITH instruction reached", D) </k>
-       <stack> _ => FailedStack </stack>
+  rule <k> FAILWITH ~> _ => Aborted("FAILWITH instruction reached", D) </k>
+       <stack> Stack(ListItem(D) _) => FailedStack </stack>
 
   rule <k> IF BT BF => BT ... </k>
        <stack> Stack(ListItem(true) Ls => Ls) </stack>
@@ -103,7 +103,7 @@ module MICHELSON
 
   syntax KItem ::= #Push(Data)
   rule <k> #Push(D) => . ... </k>
-       <stack> Stack(Ls => ListItem(D) Ls) </stack>
+       <stack> Stack(Ls => ListItem(D) Ls) </stack> [structural]
 
   rule <k> DIP B => B ~> #Push(D) ... </k>
        <stack> Stack((ListItem(D) => .List) _) </stack>
@@ -239,17 +239,17 @@ module MICHELSON
   rule <k> COMPARE => . ... </k>
        <stack> Stack(ListItem(V1) ListItem(V2) Ls => ListItem(#DoCompare(V1, V2)) Ls) </stack>
 
-  syntax String ::= #ConcatAll(DataList, String) [function]
+  syntax String ::= #ConcatAll(List, String) [function]
 
-  rule #ConcatAll(.DataList, A) => A
-  rule #ConcatAll(S1:String ; DL:DataList, A) => #ConcatAll(DL, A +String S1)
+  rule #ConcatAll(.List, A) => A
+  rule #ConcatAll(ListItem(S1) DL, A) => #ConcatAll(DL, A +String S1)
 
   //// Operations on strings
   rule <k> CONCAT => . ... </k>
        <stack> Stack(ListItem(S1) ListItem(S2) Ls => ListItem(S1 +String S2) Ls) </stack>
 
   rule <k> CONCAT => . ... </k>
-       <stack> Stack(ListItem({ D:DataList }) Ls => ListItem(#ConcatAll(D, "")) Ls) </stack>
+       <stack> Stack(ListItem(L => #ConcatAll(L, "")) _) </stack>
 
   rule <k> SIZE => . ... </k>
        <stack> Stack(ListItem(S => lengthString(S)) _) </stack> 

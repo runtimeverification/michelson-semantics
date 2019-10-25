@@ -92,7 +92,7 @@ module MICHELSON-SYNTAX
                        | "LAMBDA" Type Type Block
                        | "EXEC" 
                        | "DIP" Block
-                       | "FAILWITH" Data
+                       | "FAILWITH"
                        | "CAST" 
                        | "RENAME" 
                        | "CONCAT" 

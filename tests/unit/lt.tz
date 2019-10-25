@@ -1,0 +1,2 @@
+$Instructions { LT } ; 
+$Stack ListItem(-1) ;

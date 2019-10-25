@@ -1,0 +1,2 @@
+$Instructions { PUSH int 6 } ; 
+$Stack .List ;

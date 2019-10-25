@@ -1,0 +1,2 @@
+$Instructions { CONCAT } ; 
+$Stack ListItem(ListItem("he") ListItem("llo") ListItem(" ") ListItem("world")) ;

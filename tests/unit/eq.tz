@@ -1,0 +1,2 @@
+$Instructions { EQ } ; 
+$Stack ListItem(0) ;
