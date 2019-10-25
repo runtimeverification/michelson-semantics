@@ -17,8 +17,8 @@ module MICHELSON
   syntax Data ::= ContractData
 
 
-  syntax K ::= #ReadKnownAddrs(ContractInputList)
-  syntax K ::= #LoadContract(Contract)
+  syntax KItem ::= #ReadKnownAddrs(ContractInputList)
+  syntax KItem ::= #LoadContract(Contract)
   
   rule <k> $contract {C} ;
            $paramtype Pt ;
@@ -45,7 +45,7 @@ module MICHELSON
   rule <k> #ReadKnownAddrs(#ContractInput(A, T) Cs => Cs) ... </k>
        <knownaddrs> M => M[#Address(A) <- #Contract(#Address(A), T)] </knownaddrs> [structural]
 
-  rule <k> #ReadKnownAddrs(.ContractInputList) => . ... </k> [structural]
+  rule #ReadKnownAddrs( .ContractInputList ) => . [structural]
 
   rule <k> #LoadContract(code B ; storage St ; parameter Pt ;) => B </k> 
        <paramtype> Pt </paramtype>
@@ -101,7 +101,7 @@ module MICHELSON
   rule <k> LOOP_LEFT B => .K ... </k>
        <stack> Stack(ListItem(Right A) Ls => ListItem(A) Ls) </stack>
 
-  syntax K ::= #Push(Data)
+  syntax KItem ::= #Push(Data)
   rule <k> #Push(D) => . ... </k>
        <stack> Stack(Ls => ListItem(D) Ls) </stack>
 
@@ -110,7 +110,7 @@ module MICHELSON
 
   syntax Data ::= #Lambda(Type, Type, Block)
  
-  syntax K ::= #ReturnStack(StackSort)
+  syntax KItem ::= #ReturnStack(StackSort)
 
   rule <k> #ReturnStack(Stack(Ls)) => . ... </k>
        <stack> Stack(ListItem(R) => ListItem(R) Ls) </stack>
@@ -282,7 +282,7 @@ module MICHELSON
   rule <k> MEM => . ... </k> 
        <stack> Stack(((ListItem(X:Data) ListItem(S:Set)) => ListItem(X in S)) _) </stack>
 
-  syntax K ::= #InsertIntoSet(Data, DataList, DataList, List) | #ContinueInsert(Data, DataList, DataList, List)
+  syntax KItem ::= #InsertIntoSet(Data, DataList, DataList, List) | #ContinueInsert(Data, DataList, DataList, List)
 
   // True to insert, False to remove.
 
@@ -344,12 +344,12 @@ module MICHELSON
   rule GetMinimalKeyAux(K1 |-> _ M, K2) => GetMinimalKeyAux(M, K2) requires #DoCompare({K1}:>Data, K2) >Int 0
   rule GetMinimalKeyAux(.Map, K) => {K}:>Data
 
-  syntax K ::= #PerformMap(Map, Map, Block)
+  syntax KItem ::= #PerformMap(Map, Map, Block)
 
   rule <k> MAP B => #PerformMap(M, .Map, B) ... </k>
        <stack> Stack((ListItem(M) => .List) _) </stack>
 
-  syntax K ::= #PopNewVal(Data)
+  syntax KItem ::= #PopNewVal(Data)
 
   rule <k> #PopNewVal(K) ~> #PerformMap(M1, M2, B) => #PerformMap(M1, K |-> V M2, B) ... </k>
        <stack> Stack((ListItem(V) => .List) _) </stack>
@@ -423,12 +423,12 @@ module MICHELSON
   rule <k> IF_CONS BT BF => BF ... </k>
        <stack> Stack((ListItem(.List) => .List) _) </stack>
 
-  syntax K ::= #PerformMapList(List, List, Block)
+  syntax KItem ::= #PerformMapList(List, List, Block)
 
   rule <k> MAP B => #PerformMapList(Ls, .List, B) ... </k>
        <stack> Stack((ListItem(Ls) => .List) _) </stack>
 
-  syntax K ::= #AddToList(List, List, Block)
+  syntax KItem ::= #AddToList(List, List, Block)
 
   syntax List ::= #ReverseList(List) [function]
   syntax List ::= #ReverseListAux(List, List) [function]
@@ -567,7 +567,7 @@ module MICHELSON
   syntax Int ::= "#MutezOverflowLimit" [function]
   rule #MutezOverflowLimit => 2 ^Int 63 // Signed 64 bit integers.
 
-  syntax K ::= #ValidateMutezAndPush(Mutez)
+  syntax KItem ::= #ValidateMutezAndPush(Mutez)
 
   rule <k> #ValidateMutezAndPush(#Mutez(I)) => . ... </k>
        <stack> Stack((.List => ListItem(I)) _) </stack>
