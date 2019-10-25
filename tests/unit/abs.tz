@@ -1,0 +1,2 @@
+$Instructions { ABS } ; 
+$Stack ListItem(-5) ;

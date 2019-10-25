@@ -1,0 +1,2 @@
+$Instructions { SUB } ; 
+$Stack ListItem(5) ListItem(2) ;

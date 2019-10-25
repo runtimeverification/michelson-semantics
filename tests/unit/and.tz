@@ -1,0 +1,2 @@
+$Instructions { AND } ; 
+$Stack ListItem(5) ListItem(3) ;

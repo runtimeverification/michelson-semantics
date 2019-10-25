@@ -194,7 +194,7 @@ module MICHELSON
        <stack> Stack(ListItem(I1) ListItem(0) Ls => ListItem(None) Ls) </stack>
 
   rule <k> EDIV => . ... </k>
-       <stack> Stack(ListItem(I1) ListItem(I2) Ls => ListItem(Some (Pair (I1 /Int I2) (I2 %Int I2))) Ls) </stack>
+       <stack> Stack(ListItem(I1) ListItem(I2) Ls => ListItem(Some (Pair (I1 /Int I2) (I1 %Int I2))) Ls) </stack>
        requires I2 =/=Int 0
 
   rule <k> OR => . ... </k>
