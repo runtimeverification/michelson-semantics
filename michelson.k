@@ -191,7 +191,8 @@ module MICHELSON
        <stack> Stack(ListItem(I1) ListItem(I2) Ls => ListItem(I1 *Int I2) Ls) </stack>
 
   rule <k> EDIV => . ... </k>
-       <stack> Stack(ListItem(I1) ListItem(0) Ls => ListItem(None) Ls) </stack>
+       <stack> Stack(ListItem(I1:Int) ListItem(0) Ls => ListItem(None) Ls) </stack>
+       // Could combine this rule with the Mutez one but probably a disadvantage in readability.
 
   rule <k> EDIV => . ... </k>
        <stack> Stack(ListItem(I1) ListItem(I2) Ls => ListItem(Some (Pair (I1 /Int I2) (I1 %Int I2))) Ls) </stack>
@@ -336,35 +337,32 @@ module MICHELSON
   rule <k> UPDATE => . ... </k>
        <stack> Stack((ListItem(K) ListItem(None) ListItem(M:Map) => ListItem(M[K <- undef])) _) </stack>
 
-  syntax Data ::= GetMinimalKey(Map) [function]
-  syntax Data ::= GetMinimalKeyAux(Map, Data) [function]
+  syntax KItem ::= #PerformMap(Map, Map, Block, List)
 
-  rule GetMinimalKey(K |-> _  M) => GetMinimalKeyAux(M, {K}:>Data)
-  rule GetMinimalKeyAux(K1 |-> _ M, K2) => GetMinimalKeyAux(M, {K1}:>Data) requires #DoCompare({K1}:>Data, K2) <=Int 0
-  rule GetMinimalKeyAux(K1 |-> _ M, K2) => GetMinimalKeyAux(M, K2) requires #DoCompare({K1}:>Data, K2) >Int 0
-  rule GetMinimalKeyAux(.Map, K) => {K}:>Data
-
-  syntax KItem ::= #PerformMap(Map, Map, Block)
-
-  rule <k> MAP B => #PerformMap(M, .Map, B) ... </k>
-       <stack> Stack((ListItem(M) => .List) _) </stack>
+  rule <k> MAP B => #PerformMap(M, .Map, B, Rs) ... </k>
+       <stack> Stack((ListItem(M) => .List) Rs) </stack>
 
   syntax KItem ::= #PopNewVal(Data)
 
-  rule <k> #PopNewVal(K) ~> #PerformMap(M1, M2, B) => #PerformMap(M1, K |-> V M2, B) ... </k>
+  rule <k> #PopNewVal(K) ~> #PerformMap(M1, M2, B, Rs) => #PerformMap(M1, M2[K <- V], B, Rs) ... </k>
        <stack> Stack((ListItem(V) => .List) _) </stack>
 
-  rule <k> #PerformMap(K |-> V M1, M2, B) => B ~> #PopNewVal({K}:>Data) ~> #PerformMap(M1, M2, B) ... </k>
-       <stack> Stack((.List => ListItem(Pair {K}:>Data {V}:>Data)) _) </stack>
+  syntax Data ::= #MinimalKey(Map) [function]
+  rule #MinimalKey(M) => #MinimalElement(keys_list(M))
 
-  rule <k> #PerformMap(.Map, M, _) => . ... </k>
-       <stack> Stack((.List => ListItem(M)) _) </stack>
+  rule <k> #PerformMap(M1, M2, B, Rs) => B ~> #PopNewVal(#MinimalKey(M1)) 
+        ~> #PerformMap(M1[#MinimalKey(M1) <- undef], M2, B, Rs) ... </k>
+       <stack> Stack((.List => ListItem(Pair #MinimalKey(M1) {M1[#MinimalKey(M1)]}:>Data)) _) </stack>
+       requires size(M1) >Int 0
+
+  rule <k> #PerformMap(.Map, M, _, Rs) => . ... </k>
+       <stack> Stack(_ => ListItem(M) Rs) </stack>
 
   rule <k> ITER B => . ... </k>
        <stack> Stack((ListItem(.Map) => .List) _) </stack>
 
   rule <k> ITER B => B ~> ITER B ... </k>
-       <stack> Stack((ListItem(M) => ListItem(Pair GetMinimalKey(M) {M[GetMinimalKey(M)]}:>Data) ListItem(M[GetMinimalKey(M) <- undef])) _) </stack>
+       <stack> Stack((ListItem(M) => ListItem(Pair #MinimalElement(keys_list(M)) {M[#MinimalElement(keys_list(M))]}:>Data) ListItem(M[#MinimalElement(keys_list(M)) <- undef])) _) </stack>
        requires size(M) >Int 0
 
   rule <k> SIZE => . ... </k>
