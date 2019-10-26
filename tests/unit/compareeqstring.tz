@@ -1,0 +1,2 @@
+$Instructions { COMPARE } ; 
+$Stack ListItem("a") ListItem("a") ;

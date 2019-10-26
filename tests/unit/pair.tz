@@ -1,0 +1,2 @@
+$Instructions { PAIR } ; 
+$Stack ListItem(5) ListItem(7) ;

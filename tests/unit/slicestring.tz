@@ -1,0 +1,2 @@
+$Instructions { SLICE } ; 
+$Stack ListItem(2) ListItem(3) ListItem("hello world") ;

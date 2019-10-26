@@ -1,0 +1,2 @@
+$Instructions { CAR } ; 
+$Stack ListItem(Pair "first" "second") ;

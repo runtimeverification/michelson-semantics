@@ -1,0 +1,2 @@
+$Instructions { CDR } ; 
+$Stack ListItem(Pair "first" "second") ;

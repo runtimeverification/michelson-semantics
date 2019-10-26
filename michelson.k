@@ -307,8 +307,8 @@ module MICHELSON
   rule <k> ITER B => . ... </k>
        <stack> Stack((ListItem(.Set) => .List) _) </stack>
 
-  rule <k> ITER B => B ~> ITER B ... </k>
-       <stack> Stack((ListItem(S:Set) => ListItem(#MinimalElement(Set2List(S))) ListItem(S -Set SetItem(#MinimalElement(Set2List(S))))) _) </stack>
+  rule <k> ITER B => B ~> #Push(S -Set SetItem(#MinimalElement(Set2List(S)))) ~> ITER B ... </k>
+       <stack> Stack((ListItem(S:Set) => ListItem(#MinimalElement(Set2List(S)))) _) </stack>
        requires size(S) >Int 0
 
   rule <k> SIZE => . ... </k>
