@@ -1,0 +1,2 @@
+$Instructions { LEFT nat } ; 
+$Stack ListItem(5) ;

@@ -1,7 +1,9 @@
+requires "michelson.k"
 requires "michelson-syntax.k"
 
 module TEST-MICHELSON-SYNTAX
   imports MICHELSON-SYNTAX
+  imports MICHELSON
   imports DOMAINS
 
   syntax Data ::= List | Set | Map

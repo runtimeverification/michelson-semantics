@@ -1,0 +1,2 @@
+$Instructions { ITER { CDR ; SWAP ; SUB } } ; 
+$Stack ListItem(1 |-> 3 5 |-> 2) ListItem(1000);

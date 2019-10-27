@@ -1,0 +1,2 @@
+$Instructions { ITER { ADD } } ; 
+$Stack ListItem(ListItem(7) ListItem(11) ListItem(45)) ListItem(1) ;

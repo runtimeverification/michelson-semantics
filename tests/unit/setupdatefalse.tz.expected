@@ -35,4 +35,7 @@
   <senderaddr>
     #Address ( -3 )
   </senderaddr>
+  <chainid>
+    0
+  </chainid>
 </generatedTop>

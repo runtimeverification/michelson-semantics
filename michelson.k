@@ -317,6 +317,8 @@ module MICHELSON
 
   //// Operations on maps
 
+  syntax Data ::= Map
+
   rule <k> EMPTY_MAP _ _ => . ... </k>
        <stack> Stack((.List => ListItem(.Map)) _) </stack>
 
@@ -361,8 +363,8 @@ module MICHELSON
   rule <k> ITER B => . ... </k>
        <stack> Stack((ListItem(.Map) => .List) _) </stack>
 
-  rule <k> ITER B => B ~> ITER B ... </k>
-       <stack> Stack((ListItem(M) => ListItem(Pair #MinimalElement(keys_list(M)) {M[#MinimalElement(keys_list(M))]}:>Data) ListItem(M[#MinimalElement(keys_list(M)) <- undef])) _) </stack>
+  rule <k> ITER B => B ~> #Push(M[#MinimalKey(M) <- undef]) ~> ITER B ... </k>
+       <stack> Stack(ListItem(M => Pair #MinimalKey(M) {M[#MinimalKey(M)]}:>Data) _) </stack>
        requires size(M) >Int 0
 
   rule <k> SIZE => . ... </k>
@@ -441,14 +443,17 @@ module MICHELSON
   rule <k> #PerformMapList(ListItem(L) Ls, Acc, B) => B ~> #AddToList(Ls, Acc, B) ... </k>
        <stack> Stack((.List => ListItem(L)) _) </stack>
 
+  rule <k> #AddToList(Ls, Acc, B) => #PerformMapList(Ls, ListItem(L) Acc, B) ... </k>
+       <stack> Stack((ListItem(L) => .List) _) </stack>
+
   rule <k> SIZE => . ... </k>
        <stack> Stack(ListItem(L:List => size(L)) _) </stack>
 
   rule <k> ITER B => . ... </k>
        <stack> Stack((ListItem(.List) => .List) _) </stack>
 
-  rule <k> ITER B => B ~> ITER B ... </k>
-       <stack> Stack((ListItem(ListItem(L) Ls) => ListItem(L) ListItem(Ls)) _) </stack>
+  rule <k> ITER B => B ~> #Push(Ls) ~> ITER B ... </k>
+       <stack> Stack((ListItem(ListItem(L) Ls) => ListItem(L)) _) </stack>
 
   // Domain Specific operations
   //// Operations on timestamps
@@ -467,7 +472,7 @@ module MICHELSON
        <stack> Stack((ListItem(#Timestamp(I1)) ListItem(I2) => ListItem(#Timestamp(I1 -Int I2))) _) </stack>
 
   rule <k> SUB => . ... </k>
-       <stack> Stack((ListItem(#Timestamp(I1)) ListItem(#Timestamp(I2)) => ListItem(#Timestamp(I1 -Int I2))) _) </stack>
+       <stack> Stack((ListItem(#Timestamp(I1)) ListItem(#Timestamp(I2)) => ListItem(I1 -Int I2)) _) </stack>
 
   rule #DoCompare(#Timestamp(I1), #Timestamp(I2)) => #DoCompare(I1, I2)
 
@@ -548,11 +553,9 @@ module MICHELSON
 
   //// Special Operations
 
-  syntax Int ::= "#StepsToQuota"
-  rule #StepsToQuota => 99999999999999 [macro]
-
-  rule <k> STEPS_TO_QUOTA => . ... </k>
-       <stack> Stack((.List => ListItem(#StepsToQuota)) _) </stack>
+  rule <k> CHAIN_ID => . ... </k>
+       <stack> Stack((.List => ListItem(I)) _) </stack>
+       <chainid> I </chainid>
 
   rule <k> NOW => . ... </k> 
        <stack> Stack((.List => ListItem(N)) _) </stack>
@@ -620,4 +623,5 @@ module MICHELSON
                 <knownaddrs> .Map </knownaddrs>
                 <sourceaddr> #Address(-2) </sourceaddr>
                 <senderaddr> #Address(-3) </senderaddr>
+                <chainid> 0 </chainid>
 endmodule
