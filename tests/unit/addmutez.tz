@@ -1,0 +1,2 @@
+$Instructions { ADD } ; 
+$Stack ListItem(#Mutez(5)) ListItem(#Mutez(12)) ;

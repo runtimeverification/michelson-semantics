@@ -1,0 +1,39 @@
+<generatedTop>
+  <k>
+    .
+  </k>
+  <paramtype>
+    #NotSet
+  </paramtype>
+  <storagetype>
+    #NotSet
+  </storagetype>
+  <stack>
+    Stack ( ListItem ( #CreateContract ( code { DROP ; UNIT ; NIL operation ; PAIR ; .InstructionList } ; storage unit ; parameter unit ; , Some #KeyHash ( 1 ) , #Mutez ( 12 ) , Unit ) )
+    ListItem ( #Address ( 0 ) ) )
+  </stack>
+  <balance>
+    #Mutez ( 0 )
+  </balance>
+  <amount>
+    #Mutez ( 0 )
+  </amount>
+  <now>
+    #Timestamp ( -1 )
+  </now>
+  <myaddr>
+    #Address ( -1 )
+  </myaddr>
+  <knownaddrs>
+    .Map
+  </knownaddrs>
+  <sourceaddr>
+    #Address ( -2 )
+  </sourceaddr>
+  <senderaddr>
+    #Address ( -3 )
+  </senderaddr>
+  <chainid>
+    #ChainId ( 0 )
+  </chainid>
+</generatedTop>

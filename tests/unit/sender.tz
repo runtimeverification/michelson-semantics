@@ -1,0 +1,2 @@
+$Instructions { SENDER } ; 
+$Stack .List ;

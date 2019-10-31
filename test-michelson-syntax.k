@@ -10,6 +10,14 @@ module TEST-MICHELSON-SYNTAX
 
   syntax KItem ::= Data
 
+  syntax Optional ::= "$Contracts" ContractInputList
+                    | "$ParamType" Type
+
+  syntax OptionalGroup ::= List{Optional,";"}
+
   syntax Pgm ::= "$Instructions" Block ";"
                  "$Stack" List ";" // Basic unit test block.
+               |  "$Instructions" Block ";"
+                 "$Stack" List ";" 
+                 OptionalGroup ";"
 endmodule 

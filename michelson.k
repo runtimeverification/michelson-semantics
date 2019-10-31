@@ -483,25 +483,23 @@ module MICHELSON
 
   syntax Data ::= KeyHash
   syntax Data ::= Mutez
+  syntax Data ::= Address
 
   syntax Bool ::= #IsKeyHashOption(OptionData) [function]
   rule #IsKeyHashOption(Some K:KeyHash) => true
   rule #IsKeyHashOption(None) => true
   rule #IsKeyHashOption(_) => false [owise]
 
-  syntax BlockchainOperation ::= #CreateContract(Contract, KeyHash, OptionData, Bool, Bool, Mutez, Data)
+  syntax BlockchainOperation ::= #CreateContract(Contract, OptionData, Mutez, Data)
 
   syntax Data ::= BlockchainOperation
 
   rule <k> CREATE_CONTRACT { C } => . ... </k>
-       <stack> Stack((ListItem(Manager:KeyHash)
-                ListItem(Delegate:OptionData)
-                ListItem(Spendable:Bool)
-                ListItem(Delegatable:Bool)
+       <stack> Stack((ListItem(Delegate:OptionData)
                 ListItem(Initial:Mutez)
                 ListItem(Stor:Data)
                 =>
-                ListItem(#CreateContract(C, Manager, Delegate, Spendable, Delegatable, Initial, Stor))
+                ListItem(#CreateContract(C, Delegate, Initial, Stor))
                 ListItem(#Address(!_:Int))) _) </stack>
                 requires #IsKeyHashOption(Delegate)
 
@@ -552,10 +550,12 @@ module MICHELSON
        <stack> Stack(ListItem(#KeyHash(A) => #Contract(#Address(A), unit)) _)  </stack>
 
   //// Special Operations
+  syntax ChainId ::= #ChainId(Int)
+  syntax Data ::= ChainId
 
   rule <k> CHAIN_ID => . ... </k>
-       <stack> Stack((.List => ListItem(I)) _) </stack>
-       <chainid> I </chainid>
+       <stack> Stack((.List => ListItem(C)) _) </stack>
+       <chainid> C:ChainId </chainid>
 
   rule <k> NOW => . ... </k> 
        <stack> Stack((.List => ListItem(N)) _) </stack>
@@ -571,7 +571,7 @@ module MICHELSON
   syntax KItem ::= #ValidateMutezAndPush(Mutez)
 
   rule <k> #ValidateMutezAndPush(#Mutez(I)) => . ... </k>
-       <stack> Stack((.List => ListItem(I)) _) </stack>
+       <stack> Stack((.List => ListItem(#Mutez(I))) _) </stack>
        requires I >=Int 0 andBool I <Int #MutezOverflowLimit [structural]
 
   rule <k> #ValidateMutezAndPush(#Mutez(I)) ~> _ => Aborted("Mutez out of bounds", I) </k>
@@ -623,5 +623,5 @@ module MICHELSON
                 <knownaddrs> .Map </knownaddrs>
                 <sourceaddr> #Address(-2) </sourceaddr>
                 <senderaddr> #Address(-3) </senderaddr>
-                <chainid> 0 </chainid>
+                <chainid> #ChainId(0) </chainid>
 endmodule

@@ -1,0 +1,2 @@
+$Instructions { IMPLICIT_ACCOUNT } ; 
+$Stack ListItem(#KeyHash(12345)) ;

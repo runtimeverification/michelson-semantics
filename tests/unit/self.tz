@@ -1,0 +1,3 @@
+$Instructions { SELF } ; 
+$Stack .List ;
+$ParamType int ;

@@ -1,0 +1,3 @@
+$Instructions { CONTRACT unit } ; 
+$Stack ListItem(#Address(12345)) ;
+$Contracts #ContractInput(12345, unit) ;

@@ -1,0 +1,2 @@
+$Instructions { BALANCE } ; 
+$Stack .List ;
