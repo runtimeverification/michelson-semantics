@@ -181,6 +181,14 @@ module MICHELSON
   rule <k> ABS => . ... </k>
        <stack> Stack(ListItem(I) Ls => ListItem(absInt(I)) Ls) </stack>
 
+  rule <k> ISNAT => . ... </k>
+       <stack> Stack(ListItem(I => Some I) _) </stack>
+       requires I >=Int 0 
+
+  rule <k> ISNAT => . ... </k>
+       <stack> Stack(ListItem(I => None) _) </stack>
+       requires I <Int 0 
+
   rule <k> ADD => . ... </k>
        <stack> Stack(ListItem(I1) ListItem(I2) Ls => ListItem(I1 +Int I2) Ls) </stack>
 

@@ -1,0 +1,2 @@
+$Instructions { ISNAT } ; 
+$Stack ListItem(-1) ;
