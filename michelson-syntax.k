@@ -81,6 +81,7 @@ module MICHELSON-SYNTAX
                        | "SIZE" 
                        | "EMPTY_SET" ComparableType
                        | "EMPTY_MAP" ComparableType Type
+                       | "EMPTY_BIG_MAP" ComparableType Type
                        | "MAP" Block
                        | "ITER" Block
                        | "MEM" 

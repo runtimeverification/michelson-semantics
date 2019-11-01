@@ -382,7 +382,10 @@ module MICHELSON
        <stack> Stack(ListItem(M:Map => size(M)) _) </stack>
 
   //// Operations on big maps
-  
+
+  rule <k> EMPTY_BIG_MAP _ _ => . ... </k>
+       <stack> Stack((.List => ListItem(.Map)) _) </stack>
+
   // Same as maps
 
   //// Operations on optional values
