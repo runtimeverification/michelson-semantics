@@ -90,7 +90,8 @@ module MICHELSON-SYNTAX
                        | "LOOP" Block
                        | "LOOP_LEFT" Block
                        | "LAMBDA" Type Type Block
-                       | "EXEC" 
+                       | "EXEC"
+                       | "APPLY"
                        | "DIP" Block
                        | "FAILWITH"
                        | "CAST" 

@@ -118,6 +118,9 @@ module MICHELSON
   rule <k> EXEC => C ~> #ReturnStack(Stack(Ls)) ... </k>
        <stack> Stack(ListItem(A) ListItem(#Lambda(_, _, C)) Ls => ListItem(A)) </stack> 
 
+  rule <k> APPLY => . ... </k>
+       <stack> Stack((ListItem(D) ListItem(#Lambda(pair T0 T1, T2, C)) => ListItem(#Lambda(T1, T2, { PUSH T0 D ; PAIR ; { C } }))) _) </stack>
+
   ////Stack operations
 
   rule <k> DROP => . ... </k>
