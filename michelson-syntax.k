@@ -11,6 +11,8 @@ module MICHELSON-SYNTAX
   syntax Type
   syntax TypeAnnotation
   syntax Contract
+  syntax ComparableType
+  syntax SimpleComparableType
 
   syntax MapEntry ::= "Elt" Data Data
 
@@ -107,6 +109,7 @@ module MICHELSON-SYNTAX
 		       | "EDIV" 
 		       | "ABS" 
 		       | "ISNAT"
+                       | "INT"
                        | "NEG" 
 		       | "LSL" 
 		       | "LSR" 
@@ -128,7 +131,8 @@ module MICHELSON-SYNTAX
 		       | "CREATE_ACCOUNT" 
 		       | "CREATE_CONTRACT" "{" Contract "}"
 		       | "IMPLICIT_ACCOUNT" 
-		       | "NOW" 
+		       | "NOW"
+                       | "CHAIN_ID"
 		       | "AMOUNT" 
 		       | "BALANCE" 
 		       | "CHECK_SIGNATURE" 
@@ -189,6 +193,12 @@ module MICHELSON-SYNTAX
                        | "SET_CAR" 
                        | "SET_CDR"
 
+  syntax Type
+  syntax SimpleComparableType
+  syntax ComparableType
+
+  syntax NormalPair ::= "pair" Type Type [klabel(mpair)]
+  syntax ComparablePair ::= "pair" SimpleComparableType ComparableType [prefer, klabel(mpair)] // For some reason, having these sorts inlined into Type/ComparableType yields a warning.
 
   syntax Type ::= ComparableType
 		| "key" 
@@ -199,23 +209,26 @@ module MICHELSON-SYNTAX
 		| "set" ComparableType
 		| "operation" 
 		| "contract" Type
-		| "pair" Type Type
-		| "or" Type Type
+		| NormalPair
+                | "or" Type Type
 		| "lambda" Type Type
 		| "map" ComparableType Type
 		| "big_map" ComparableType Type
   
-  syntax Type ::= "(" Type ")" [bracket] // Technically incorrect due to rule about primitive app right inside a sequence.  Need to split out Wrapped/Unwrapped sort.
-  
-  syntax ComparableType ::= "int" 
-			  | "nat" 
-			  | "string" 
-			  | "bytes" 
-			  | "mutez" 
-			  | "bool" 
-			  | "key_hash" 
-			  | "timestamp" 
-			  | "address" 
+  syntax Type ::= "(" Type ")" [bracket] // Technically incorrect due to rule about primitive app right inside a sequence.  Need to split out Wrapped/Unwrapped sort. 
+
+  syntax ComparableType ::= SimpleComparableType 
+                          | ComparablePair
+
+  syntax SimpleComparableType ::= "int" 
+	  		        | "nat" 
+			        | "string" 
+          			| "bytes" 
+			        | "mutez" 
+			        | "bool" 
+			        | "key_hash" 
+			        | "timestamp" 
+			        | "address" 
 
   
 

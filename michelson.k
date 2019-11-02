@@ -119,7 +119,10 @@ module MICHELSON
        <stack> Stack(ListItem(A) ListItem(#Lambda(_, _, C)) Ls => ListItem(A)) </stack> 
 
   rule <k> APPLY => . ... </k>
-       <stack> Stack((ListItem(D) ListItem(#Lambda(pair T0 T1, T2, C)) => ListItem(#Lambda(T1, T2, { PUSH T0 D ; PAIR ; { C } }))) _) </stack>
+       <stack> Stack((ListItem(D) ListItem(#Lambda((pair T0 T1):Type, T2, C)) => ListItem(#Lambda(T1, T2, { PUSH T0 D ; PAIR ; { C } }))) _) </stack>
+
+  rule <k> APPLY => . ... </k>
+       <stack> Stack((ListItem(D) ListItem(#Lambda((pair T0 T1):ComparableType, T2, C)) => ListItem(#Lambda(T1, T2, { PUSH T0 D ; PAIR ; { C } }))) _) </stack>
 
   ////Stack operations
 
@@ -191,6 +194,9 @@ module MICHELSON
   rule <k> ISNAT => . ... </k>
        <stack> Stack(ListItem(I => None) _) </stack>
        requires I <Int 0 
+
+  rule <k> INT => . ... </k>
+       <stack> Stack(ListItem(I:Int) _) </stack>
 
   rule <k> ADD => . ... </k>
        <stack> Stack(ListItem(I1) ListItem(I2) Ls => ListItem(I1 +Int I2) Ls) </stack>
@@ -621,8 +627,6 @@ module MICHELSON
        requires I2 >Int 0
 
   rule #DoCompare(#Mutez(I1), #Mutez(I2)) => #DoCompare(I1, I2)
-
-//  syntax Int ::= "#NotSet"
 
   syntax Type ::= "#NotSet"
 
