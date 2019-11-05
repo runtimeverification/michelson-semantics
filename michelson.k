@@ -16,7 +16,6 @@ module MICHELSON
   syntax ContractData ::= #Contract(Address, Type)
   syntax Data ::= ContractData
 
-
   syntax KItem ::= #ReadKnownAddrs(ContractInputList)
   syntax KItem ::= #LoadContract(Contract)
   

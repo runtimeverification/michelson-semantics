@@ -1,3 +1,5 @@
+requires "michelson-annotation-sorts.k"
+
 module MICHELSON-SYNTAX
   imports INT-SYNTAX // TODO maybe use unsigned int so the parser can catch int/nat issues at parse time?
   imports STRING-SYNTAX
@@ -9,7 +11,6 @@ module MICHELSON-SYNTAX
   syntax Instruction
   syntax ComparableType
   syntax Type
-  syntax TypeAnnotation
   syntax Contract
   syntax ComparableType
   syntax SimpleComparableType
@@ -19,6 +20,13 @@ module MICHELSON-SYNTAX
   syntax DataList ::= List{Data, ";"}
   syntax MapEntryList ::= List{MapEntry, ";"}
   syntax InstructionList ::= List{Instruction, ";"}
+
+  syntax InstructionAnnotationList ::= TypeAnnotationList VariableAnnotationList FieldAnnotationList
+                                     | TypeAnnotationList FieldAnnotationList VariableAnnotationList
+                                     | FieldAnnotationList TypeAnnotationList VariableAnnotationList
+                                     | VariableAnnotationList TypeAnnotationList FieldAnnotationList
+                                     | FieldAnnotationList VariableAnnotationList TypeAnnotationList
+                                     | VariableAnnotationList FieldAnnotationList TypeAnnotationList
 
   syntax BytesLiteral ::= r"0x([0-9a-fA-F]{2})+" [token]
 
@@ -43,12 +51,8 @@ module MICHELSON-SYNTAX
                 | OrData
                 | OptionData
                 | "{" DataList "}"
-                | "{" MapEntry "}"
+                | "{" MapEntryList "}"
                 | Instruction
-
-  syntax VariableAnnotation ::= r"@[a-z0-9_]" [token] 
-
-  syntax Data ::= VariableAnnotation Data
 
   syntax Block ::= "{" InstructionList "}"
                  | "{" "}"
@@ -60,9 +64,8 @@ module MICHELSON-SYNTAX
   syntax CDARMacro ::= r"C[AD]+R" [token]
   syntax SetCDARMacro ::= r"SET_C[AD]+R" [token]
 
-
   syntax Instruction ::= Block
-                       | "DROP" 
+                       | "DROP" InstructionAnnotationList 
                        | "DUP" 
                        | "SWAP"
                        | "PUSH" Type Data
@@ -194,26 +197,27 @@ module MICHELSON-SYNTAX
                        | "SET_CDR"
 
   syntax Type
-  syntax SimpleComparableType
+  syntax SimpleNoncomparableType
   syntax ComparableType
+  syntax SimpleComparableType
 
   syntax NormalPair ::= "pair" Type Type [klabel(mpair)]
+                      | "pair" Annotation Type Type [klabel(ampair)]
   syntax ComparablePair ::= "pair" SimpleComparableType ComparableType [prefer, klabel(mpair)] // For some reason, having these sorts inlined into Type/ComparableType yields a warning.
+                          | "pair" Annotation SimpleComparableType ComparableType [prefer, klabel(ampair)]
 
   syntax Type ::= ComparableType
-		| "key" 
-		| "unit" 
-		| "signature" 
-		| "option" Type
-		| "list" Type
-		| "set" ComparableType
-		| "operation" 
-		| "contract" Type
+                | SimpleNoncomparableType
 		| NormalPair
-                | "or" Type Type
-		| "lambda" Type Type
-		| "map" ComparableType Type
-		| "big_map" ComparableType Type
+                | "option" TypeAnnotation Type
+		| "list" TypeAnnotation Type
+		| "set" TypeAnnotation ComparableType
+		| "contract" TypeAnnotation Type
+                | "or" TypeAnnotation Type Type
+		| "lambda" TypeAnnotation Type Type
+		| "map" TypeAnnotation ComparableType Type
+		| "big_map" TypeAnnotation ComparableType Type
+ 
   
   syntax Type ::= "(" Type ")" [bracket] // Technically incorrect due to rule about primitive app right inside a sequence.  Need to split out Wrapped/Unwrapped sort. 
 
@@ -228,12 +232,17 @@ module MICHELSON-SYNTAX
 			        | "bool" 
 			        | "key_hash" 
 			        | "timestamp" 
-			        | "address" 
+			        | "address"   
 
-  
+  syntax SimpleComparableType ::= SimpleComparableType Annotation
 
-  syntax TypeAnnotation ::= r":[a-z0-9_]+" [token] 
-  syntax Type ::= Type TypeAnnotation
+  syntax SimpleNoncomparableType ::= "key" 
+                    		   | "unit" 
+                   		   | "signature"
+		                   | "operation"
+
+  syntax SimpleNoncomparableType ::= SimpleNoncomparableType Annotation
+
 
   syntax CodeDecl ::= "code" Block ";"
   syntax StorageDecl ::= "storage" Type ";"
