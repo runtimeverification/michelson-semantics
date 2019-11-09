@@ -2,15 +2,15 @@
   <k>
     .
   </k>
+  <stack>
+    #Timestamp ( 3 )
+  </stack>
   <paramtype>
     #NotSet
   </paramtype>
   <storagetype>
     #NotSet
   </storagetype>
-  <stack>
-    Stack ( ListItem ( #Timestamp ( 3 ) ) )
-  </stack>
   <balance>
     #Mutez ( 0 )
   </balance>

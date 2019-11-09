@@ -2,15 +2,15 @@
   <k>
     Aborted ( "LSL out of range" , 257 )
   </k>
+  <stack>
+    FailedStack
+  </stack>
   <paramtype>
     #NotSet
   </paramtype>
   <storagetype>
     #NotSet
   </storagetype>
-  <stack>
-    FailedStack
-  </stack>
   <balance>
     #Mutez ( 0 )
   </balance>

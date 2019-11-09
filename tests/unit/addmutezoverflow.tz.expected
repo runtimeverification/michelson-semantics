@@ -2,15 +2,15 @@
   <k>
     Aborted ( "Mutez out of bounds" , 9223372036854775808 )
   </k>
+  <stack>
+    FailedStack
+  </stack>
   <paramtype>
     #NotSet
   </paramtype>
   <storagetype>
     #NotSet
   </storagetype>
-  <stack>
-    FailedStack
-  </stack>
   <balance>
     #Mutez ( 0 )
   </balance>

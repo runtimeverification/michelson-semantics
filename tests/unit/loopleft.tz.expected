@@ -2,15 +2,15 @@
   <k>
     .
   </k>
+  <stack>
+    "hello"
+  </stack>
   <paramtype>
     #NotSet
   </paramtype>
   <storagetype>
     #NotSet
   </storagetype>
-  <stack>
-    Stack ( ListItem ( "hello" ) )
-  </stack>
   <balance>
     #Mutez ( 0 )
   </balance>

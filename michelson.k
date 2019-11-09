@@ -10,10 +10,20 @@ module MICHELSON
   rule True => true [macro]
   rule False => false [macro]
 
-  syntax StackSort ::= Stack(List)
-                     | "FailedStack"
+  syntax KItem ::= "FailedStack"
 
   syntax ContractData ::= #Contract(Address, Type)
+  syntax Address ::= #Address(Int)
+  syntax Mutez ::= #Mutez(Int)
+  syntax KeyHash ::= #KeyHash(Int)
+  syntax ChainId ::= #ChainId(Int)
+  syntax Timestamp ::= #Timestamp(Int) 
+
+  syntax Data ::= Timestamp 
+  syntax Data ::= ChainId
+  syntax Data ::= KeyHash
+  syntax Data ::= Mutez
+  syntax Data ::= Address
   syntax Data ::= ContractData
 
 
@@ -32,7 +42,7 @@ module MICHELSON
            $senderaddr SenderAddr ;
            $param P ;
            $storage S ; => #ReadKnownAddrs(AddrList) ~> #LoadContract(C) </k> 
-       <stack> _ => Stack(ListItem(Pair P S)) </stack>
+       <stack> . => Pair P S </stack>
        <paramtype> _ => Pt </paramtype>
        <storagetype> _ => St </storagetype>
        <balance> #Mutez(_ => B) </balance>
@@ -81,166 +91,164 @@ module MICHELSON
   // Core Instructioons
   //// Control Structures
   rule <k> FAILWITH ~> _ => Aborted("FAILWITH instruction reached", D) </k>
-       <stack> Stack(ListItem(D) _) => FailedStack </stack>
+       <stack> D ~> _ => FailedStack </stack>
 
   rule <k> IF BT BF => BT ... </k>
-       <stack> Stack(ListItem(true) Ls => Ls) </stack>
+       <stack> true => . ... </stack>
 
   rule <k> IF BT BF => BF ... </k>
-       <stack> Stack(ListItem(false) Ls => Ls) </stack>
+       <stack> false => . ... </stack>
 
   rule <k> LOOP B => B ~> LOOP B ... </k>
-       <stack> Stack(ListItem(true) Ls => Ls) </stack>
+       <stack> true => . ... </stack>
 
   rule <k> LOOP B => .K ... </k>
-       <stack> Stack(ListItem(false) Ls => Ls) </stack>
+       <stack> false => . ... </stack>
 
   rule <k> LOOP_LEFT B => B ~> LOOP_LEFT B ... </k>
-       <stack> Stack(ListItem(Left A) Ls => ListItem(A) Ls) </stack>
+       <stack> Left A => A ... </stack>
 
   rule <k> LOOP_LEFT B => .K ... </k>
-       <stack> Stack(ListItem(Right A) Ls => ListItem(A) Ls) </stack>
+       <stack> Right A => A ... </stack>
 
   syntax KItem ::= #Push(Data)
   rule <k> #Push(D) => . ... </k>
-       <stack> Stack(Ls => ListItem(D) Ls) </stack> [structural]
+       <stack> . => D ... </stack> [structural]
 
   rule <k> DIP B => B ~> #Push(D) ... </k>
-       <stack> Stack((ListItem(D) => .List) _) </stack>
+       <stack> D:Data => . ... </stack>
 
   syntax Data ::= #Lambda(Type, Type, Block)
  
-  syntax KItem ::= #ReturnStack(StackSort)
+  syntax KItem ::= #ReturnStack(K)
 
-  rule <k> #ReturnStack(Stack(Ls)) => . ... </k>
-       <stack> Stack(ListItem(R) => ListItem(R) Ls) </stack>
+  rule <k> #ReturnStack(Ls) => . ... </k>
+       <stack> R:Data => R ~> Ls </stack>
 
-  rule <k> EXEC => C ~> #ReturnStack(Stack(Ls)) ... </k>
-       <stack> Stack(ListItem(A) ListItem(#Lambda(_, _, C)) Ls => ListItem(A)) </stack> 
-
-  rule <k> APPLY => . ... </k>
-       <stack> Stack((ListItem(D) ListItem(#Lambda((pair T0 T1):Type, T2, C)) => ListItem(#Lambda(T1, T2, { PUSH T0 D ; PAIR ; { C } }))) _) </stack>
+  rule <k> EXEC => C ~> #ReturnStack(Rs) ... </k>
+       <stack> A:Data ~> #Lambda(_, _, C):Data ~> Rs:K => A </stack> 
 
   rule <k> APPLY => . ... </k>
-       <stack> Stack((ListItem(D) ListItem(#Lambda((pair T0 T1):ComparableType, T2, C)) => ListItem(#Lambda(T1, T2, { PUSH T0 D ; PAIR ; { C } }))) _) </stack>
+       <stack> D:Data ~> #Lambda((pair T0 T1):Type, T2, C) => #Lambda(T1, T2, { PUSH T0 D ; PAIR ; { C } }) ... </stack>
+
+  rule <k> APPLY => . ... </k>
+       <stack> D:Data ~> #Lambda((pair T0 T1):ComparableType, T2, C) => #Lambda(T1, T2, { PUSH T0 D ; PAIR ; { C } }) ... </stack>
 
   ////Stack operations
 
   rule <k> DROP => . ... </k>
-       <stack> Stack((ListItem(_) => .List) _) </stack>
+       <stack> _:Data => . ... </stack>
 
   rule <k> DUP => . ... </k>
-       <stack> Stack((ListItem(X) => ListItem(X) ListItem(X)) _) </stack>
+       <stack> X:Data => X ~> X ... </stack>
 
   rule <k> SWAP => . ... </k>
-       <stack> Stack((ListItem(X) ListItem(Y) => ListItem(Y) ListItem(X)) _) </stack>
+       <stack> X:Data ~> Y:Data => Y ~> X ... </stack>
 
   rule <k> PUSH _ X => . ... </k>
-       <stack> Stack((.List => ListItem(X)) _) </stack>
+       <stack> . => X ... </stack>
 
   rule <k> UNIT => . ... </k>
-       <stack> Stack((.List => ListItem(Unit)) _) </stack>
+       <stack> . => Unit ... </stack>
 
   rule <k> LAMBDA T1 T2 C => . ... </k>
-       <stack> Stack((.List => ListItem(#Lambda(T1, T2, C))) _) </stack>
+       <stack> . => #Lambda(T1, T2, C) ... </stack>
 
   //// Generic Comparisons
 
   rule <k> EQ => . ... </k>
-       <stack> Stack(ListItem(I) Ls => ListItem(I ==Int 0) Ls) </stack>
+       <stack> I => I ==Int 0 ... </stack>
 
   rule <k> NEQ => . ... </k>
-       <stack> Stack(ListItem(I) Ls => ListItem(I =/=Int 0) Ls) </stack>
+       <stack> I => I =/=Int 0 ... </stack>
 
   rule <k> LT => . ... </k>
-       <stack> Stack(ListItem(I) Ls => ListItem(I <Int 0) Ls) </stack>
+       <stack> I => I <Int 0 ... </stack>
 
   rule <k> GT => . ... </k>
-       <stack> Stack(ListItem(I) Ls => ListItem(I >Int 0) Ls) </stack>
+       <stack> I => I >Int 0 ... </stack>
 
   rule <k> LE => . ... </k>
-       <stack> Stack(ListItem(I) Ls => ListItem(I <=Int 0) Ls) </stack>
+       <stack> I => I <=Int 0 ... </stack>
 
   rule <k> GE => . ... </k>
-       <stack> Stack(ListItem(I) Ls => ListItem(I >=Int 0) Ls) </stack>
+       <stack> I => I >=Int 0 ... </stack>
 
   // Operations
   //// Operations on booleans
-
   rule <k> OR => . ... </k>
-       <stack> Stack(ListItem(B1:Bool) ListItem(B2:Bool) Ls => ListItem(B1 orBool B2) Ls) </stack>
+       <stack> B1 ~> B2 => B1 orBool B2 ...  </stack>
 
   rule <k> AND => . ... </k>
-       <stack> Stack(ListItem(B1:Bool) ListItem(B2:Bool) Ls => ListItem(B1 andBool B2) Ls) </stack>
+       <stack> B1 ~> B2 => B1 andBool B2 ... </stack>
 
   rule <k> XOR => . ... </k>
-       <stack> Stack(ListItem(B1:Bool) ListItem(B2:Bool) Ls => ListItem(B1 xorBool B2) Ls) </stack>
+       <stack> B1 ~> B2 => B1 xorBool B2 ... </stack>
 
   rule <k> NOT => . ... </k>
-       <stack> Stack(ListItem(B:Bool) Ls => ListItem(notBool B) Ls) </stack>
+       <stack> B => notBool B ... </stack>
 
-  //// Operations on integers and natural numbers
-  
+  //// Operations on integers and natural numbers 
   rule <k> NEG => . ... </k>
-       <stack> Stack(ListItem(I) Ls => ListItem(0 -Int I) Ls) </stack>
+       <stack> I => 0 -Int I ... </stack>
 
   rule <k> ABS => . ... </k>
-       <stack> Stack(ListItem(I) Ls => ListItem(absInt(I)) Ls) </stack>
+       <stack> I => absInt(I) ... </stack>
 
   rule <k> ISNAT => . ... </k>
-       <stack> Stack(ListItem(I => Some I) _) </stack>
+       <stack> I => Some I ... </stack>
        requires I >=Int 0 
 
   rule <k> ISNAT => . ... </k>
-       <stack> Stack(ListItem(I => None) _) </stack>
+       <stack> I => None ... </stack>
        requires I <Int 0 
 
   rule <k> INT => . ... </k>
-       <stack> Stack(ListItem(I:Int) _) </stack>
+       <stack> I:Int ... </stack>
 
   rule <k> ADD => . ... </k>
-       <stack> Stack(ListItem(I1) ListItem(I2) Ls => ListItem(I1 +Int I2) Ls) </stack>
+       <stack> I1 ~> I2 => I1 +Int I2 ... </stack>
 
   rule <k> SUB => . ... </k>
-       <stack> Stack(ListItem(I1) ListItem(I2) Ls => ListItem(I1 -Int I2) Ls) </stack>
+       <stack> I1 ~> I2 => I1 -Int I2 ... </stack>
 
   rule <k> MUL => . ... </k>
-       <stack> Stack(ListItem(I1) ListItem(I2) Ls => ListItem(I1 *Int I2) Ls) </stack>
+       <stack> I1 ~> I2 => I1 *Int I2 ... </stack>
 
   rule <k> EDIV => . ... </k>
-       <stack> Stack(ListItem(I1:Int) ListItem(0) Ls => ListItem(None) Ls) </stack>
+       <stack> I1:Int ~> 0 => None ... </stack>
        // Could combine this rule with the Mutez one but probably a disadvantage in readability.
 
   rule <k> EDIV => . ... </k>
-       <stack> Stack(ListItem(I1) ListItem(I2) Ls => ListItem(Some (Pair (I1 /Int I2) (I1 %Int I2))) Ls) </stack>
+       <stack> I1 ~> I2 => Some (Pair (I1 /Int I2) (I1 %Int I2)) ... </stack>
        requires I2 =/=Int 0
 
   rule <k> OR => . ... </k>
-       <stack> Stack(ListItem(I1:Int) ListItem(I2:Int) Ls => ListItem(I1 |Int I2) Ls) </stack>
+       <stack> I1 ~> I2 => I1 |Int I2 ... </stack>
 
   rule <k> AND => . ... </k>
-       <stack> Stack(ListItem(I1:Int) ListItem(I2:Int) Ls => ListItem(I1 &Int I2) Ls) </stack>
+       <stack> I1 ~> I2 => I1 &Int I2 ... </stack>
 
   rule <k> XOR => . ... </k>
-       <stack> Stack(ListItem(I1:Int) ListItem(I2:Int) Ls => ListItem(I1 xorInt I2) Ls) </stack>
+       <stack> I1 ~> I2 => I1 xorInt I2 ... </stack>
 
   rule <k> NOT => . ... </k>
-       <stack> Stack(ListItem(I:Int) Ls => ListItem(~Int I) Ls) </stack>
+       <stack> I => ~Int I ... </stack>
 
   rule <k> LSL => . ... </k>
-       <stack> Stack(ListItem(X) ListItem(S) Ls => ListItem(X <<Int S) Ls) </stack>
+       <stack> X ~> S => X <<Int S ... </stack>
        requires S <=Int 256
 
   rule <k> LSL ~> _ => Aborted("LSL out of range", S) </k>
-       <stack> Stack(ListItem(_) ListItem(S) _) => FailedStack </stack>
+       <stack> _:Data ~> S:Int ~> _ => FailedStack </stack>
        requires S >Int 256
 
   rule <k> LSR => . ... </k>
-       <stack> Stack(ListItem(X) ListItem(S) Ls => ListItem(X >>Int S) Ls) </stack>
+       <stack> X ~> S => X >>Int S ... </stack>
        requires S <=Int 256
 
   rule <k> LSR ~> _ => Aborted("LSR out of range", S) </k>
-       <stack> Stack(ListItem(_) ListItem(S) _) => FailedStack </stack>
+       <stack> _:Data ~> S:Int ~> _ => FailedStack </stack>
        requires S >Int 256
 
   syntax Int ::= #DoCompare(Data, Data) [function]
@@ -255,7 +263,7 @@ module MICHELSON
 
 
   rule <k> COMPARE => . ... </k>
-       <stack> Stack(ListItem(V1) ListItem(V2) Ls => ListItem(#DoCompare(V1, V2)) Ls) </stack>
+       <stack> V1 ~> V2 => #DoCompare(V1, V2) ... </stack>
 
   syntax String ::= #ConcatAll(List, String) [function]
 
@@ -264,54 +272,54 @@ module MICHELSON
 
   //// Operations on strings
   rule <k> CONCAT => . ... </k>
-       <stack> Stack(ListItem(S1) ListItem(S2) Ls => ListItem(S1 +String S2) Ls) </stack>
+       <stack> S1 ~> S2 => S1 +String S2 ... </stack>
 
   rule <k> CONCAT => . ... </k>
-       <stack> Stack(ListItem(L => #ConcatAll(L, "")) _) </stack>
+       <stack> L => #ConcatAll(L, "") ... </stack>
 
   rule <k> SIZE => . ... </k>
-       <stack> Stack(ListItem(S => lengthString(S)) _) </stack> 
+       <stack> S => lengthString(S) ... </stack> 
 
   rule <k> SLICE => . ... </k>
-       <stack> Stack((ListItem(O) ListItem(L) ListItem(S) => ListItem(Some substrString(S, O, O +Int L))) _) </stack>
+       <stack> O ~> L ~> S => Some substrString(S, O, O +Int L) ... </stack>
        requires O >=Int 0 andBool L >=Int 0 andBool (O +Int L) <Int lengthString(S)
 
   rule <k> SLICE => . ... </k>
-       <stack> Stack((ListItem(O) ListItem(L) ListItem(S) => ListItem(None)) _) </stack>
+       <stack> O ~> L ~> S => None ... </stack>
        requires notBool(O >=Int 0 andBool L >=Int 0 andBool (O +Int L) <Int lengthString(S))
 
 
   //// Operations on pairs
   rule <k> PAIR => . ... </k>
-       <stack> Stack((ListItem(L) ListItem(R) => ListItem(Pair L R)) _) </stack>
+       <stack> L ~> R => Pair L R ... </stack>
 
   rule <k> CAR => . ... </k>
-       <stack> Stack(ListItem(Pair L _ => L) _) </stack>
+       <stack> Pair L _ => L ... </stack>
 
   rule <k> CDR => . ... </k>
-       <stack> Stack(ListItem(Pair _ R => R) _) </stack>
+       <stack> Pair _ R => R ... </stack>
 
   //// Operations on sets
   syntax Data ::= Set
 
   rule <k> EMPTY_SET _ => . ... </k>
-       <stack> Stack((.List => ListItem(.Set)) _) </stack>
+       <stack> . => .Set ... </stack>
 
   rule <k> MEM => . ... </k> 
-       <stack> Stack(((ListItem(X:Data) ListItem(S:Set)) => ListItem(X in S)) _) </stack>
+       <stack> X ~> S:Set => X in S ... </stack>
 
   syntax KItem ::= #InsertIntoSet(Data, DataList, DataList, List) | #ContinueInsert(Data, DataList, DataList, List)
 
   // True to insert, False to remove.
 
   rule <k> UPDATE => . ... </k>
-       <stack> Stack((ListItem(D) ListItem(true) ListItem(S:Set) => ListItem(SetItem(D) S)) _) </stack>
+       <stack> D ~> true ~> S => SetItem(D) S ... </stack>
 
   rule <k> UPDATE => . ... </k>
-       <stack> Stack((ListItem(D) ListItem(false) ListItem(SetItem(D) S) => ListItem(S)) _) </stack>
+       <stack> D ~> false ~> SetItem(D) S => S ... </stack>
 
   rule <k> UPDATE => . ... </k>
-       <stack> Stack((ListItem(D) ListItem(false) => .List) ListItem(S:Set) _) </stack>
+       <stack> (D ~> false => .) ~> S:Set ... </stack>
        requires notBool(D in S)
 
   syntax Data ::= #MinimalElement(List) [function]
@@ -323,130 +331,129 @@ module MICHELSON
   rule #MinimalElementAux(ListItem(H) L, M) => #MinimalElementAux(L, H) requires #DoCompare(M, H) ==Int 1
 
   rule <k> ITER B => . ... </k>
-       <stack> Stack((ListItem(.Set) => .List) _) </stack>
+       <stack> .Set => . ... </stack>
 
   rule <k> ITER B => B ~> #Push(S -Set SetItem(#MinimalElement(Set2List(S)))) ~> ITER B ... </k>
-       <stack> Stack((ListItem(S:Set) => ListItem(#MinimalElement(Set2List(S)))) _) </stack>
+       <stack> S => #MinimalElement(Set2List(S)) ... </stack>
        requires size(S) >Int 0
 
   rule <k> SIZE => . ... </k>
-       <stack> Stack((ListItem(S:Set) => ListItem(size(S))) _) </stack>
+       <stack> S:Set => size(S) ... </stack>
 
   //// Operations on maps
-
   syntax Data ::= Map
 
   rule <k> EMPTY_MAP _ _ => . ... </k>
-       <stack> Stack((.List => ListItem(.Map)) _) </stack>
+       <stack> . => .Map ... </stack>
 
   rule <k> GET => . ... </k>
-       <stack> Stack((ListItem(X) ListItem(M) => ListItem(None)) _) </stack>
+       <stack> X ~> M => None ... </stack>
        requires notBool(X in_keys(M))
 
   rule <k> GET => . ... </k>
-       <stack> Stack((ListItem(X) ListItem(M) => ListItem(Some {M[X]}:>Data)) _) </stack>
+       <stack> X ~> M => Some {M[X]}:>Data ... </stack>
        requires X in_keys(M)
 
   rule <k> MEM => . ... </k>
-       <stack> Stack((ListItem(X) ListItem(M) => ListItem(X in_keys(M))) _) </stack>
+       <stack> X ~> M => X in_keys(M) ... </stack>
 
   rule <k> UPDATE => . ... </k>
-       <stack> Stack((ListItem(K) ListItem(Some V) ListItem(M:Map) => ListItem(M[K <- V])) _) </stack>
+       <stack> K ~> Some V ~> M:Map => M[K <- V] ... </stack>
 
   rule <k> UPDATE => . ... </k>
-       <stack> Stack((ListItem(K) ListItem(None) ListItem(M:Map) => ListItem(M[K <- undef])) _) </stack>
+       <stack> K ~> None ~> M:Map => M[K <- undef] ... </stack>
 
-  syntax KItem ::= #PerformMap(Map, Map, Block, List)
+  syntax KItem ::= #PerformMap(Map, Map, Block)
 
-  rule <k> MAP B => #PerformMap(M, .Map, B, Rs) ... </k>
-       <stack> Stack((ListItem(M) => .List) Rs) </stack>
+  rule <k> MAP B => #PerformMap(M, .Map, B) ... </k>
+       <stack> M => . ... </stack>
 
   syntax KItem ::= #PopNewVal(Data)
 
-  rule <k> #PopNewVal(K) ~> #PerformMap(M1, M2, B, Rs) => #PerformMap(M1, M2[K <- V], B, Rs) ... </k>
-       <stack> Stack((ListItem(V) => .List) _) </stack>
+  rule <k> #PopNewVal(K) ~> #PerformMap(M1, M2, B) => #PerformMap(M1, M2[K <- V], B) ... </k>
+       <stack> V => . ... </stack>
 
   syntax Data ::= #MinimalKey(Map) [function]
   rule #MinimalKey(M) => #MinimalElement(keys_list(M))
 
-  rule <k> #PerformMap(M1, M2, B, Rs) => B ~> #PopNewVal(#MinimalKey(M1)) 
-        ~> #PerformMap(M1[#MinimalKey(M1) <- undef], M2, B, Rs) ... </k>
-       <stack> Stack((.List => ListItem(Pair #MinimalKey(M1) {M1[#MinimalKey(M1)]}:>Data)) _) </stack>
+  rule <k> #PerformMap(M1, M2, B) => B ~> #PopNewVal(#MinimalKey(M1)) 
+        ~> #PerformMap(M1[#MinimalKey(M1) <- undef], M2, B) ... </k>
+       <stack> . => Pair #MinimalKey(M1) {M1[#MinimalKey(M1)]}:>Data ... </stack>
        requires size(M1) >Int 0
 
-  rule <k> #PerformMap(.Map, M, _, Rs) => . ... </k>
-       <stack> Stack(_ => ListItem(M) Rs) </stack>
+  rule <k> #PerformMap(.Map, M, _) => . ... </k>
+       <stack> . => M ... </stack>
 
   rule <k> ITER B => . ... </k>
-       <stack> Stack((ListItem(.Map) => .List) _) </stack>
+       <stack> .Map => .K ... </stack>
 
   rule <k> ITER B => B ~> #Push(M[#MinimalKey(M) <- undef]) ~> ITER B ... </k>
-       <stack> Stack(ListItem(M => Pair #MinimalKey(M) {M[#MinimalKey(M)]}:>Data) _) </stack>
+       <stack> M => Pair #MinimalKey(M) {M[#MinimalKey(M)]}:>Data ... </stack>
        requires size(M) >Int 0
 
   rule <k> SIZE => . ... </k>
-       <stack> Stack(ListItem(M:Map => size(M)) _) </stack>
+       <stack> M:Map => size(M) ... </stack>
 
   //// Operations on big maps
 
   rule <k> EMPTY_BIG_MAP _ _ => . ... </k>
-       <stack> Stack((.List => ListItem(.Map)) _) </stack>
+       <stack> . => .Map ... </stack>
 
   // Same as maps
 
   //// Operations on optional values
 
   rule <k> SOME => . ... </k>
-       <stack> Stack(ListItem(X => Some X) _) </stack>
+       <stack> X => Some X ... </stack>
 
   rule <k> NONE _ => . ... </k>
-       <stack> Stack((.List => ListItem(None)) _) </stack>
+       <stack> . => None ... </stack>
 
   rule <k> IF_NONE BT BF => BT ... </k>
-       <stack> Stack((ListItem(None) => .List) _) </stack>
+       <stack> None => . ... </stack>
 
   rule <k> IF_NONE BT BF => BF ... </k>
-       <stack> Stack(ListItem(Some V => V) _) </stack>
+       <stack> Some V => V ... </stack>
 
   //// Operations on unions
   rule <k> LEFT _ => . ... </k>
-       <stack> Stack((ListItem(X) => ListItem(Left X)) _) </stack>
+       <stack> X => Left X ... </stack>
 
   rule <k> RIGHT _ => . ... </k>
-       <stack> Stack((ListItem(X) => ListItem(Right X)) _) </stack>
+       <stack> X => Right X ... </stack>
 
   rule <k> IF_LEFT BT BF => BT ... </k>
-       <stack> Stack(ListItem(Left V => V) _) </stack>
+       <stack> Left V => V ... </stack>
 
   rule <k> IF_LEFT BT BF => BF ... </k>
-       <stack> Stack(ListItem(Right V => V) _) </stack>
+       <stack> Right V => V ... </stack>
 
   rule <k> IF_RIGHT BT BF => BT ... </k>
-       <stack> Stack(ListItem(Right V => V) _) </stack>
+       <stack> Right V => V ... </stack>
 
   rule <k> IF_RIGHT BT BF => BF ... </k>
-       <stack> Stack(ListItem(Left V => V) _) </stack>
+       <stack> Left V => V ... </stack>
 
   //// Operations on lists
  
   syntax Data ::= List
 
   rule <k> CONS => . ... </k>
-       <stack> Stack((ListItem(V) ListItem(L) => ListItem(ListItem(V) L)) _) </stack>
+       <stack> V ~> L => ListItem(V) L ... </stack>
   
   rule <k> NIL _ => . ... </k> 
-       <stack> Stack((.List => ListItem(.List)) _) </stack>
+       <stack> . => ListItem(.List) ... </stack>
 
   rule <k> IF_CONS BT BF => BT ... </k>
-       <stack> Stack((ListItem(ListItem(L1) Ls) => ListItem(L1) ListItem(Ls)) _) </stack>
+       <stack> ListItem(L1) Ls => L1 ~> Ls ... </stack>
 
   rule <k> IF_CONS BT BF => BF ... </k>
-       <stack> Stack((ListItem(.List) => .List) _) </stack>
+       <stack> .List => . ... </stack>
 
   syntax KItem ::= #PerformMapList(List, List, Block)
 
   rule <k> MAP B => #PerformMapList(Ls, .List, B) ... </k>
-       <stack> Stack((ListItem(Ls) => .List) _) </stack>
+       <stack> Ls => . ... </stack>
 
   syntax KItem ::= #AddToList(List, List, Block)
 
@@ -458,53 +465,40 @@ module MICHELSON
   rule #ReverseListAux(.List, Acc) => Acc
 
   rule <k> #PerformMapList(.List, Acc, B) => . ... </k>
-       <stack> Stack((.List => ListItem(#ReverseList(Acc))) _) </stack>
+       <stack> . => #ReverseList(Acc) ... </stack>
 
   rule <k> #PerformMapList(ListItem(L) Ls, Acc, B) => B ~> #AddToList(Ls, Acc, B) ... </k>
-       <stack> Stack((.List => ListItem(L)) _) </stack>
+       <stack> . => L ... </stack>
 
   rule <k> #AddToList(Ls, Acc, B) => #PerformMapList(Ls, ListItem(L) Acc, B) ... </k>
-       <stack> Stack((ListItem(L) => .List) _) </stack>
+       <stack> L => . ... </stack>
 
   rule <k> SIZE => . ... </k>
-       <stack> Stack(ListItem(L:List => size(L)) _) </stack>
+       <stack> L:List => size(L) ... </stack>
 
   rule <k> ITER B => . ... </k>
-       <stack> Stack((ListItem(.List) => .List) _) </stack>
+       <stack> .List => . ... </stack>
 
   rule <k> ITER B => B ~> #Push(Ls) ~> ITER B ... </k>
-       <stack> Stack((ListItem(ListItem(L) Ls) => ListItem(L)) _) </stack>
+       <stack> ListItem(L) Ls => L ... </stack>
 
   // Domain Specific operations
   //// Operations on timestamps
-
-  syntax Timestamp ::= #Timestamp(Int) 
-
-  syntax Data ::= Timestamp 
+  rule <k> ADD => . ... </k>
+       <stack> #Timestamp(I1) ~> I2 => #Timestamp(I1 +Int I2) ... </stack>
 
   rule <k> ADD => . ... </k>
-       <stack> Stack((ListItem(#Timestamp(I1)) ListItem(I2) => ListItem(#Timestamp(I1 +Int I2))) _) </stack>
-
-  rule <k> ADD => . ... </k>
-       <stack> Stack((ListItem(I1) ListItem(#Timestamp(I2)) => ListItem(#Timestamp(I1 +Int I2))) _) </stack>
+       <stack> I1 ~> #Timestamp(I2) => #Timestamp(I1 +Int I2) ... </stack>
 
   rule <k> SUB => . ... </k>
-       <stack> Stack((ListItem(#Timestamp(I1)) ListItem(I2) => ListItem(#Timestamp(I1 -Int I2))) _) </stack>
+       <stack> #Timestamp(I1) ~> I2 => #Timestamp(I1 -Int I2) ... </stack>
 
   rule <k> SUB => . ... </k>
-       <stack> Stack((ListItem(#Timestamp(I1)) ListItem(#Timestamp(I2)) => ListItem(I1 -Int I2)) _) </stack>
+       <stack> #Timestamp(I1) ~> #Timestamp(I2) => I1 -Int I2 ... </stack>
 
   rule #DoCompare(#Timestamp(I1), #Timestamp(I2)) => #DoCompare(I1, I2)
 
-  syntax Address ::= #Address(Int)
-
-  syntax Mutez ::= #Mutez(Int)
-  syntax KeyHash ::= #KeyHash(Int)
-
-  syntax Data ::= KeyHash
-  syntax Data ::= Mutez
-  syntax Data ::= Address
-
+  
   syntax Bool ::= #IsKeyHashOption(OptionData) [function]
   rule #IsKeyHashOption(Some K:KeyHash) => true
   rule #IsKeyHashOption(None) => true
@@ -515,71 +509,62 @@ module MICHELSON
   syntax Data ::= BlockchainOperation
 
   rule <k> CREATE_CONTRACT { C } => . ... </k>
-       <stack> Stack((ListItem(Delegate:OptionData)
-                ListItem(Initial:Mutez)
-                ListItem(Stor:Data)
-                =>
-                ListItem(#CreateContract(C, Delegate, Initial, Stor))
-                ListItem(#Address(!_:Int))) _) </stack>
-                requires #IsKeyHashOption(Delegate)
-
+       <stack> Delegate:OptionData ~> Initial:Mutez ~> Stor:Data => #CreateContract(C, Delegate, Initial, Stor) ~> #Address(!_:Int) ... </stack>
+       requires #IsKeyHashOption(Delegate)
 
   syntax BlockchainOperation ::= #TransferTokens(Data, Mutez, ContractData)
 
   rule <k> TRANSFER_TOKENS => . ... </k>
-       <stack> Stack((ListItem(D) ListItem(M:Mutez) ListItem(C:ContractData) => ListItem(#TransferTokens(D, M, C))) _) </stack>
+       <stack> D ~> M ~> C => #TransferTokens(D, M, C) ... </stack>
 
   syntax BlockchainOperation ::= #SetDelegate(OptionData)
 
   rule <k> SET_DELEGATE => . ... </k>
-       <stack> Stack((ListItem(O:OptionData => #SetDelegate(O))) _) </stack>
+       <stack> O => #SetDelegate(O) ... </stack>
        requires #IsKeyHashOption(O)
 
   rule <k> BALANCE => . ... </k>
-       <stack> Stack((.List => ListItem(B)) _) </stack>
+       <stack> . => B ... </stack>
        <balance> B </balance>
 
   rule <k> ADDRESS => . ... </k>
-       <stack> Stack(ListItem(#Contract(A, _) => A) _) </stack>
+       <stack> #Contract(A, _) => A ... </stack>
 
   rule <k> CONTRACT T => . ... </k>
-       <stack> Stack(ListItem(A => Some #Contract(A, T)) _) </stack>
+       <stack> A => Some #Contract(A, T) ... </stack>
        <knownaddrs> ... A |-> #Contract(A, T) ... </knownaddrs>
        
   rule <k> CONTRACT _ => . ... </k>
-       <stack> Stack(ListItem(A => None) _) </stack> [owise]
+       <stack> A:Address => None ... </stack> [owise]
 
   rule <k> SOURCE => . ... </k>
-       <stack> Stack((.List => ListItem(A)) _) </stack>
-       <sourceaddr> A:Address </sourceaddr>
+       <stack> . => A ... </stack>
+       <sourceaddr> A </sourceaddr>
 
   rule <k> SENDER => . ... </k>
-       <stack> Stack((.List => ListItem(A)) _) </stack>
-       <senderaddr> A:Address </senderaddr>
+       <stack> . => A ... </stack>
+       <senderaddr> A </senderaddr>
 
   rule <k> SELF => . ... </k>
-       <stack> Stack((.List => ListItem(#Contract(A, T))) _) </stack>
+       <stack> . => #Contract(A, T) ... </stack>
        <paramtype> T </paramtype>
        <myaddr> A </myaddr>
 
   rule <k> AMOUNT => . ... </k>
-       <stack> Stack((.List => ListItem(A)) _) </stack>
-       <amount> A:Mutez </amount>
+       <stack> . => M ... </stack>
+       <amount> M </amount>
 
   rule <k> IMPLICIT_ACCOUNT => . ... </k>
-       <stack> Stack(ListItem(#KeyHash(A) => #Contract(#Address(A), unit)) _)  </stack>
+       <stack> #KeyHash(A) => #Contract(#Address(A), unit) ... </stack>
 
   //// Special Operations
-  syntax ChainId ::= #ChainId(Int)
-  syntax Data ::= ChainId
-
   rule <k> CHAIN_ID => . ... </k>
-       <stack> Stack((.List => ListItem(C)) _) </stack>
-       <chainid> C:ChainId </chainid>
+       <stack> . => C ... </stack>
+       <chainid> C </chainid>
 
   rule <k> NOW => . ... </k> 
-       <stack> Stack((.List => ListItem(N)) _) </stack>
-       <now> N:Timestamp </now>
+       <stack> . => N ... </stack>
+       <now> N </now>
 
   //// Operations on Mutez
 
@@ -588,42 +573,43 @@ module MICHELSON
   syntax Int ::= "#MutezOverflowLimit" [function]
   rule #MutezOverflowLimit => 2 ^Int 63 // Signed 64 bit integers.
 
+  syntax Bool ::= #IsLegalMutezValue(Int) [function]
+  rule #IsLegalMutezValue(I) => I >=Int 0 andBool I <Int #MutezOverflowLimit
+
   syntax KItem ::= #ValidateMutezAndPush(Mutez)
 
   rule <k> #ValidateMutezAndPush(#Mutez(I)) => . ... </k>
-       <stack> Stack((.List => ListItem(#Mutez(I))) _) </stack>
-       requires I >=Int 0 andBool I <Int #MutezOverflowLimit [structural]
+       <stack> . => #Mutez(I) ... </stack>
+       requires #IsLegalMutezValue(I) [structural]
 
   rule <k> #ValidateMutezAndPush(#Mutez(I)) ~> _ => Aborted("Mutez out of bounds", I) </k>
-       <stack> Stack(_) => FailedStack </stack>
-       requires notBool(I >=Int 0 andBool I <Int #MutezOverflowLimit) [structural]
+       <stack> _ => FailedStack </stack>
+       requires notBool #IsLegalMutezValue(I) [structural]
 
   rule <k> ADD => #ValidateMutezAndPush(#Mutez(I1 +Int I2)) ... </k>
-       <stack> Stack((ListItem(#Mutez(I1)) ListItem(#Mutez(I2)) => .List) _) </stack>
+       <stack> #Mutez(I1) ~> #Mutez(I2) => . ... </stack>
 
   rule <k> SUB => #ValidateMutezAndPush(#Mutez(I1 -Int I2)) ... </k>
-       <stack> Stack((ListItem(#Mutez(I1)) ListItem(#Mutez(I2)) => .List) _) </stack>
+       <stack> #Mutez(I1) ~> #Mutez(I2) => . ... </stack>
 
   rule <k> MUL => #ValidateMutezAndPush(#Mutez(I1 *Int I2)) ... </k>
-       <stack> Stack((ListItem(#Mutez(I1)) ListItem(I2) => .List) _) </stack>
+       <stack> #Mutez(I1) ~> I2 => . ... </stack>
 
   rule <k> MUL => #ValidateMutezAndPush(#Mutez(I1 *Int I2)) ... </k>
-       <stack> Stack((ListItem(I1) ListItem(#Mutez(I2)) => .List) _) </stack>
+       <stack> I1 ~> #Mutez(I2) => . ... </stack>
 
   rule <k> EDIV => . ... </k>
-       <stack> Stack((ListItem(#Mutez(I1)) ListItem(#Mutez(0)) => ListItem(None)) _) </stack>
+       <stack> #Mutez(I1) ~> #Mutez(0) => None ... </stack>
 
   rule <k> EDIV => . ... </k>
-       <stack> Stack((ListItem(#Mutez(I1)) ListItem(0) => ListItem(None)) _) </stack>
+       <stack> #Mutez(I1) ~> 0 => None ... </stack>
 
   rule <k> EDIV => . ... </k>
-       <stack> Stack((ListItem(#Mutez(I1)) ListItem(#Mutez(I2)) => 
-               ListItem(Some (Pair #Mutez(I1 /Int I2) #Mutez(I1 %Int I2)))) _) </stack>
+       <stack> #Mutez(I1) ~> #Mutez(I2) => Some (Pair #Mutez(I1 /Int I2) #Mutez(I1 %Int I2)) ... </stack>
        requires I2 >Int 0
 
   rule <k> EDIV => . ... </k>
-       <stack> Stack((ListItem(#Mutez(I1)) ListItem(I2) => 
-               ListItem(Some (Pair #Mutez(I1 /Int I2) #Mutez(I1 %Int I2)))) _) </stack>
+       <stack> #Mutez(I1) ~> I2 => Some (Pair #Mutez(I1 /Int I2) #Mutez(I1 %Int I2)) </stack>
        requires I2 >Int 0
 
   rule #DoCompare(#Mutez(I1), #Mutez(I2)) => #DoCompare(I1, I2)
@@ -631,9 +617,9 @@ module MICHELSON
   syntax Type ::= "#NotSet"
 
   configuration <k> $PGM:Pgm </k>
+                <stack> .K </stack>
                 <paramtype> #NotSet </paramtype>
                 <storagetype> #NotSet </storagetype>
-                <stack> Stack(.List) </stack>
                 <balance> #Mutez(0) </balance>
                 <amount> #Mutez(0) </amount>
                 <now> #Timestamp(-1) </now>

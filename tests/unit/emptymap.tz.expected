@@ -2,15 +2,15 @@
   <k>
     .
   </k>
+  <stack>
+    .Map
+  </stack>
   <paramtype>
     #NotSet
   </paramtype>
   <storagetype>
     #NotSet
   </storagetype>
-  <stack>
-    Stack ( ListItem ( .Map ) )
-  </stack>
   <balance>
     #Mutez ( 0 )
   </balance>

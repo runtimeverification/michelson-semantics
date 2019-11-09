@@ -2,15 +2,15 @@
   <k>
     .
   </k>
+  <stack>
+    #Lambda ( int , nat , { PUSH string "Hi" ; PAIR ; { { DROP ; PUSH nat 1 ; .InstructionList } ; .InstructionList } ; .InstructionList } )
+  </stack>
   <paramtype>
     #NotSet
   </paramtype>
   <storagetype>
     #NotSet
   </storagetype>
-  <stack>
-    Stack ( ListItem ( #Lambda ( int , nat , { PUSH string "Hi" ; PAIR ; { { DROP ; PUSH nat 1 ; .InstructionList } ; .InstructionList } ; .InstructionList } ) ) )
-  </stack>
   <balance>
     #Mutez ( 0 )
   </balance>

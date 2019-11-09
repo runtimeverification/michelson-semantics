@@ -2,16 +2,15 @@
   <k>
     .
   </k>
+  <stack>
+    #CreateContract ( code { DROP ; UNIT ; NIL operation ; PAIR ; .InstructionList } ; storage unit ; parameter unit ; , Some #KeyHash ( 1 ) , #Mutez ( 12 ) , Unit ) ~> #Address ( 0 )
+  </stack>
   <paramtype>
     #NotSet
   </paramtype>
   <storagetype>
     #NotSet
   </storagetype>
-  <stack>
-    Stack ( ListItem ( #CreateContract ( code { DROP ; UNIT ; NIL operation ; PAIR ; .InstructionList } ; storage unit ; parameter unit ; , Some #KeyHash ( 1 ) , #Mutez ( 12 ) , Unit ) )
-    ListItem ( #Address ( 0 ) ) )
-  </stack>
   <balance>
     #Mutez ( 0 )
   </balance>

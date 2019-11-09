@@ -2,15 +2,15 @@
   <k>
     .
   </k>
+  <stack>
+    #TransferTokens ( Unit , #Mutez ( 5 ) , #Contract ( #Address ( 1 ) , unit ) )
+  </stack>
   <paramtype>
     #NotSet
   </paramtype>
   <storagetype>
     #NotSet
   </storagetype>
-  <stack>
-    Stack ( ListItem ( #TransferTokens ( Unit , #Mutez ( 5 ) , #Contract ( #Address ( 1 ) , unit ) ) ) )
-  </stack>
   <balance>
     #Mutez ( 0 )
   </balance>
