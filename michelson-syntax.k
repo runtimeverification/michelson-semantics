@@ -1,4 +1,4 @@
-requires "michelson-annotation-syntax.k"
+require "michelson-annotation-syntax.k"
 
 module MICHELSON-SYNTAX
   imports INT-SYNTAX // TODO maybe use unsigned int so the parser can catch int/nat issues at parse time?
@@ -193,21 +193,21 @@ module MICHELSON-SYNTAX
   syntax SimpleComparableType
 
   syntax NormalPair ::= "pair" Type Type [klabel(mpair)]
-                      | "pair" Annotation Type Type [klabel(ampair)]
+                      | "pair" T1 Type Type [klabel(ampair)]
   syntax ComparablePair ::= "pair" SimpleComparableType ComparableType [prefer, klabel(mpair)] // For some reason, having these sorts inlined into Type/ComparableType yields a warning.
-                          | "pair" Annotation SimpleComparableType ComparableType [prefer, klabel(ampair)]
+                          | "pair" T1 SimpleComparableType ComparableType [prefer, klabel(ampair)]
 
   syntax Type ::= ComparableType
                 | SimpleNoncomparableType
 		| NormalPair
-                | "option" TypeAnnotation Type
-		| "list" TypeAnnotation Type
-		| "set" TypeAnnotation ComparableType
-		| "contract" TypeAnnotation Type
-                | "or" TypeAnnotation Type Type
-		| "lambda" TypeAnnotation Type Type
-		| "map" TypeAnnotation ComparableType Type
-		| "big_map" TypeAnnotation ComparableType Type
+                | "option" T1 Type
+		| "list" T1 Type
+		| "set" T1 ComparableType
+		| "contract" T1 Type
+                | "or" T1 Type Type
+		| "lambda" T1 Type Type
+		| "map" T1 ComparableType Type
+		| "big_map" T1 ComparableType Type
  
   
   syntax Type ::= "(" Type ")" [bracket] // Technically incorrect due to rule about primitive app right inside a sequence.  Need to split out Wrapped/Unwrapped sort. 
@@ -215,7 +215,7 @@ module MICHELSON-SYNTAX
   syntax ComparableType ::= SimpleComparableType 
                           | ComparablePair
 
-  syntax SimpleComparableType ::= "int" 
+  syntax UnannotatedSimpleComparableType ::= "int" 
 	  		        | "nat" 
 			        | "string" 
           			| "bytes" 
@@ -225,14 +225,14 @@ module MICHELSON-SYNTAX
 			        | "timestamp" 
 			        | "address"   
 
-  syntax SimpleComparableType ::= SimpleComparableType Annotation
+  syntax SimpleComparableType ::= UnannotatedSimpleComparableType T1
 
-  syntax SimpleNoncomparableType ::= "key" 
+  syntax UnannotatedSimpleNoncomparableType ::= "key" 
                     		   | "unit" 
                    		   | "signature"
 		                   | "operation"
 
-  syntax SimpleNoncomparableType ::= SimpleNoncomparableType Annotation
+  syntax SimpleNoncomparableType ::= UnannotatedSimpleNoncomparableType T1
 
 
   syntax CodeDecl ::= "code" Block ";"

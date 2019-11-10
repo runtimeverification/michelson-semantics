@@ -3,9 +3,9 @@ import itertools
 types = ["type", "variable", "field"]
 
 lists = {
-    "type": ["L0TA", "L1TA"],
-    "variable": ["L0VA", "L1VA", "L2VA"],
-    "field": ["L0FA", "L1FA", "L2FA"]
+    "type": ["T0", "T1"],
+    "variable": ["V0", "V1", "V2"],
+    "field": ["F0", "F1", "F2"]
 }
 
 files = {
@@ -43,11 +43,18 @@ with open("remaining") as f:
         opcodes[split[0].strip()].rest = split[1].strip()
 
 
-#for type_ in lists["type"]:
-    #for variable in lists["variable"]:
-        #for field in lists["field"]:
-            #for permutation in itertools.permutations([type_, variable, field]):
-                #print("syntax {0}{1}{2} ::= {3}".format(type_, variable, field, " ".join(permutation)))
+def makeSyntaxSubstring(prefix, num):
+    return "" if num == 0 else prefix + str(num)
+
+def makeSyntaxStrings(type_, variable, field):
+
+
+
+for type_ in range(2):
+    for variable in range(3):
+        for field in range(3):
+            for permutation in itertools.permutations(["T" + str(type_), "V" + str(variable), "F" + str(field)]):
+                print("syntax T{0}V{1}F{2} ::= {3}".format(str(type_), str(variable), str(field), " ".join(permutation)))
 
 for opcode in opcodes:
     print(opcodes[opcode].tostring())
