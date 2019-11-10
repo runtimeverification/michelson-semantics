@@ -2,15 +2,15 @@
   <k>
     .
   </k>
+  <stack>
+    #Contract ( #Address ( -1 ) , int )
+  </stack>
   <paramtype>
     int
   </paramtype>
   <storagetype>
     #NotSet
   </storagetype>
-  <stack>
-    Stack ( ListItem ( #Contract ( #Address ( -1 ) , int ) ) )
-  </stack>
   <balance>
     #Mutez ( 0 )
   </balance>

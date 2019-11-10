@@ -2,15 +2,15 @@
   <k>
     .
   </k>
+  <stack>
+    Unit
+  </stack>
   <paramtype>
     #NotSet
   </paramtype>
   <storagetype>
     #NotSet
   </storagetype>
-  <stack>
-    Stack ( ListItem ( Unit ) )
-  </stack>
   <balance>
     #Mutez ( 0 )
   </balance>

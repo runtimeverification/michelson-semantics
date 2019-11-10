@@ -2,15 +2,15 @@
   <k>
     .
   </k>
+  <stack>
+    #SetDelegate ( Some #KeyHash ( 2 ) )
+  </stack>
   <paramtype>
     #NotSet
   </paramtype>
   <storagetype>
     #NotSet
   </storagetype>
-  <stack>
-    Stack ( ListItem ( #SetDelegate ( Some #KeyHash ( 2 ) ) ) )
-  </stack>
   <balance>
     #Mutez ( 0 )
   </balance>
