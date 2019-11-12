@@ -442,7 +442,7 @@ module MICHELSON
        <stack> V ~> L => ListItem(V) L ... </stack>
   
   rule <k> NIL _ => . ... </k> 
-       <stack> . => ListItem(.List) ... </stack>
+       <stack> . => .List ... </stack>
 
   rule <k> IF_CONS BT BF => BT ... </k>
        <stack> ListItem(L1) Ls => L1 ~> Ls ... </stack>
@@ -502,7 +502,7 @@ module MICHELSON
   syntax Bool ::= #IsKeyHashOption(OptionData) [function]
   rule #IsKeyHashOption(Some K:KeyHash) => true
   rule #IsKeyHashOption(None) => true
-  rule #IsKeyHashOption(_) => false [owise]
+  rule #IsKeyHashOption(Some _) => false [owise]
 
   syntax BlockchainOperation ::= #CreateContract(Contract, OptionData, Mutez, Data)
 

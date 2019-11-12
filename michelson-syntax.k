@@ -42,9 +42,7 @@ module MICHELSON-SYNTAX
                 | Pair
                 | OrData
                 | OptionData
-                | "{" DataList "}"
                 | "{" MapEntry "}"
-                | Instruction
 
   syntax VariableAnnotation ::= r"@[a-z0-9_]" [token] 
 
@@ -198,7 +196,7 @@ module MICHELSON-SYNTAX
   syntax ComparableType
 
   syntax NormalPair ::= "pair" Type Type [klabel(mpair)]
-  syntax ComparablePair ::= "pair" SimpleComparableType ComparableType [prefer, klabel(mpair)] // For some reason, having these sorts inlined into Type/ComparableType yields a warning.
+  syntax ComparablePair ::= "pair" SimpleComparableType ComparableType [prefer, klabel(cpair)] // For some reason, having these sorts inlined into Type/ComparableType yields a warning.
 
   syntax Type ::= ComparableType
 		| "key" 
@@ -215,7 +213,7 @@ module MICHELSON-SYNTAX
 		| "map" ComparableType Type
 		| "big_map" ComparableType Type
   
-  syntax Type ::= "(" Type ")" [bracket] // Technically incorrect due to rule about primitive app right inside a sequence.  Need to split out Wrapped/Unwrapped sort. 
+  //syntax Type ::= "(" Type ")" [bracket] // Technically incorrect due to rule about primitive app right inside a sequence.  Need to split out Wrapped/Unwrapped sort. 
 
   syntax ComparableType ::= SimpleComparableType 
                           | ComparablePair

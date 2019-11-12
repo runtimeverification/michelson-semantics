@@ -3,7 +3,7 @@
     .
   </k>
   <stack>
-    ListItem ( .List )
+    .List
   </stack>
   <paramtype>
     #NotSet
