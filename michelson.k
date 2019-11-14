@@ -308,8 +308,6 @@ module MICHELSON
   rule <k> MEM => . ... </k> 
        <stack> X ~> S:Set => X in S ... </stack>
 
-  syntax KItem ::= #InsertIntoSet(Data, DataList, DataList, List) | #ContinueInsert(Data, DataList, DataList, List)
-
   // True to insert, False to remove.
 
   rule <k> UPDATE => . ... </k>
@@ -417,10 +415,10 @@ module MICHELSON
 
   //// Operations on unions
   rule <k> LEFT _ => . ... </k>
-       <stack> X => Left X ... </stack>
+       <stack> X:Data => Left X ... </stack>
 
-  rule <k> RIGHT _ => . ... </k>
-       <stack> X => Right X ... </stack>
+  rule <k> RIGHT _:Type => .K ... </k>
+       <stack> X:Data => Right X ... </stack>
 
   rule <k> IF_LEFT BT BF => BT ... </k>
        <stack> Left V => V ... </stack>
