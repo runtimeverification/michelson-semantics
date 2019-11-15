@@ -46,15 +46,19 @@ with open("remaining") as f:
 def makeSyntaxSubstring(prefix, num):
     return "" if num == 0 else prefix + str(num)
 
-def makeSyntaxStrings(type_, variable, field):
+def makeNonterminalsList(type_, variable, field):
+    return filter(lambda x: len(x) > 0, [makeSyntaxSubstring("T", type_), makeSyntaxSubstring("V", variable), makeSyntaxSubstring("F", field)])
 
-
+made_set = set()
 
 for type_ in range(2):
     for variable in range(3):
         for field in range(3):
-            for permutation in itertools.permutations(["T" + str(type_), "V" + str(variable), "F" + str(field)]):
-                print("syntax T{0}V{1}F{2} ::= {3}".format(str(type_), str(variable), str(field), " ".join(permutation)))
+            for permutation in itertools.permutations(makeNonterminalsList(type_, variable, field)):
+                nonterminals = " ".join(permutation)
+                if nonterminals not in made_set:
+                    made_set.add(nonterminals)
+                    print("syntax T{0}V{1}F{2} ::= {3}".format(str(type_), str(variable), str(field), nonterminals))
 
-for opcode in opcodes:
-    print(opcodes[opcode].tostring())
+#for opcode in opcodes:
+#    print(opcodes[opcode].tostring())
