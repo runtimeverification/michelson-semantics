@@ -51,7 +51,6 @@ module MICHELSON-SYNTAX
                 | Pair
                 | OrData
                 | OptionData
-                | "{" DataList "}"
                 | "{" MapEntryList "}"
                 | Instruction
 
@@ -193,9 +192,13 @@ module MICHELSON-SYNTAX
   syntax SimpleComparableType
 
   syntax NormalPair ::= "pair" Type Type [klabel(mpair)]
+<<<<<<< HEAD
                       | "pair" T1 Type Type [klabel(ampair)]
   syntax ComparablePair ::= "pair" SimpleComparableType ComparableType [prefer, klabel(mpair)] // For some reason, having these sorts inlined into Type/ComparableType yields a warning.
                           | "pair" T1 SimpleComparableType ComparableType [prefer, klabel(ampair)]
+=======
+  syntax ComparablePair ::= "pair" SimpleComparableType ComparableType [prefer, klabel(cpair)] // For some reason, having these sorts inlined into Type/ComparableType yields a warning.
+>>>>>>> master
 
   syntax Type ::= ComparableType
                 | SimpleNoncomparableType

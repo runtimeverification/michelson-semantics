@@ -4,3 +4,4 @@ notes.txt
 template.tz
 /.build
 /.krun*
+/.kprove*

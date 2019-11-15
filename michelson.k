@@ -307,8 +307,6 @@ module MICHELSON
   rule <k> MEM => . ... </k> 
        <stack> X ~> S:Set => X in S ... </stack>
 
-  syntax KItem ::= #InsertIntoSet(Data, DataList, DataList, List) | #ContinueInsert(Data, DataList, DataList, List)
-
   // True to insert, False to remove.
 
   rule <k> UPDATE => . ... </k>
@@ -416,10 +414,10 @@ module MICHELSON
 
   //// Operations on unions
   rule <k> LEFT _ => . ... </k>
-       <stack> X => Left X ... </stack>
+       <stack> X:Data => Left X ... </stack>
 
-  rule <k> RIGHT _ => . ... </k>
-       <stack> X => Right X ... </stack>
+  rule <k> RIGHT _:Type => .K ... </k>
+       <stack> X:Data => Right X ... </stack>
 
   rule <k> IF_LEFT BT BF => BT ... </k>
        <stack> Left V => V ... </stack>
@@ -441,7 +439,7 @@ module MICHELSON
        <stack> V ~> L => ListItem(V) L ... </stack>
   
   rule <k> NIL _ => . ... </k> 
-       <stack> . => ListItem(.List) ... </stack>
+       <stack> . => .List ... </stack>
 
   rule <k> IF_CONS BT BF => BT ... </k>
        <stack> ListItem(L1) Ls => L1 ~> Ls ... </stack>
@@ -501,7 +499,7 @@ module MICHELSON
   syntax Bool ::= #IsKeyHashOption(OptionData) [function]
   rule #IsKeyHashOption(Some K:KeyHash) => true
   rule #IsKeyHashOption(None) => true
-  rule #IsKeyHashOption(_) => false [owise]
+  rule #IsKeyHashOption(Some _) => false [owise]
 
   syntax BlockchainOperation ::= #CreateContract(Contract, OptionData, Mutez, Data)
 
