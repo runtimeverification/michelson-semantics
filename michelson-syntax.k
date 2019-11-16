@@ -184,7 +184,7 @@ module MICHELSON-SYNTAX
   syntax Instruction ::= "IF_SOME" T0V0F0 Block Block
   syntax Instruction ::= "SET_CAR" T0V0F0 
   syntax Instruction ::= "SET_CDR" T0V0F0 
-  syntax Instruction ::= "CREATE_CONTRACT" T0V2F0 
+  syntax Instruction ::= "CREATE_CONTRACT" T0V2F0 Block 
 
   syntax Type
   syntax SimpleNoncomparableType

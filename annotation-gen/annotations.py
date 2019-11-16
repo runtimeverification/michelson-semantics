@@ -47,18 +47,28 @@ def makeSyntaxSubstring(prefix, num):
     return "" if num == 0 else prefix + str(num)
 
 def makeNonterminalsList(type_, variable, field):
-    return filter(lambda x: len(x) > 0, [makeSyntaxSubstring("T", type_), makeSyntaxSubstring("V", variable), makeSyntaxSubstring("F", field)])
+    ret = list(filter(lambda x: len(x) > 0, [makeSyntaxSubstring("T", type_), makeSyntaxSubstring("V", variable), makeSyntaxSubstring("F", field)]))
+    if len(ret) == 0:
+        return ["NoAnnotation"]
+    else:
+        return ret
 
 made_set = set()
 
-for type_ in range(2):
-    for variable in range(3):
-        for field in range(3):
-            for permutation in itertools.permutations(makeNonterminalsList(type_, variable, field)):
-                nonterminals = " ".join(permutation)
-                if nonterminals not in made_set:
-                    made_set.add(nonterminals)
-                    print("syntax T{0}V{1}F{2} ::= {3}".format(str(type_), str(variable), str(field), nonterminals))
+for m_type_ in range(2):
+    for m_variable in range(3):
+        for m_field in range(3):
+            s = "syntax T{0}V{1}F{2} ::= ".format(m_type_, m_variable, m_field)
+            results = []
+            for type_ in range(m_type_ + 1):
+                for variable in range(m_variable + 1):
+                    for field in range(m_field + 1):
+                        for permutation in itertools.permutations(makeNonterminalsList(type_, variable, field)):
+                            results.append(" ".join(permutation))
+            if len(results) == 0:
+                print("{0}NoAnnotation".format(s))
+            else:
+                print("{0}{1}".format(s, " | ".join(results)))
 
 #for opcode in opcodes:
 #    print(opcodes[opcode].tostring())

@@ -128,10 +128,10 @@ module MICHELSON
        <stack> A:Data ~> #Lambda(_, _, C):Data ~> Rs:K => A </stack> 
 
   rule <k> APPLY => . ... </k>
-       <stack> D:Data ~> #Lambda((pair T0 T1):Type, T2, C) => #Lambda(T1, T2, { PUSH T0 D ; PAIR ; { C } }) ... </stack>
+       <stack> D:Data ~> #Lambda((pair NoAnnotation T0 T1):Type, T2, C) => #Lambda(T1, T2, { PUSH T0 D ; PAIR ; { C } }) ... </stack>
 
   rule <k> APPLY => . ... </k>
-       <stack> D:Data ~> #Lambda((pair T0 T1):ComparableType, T2, C) => #Lambda(T1, T2, { PUSH T0 D ; PAIR ; { C } }) ... </stack>
+       <stack> D:Data ~> #Lambda((pair NoAnnotation T0 T1):ComparableType, T2, C) => #Lambda(T1, T2, { PUSH T0 D ; PAIR ; { C } }) ... </stack>
 
   ////Stack operations
 
@@ -505,7 +505,7 @@ module MICHELSON
 
   syntax Data ::= BlockchainOperation
 
-  rule <k> CREATE_CONTRACT { C } => . ... </k>
+  rule <k> CREATE_CONTRACT _ { C } => . ... </k>
        <stack> Delegate:OptionData ~> Initial:Mutez ~> Stor:Data => #CreateContract(C, Delegate, Initial, Stor) ~> #Address(!_:Int) ... </stack>
        requires #IsKeyHashOption(Delegate)
 
@@ -552,7 +552,7 @@ module MICHELSON
        <amount> M </amount>
 
   rule <k> IMPLICIT_ACCOUNT => . ... </k>
-       <stack> #KeyHash(A) => #Contract(#Address(A), unit) ... </stack>
+       <stack> #KeyHash(A) => #Contract(#Address(A), unit NoAnnotation) ... </stack>
 
   //// Special Operations
   rule <k> CHAIN_ID => . ... </k>
