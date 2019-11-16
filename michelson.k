@@ -613,6 +613,53 @@ module MICHELSON
   rule #DoCompare(#Mutez(I1), #Mutez(I2)) => #DoCompare(I1, I2)
 
   syntax Type ::= "#NotSet"
+/*
+  rule CMPEQ => COMPARE ~> EQ
+  rule CMPNEQ => COMPARE ~> NEQ
+  rule CMPLT => COMPARE ~> LT
+  rule CMPGT => COMPARE ~> GT
+  rule CMPLE => COMPARE ~> LE
+  rule CMPGE => COMPARE ~> GE
+
+  rule IFEQ BT BF => EQ ~> IF BT BF
+  rule IFNEQ BT BF => NEQ ~> IF BT BF
+  rule IFLT BT BF => LT ~> IF BT BF
+  rule IFGT BT BF => GT ~> IF BT BF
+  rule IFLE BT BF => LE ~> IF BT BF
+  rule IFGE BT BF => GE ~> IF BT BF
+
+  rule IFCMPEQ BT BF => COMPARE ~> EQ ~> IF BT BF
+  rule IFCMPNEQ BT BF => COMPARE ~> NEQ ~> IF BT BF
+  rule IFCMPLT BT BF => COMPARE ~> LT ~> IF BT BF
+  rule IFCMPGT BT BF => COMPARE ~> GT ~> IF BT BF
+  rule IFCMPLE BT BF => COMPARE ~> LE ~> IF BT BF
+  rule IFCMPGE BT BF => COMPARE ~> GE ~> IF BT BF
+
+  rule FAIL => UNIT ~> FAILWITH
+
+  rule ASSERT => IF {} {FAIL}
+
+  rule ASSERT_EQ => IFEQ {} {FAIL}
+  rule ASSERT_NEQ => IFNEQ {} {FAIL}
+  rule ASSERT_LT => IFLT {} {FAIL}
+  rule ASSERT_GT => IFGT {} {FAIL}
+  rule ASSERT_LE => IFLE {} {FAIL}
+  rule ASSERT_GE => IFGE {} {FAIL}
+
+  rule ASSERT_CMPEQ => IFCMPEQ {} {FAIL}
+  rule ASSERT_CMPNEQ => IFCMPNEQ {} {FAIL}
+  rule ASSERT_CMPLT => IFCMPLT {} {FAIL}
+  rule ASSERT_CMPGT => IFCMPGT {} {FAIL}
+  rule ASSERT_CMPLE => IFCMPLE {} {FAIL}
+  rule ASSERT_CMPGE => IFCMPGE {} {FAIL}
+
+  rule ASSERT_NONE => IF_NONE {} {FAIL}
+
+  rule ASSERT_SOME => IF_NONE {FAIL} {} // TODO: Add annotations
+  rule ASSERT_LEFT => IF_LEFT {} {FAIL} //  ^
+  rule ASSERT_RIGHT => IF_LEFT {FAIL} {} // ^
+*/
+
 
   configuration <k> $PGM:Pgm </k>
                 <stack> .K </stack>

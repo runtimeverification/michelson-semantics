@@ -63,6 +63,8 @@ module MICHELSON-SYNTAX
                        | "DROP" 
                        | "DUP" 
                        | "SWAP"
+                       | "DIG" Int
+                       | "DUG" Int
                        | "PUSH" Type Data
                        | "SOME" 
                        | "NONE" Type
