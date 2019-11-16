@@ -184,27 +184,29 @@ module MICHELSON-SYNTAX
   syntax Instruction ::= "IF_SOME" T0V0F0 Block Block
   syntax Instruction ::= "SET_CAR" T0V0F0 
   syntax Instruction ::= "SET_CDR" T0V0F0 
-  syntax Instruction ::= "CREATE_CONTRACT" T0V2F0 Block 
+  syntax Instruction ::= "CREATE_CONTRACT" T0V2F0 "{" Contract "}" 
 
   syntax Type
   syntax SimpleNoncomparableType
   syntax ComparableType
   syntax SimpleComparableType
 
-  syntax NormalPair ::= "pair" T1 Type Type [klabel(ampair)]
-  syntax ComparablePair ::= "pair" T1 SimpleComparableType ComparableType [prefer, klabel(ampair)]
+  syntax OptT1 ::= T1 | NoAnnotation
+
+  syntax NormalPair ::= "pair" OptT1 Type Type [klabel(ampair)]
+  syntax ComparablePair ::= "pair" OptT1 SimpleComparableType ComparableType [prefer, klabel(ampair)]
 
   syntax Type ::= ComparableType
                 | SimpleNoncomparableType
 		| NormalPair
-                | "option" T1 Type
-		| "list" T1 Type
-		| "set" T1 ComparableType
-		| "contract" T1 Type
-                | "or" T1 Type Type
-		| "lambda" T1 Type Type
-		| "map" T1 ComparableType Type
-		| "big_map" T1 ComparableType Type
+                | "option" OptT1 Type
+		| "list" OptT1 Type
+		| "set" OptT1 ComparableType
+		| "contract" OptT1 Type
+                | "or" OptT1 Type Type
+		| "lambda" OptT1 Type Type
+		| "map" OptT1 ComparableType Type
+		| "big_map" OptT1 ComparableType Type
  
   
   syntax Type ::= "(" Type ")" [bracket] // Technically incorrect due to rule about primitive app right inside a sequence.  Need to split out Wrapped/Unwrapped sort. 
@@ -222,14 +224,14 @@ module MICHELSON-SYNTAX
 			        | "timestamp" 
 			        | "address"   
 
-  syntax SimpleComparableType ::= UnannotatedSimpleComparableType T1
+  syntax SimpleComparableType ::= UnannotatedSimpleComparableType OptT1
 
   syntax UnannotatedSimpleNoncomparableType ::= "key" 
                     		   | "unit" 
                    		   | "signature"
 		                   | "operation"
 
-  syntax SimpleNoncomparableType ::= UnannotatedSimpleNoncomparableType T1
+  syntax SimpleNoncomparableType ::= UnannotatedSimpleNoncomparableType OptT1
 
 
   syntax CodeDecl ::= "code" Block ";"
