@@ -177,17 +177,17 @@ module MICHELSON
   syntax KItem ::= #DoDug(Int, K, Data)
 
   rule <k> DUG I => #DoDug(I, .K, T) ... </k>
-       <stack> T => .K ... </stack>
+       <stack> T => .K ... </stack> [structural]
 
   rule <k> #DoDug(I, S, R) => #DoDug(I -Int 1, T ~> S, R) ... </k>
        <stack> T:Data => .K ... </stack>
-       requires I >Int 0
+       requires I >Int 0 [structural]
 
   rule <k> #DoDug(0, S, R) => #DoDug(-1, S, R) ... </k>
-       <stack> .K => R ... </stack>
+       <stack> .K => R ... </stack> [structural]
 
   rule <k> #DoDug(-1, T:Data ~> S, R) => #DoDug(-1, S, R) ... </k>
-       <stack> .K => T ... </stack>
+       <stack> .K => T ... </stack> [structural]
 
   rule <k> #DoDug(-1, .K, _) => .K ... </k>
 
