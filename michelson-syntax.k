@@ -52,7 +52,6 @@ module MICHELSON-SYNTAX
                 | OrData
                 | OptionData
                 | "{" MapEntryList "}"
-                | Instruction
 
   syntax Block ::= "{" InstructionList "}"
                  | "{" "}"

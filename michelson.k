@@ -89,25 +89,25 @@ module MICHELSON
 
   // Core Instructioons
   //// Control Structures
-  rule <k> FAILWITH _:T0V0F0 ~> _ => Aborted("FAILWITH instruction reached", D) </k>
+  rule <k> FAILWITH ~> _ => Aborted("FAILWITH instruction reached", D) </k>
        <stack> D ~> _ => FailedStack </stack>
 
-  rule <k> IF _:T0V0F0 BT BF => BT ... </k>
+  rule <k> IF BT BF => BT ... </k>
        <stack> true => . ... </stack>
 
-  rule <k> IF _:T0V0F0 BT BF => BF ... </k>
+  rule <k> IF BT BF => BF ... </k>
        <stack> false => . ... </stack>
 
-  rule <k> LOOP _:T0V0F0 B => B ~> LOOP B ... </k>
+  rule <k> LOOP B => B ~> LOOP B ... </k>
        <stack> true => . ... </stack>
 
-  rule <k> LOOP _:T0V0F0 B => .K ... </k>
+  rule <k> LOOP B => .K ... </k>
        <stack> false => . ... </stack>
 
-  rule <k> LOOP_LEFT _:T0V0F0 B => B ~> LOOP_LEFT B ... </k>
+  rule <k> LOOP_LEFT B => B ~> LOOP_LEFT B ... </k>
        <stack> Left A => A ... </stack>
 
-  rule <k> LOOP_LEFT _:T0V0F0 B => .K ... </k>
+  rule <k> LOOP_LEFT B => .K ... </k>
        <stack> Right A => A ... </stack>
 
   syntax KItem ::= #Push(Data)
@@ -124,14 +124,14 @@ module MICHELSON
   rule <k> #ReturnStack(Ls) => . ... </k>
        <stack> R:Data => R ~> Ls </stack>
 
-  rule <k> EXEC _:T0V1F0 => C ~> #ReturnStack(Rs) ... </k>
+  rule <k> EXEC => C ~> #ReturnStack(Rs) ... </k>
        <stack> A:Data ~> #Lambda(_, _, C):Data ~> Rs:K => A </stack> 
 
-  rule <k> APPLY _:T0V0F0 => . ... </k>
-//       <stack> D:Data ~> #Lambda((pair _:OptT1 T0 T1):Type, T2, C) => #Lambda(T1, T2, { PUSH T0 D ; PAIR ; { C } } ) ... </stack> // TODO fix later
+  rule <k> APPLY => . ... </k>
+       <stack> D:Data ~> #Lambda((pair _:OptT1 T0 T1):Type, T2, C) => #Lambda(T1, T2, { PUSH T0 D ; PAIR ; { C } } ) ... </stack> // TODO fix later
 
-  rule <k> APPLY _:T0V0F0 => . ... </k>
-//       <stack> D:Data ~> #Lambda((pair _:OptT1 T0 T1):ComparableType, T2, C) => #Lambda(T1, T2, { PUSH T0 D ; PAIR ; { C } }) ... </stack>
+  rule <k> APPLY => . ... </k>
+       <stack> D:Data ~> #Lambda((pair _:OptT1 T0 T1):ComparableType, T2, C) => #Lambda(T1, T2, { PUSH T0 D ; PAIR ; { C } }) ... </stack>
 
   ////Stack operations
 
