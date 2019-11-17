@@ -60,7 +60,8 @@ module MICHELSON-SYNTAX
 
 
   syntax Instruction ::= Block
-                       | "DROP" 
+                       | "DROP"
+                       | "DROP" Int
                        | "DUP" 
                        | "SWAP"
                        | "DIG" Int
@@ -96,6 +97,7 @@ module MICHELSON-SYNTAX
                        | "EXEC"
                        | "APPLY"
                        | "DIP" Block
+                       | "DIP" Int Block
                        | "FAILWITH"
                        | "CAST" 
                        | "RENAME" 

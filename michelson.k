@@ -118,6 +118,11 @@ module MICHELSON
   rule <k> DIP B => B ~> #Push(D) ... </k>
        <stack> D:Data => . ... </stack>
 
+  rule <k> DIP 0 B => B ... </k>
+
+  rule <k> DIP I B => DIP { DIP I -Int 1 B } ... </k>
+       requires I >Int 0
+
   syntax Data ::= #Lambda(Type, Type, Block)
  
   syntax KItem ::= #ReturnStack(K)
@@ -139,11 +144,52 @@ module MICHELSON
   rule <k> DROP => . ... </k>
        <stack> _:Data => . ... </stack>
 
+  rule <k> DROP I => DROP ~> DROP I -Int 1 ... </k> 
+       requires I >Int 0
+
+  rule <k> DROP 0 => . ... </k> 
+
+
   rule <k> DUP => . ... </k>
        <stack> X:Data => X ~> X ... </stack>
 
   rule <k> SWAP => . ... </k>
        <stack> X:Data ~> Y:Data => Y ~> X ... </stack>
+
+  syntax KItem ::= #DoDig(Int, K, OptionData)
+
+  rule <k> DIG I => #DoDig(I, .K, None) ... </k>
+       <stack> S </stack> [structural]
+
+  rule <k> #DoDig(I, A, None) => #DoDig(I -Int 1, F ~> A, None) ... </k>
+       <stack> F:Data => . ... </stack>
+       requires I >Int 0 [structural]
+
+  rule <k> #DoDig(0, A, None) => #DoDig(-1, A, Some F) ... </k>
+       <stack> F:Data => . ... </stack> [structural]
+
+  rule <k> #DoDig(-1, F:Data ~> A, Some T) => #DoDig(-1, A, Some T) ... </k>
+       <stack> . => F ... </stack> [structural]
+
+  rule <k> #DoDig(-1, .K, Some T) => . ... </k>
+       <stack> . => T ... </stack>
+
+  syntax KItem ::= #DoDug(Int, K, Data)
+
+  rule <k> DUG I => #DoDug(I, .K, T) ... </k>
+       <stack> T => .K ... </stack>
+
+  rule <k> #DoDug(I, S, R) => #DoDug(I -Int 1, T ~> S, R) ... </k>
+       <stack> T:Data => .K ... </stack>
+       requires I >Int 0
+
+  rule <k> #DoDug(0, S, R) => #DoDug(-1, S, R) ... </k>
+       <stack> .K => R ... </stack>
+
+  rule <k> #DoDug(-1, T:Data ~> S, R) => #DoDug(-1, S, R) ... </k>
+       <stack> .K => T ... </stack>
+
+  rule <k> #DoDug(-1, .K, _) => .K ... </k>
 
   rule <k> PUSH _ X => . ... </k>
        <stack> . => X ... </stack>
@@ -613,7 +659,7 @@ module MICHELSON
   rule #DoCompare(#Mutez(I1), #Mutez(I2)) => #DoCompare(I1, I2)
 
   syntax Type ::= "#NotSet"
-/*
+
   rule CMPEQ => COMPARE ~> EQ
   rule CMPNEQ => COMPARE ~> NEQ
   rule CMPLT => COMPARE ~> LT
@@ -658,7 +704,7 @@ module MICHELSON
   rule ASSERT_SOME => IF_NONE {FAIL} {} // TODO: Add annotations
   rule ASSERT_LEFT => IF_LEFT {} {FAIL} //  ^
   rule ASSERT_RIGHT => IF_LEFT {FAIL} {} // ^
-*/
+
 
 
   configuration <k> $PGM:Pgm </k>
