@@ -63,7 +63,10 @@ module MICHELSON-SYNTAX
   syntax CDARMacro ::= r"C[AD]+R" [token]
   syntax SetCDARMacro ::= r"SET_C[AD]+R" [token]
 
-  syntax Instruction ::= "DROP" T0V0F0 
+  syntax Instruction ::= "DROP" T0V0F0
+  syntax Instruction ::= "DROP" T0V0F0 Int
+  syntax Instruction ::= "DIG" T0V0F0 Int
+  syntax Instruction ::= "DUG" T0V0F0 Int
   syntax Instruction ::= "DUP" T0V1F0 
   syntax Instruction ::= "SWAP" T0V0F0 
   syntax Instruction ::= "PUSH" T0V1F0 Type Data
@@ -97,6 +100,7 @@ module MICHELSON-SYNTAX
   syntax Instruction ::= "EXEC" T0V1F0 
   syntax Instruction ::= "APPLY" T0V0F0 
   syntax Instruction ::= "DIP" T0V0F0 Block
+  syntax Instruction ::= "DIP" T0V0F0 Int Block
   syntax Instruction ::= "FAILWITH" T0V0F0 
   syntax Instruction ::= "CAST" T1V1F0 
   syntax Instruction ::= "RENAME" T0V1F0 

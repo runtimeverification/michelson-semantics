@@ -1,0 +1,2 @@
+$Instructions { DROP 5 } ; 
+$Stack ListItem(5) ListItem(4) ListItem(3) ListItem(2) ListItem(1) ListItem(0) ;

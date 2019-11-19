@@ -1,0 +1,38 @@
+<generatedTop>
+  <k>
+    .
+  </k>
+  <stack>
+    5 ~> 4 ~> 3 ~> true ~> 2 ~> 1 ~> 0
+  </stack>
+  <paramtype>
+    #NotSet
+  </paramtype>
+  <storagetype>
+    #NotSet
+  </storagetype>
+  <balance>
+    #Mutez ( 0 )
+  </balance>
+  <amount>
+    #Mutez ( 0 )
+  </amount>
+  <now>
+    #Timestamp ( -1 )
+  </now>
+  <myaddr>
+    #Address ( -1 )
+  </myaddr>
+  <knownaddrs>
+    .Map
+  </knownaddrs>
+  <sourceaddr>
+    #Address ( -2 )
+  </sourceaddr>
+  <senderaddr>
+    #Address ( -3 )
+  </senderaddr>
+  <chainid>
+    #ChainId ( 0 )
+  </chainid>
+</generatedTop>
