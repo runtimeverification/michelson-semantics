@@ -1,7 +1,11 @@
-require "michelson-syntax.k"
+requires "michelson-syntax.k"
+requires "michelson-annotation-semantics.k"
+requires "michelson-config.k"
 
 module MICHELSON
   imports MICHELSON-SYNTAX
+  imports MICHELSON-ANNOTATION-SEMANTICS
+  imports MICHELSON-CONFIG
   imports DOMAINS 
   imports COLLECTIONS
 
@@ -11,20 +15,6 @@ module MICHELSON
   rule False => false [macro]
 
   syntax KItem ::= "FailedStack"
-
-  syntax ContractData ::= #Contract(Address, Type)
-  syntax Address ::= #Address(Int)
-  syntax Mutez ::= #Mutez(Int)
-  syntax KeyHash ::= #KeyHash(Int)
-  syntax ChainId ::= #ChainId(Int)
-  syntax Timestamp ::= #Timestamp(Int) 
-
-  syntax Data ::= Timestamp 
-  syntax Data ::= ChainId
-  syntax Data ::= KeyHash
-  syntax Data ::= Mutez
-  syntax Data ::= Address
-  syntax Data ::= ContractData
 
   syntax KItem ::= #ReadKnownAddrs(ContractInputList)
   syntax KItem ::= #LoadContract(Contract)
@@ -133,7 +123,7 @@ module MICHELSON
        <stack> A:Data ~> #Lambda(_, _, C):Data ~> Rs:K => A </stack> 
 
   rule <k> APPLY => . ... </k>
-       <stack> D:Data ~> #Lambda((pair _:OptT1 T0 T1):Type, T2, { C } ) => #Lambda(T1, T2, { PUSH T0 D ; PAIR ; C } ) ... </stack> // TODO fix later
+       <stack> D:Data ~> #Lambda((pair _:OptT1 T0 T1):Type, T2, { C } ) => #Lambda(T1, T2, { PUSH T0 D ; PAIR ; C } ) ... </stack> 
 
   rule <k> APPLY => . ... </k>
        <stack> D:Data ~> #Lambda((pair _:OptT1 T0 T1):ComparableType, T2, { C } ) => #Lambda(T1, T2, { PUSH T0 D ; PAIR ; C }) ... </stack>
@@ -657,8 +647,6 @@ module MICHELSON
 
   rule #DoCompare(#Mutez(I1), #Mutez(I2)) => #DoCompare(I1, I2)
 
-  syntax Type ::= "#NotSet"
-
   rule CMPEQ => COMPARE ~> EQ
   rule CMPNEQ => COMPARE ~> NEQ
   rule CMPLT => COMPARE ~> LT
@@ -703,19 +691,4 @@ module MICHELSON
   rule ASSERT_SOME => IF_NONE {FAIL} {} // TODO: Add annotations
   rule ASSERT_LEFT => IF_LEFT {} {FAIL} //  ^
   rule ASSERT_RIGHT => IF_LEFT {FAIL} {} // ^
-
-
-
-  configuration <k> $PGM:Pgm </k>
-                <stack> .K </stack>
-                <paramtype> #NotSet </paramtype>
-                <storagetype> #NotSet </storagetype>
-                <balance> #Mutez(0) </balance>
-                <amount> #Mutez(0) </amount>
-                <now> #Timestamp(-1) </now>
-                <myaddr> #Address(-1) </myaddr>
-                <knownaddrs> .Map </knownaddrs>
-                <sourceaddr> #Address(-2) </sourceaddr>
-                <senderaddr> #Address(-3) </senderaddr>
-                <chainid> #ChainId(0) </chainid>
 endmodule
