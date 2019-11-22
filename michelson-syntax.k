@@ -63,6 +63,8 @@ module MICHELSON-SYNTAX
   syntax CDARMacro ::= r"C[AD]+R" [token]
   syntax SetCDARMacro ::= r"SET_C[AD]+R" [token]
 
+  syntax ContractBlock ::= "{" Contract "}"
+
   syntax Instruction ::= "DROP" T0V0F0
   syntax Instruction ::= "DROP" T0V0F0 Int
   syntax Instruction ::= "DIG" T0V0F0 Int
@@ -187,7 +189,7 @@ module MICHELSON-SYNTAX
   syntax Instruction ::= "IF_SOME" T0V0F0 Block Block
   syntax Instruction ::= "SET_CAR" T0V0F0 
   syntax Instruction ::= "SET_CDR" T0V0F0 
-  syntax Instruction ::= "CREATE_CONTRACT" T0V2F0 "{" Contract "}" 
+  syntax Instruction ::= "CREATE_CONTRACT" T0V2F0 ContractBlock 
 
   syntax Type
   syntax SimpleNoncomparableType

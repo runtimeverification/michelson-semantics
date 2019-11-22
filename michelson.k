@@ -70,10 +70,11 @@ module MICHELSON
        <paramtype> Pt </paramtype>
        <storagetype> St </storagetype> [structural]
 
-  rule I:Instruction ; Is:InstructionList => I ~> Is [structural]
+  rule I:Instruction ; Is:InstructionList => #ExtractAnnotations(I) ~> Is [structural]
   rule .InstructionList => .K [structural]
   rule {} => .K [structrual]
   rule { Is:InstructionList } => Is [structural]
+  rule #HandleAnnotations(_, I) => I [structural]
 
   syntax Error ::= Aborted(String, KItem)
 
