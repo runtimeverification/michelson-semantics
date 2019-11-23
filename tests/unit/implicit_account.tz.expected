@@ -3,7 +3,7 @@
     .
   </k>
   <stack>
-    #Contract ( #Address ( 12345 ) , unit )
+    #Contract ( #Address ( 12345 ) , unit  )
   </stack>
   <paramtype>
     #NotSet

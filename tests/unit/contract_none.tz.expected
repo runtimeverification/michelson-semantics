@@ -24,7 +24,7 @@
     #Address ( -1 )
   </myaddr>
   <knownaddrs>
-    #Address ( 1 ) |-> #Contract ( #Address ( 1 ) , unit )
+    #Address ( 1 ) |-> #Contract ( #Address ( 1 ) , unit  )
   </knownaddrs>
   <sourceaddr>
     #Address ( -2 )

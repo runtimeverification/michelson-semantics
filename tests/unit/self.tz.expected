@@ -3,10 +3,10 @@
     .
   </k>
   <stack>
-    #Contract ( #Address ( -1 ) , int )
+    #Contract ( #Address ( -1 ) , int  )
   </stack>
   <paramtype>
-    int
+    int 
   </paramtype>
   <storagetype>
     #NotSet

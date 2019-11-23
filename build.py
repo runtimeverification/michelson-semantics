@@ -17,8 +17,6 @@ files = [
         "michelson.k", 
         "michelson-syntax.k", 
         "test-michelson-syntax.k", 
-        "michelson-annotation-syntax.k", 
-        "michelson-annotation-semantics.k", 
         "michelson-config.k"
 ]
 
