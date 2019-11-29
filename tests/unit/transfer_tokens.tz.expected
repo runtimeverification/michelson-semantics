@@ -3,7 +3,7 @@
     .
   </k>
   <stack>
-    #TransferTokens ( Unit , #Mutez ( 5 ) , #Contract ( #Address ( 1 ) , unit  ) )
+    #TransferTokens ( Unit , #Mutez ( 5 ) , #Contract ( #Address ( 1 ) , unit .TypeAnnotationList .FieldAnnotationList ) )
   </stack>
   <paramtype>
     #NotSet

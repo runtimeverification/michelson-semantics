@@ -58,6 +58,51 @@ module MICHELSON-SYNTAX
                 | OrData
                 | OptionData
                 | "{" MapEntryList "}"
+                | "{" DataList "}"
+                | Block
+
+  syntax Data ::= "(" Data ")" [bracket]
+  syntax Type ::= "(" Type ")" [bracket] // Technically incorrect due to rule about primitive app right inside a sequence.  Need to split out Wrapped/Unwrapped sort. 
+
+  syntax ComparableType ::= SimpleComparableType 
+                          | ComparablePair
+
+  syntax UnannotatedSimpleComparableType ::= "int" 
+	  		        | "nat" 
+			        | "string" 
+          			| "bytes" 
+			        | "mutez" 
+			        | "bool" 
+			        | "key_hash" 
+			        | "timestamp" 
+			        | "address"   
+
+  syntax SimpleComparableType ::= UnannotatedSimpleComparableType AnnotatedTypeList
+
+  syntax UnannotatedSimpleNoncomparableType ::= "key" 
+                    		   | "unit" 
+                   		   | "signature"
+		                   | "operation"
+
+  syntax SimpleNoncomparableType ::= UnannotatedSimpleNoncomparableType AnnotatedTypeList
+
+
+  syntax AnnotatedTypeList ::= TypeAnnotationList FieldAnnotationList | FieldAnnotationList TypeAnnotationList
+
+  syntax NormalPair ::= "pair" AnnotatedTypeList Type Type [klabel(ampair)]
+  syntax ComparablePair ::= "pair" AnnotatedTypeList SimpleComparableType ComparableType [prefer, klabel(ampair)]
+
+  syntax Type ::= ComparableType
+                | SimpleNoncomparableType
+		| NormalPair
+                | "option" AnnotatedTypeList Type
+		| "list" AnnotatedTypeList Type
+		| "set" AnnotatedTypeList ComparableType
+		| "contract" AnnotatedTypeList Type
+                | "or" AnnotatedTypeList Type Type
+		| "lambda" AnnotatedTypeList Type Type
+		| "map" AnnotatedTypeList ComparableType Type
+		| "big_map" AnnotatedTypeList ComparableType Type
 
   syntax Block ::= "{" InstructionList "}"
                  | "{" "}"
@@ -197,54 +242,7 @@ module MICHELSON-SYNTAX
   syntax Instruction ::= "SET_CDR" InstructionAnnotationList 
   syntax Instruction ::= "CREATE_CONTRACT" InstructionAnnotationList ContractBlock 
 
-  syntax Type
-  syntax SimpleNoncomparableType
-  syntax ComparableType
-  syntax SimpleComparableType
-
-  syntax OptT1 ::= TypeAnnotation | NoAnnotation
-
-  syntax NormalPair ::= "pair" OptT1 Type Type [klabel(ampair)]
-  syntax ComparablePair ::= "pair" OptT1 SimpleComparableType ComparableType [prefer, klabel(ampair)]
-
-  syntax Type ::= ComparableType
-                | SimpleNoncomparableType
-		| NormalPair
-                | "option" OptT1 Type
-		| "list" OptT1 Type
-		| "set" OptT1 ComparableType
-		| "contract" OptT1 Type
-                | "or" OptT1 Type Type
-		| "lambda" OptT1 Type Type
-		| "map" OptT1 ComparableType Type
-		| "big_map" OptT1 ComparableType Type
  
-  
-  syntax Type ::= "(" Type ")" [bracket] // Technically incorrect due to rule about primitive app right inside a sequence.  Need to split out Wrapped/Unwrapped sort. 
-
-  syntax ComparableType ::= SimpleComparableType 
-                          | ComparablePair
-
-  syntax UnannotatedSimpleComparableType ::= "int" 
-	  		        | "nat" 
-			        | "string" 
-          			| "bytes" 
-			        | "mutez" 
-			        | "bool" 
-			        | "key_hash" 
-			        | "timestamp" 
-			        | "address"   
-
-  syntax SimpleComparableType ::= UnannotatedSimpleComparableType OptT1
-
-  syntax UnannotatedSimpleNoncomparableType ::= "key" 
-                    		   | "unit" 
-                   		   | "signature"
-		                   | "operation"
-
-  syntax SimpleNoncomparableType ::= UnannotatedSimpleNoncomparableType OptT1
-
-
   syntax CodeDecl ::= "code" Block ";"
   syntax StorageDecl ::= "storage" Type ";"
   syntax ParameterDecl ::= "parameter" Type ";"

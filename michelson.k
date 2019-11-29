@@ -26,6 +26,83 @@ module MICHELSON
   rule V:VariableAnnotationList T:TypeAnnotationList F:FieldAnnotationList => T V F [macro]
   rule V:VariableAnnotationList F:FieldAnnotationList T:TypeAnnotationList => T V F [macro]
 
+
+  syntax Data ::= #ConcreteArgToSemantics(Data, Type) [function] 
+
+  syntax KeyHash ::= #ParseKeyHash(String) [function]
+  syntax Timestamp ::= #ParseTimestamp(String) [function]
+  syntax Address ::= #ParseAddress(String) [function]
+  syntax Key ::= #ParseKey(String) [function]
+  syntax Signature ::= #ParseSignature(String) [function]
+
+  rule #ConcreteArgToSemantics(I:Int, int _) => I
+  rule #ConcreteArgToSemantics(I:Int, nat _) => I requires I >=Int 0
+  rule #ConcreteArgToSemantics(S:String, string _) => S
+  rule #ConcreteArgToSemantics(B:BytesLiteral, bytes _) => B
+  rule #ConcreteArgToSemantics(I:Int, mutez _) => #Mutez(I)
+  rule #ConcreteArgToSemantics(B:Bool, bool _) => B
+  rule #ConcreteArgToSemantics(S:String, key_hash _) => #ParseKeyHash(S)
+  rule #ConcreteArgToSemantics(S:String, timestamp _) => #ParseTimestamp(S)
+  rule #ConcreteArgToSemantics(I:Int, timestamp _) => #Timestamp(I)
+  rule #ConcreteArgToSemantics(I:Int, address _) => #Timestamp(I)
+  rule #ConcreteArgToSemantics(S:String, timestamp _) => #ParseTimestamp(S)
+  rule #ConcreteArgToSemantics(S:String, address _) => #ParseAddress(S)
+  rule #ConcreteArgToSemantics(S:String, key _) => #ParseKey(S)
+  rule #ConcreteArgToSemantics(Unit, unit _) => Unit
+  rule #ConcreteArgToSemantics(S:String, signature _) => #ParseSignature(S)
+  // I do not believe you can input an operation to a contract, so skipping that one.
+  
+  rule #ConcreteArgToSemantics(Pair A B, pair _ T1:Type T2:Type) => 
+       Pair #ConcreteArgToSemantics(A, T1) #ConcreteArgToSemantics(B, T2)
+
+  rule #ConcreteArgToSemantics(Pair A B, pair _ T1:SimpleComparableType T2:SimpleComparableType) => 
+       Pair #ConcreteArgToSemantics(A, T1) #ConcreteArgToSemantics(B, T2)
+
+  rule #ConcreteArgToSemantics(Some V, option _ T) => Some #ConcreteArgToSemantics(V, T)
+  rule #ConcreteArgToSemantics(None, option _:AnnotatedTypeList _) => None
+
+  syntax Data ::= #ConcreteArgToSemanticsList(DataList, Type, List) [function]
+
+  rule #ConcreteArgToSemantics({ DL:DataList }, list _ T) =>
+       #ConcreteArgToSemanticsList(DL, T, .List)
+
+  rule #ConcreteArgToSemanticsList(D1 ; DL, T, L) =>
+       #ConcreteArgToSemanticsList(DL, T, ListItem(#ConcreteArgToSemantics(D1, T)) L)
+
+  rule #ConcreteArgToSemanticsList(.DataList, _, L) => #ReverseList(L)
+
+  syntax Data ::= #ConcreteArgToSemanticsSet(DataList, Type, Set) [function]
+
+  rule #ConcreteArgToSemantics({ DL:DataList }, set _ T) =>
+       #ConcreteArgToSemanticsSet(DL, T, .Set)
+
+  rule #ConcreteArgToSemanticsSet(D1 ; DL, T, S) =>
+       #ConcreteArgToSemanticsSet(DL, T, SetItem(#ConcreteArgToSemantics(D1, T)) S)
+
+  rule #ConcreteArgToSemanticsSet(.DataList, _, S) => S
+
+  rule #ConcreteArgToSemantics(S:String, contract _ T) => #Contract(#ParseAddress(S), T)
+  // TODO: Should Address be defined as #Address(String) rather than #Address(Int)?
+  
+  rule #ConcreteArgToSemantics(Left V, or _:AnnotatedTypeList TL:Type _:Type) => Left #ConcreteArgToSemantics(V, TL)
+  rule #ConcreteArgToSemantics(Right V, or _:AnnotatedTypeList _:Type TR:Type) => Right #ConcreteArgToSemantics(V, TR)
+
+  rule #ConcreteArgToSemantics(B:Block, lambda _:AnnotatedTypeList T1 T2) => #Lambda(T1, T2, B)
+
+  syntax Data ::= #ConcreteArgToSemanticsMap(MapEntryList, Type, Type, Map) [function]
+
+  rule #ConcreteArgToSemantics({ M:MapEntryList }, map _:AnnotatedTypeList K V) =>
+       #ConcreteArgToSemanticsMap(M, K, V, .Map)
+
+  rule #ConcreteArgToSemanticsMap(Elt K V ; ML , KT, VT, M) =>
+       #ConcreteArgToSemanticsMap(ML , KT, VT, M[#ConcreteArgToSemantics(K, KT) <- #ConcreteArgToSemantics(V, VT)])
+
+  rule #ConcreteArgToSemanticsMap(.MapEntryList, _, _, M) => M
+
+  rule #ConcreteArgToSemantics({ M:MapEntryList }, big_map _:AnnotatedTypeList K V) =>
+       #ConcreteArgToSemanticsMap(M, K, V, .Map)
+
+
   rule <k> $contract {C} ;
            $paramtype Pt ;
            $storagetype St ;
@@ -38,7 +115,7 @@ module MICHELSON
            $senderaddr SenderAddr ;
            $param P ;
            $storage S ; => #ReadKnownAddrs(AddrList) ~> #LoadContract(C) </k> 
-       <stack> . => Pair P S </stack>
+       <stack> . => Pair #ConcreteArgToSemantics(P, Pt) #ConcreteArgToSemantics(S, St) </stack>
        <paramtype> _ => Pt </paramtype>
        <storagetype> _ => St </storagetype>
        <balance> #Mutez(_ => B) </balance>
@@ -136,10 +213,10 @@ module MICHELSON
        <stack> A:Data ~> #Lambda(_, _, C):Data ~> Rs:K => A </stack> 
 
   rule <k> APPLY A => #HandleAnnotations(A) ~> . ... </k>
-       <stack> D:Data ~> #Lambda((pair _:OptT1 T0 T1):Type, T2, { C } ) => #Lambda(T1, T2, { PUSH NoAnnotations T0 D ; PAIR NoAnnotations ; C } ) ... </stack> 
+       <stack> D:Data ~> #Lambda((pair _:AnnotatedTypeList T0 T1):Type, T2, { C } ) => #Lambda(T1, T2, { PUSH NoAnnotations T0 D ; PAIR NoAnnotations ; C } ) ... </stack> 
 
   rule <k> APPLY A => #HandleAnnotations(A) ~> . ... </k>
-       <stack> D:Data ~> #Lambda((pair _:OptT1 T0 T1):ComparableType, T2, { C } ) => #Lambda(T1, T2, { PUSH NoAnnotations T0 D ; PAIR NoAnnotations ; C }) ... </stack>
+       <stack> D:Data ~> #Lambda((pair _:AnnotatedTypeList T0 T1):ComparableType, T2, { C } ) => #Lambda(T1, T2, { PUSH NoAnnotations T0 D ; PAIR NoAnnotations ; C }) ... </stack>
 
   ////Stack operations
 
@@ -193,8 +270,8 @@ module MICHELSON
 
   rule <k> #DoDug(-1, .K, _) => .K ... </k>
 
-  rule <k> PUSH A _ X => #HandleAnnotations(A) ~> . ... </k>
-       <stack> . => X ... </stack>
+  rule <k> PUSH A T X => #HandleAnnotations(A) ~> . ... </k>
+       <stack> . => #ConcreteArgToSemantics(X, T) ... </stack>
 
   rule <k> UNIT A => #HandleAnnotations(A) ~> . ... </k>
        <stack> . => Unit ... </stack>
@@ -601,7 +678,7 @@ module MICHELSON
        <amount> M </amount>
 
   rule <k> IMPLICIT_ACCOUNT Ann => . ... </k>
-       <stack> #KeyHash(A) => #Contract(#Address(A), unit) ... </stack>
+       <stack> #KeyHash(A) => #Contract(#Address(A), unit .TypeAnnotationList .FieldAnnotationList) ... </stack>
 
   //// Special Operations
   rule <k> CHAIN_ID A => . ... </k>

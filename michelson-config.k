@@ -12,6 +12,8 @@ module MICHELSON-CONFIG
   syntax KeyHash ::= #KeyHash(Int)
   syntax ChainId ::= #ChainId(Int)
   syntax Timestamp ::= #Timestamp(Int) 
+  syntax Key ::= #Key(String)
+  syntax Signature ::= #Signature(String)
 
   syntax Data ::= Timestamp 
   syntax Data ::= ChainId
@@ -19,6 +21,8 @@ module MICHELSON-CONFIG
   syntax Data ::= Mutez
   syntax Data ::= Address
   syntax Data ::= ContractData
+  syntax Data ::= Key
+  syntax Data ::= Signature
 
   configuration <k> $PGM:Pgm </k>
                 <stack> .K </stack>

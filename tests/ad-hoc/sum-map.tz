@@ -1,0 +1,22 @@
+$contract { 
+parameter (map nat nat);
+storage nat ;
+code { DUP ;
+       DIP { CDR } ;
+       CAR ;
+       ITER { CDR ; ADD } ;
+       NIL operation ;
+       PAIR 
+} ;
+} ;
+$paramtype (map nat nat) ;
+$storagetype nat ;
+$balance 0 ;
+$amount 0 ;
+$now 0 ;
+$myaddr 0 ;
+$knownaddrs ;
+$sourceaddr 0 ;
+$senderaddr 0 ;
+$param { Elt 1 3 ; Elt 2 4 ; Elt 5 5 } ;
+$storage 0 ;

@@ -1,0 +1,16 @@
+$contract { 
+  parameter pair (pair int nat) (pair string (or nat mutez)) ;
+  storage unit ;
+  code { CDR ; NIL operation ; PAIR } ;
+} ;
+$paramtype pair (pair int nat) (pair string (or nat mutez)) ;
+$storagetype unit ;
+$balance 0 ;
+$amount 0 ;
+$now 0 ;
+$myaddr 0 ;
+$knownaddrs ;
+$sourceaddr 0 ;
+$senderaddr 0 ;
+$param Pair Pair -5 2 Pair "s" (Right 10) ;
+$storage Unit ;

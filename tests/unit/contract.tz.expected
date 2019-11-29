@@ -3,7 +3,7 @@
     .
   </k>
   <stack>
-    Some #Contract ( #Address ( 12345 ) , unit  )
+    Some #Contract ( #Address ( 12345 ) , unit .TypeAnnotationList .FieldAnnotationList )
   </stack>
   <paramtype>
     #NotSet
@@ -24,7 +24,7 @@
     #Address ( -1 )
   </myaddr>
   <knownaddrs>
-    #Address ( 12345 ) |-> #Contract ( #Address ( 12345 ) , unit  )
+    #Address ( 12345 ) |-> #Contract ( #Address ( 12345 ) , unit .TypeAnnotationList .FieldAnnotationList )
   </knownaddrs>
   <sourceaddr>
     #Address ( -2 )
