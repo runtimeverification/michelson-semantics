@@ -82,7 +82,6 @@ module MICHELSON
   rule #ConcreteArgToSemanticsSet(.DataList, _, S) => S
 
   rule #ConcreteArgToSemantics(S:String, contract _ T) => #Contract(#ParseAddress(S), T)
-  // TODO: Should Address be defined as #Address(String) rather than #Address(Int)?
   
   rule #ConcreteArgToSemantics(Left V, or _:AnnotatedTypeList TL:Type _:Type) => Left #ConcreteArgToSemantics(V, TL)
   rule #ConcreteArgToSemantics(Right V, or _:AnnotatedTypeList _:Type TR:Type) => Right #ConcreteArgToSemantics(V, TR)
@@ -632,7 +631,7 @@ module MICHELSON
   syntax Data ::= BlockchainOperation
 
   rule <k> CREATE_CONTRACT A:InstructionAnnotationList { C } => . ... </k>
-       <stack> Delegate:OptionData ~> Initial:Mutez ~> Stor:Data => #CreateContract(C, Delegate, Initial, Stor) ~> #Address(!_:Int) ... </stack>
+       <stack> Delegate:OptionData ~> Initial:Mutez ~> Stor:Data => #CreateContract(C, Delegate, Initial, Stor) ~> #Address(Int2String(!_:Int)) ... </stack>
        requires #IsKeyHashOption(Delegate)
 
   syntax BlockchainOperation ::= #TransferTokens(Data, Mutez, ContractData)
@@ -688,6 +687,55 @@ module MICHELSON
   rule <k> NOW A => . ... </k> 
        <stack> . => N ... </stack>
        <now> N </now>
+
+
+  //// Operations on Bytes, stubbed for now because of the lack of a documented bytes format.
+
+  syntax Bytes ::= BytesLiteral | #Packed(Data) | "#UnknownBytes"
+
+  syntax Data ::= Bytes
+
+  rule <k> PACK A => #HandleAnnotations(A) ... </k>
+       <stack> T => #Packed(T) ... </stack>
+
+  rule <k> UNPACK A _ => #HandleAnnotations(A) ... </k>
+       <stack> #Packed(T) => T ... </stack>
+
+  rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
+       <stack> B1:Bytes ~> B2:Bytes => #UnknownBytes ... </stack>
+
+  rule <k> SIZE A => #HandleAnnotations(A) ... </k>
+       <stack> B:Bytes => 0 ... </stack> // Would like to make this a ?_ variable but llvm doesn't support those.
+
+  rule <k> SLICE A => #HandleAnnotations(A) ... </k>
+       <stack> _:Int ~> _:Int ~> B:Bytes => Some #UnknownBytes ... </stack>
+
+  rule #DoCompare(B1:Bytes, B2:Bytes) => 0 // I can't see a reasonable way of doing this.
+
+  //// Cryptographic primitives
+
+  syntax String ::= #Blake2BKeyHash(String) [function] // TODO: Blake2B crypto hook.
+
+  rule <k> HASH_KEY A => #HandleAnnotations(A) ... </k>
+       <stack> #Key(S) => #KeyHash(S) ... </stack> 
+  
+  syntax Bytes ::= #SHA256(Bytes) | #SHA512(Bytes)
+
+  rule <k> SHA256 A => #HandleAnnotations(A) ... </k>
+       <stack> B:Bytes => #SHA256(B) ... </stack>
+       
+  rule <k> SHA512 A => #HandleAnnotations(A) ... </k>
+       <stack> B:Bytes => #SHA512(B) ... </stack>
+
+  syntax Bytes ::= #SignedBytes(Key, Signature, Bytes)
+
+  rule <k> CHECK_SIGNATURE A => #HandleAnnotations(A) ... </k>
+       <stack> #Key(K) ~> #Signature(S) ~> #SignedBytes(#Key(K), #Signature(S), _) => true ... </stack>
+
+  rule <k> CHECK_SIGNATURE A => #HandleAnnotations(A) ... </k>
+       <stack> #Key(_) ~> #Signature(_) ~> _:Bytes => false ... </stack> [owise]
+
+  rule #DoCompare(#KeyHash(S1), #KeyHash(S2)) => #DoCompare(S1, S2)
 
   //// Operations on Mutez
 

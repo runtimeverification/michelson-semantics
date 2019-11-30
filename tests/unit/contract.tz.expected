@@ -3,7 +3,7 @@
     .
   </k>
   <stack>
-    Some #Contract ( #Address ( 12345 ) , unit .TypeAnnotationList .FieldAnnotationList )
+    Some #Contract ( #Address ( "12345" ) , unit .TypeAnnotationList .FieldAnnotationList )
   </stack>
   <paramtype>
     #NotSet
@@ -21,16 +21,16 @@
     #Timestamp ( -1 )
   </now>
   <myaddr>
-    #Address ( -1 )
+    #Address ( "InvalidMyAddr" )
   </myaddr>
   <knownaddrs>
-    #Address ( 12345 ) |-> #Contract ( #Address ( 12345 ) , unit .TypeAnnotationList .FieldAnnotationList )
+    #Address ( "12345" ) |-> #Contract ( #Address ( "12345" ) , unit .TypeAnnotationList .FieldAnnotationList )
   </knownaddrs>
   <sourceaddr>
-    #Address ( -2 )
+    #Address ( "InvalidSourceAddr" )
   </sourceaddr>
   <senderaddr>
-    #Address ( -3 )
+    #Address ( "InvalidSenderAddr" )
   </senderaddr>
   <chainid>
     #ChainId ( 0 )

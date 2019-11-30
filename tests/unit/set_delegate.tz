@@ -1,2 +1,2 @@
 $Instructions { SET_DELEGATE } ; 
-$Stack ListItem(Some #KeyHash(2)) ;
+$Stack ListItem(Some #KeyHash("2")) ;

@@ -2,6 +2,7 @@
 notes.txt
 *.swp
 template.tz
+diff_file.txt
 /.build
 /.krun*
 /.kprove*

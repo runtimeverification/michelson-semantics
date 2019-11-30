@@ -160,7 +160,7 @@ module MICHELSON-SYNTAX
   syntax Instruction ::= "CONCAT" InstructionAnnotationList 
   syntax Instruction ::= "SLICE" InstructionAnnotationList 
   syntax Instruction ::= "PACK" InstructionAnnotationList 
-  syntax Instruction ::= "UNPACK" InstructionAnnotationList 
+  syntax Instruction ::= "UNPACK" InstructionAnnotationList Type
   syntax Instruction ::= "ADD" InstructionAnnotationList 
   syntax Instruction ::= "SUB" InstructionAnnotationList 
   syntax Instruction ::= "MUL" InstructionAnnotationList 
@@ -254,7 +254,7 @@ module MICHELSON-SYNTAX
                     | StorageDecl ParameterDecl CodeDecl
                     | ParameterDecl StorageDecl CodeDecl
 
-  syntax ContractInput ::= #ContractInput(Int, Type)
+  syntax ContractInput ::= #ContractInput(String, Type)
   syntax ContractInputList ::= List{ContractInput, " "} 
 
   syntax Pgm ::= "$contract" "{" Contract "}" ";" 
@@ -263,10 +263,10 @@ module MICHELSON-SYNTAX
                  "$balance" Int ";" 
                  "$amount" Int ";" 
                  "$now" Int ";" 
-                 "$myaddr" Int ";" 
+                 "$myaddr" String ";" 
                  "$knownaddrs" ContractInputList ";" 
-                 "$sourceaddr" Int ";" 
-                 "$senderaddr" Int ";" 
+                 "$sourceaddr" String ";" 
+                 "$senderaddr" String ";" 
                  "$param" Data  ";" 
                  "$storage" Data ";" 
 endmodule

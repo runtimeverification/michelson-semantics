@@ -1,2 +1,2 @@
 $Instructions { CREATE_CONTRACT { code { DROP ; UNIT ; NIL operation ; PAIR } ; storage unit ; parameter unit ; } } ; 
-$Stack ListItem(Some #KeyHash(1)) ListItem(#Mutez(12)) ListItem(Unit);
+$Stack ListItem(Some #KeyHash("1")) ListItem(#Mutez(12)) ListItem(Unit);

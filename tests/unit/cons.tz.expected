@@ -22,16 +22,16 @@
     #Timestamp ( -1 )
   </now>
   <myaddr>
-    #Address ( -1 )
+    #Address ( "InvalidMyAddr" )
   </myaddr>
   <knownaddrs>
     .Map
   </knownaddrs>
   <sourceaddr>
-    #Address ( -2 )
+    #Address ( "InvalidSourceAddr" )
   </sourceaddr>
   <senderaddr>
-    #Address ( -3 )
+    #Address ( "InvalidSenderAddr" )
   </senderaddr>
   <chainid>
     #ChainId ( 0 )

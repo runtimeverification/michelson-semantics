@@ -3,7 +3,7 @@
     .
   </k>
   <stack>
-    #CreateContract ( code { DROP .TypeAnnotationList .VariableAnnotationList .FieldAnnotationList ; UNIT .TypeAnnotationList .VariableAnnotationList .FieldAnnotationList ; NIL .TypeAnnotationList .VariableAnnotationList .FieldAnnotationList operation .TypeAnnotationList .FieldAnnotationList ; PAIR .TypeAnnotationList .VariableAnnotationList .FieldAnnotationList ; .InstructionList } ; storage unit .TypeAnnotationList .FieldAnnotationList ; parameter unit .TypeAnnotationList .FieldAnnotationList ; , Some #KeyHash ( 1 ) , #Mutez ( 12 ) , Unit ) ~> #Address ( 0 )
+    #CreateContract ( code { DROP .TypeAnnotationList .VariableAnnotationList .FieldAnnotationList ; UNIT .TypeAnnotationList .VariableAnnotationList .FieldAnnotationList ; NIL .TypeAnnotationList .VariableAnnotationList .FieldAnnotationList operation .TypeAnnotationList .FieldAnnotationList ; PAIR .TypeAnnotationList .VariableAnnotationList .FieldAnnotationList ; .InstructionList } ; storage unit .TypeAnnotationList .FieldAnnotationList ; parameter unit .TypeAnnotationList .FieldAnnotationList ; , Some #KeyHash ( "1" ) , #Mutez ( 12 ) , Unit ) ~> #Address ( "0" )
   </stack>
   <paramtype>
     #NotSet
@@ -21,16 +21,16 @@
     #Timestamp ( -1 )
   </now>
   <myaddr>
-    #Address ( -1 )
+    #Address ( "InvalidMyAddr" )
   </myaddr>
   <knownaddrs>
     .Map
   </knownaddrs>
   <sourceaddr>
-    #Address ( -2 )
+    #Address ( "InvalidSourceAddr" )
   </sourceaddr>
   <senderaddr>
-    #Address ( -3 )
+    #Address ( "InvalidSenderAddr" )
   </senderaddr>
   <chainid>
     #ChainId ( 0 )

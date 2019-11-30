@@ -1,2 +1,2 @@
 $Instructions { ADDRESS } ; 
-$Stack ListItem(#Contract(#Address(12345), unit)) ;
+$Stack ListItem(#Contract(#Address("12345"), unit)) ;

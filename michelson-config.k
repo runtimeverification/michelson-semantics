@@ -6,10 +6,10 @@ module MICHELSON-CONFIG
 
   syntax Type ::= "#NotSet"
 
-  syntax Address ::= #Address(Int)
+  syntax Address ::= #Address(String)
   syntax ContractData ::= #Contract(Address, Type)
   syntax Mutez ::= #Mutez(Int)
-  syntax KeyHash ::= #KeyHash(Int)
+  syntax KeyHash ::= #KeyHash(String)
   syntax ChainId ::= #ChainId(Int)
   syntax Timestamp ::= #Timestamp(Int) 
   syntax Key ::= #Key(String)
@@ -31,9 +31,9 @@ module MICHELSON-CONFIG
                 <balance> #Mutez(0) </balance>
                 <amount> #Mutez(0) </amount>
                 <now> #Timestamp(-1) </now>
-                <myaddr> #Address(-1) </myaddr>
+                <myaddr> #Address("InvalidMyAddr") </myaddr>
                 <knownaddrs> .Map </knownaddrs>
-                <sourceaddr> #Address(-2) </sourceaddr>
-                <senderaddr> #Address(-3) </senderaddr>
+                <sourceaddr> #Address("InvalidSourceAddr") </sourceaddr>
+                <senderaddr> #Address("InvalidSenderAddr") </senderaddr>
                 <chainid> #ChainId(0) </chainid>
 endmodule
