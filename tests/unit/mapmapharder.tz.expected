@@ -3,9 +3,9 @@
     .
   </k>
   <stack>
-    1 |-> 3
+    #Map ( 1 |-> 3
     5 |-> 5
-    12 |-> 25 ~> 25
+    12 |-> 25 , int .TypeAnnotationList .FieldAnnotationList , int .TypeAnnotationList .FieldAnnotationList ) ~> 25
   </stack>
   <paramtype>
     #NotSet

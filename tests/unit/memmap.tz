@@ -1,2 +1,2 @@
 $Instructions { MEM } ; 
-$Stack ListItem(1) ListItem(1 |-> 3 5 |-> 2);
+$Stack ListItem(1) ListItem(#Map(1 |-> 3 5 |-> 2, int, int));

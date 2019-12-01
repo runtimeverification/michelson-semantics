@@ -3,7 +3,7 @@
     .
   </k>
   <stack>
-    .Map
+    #Map ( .Map , nat .TypeAnnotationList .FieldAnnotationList , nat .TypeAnnotationList .FieldAnnotationList )
   </stack>
   <paramtype>
     #NotSet
