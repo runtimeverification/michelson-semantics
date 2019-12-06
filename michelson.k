@@ -30,10 +30,20 @@ module MICHELSON
   syntax Data ::= #ConcreteArgToSemantics(Data, Type) [function] 
 
   syntax KeyHash ::= #ParseKeyHash(String) [function]
+  rule #ParseKeyHash(S) => #KeyHash(S)
+
   syntax Timestamp ::= #ParseTimestamp(String) [function]
+  rule #ParseTimestamp(S) => #Timestamp(String2Int(S)) // For the time being we support only unix times.
+  
+
   syntax Address ::= #ParseAddress(String) [function]
+  rule #ParseAddress(S) => #Address(S)
+
   syntax Key ::= #ParseKey(String) [function]
+  rule #ParseKey(S) => #Key(S)
+
   syntax Signature ::= #ParseSignature(String) [function]
+  rule #ParseSignature(S) => #Signature(S)
 
   rule #ConcreteArgToSemantics(I:Int, int _) => I
   rule #ConcreteArgToSemantics(I:Int, nat _) => I requires I >=Int 0
@@ -176,14 +186,14 @@ module MICHELSON
   rule <k> LOOP A B => #HandleAnnotations(A) ~> B ~> LOOP NoAnnotations B ... </k>
        <stack> true => . ... </stack>
 
-  rule <k> LOOP A B => #HandleAnnotations(A) ~> .K ... </k>
+  rule <k> LOOP A B => #HandleAnnotations(A) ... </k>
        <stack> false => . ... </stack>
 
-  rule <k> LOOP_LEFT C B => #HandleAnnotations(C) ~> B ~> LOOP_LEFT NoAnnotations B ... </k>
-       <stack> Left A => A ... </stack>
+  rule <k> LOOP_LEFT A B => #HandleAnnotations(A) ~> B ~> LOOP_LEFT NoAnnotations B ... </k>
+       <stack> Left D => D ... </stack>
 
-  rule <k> LOOP_LEFT C B => #HandleAnnotations(C) ~> .K ... </k>
-       <stack> Right A => A ... </stack>
+  rule <k> LOOP_LEFT A B => #HandleAnnotations(A) ... </k>
+       <stack> Right D => D ... </stack>
 
   syntax KItem ::= #Push(Data)
   rule <k> #Push(D) => . ... </k>
@@ -211,27 +221,27 @@ module MICHELSON
   rule <k> EXEC B => #HandleAnnotations(B) ~> C ~> #ReturnStack(Rs) ... </k>
        <stack> A:Data ~> #Lambda(_, _, C):Data ~> Rs:K => A </stack> 
 
-  rule <k> APPLY A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> APPLY A => #HandleAnnotations(A) ... </k>
        <stack> D:Data ~> #Lambda((pair _:AnnotatedTypeList T0 T1):Type, T2, { C } ) => #Lambda(T1, T2, { PUSH NoAnnotations T0 D ; PAIR NoAnnotations ; C } ) ... </stack> 
 
-  rule <k> APPLY A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> APPLY A => #HandleAnnotations(A) ... </k>
        <stack> D:Data ~> #Lambda((pair _:AnnotatedTypeList T0 T1):ComparableType, T2, { C } ) => #Lambda(T1, T2, { PUSH NoAnnotations T0 D ; PAIR NoAnnotations ; C }) ... </stack>
 
   ////Stack operations
 
-  rule <k> DROP A =>  #HandleAnnotations(A) ~>. ... </k>
+  rule <k> DROP A =>  #HandleAnnotations(A) ... </k>
        <stack> _:Data => . ... </stack>
 
   rule <k> DROP A I => #HandleAnnotations(A) ~> DROP NoAnnotations ~> DROP NoAnnotations I -Int 1 ... </k> 
        requires I >Int 0
 
-  rule <k> DROP A 0 => #HandleAnnotations(A) ~> . ... </k> 
+  rule <k> DROP A 0 => #HandleAnnotations(A) ... </k> 
 
 
-  rule <k> DUP A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> DUP A => #HandleAnnotations(A) ... </k>
        <stack> X:Data => X ~> X ... </stack>
 
-  rule <k> SWAP A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> SWAP A => #HandleAnnotations(A) ... </k>
        <stack> X:Data ~> Y:Data => Y ~> X ... </stack>
 
   syntax KItem ::= #DoDig(Int, K, OptionData)
@@ -269,97 +279,97 @@ module MICHELSON
 
   rule <k> #DoDug(-1, .K, _) => .K ... </k>
 
-  rule <k> PUSH A T X => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> PUSH A T X => #HandleAnnotations(A) ... </k>
        <stack> . => #ConcreteArgToSemantics(X, T) ... </stack>
 
-  rule <k> UNIT A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> UNIT A => #HandleAnnotations(A) ... </k>
        <stack> . => Unit ... </stack>
 
-  rule <k> LAMBDA A T1 T2 C => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> LAMBDA A T1 T2 C => #HandleAnnotations(A) ... </k>
        <stack> . => #Lambda(T1, T2, C) ... </stack>
 
   //// Generic Comparisons
 
-  rule <k> EQ A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> EQ A => #HandleAnnotations(A) ... </k>
        <stack> I => I ==Int 0 ... </stack>
 
-  rule <k> NEQ A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> NEQ A => #HandleAnnotations(A) ... </k>
        <stack> I => I =/=Int 0 ... </stack>
 
-  rule <k> LT A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> LT A => #HandleAnnotations(A) ... </k>
        <stack> I => I <Int 0 ... </stack>
 
-  rule <k> GT A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> GT A => #HandleAnnotations(A) ... </k>
        <stack> I => I >Int 0 ... </stack>
 
-  rule <k> LE A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> LE A => #HandleAnnotations(A) ... </k>
        <stack> I => I <=Int 0 ... </stack>
 
-  rule <k> GE A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> GE A => #HandleAnnotations(A) ... </k>
        <stack> I => I >=Int 0 ... </stack>
 
   // Operations
   //// Operations on booleans
-  rule <k> OR A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> OR A => #HandleAnnotations(A) ... </k>
        <stack> B1 ~> B2 => B1 orBool B2 ...  </stack>
 
-  rule <k> AND A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> AND A => #HandleAnnotations(A) ... </k>
        <stack> B1 ~> B2 => B1 andBool B2 ... </stack>
 
-  rule <k> XOR A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> XOR A => #HandleAnnotations(A) ... </k>
        <stack> B1 ~> B2 => B1 xorBool B2 ... </stack>
 
-  rule <k> NOT A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> NOT A => #HandleAnnotations(A) ... </k>
        <stack> B => notBool B ... </stack>
 
   //// Operations on integers and natural numbers 
-  rule <k> NEG A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> NEG A => #HandleAnnotations(A) ... </k>
        <stack> I => 0 -Int I ... </stack>
 
-  rule <k> ABS A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> ABS A => #HandleAnnotations(A) ... </k>
        <stack> I => absInt(I) ... </stack>
 
-  rule <k> ISNAT A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> ISNAT A => #HandleAnnotations(A) ... </k>
        <stack> I => Some I ... </stack>
        requires I >=Int 0 
 
-  rule <k> ISNAT A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> ISNAT A => #HandleAnnotations(A) ... </k>
        <stack> I => None ... </stack>
        requires I <Int 0 
 
-  rule <k> INT A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> INT A => #HandleAnnotations(A) ... </k>
        <stack> I:Int ... </stack>
 
-  rule <k> ADD A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> ADD A => #HandleAnnotations(A) ... </k>
        <stack> I1 ~> I2 => I1 +Int I2 ... </stack>
 
-  rule <k> SUB A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> SUB A => #HandleAnnotations(A) ... </k>
        <stack> I1 ~> I2 => I1 -Int I2 ... </stack>
 
-  rule <k> MUL A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> MUL A => #HandleAnnotations(A) ... </k>
        <stack> I1 ~> I2 => I1 *Int I2 ... </stack>
 
-  rule <k> EDIV A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> EDIV A => #HandleAnnotations(A) ... </k>
        <stack> I1:Int ~> 0 => None ... </stack>
        // Could combine this rule with the Mutez one but probably a disadvantage in readability.
 
-  rule <k> EDIV A  => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> EDIV A  => #HandleAnnotations(A) ... </k>
        <stack> I1 ~> I2 => Some (Pair (I1 /Int I2) (I1 %Int I2)) ... </stack>
        requires I2 =/=Int 0
 
-  rule <k> OR A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> OR A => #HandleAnnotations(A)  ... </k>
        <stack> I1 ~> I2 => I1 |Int I2 ... </stack>
 
-  rule <k> AND A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> AND A => #HandleAnnotations(A) ... </k>
        <stack> I1 ~> I2 => I1 &Int I2 ... </stack>
 
-  rule <k> XOR A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> XOR A => #HandleAnnotations(A) ... </k>
        <stack> I1 ~> I2 => I1 xorInt I2 ... </stack>
 
-  rule <k> NOT A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> NOT A => #HandleAnnotations(A) ... </k>
        <stack> I => ~Int I ... </stack>
 
-  rule <k> LSL A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> LSL A => #HandleAnnotations(A) ... </k>
        <stack> X ~> S => X <<Int S ... </stack>
        requires S <=Int 256
 
@@ -367,7 +377,7 @@ module MICHELSON
        <stack> _:Data ~> S:Int ~> _ => FailedStack </stack>
        requires S >Int 256
 
-  rule <k> LSR A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> LSR A => #HandleAnnotations(A) ... </k>
        <stack> X ~> S => X >>Int S ... </stack>
        requires S <=Int 256
 
@@ -386,7 +396,7 @@ module MICHELSON
   rule #DoCompare(S1:String, S2:String) => 1 requires S1 >String S2
 
 
-  rule <k> COMPARE A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> COMPARE A => #HandleAnnotations(A) ... </k>
        <stack> V1 ~> V2 => #DoCompare(V1, V2) ... </stack>
 
   syntax String ::= #ConcatAll(List, String) [function]
@@ -395,52 +405,55 @@ module MICHELSON
   rule #ConcatAll(ListItem(S1) DL, A) => #ConcatAll(DL, A +String S1)
 
   //// Operations on strings
-  rule <k> CONCAT A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
        <stack> S1 ~> S2 => S1 +String S2 ... </stack>
 
-  rule <k> CONCAT A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
        <stack> L => #ConcatAll(L, "") ... </stack>
 
-  rule <k> SIZE A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> SIZE A => #HandleAnnotations(A) ... </k>
        <stack> S => lengthString(S) ... </stack> 
 
-  rule <k> SLICE A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> SLICE A => #HandleAnnotations(A) ... </k>
        <stack> O ~> L ~> S => Some substrString(S, O, O +Int L) ... </stack>
        requires O >=Int 0 andBool L >=Int 0 andBool (O +Int L) <Int lengthString(S)
 
-  rule <k> SLICE A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> SLICE A => #HandleAnnotations(A) ... </k>
        <stack> O ~> L ~> S => None ... </stack>
        requires notBool(O >=Int 0 andBool L >=Int 0 andBool (O +Int L) <Int lengthString(S))
 
 
   //// Operations on pairs
-  rule <k> PAIR A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> PAIR A => #HandleAnnotations(A) ... </k>
        <stack> L ~> R => Pair L R ... </stack>
 
-  rule <k> CAR A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> UNPAIR A => #HandleAnnotations(A) ... </k>
+       <stack> Pair L R => L ~> R ... </stack>
+
+  rule <k> CAR A => #HandleAnnotations(A) ... </k>
        <stack> Pair L _ => L ... </stack>
 
-  rule <k> CDR A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> CDR A => #HandleAnnotations(A) ... </k>
        <stack> Pair _ R => R ... </stack>
 
   //// Operations on sets
   syntax Data ::= Set
 
-  rule <k> EMPTY_SET A _ => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> EMPTY_SET A _ => #HandleAnnotations(A) ... </k>
        <stack> . => .Set ... </stack>
 
-  rule <k> MEM A => #HandleAnnotations(A) ~> . ... </k> 
+  rule <k> MEM A => #HandleAnnotations(A) ... </k> 
        <stack> X ~> S:Set => X in S ... </stack>
 
   // True to insert, False to remove.
 
-  rule <k> UPDATE A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> UPDATE A => #HandleAnnotations(A) ... </k>
        <stack> D ~> true ~> S => SetItem(D) S ... </stack>
 
-  rule <k> UPDATE A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> UPDATE A => #HandleAnnotations(A) ... </k>
        <stack> D ~> false ~> SetItem(D) S => S ... </stack>
 
-  rule <k> UPDATE A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> UPDATE A => #HandleAnnotations(A) ... </k>
        <stack> (D ~> false => .) ~> S:Set ... </stack>
        requires notBool(D in S)
 
@@ -452,38 +465,42 @@ module MICHELSON
   rule #MinimalElementAux(ListItem(H) L, M) => #MinimalElementAux(L, M) requires #DoCompare(M, H) <=Int 0
   rule #MinimalElementAux(ListItem(H) L, M) => #MinimalElementAux(L, H) requires #DoCompare(M, H) ==Int 1
 
-  rule <k> ITER A _ => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> ITER A _ => #HandleAnnotations(A) ... </k>
        <stack> .Set => . ... </stack>
 
   rule <k> ITER A B => #HandleAnnotations(A) ~> B ~> #Push(S -Set SetItem(#MinimalElement(Set2List(S)))) ~> ITER NoAnnotations B ... </k>
        <stack> S => #MinimalElement(Set2List(S)) ... </stack>
        requires size(S) >Int 0
 
-  rule <k> SIZE A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> SIZE A => #HandleAnnotations(A) ... </k>
        <stack> S:Set => size(S) ... </stack>
 
   //// Operations on maps
   syntax MichelsonMap ::= #Map(Map, Type, Type) // Key, Value
   syntax Data ::= MichelsonMap
 
-  rule <k> EMPTY_MAP A KT VT => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> EMPTY_MAP A KT VT => #HandleAnnotations(A) ... </k>
        <stack> . => #Map(.Map, KT, VT) ... </stack>
 
-  rule <k> GET A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> GET A => #HandleAnnotations(A) ... </k>
        <stack> X ~> #Map(M, _, _) => None ... </stack>
        requires notBool(X in_keys(M))
 
-  rule <k> GET A => #HandleAnnotations(A) ~> . ... </k>
-       <stack> X ~> #Map(M, _, _) => Some {M[X]}:>Data ... </stack>
-       requires X in_keys(M)
+  syntax OptionData ::= #LookupMap(MichelsonMap, Data) [function]
+
+  rule #LookupMap(#Map(M, T0, T1), X) => Some {M[X]}:>Data requires X in_keys(M) [concrete]
+  rule #LookupMap(#Map(M, T0, T1), X) => None requires notBool(X in_keys(M)) [concrete]
 
   rule <k> MEM A => #HandleAnnotations(A) ~> . ... </k>
        <stack> X ~> #Map(M, _, _) => X in_keys(M) ... </stack>
 
-  rule <k> UPDATE A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> GET A => #HandleAnnotations(A) ... </k>
+       <stack> X ~> M => #LookupMap(M, X) ... </stack>
+
+  rule <k> UPDATE A => #HandleAnnotations(A)  ... </k>
        <stack> K ~> Some V ~> #Map(M:Map, T1, T2) => #Map(M[K <- V], T1, T2) ... </stack>
 
-  rule <k> UPDATE A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> UPDATE A => #HandleAnnotations(A)  ... </k>
        <stack> K ~> None ~> #Map(M:Map, T1, T2) => #Map(M[K <- undef], T1, T2) ... </stack>
 
   syntax KItem ::= #PerformMap(MichelsonMap, MichelsonMap, Block)
@@ -507,29 +524,29 @@ module MICHELSON
   rule <k> #PerformMap(#Map(.Map, _, _), M, _) => . ... </k>
        <stack> . => M ... </stack>
 
-  rule <k> ITER A B => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> ITER A B => #HandleAnnotations(A)  ... </k>
        <stack> #Map(.Map, _, _) => .K ... </stack>
 
   rule <k> ITER A B => #HandleAnnotations(A) ~> B ~> #Push(#Map(M[#MinimalKey(M) <- undef], T1, T2)) ~> ITER NoAnnotations B ... </k>
        <stack> #Map(M, T1, T2) => Pair #MinimalKey(M) {M[#MinimalKey(M)]}:>Data ... </stack>
        requires size(M) >Int 0
 
-  rule <k> SIZE A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> SIZE A => #HandleAnnotations(A)  ... </k>
        <stack> #Map(M, T1, T2) => size(M) ... </stack>
 
   //// Operations on big maps
 
-  rule <k> EMPTY_BIG_MAP A T1 T2 => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> EMPTY_BIG_MAP A T1 T2 => #HandleAnnotations(A)  ... </k>
        <stack> . => #Map(.Map, T1, T2) ... </stack>
 
   // Same as maps
 
   //// Operations on optional values
 
-  rule <k> SOME A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> SOME A => #HandleAnnotations(A)  ... </k>
        <stack> X => Some X ... </stack>
 
-  rule <k> NONE A _ => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> NONE A _ => #HandleAnnotations(A)  ... </k>
        <stack> . => None ... </stack>
 
   rule <k> IF_NONE A BT BF => #HandleAnnotations(A) ~> BT ... </k>
@@ -539,10 +556,10 @@ module MICHELSON
        <stack> Some V => V ... </stack>
 
   //// Operations on unions
-  rule <k> LEFT A _ => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> LEFT A _ => #HandleAnnotations(A)  ... </k>
        <stack> X:Data => Left X ... </stack>
 
-  rule <k> RIGHT A _:Type => #HandleAnnotations(A) ~> .K ... </k>
+  rule <k> RIGHT A _:Type => #HandleAnnotations(A) ... </k>
        <stack> X:Data => Right X ... </stack>
 
   rule <k> IF_LEFT A BT BF => #HandleAnnotations(A) ~> BT ... </k>
@@ -561,10 +578,10 @@ module MICHELSON
  
   syntax Data ::= List
 
-  rule <k> CONS A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> CONS A => #HandleAnnotations(A)  ... </k>
        <stack> V ~> L => ListItem(V) L ... </stack>
   
-  rule <k> NIL A _ => #HandleAnnotations(A) ~> . ... </k> 
+  rule <k> NIL A _ => #HandleAnnotations(A)  ... </k> 
        <stack> . => .List ... </stack>
 
   rule <k> IF_CONS A BT BF => #HandleAnnotations(A) ~> BT ... </k>
@@ -596,7 +613,7 @@ module MICHELSON
   rule <k> #AddToList(Ls, Acc, B) => #PerformMapList(Ls, ListItem(L) Acc, B) ... </k>
        <stack> L => . ... </stack>
 
-  rule <k> SIZE A => #HandleAnnotations(A) ~> . ... </k>
+  rule <k> SIZE A => #HandleAnnotations(A)  ... </k>
        <stack> L:List => size(L) ... </stack>
 
   rule <k> ITER A B =>  #HandleAnnotations(A) ~>. ... </k>
@@ -716,9 +733,11 @@ module MICHELSON
   //// Cryptographic primitives
 
   syntax String ::= #Blake2BKeyHash(String) [function] // TODO: Blake2B crypto hook.
+  syntax String ::= #Blake2BHash(String)
+  rule #Blake2BKeyHash(S) => #Blake2BHash(S)
 
   rule <k> HASH_KEY A => #HandleAnnotations(A) ... </k>
-       <stack> #Key(S) => #KeyHash(S) ... </stack> 
+       <stack> #Key(S) => #KeyHash(#Blake2BKeyHash(S)) ... </stack> 
   
   syntax Bytes ::= #SHA256(Bytes) | #SHA512(Bytes)
 
@@ -758,29 +777,29 @@ module MICHELSON
        <stack> _ => FailedStack </stack>
        requires notBool #IsLegalMutezValue(I) [structural]
 
-  rule <k> ADD A => #ValidateMutezAndPush(#Mutez(I1 +Int I2)) ... </k>
+  rule <k> ADD A => #ValidateMutezAndPush(#Mutez(I1 +Int I2)) ~> #HandleAnnotations(A) ... </k>
        <stack> #Mutez(I1) ~> #Mutez(I2) => . ... </stack>
 
-  rule <k> SUB A => #ValidateMutezAndPush(#Mutez(I1 -Int I2)) ... </k>
+  rule <k> SUB A => #ValidateMutezAndPush(#Mutez(I1 -Int I2)) ~> #HandleAnnotations(A) ... </k>
        <stack> #Mutez(I1) ~> #Mutez(I2) => . ... </stack>
 
-  rule <k> MUL A => #ValidateMutezAndPush(#Mutez(I1 *Int I2)) ... </k>
+  rule <k> MUL A => #ValidateMutezAndPush(#Mutez(I1 *Int I2)) ~> #HandleAnnotations(A) ... </k>
        <stack> #Mutez(I1) ~> I2 => . ... </stack>
 
-  rule <k> MUL A => #ValidateMutezAndPush(#Mutez(I1 *Int I2)) ... </k>
+  rule <k> MUL A => #ValidateMutezAndPush(#Mutez(I1 *Int I2)) ~> #HandleAnnotations(A) ... </k>
        <stack> I1 ~> #Mutez(I2) => . ... </stack>
 
-  rule <k> EDIV A => . ... </k>
+  rule <k> EDIV A => #HandleAnnotations(A) ... </k>
        <stack> #Mutez(I1) ~> #Mutez(0) => None ... </stack>
 
-  rule <k> EDIV A => . ... </k>
+  rule <k> EDIV A => #HandleAnnotations(A) ... </k>
        <stack> #Mutez(I1) ~> 0 => None ... </stack>
 
-  rule <k> EDIV A => . ... </k>
+  rule <k> EDIV A => #HandleAnnotations(A) ... </k>
        <stack> #Mutez(I1) ~> #Mutez(I2) => Some (Pair #Mutez(I1 /Int I2) #Mutez(I1 %Int I2)) ... </stack>
        requires I2 >Int 0
 
-  rule <k> EDIV A => . ... </k>
+  rule <k> EDIV A => #HandleAnnotations(A) ... </k>
        <stack> #Mutez(I1) ~> I2 => Some (Pair #Mutez(I1 /Int I2) #Mutez(I1 %Int I2)) </stack>
        requires I2 >Int 0
 

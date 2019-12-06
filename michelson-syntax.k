@@ -127,7 +127,8 @@ module MICHELSON-SYNTAX
   syntax Instruction ::= "NONE" InstructionAnnotationList Type
   syntax Instruction ::= "UNIT" InstructionAnnotationList 
   syntax Instruction ::= "IF_NONE" InstructionAnnotationList Block Block
-  syntax Instruction ::= "PAIR" InstructionAnnotationList 
+  syntax Instruction ::= "PAIR" InstructionAnnotationList
+  syntax Instruction ::= "UNPAIR" InstructionAnnotationList
   syntax Instruction ::= "CAR" InstructionAnnotationList 
   syntax Instruction ::= "CDR" InstructionAnnotationList 
   syntax Instruction ::= "LEFT" InstructionAnnotationList Type
