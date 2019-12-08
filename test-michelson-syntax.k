@@ -2,7 +2,7 @@ requires "michelson.k"
 requires "michelson-syntax.k"
 
 module TEST-MICHELSON-SYNTAX
-  imports MICHELSON-SYNTAX
+  imports MICHELSON-SYNTAX-BASE
   imports MICHELSON
   imports DOMAINS
 

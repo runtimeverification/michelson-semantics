@@ -2,7 +2,7 @@ requires "michelson-syntax.k"
 requires "michelson-config.k"
 
 module MICHELSON
-  imports MICHELSON-SYNTAX
+  imports MICHELSON-SYNTAX-BASE
   imports MICHELSON-CONFIG
   imports DOMAINS 
   imports COLLECTIONS
@@ -18,6 +18,8 @@ module MICHELSON
   syntax KItem ::= #LoadContract(Contract)
 
   syntax KItem ::= #HandleAnnotations(InstructionAnnotationList)
+
+  syntax InstructionAnnotationList ::= AnnotationList AnnotationList AnnotationList [symbol, klabel(annotationlists)]
 
   // Reorder annotation lists to T V F format to make future rule matching easier.
   rule T:TypeAnnotationList F:FieldAnnotationList V:VariableAnnotationList => T V F [macro]

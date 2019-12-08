@@ -1,4 +1,4 @@
-module MICHELSON-SYNTAX
+module MICHELSON-SYNTAX-BASE
   imports INT-SYNTAX // TODO maybe use unsigned int so the parser can catch int/nat issues at parse time?
   imports STRING-SYNTAX
   imports BOOL-SYNTAX
@@ -24,16 +24,16 @@ module MICHELSON-SYNTAX
   syntax VariableAnnotation ::= r"@(%|%%|[_a-zA-Z][_0-9a-zA-Z\\.]*)?" [token]
   syntax FieldAnnotation ::= r"%(@|[_a-zA-Z][_0-9a-zA-Z\\.]*)?" [token]
 
-  syntax TypeAnnotationList ::= List{TypeAnnotation, " "}
-  syntax VariableAnnotationList ::= List{VariableAnnotation, " "}
-  syntax FieldAnnotationList ::= List{FieldAnnotation, " "}
+  syntax AnnotationBottom
+  syntax Annotation ::= AnnotationBottom | TypeAnnotation | VariableAnnotation | FieldAnnotation
+  syntax AnnotationBottomList ::= List{AnnotationBottom, ""}          [symbol, klabel(annotationlist)]
+  syntax TypeAnnotationList ::= List{TypeAnnotation, ""}          [symbol, klabel(annotationlist)]
+  syntax VariableAnnotationList ::= List{VariableAnnotation, ""}  [symbol, klabel(annotationlist)]
+  syntax FieldAnnotationList ::= List{FieldAnnotation, ""}        [symbol, klabel(annotationlist)]
+  syntax AnnotationList ::= List{Annotation, " "}        [symbol, klabel(annotationlist)]
+                          | AnnotationBottomList | TypeAnnotationList | VariableAnnotationList | FieldAnnotationList
 
-  syntax InstructionAnnotationList ::= TypeAnnotationList VariableAnnotationList FieldAnnotationList [klabel(annotations)]
-                                     | TypeAnnotationList FieldAnnotationList VariableAnnotationList [klabel(annotations)]
-                                     | FieldAnnotationList TypeAnnotationList VariableAnnotationList [klabel(annotations)]
-                                     | VariableAnnotationList TypeAnnotationList FieldAnnotationList [klabel(annotations)]
-                                     | FieldAnnotationList VariableAnnotationList TypeAnnotationList [klabel(annotations)]
-                                     | VariableAnnotationList FieldAnnotationList TypeAnnotationList [klabel(annotations)]
+  syntax InstructionAnnotationList
 
   syntax BytesLiteral ::= r"0x([0-9a-fA-F]{2})+" [token]
 
@@ -270,4 +270,14 @@ module MICHELSON-SYNTAX
                  "$senderaddr" String ";" 
                  "$param" Data  ";" 
                  "$storage" Data ";" 
+endmodule
+
+module MICHELSON-SYNTAX
+  imports MICHELSON-SYNTAX-BASE
+  syntax InstructionAnnotationList ::= TypeAnnotationList VariableAnnotationList FieldAnnotationList [symbol, klabel(annotationlists)]
+                                     | TypeAnnotationList FieldAnnotationList VariableAnnotationList [symbol, klabel(annotationlists)]
+                                     | FieldAnnotationList TypeAnnotationList VariableAnnotationList [symbol, klabel(annotationlists)]
+                                     | VariableAnnotationList TypeAnnotationList FieldAnnotationList [symbol, klabel(annotationlists)]
+                                     | FieldAnnotationList VariableAnnotationList TypeAnnotationList [symbol, klabel(annotationlists)]
+                                     | VariableAnnotationList FieldAnnotationList TypeAnnotationList [symbol, klabel(annotationlists)]
 endmodule

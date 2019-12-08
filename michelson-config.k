@@ -1,7 +1,7 @@
 requires "michelson-syntax.k"
 
 module MICHELSON-CONFIG
-  imports MICHELSON-SYNTAX
+  imports MICHELSON-SYNTAX-BASE
   imports DOMAINS
 
   syntax Type ::= "#NotSet"
