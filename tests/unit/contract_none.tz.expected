@@ -24,7 +24,7 @@
     #Address ( "InvalidMyAddr" )
   </myaddr>
   <knownaddrs>
-    #Address ( "1" ) |-> #Contract ( #Address ( "1" ) , unit .TypeAnnotationList .FieldAnnotationList )
+    #Address ( "1" ) |-> #Contract ( #Address ( "1" ) , unit .AnnotationBottomList .AnnotationBottomList )
   </knownaddrs>
   <sourceaddr>
     #Address ( "InvalidSourceAddr" )

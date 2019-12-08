@@ -27,9 +27,9 @@ module MICHELSON-SYNTAX-BASE
   syntax AnnotationBottom
   syntax Annotation ::= AnnotationBottom | TypeAnnotation | VariableAnnotation | FieldAnnotation
   syntax AnnotationBottomList ::= List{AnnotationBottom, ""}          [symbol, klabel(annotationlist)]
-  syntax TypeAnnotationList ::= List{TypeAnnotation, ""}          [symbol, klabel(annotationlist)]
-  syntax VariableAnnotationList ::= List{VariableAnnotation, ""}  [symbol, klabel(annotationlist)]
-  syntax FieldAnnotationList ::= List{FieldAnnotation, ""}        [symbol, klabel(annotationlist)]
+  syntax TypeAnnotationList ::= List{TypeAnnotation, ""}          [symbol, klabel(annotationlist)] | AnnotationBottomList
+  syntax VariableAnnotationList ::= List{VariableAnnotation, ""}  [symbol, klabel(annotationlist)] | AnnotationBottomList
+  syntax FieldAnnotationList ::= List{FieldAnnotation, ""}        [symbol, klabel(annotationlist)] | AnnotationBottomList
   syntax AnnotationList ::= List{Annotation, " "}        [symbol, klabel(annotationlist)]
                           | AnnotationBottomList | TypeAnnotationList | VariableAnnotationList | FieldAnnotationList
 
@@ -87,7 +87,7 @@ module MICHELSON-SYNTAX-BASE
   syntax SimpleNoncomparableType ::= UnannotatedSimpleNoncomparableType AnnotatedTypeList
 
 
-  syntax AnnotatedTypeList ::= TypeAnnotationList FieldAnnotationList | FieldAnnotationList TypeAnnotationList
+  syntax AnnotatedTypeList 
 
   syntax NormalPair ::= "pair" AnnotatedTypeList Type Type [klabel(ampair)]
   syntax ComparablePair ::= "pair" AnnotatedTypeList SimpleComparableType ComparableType [prefer, klabel(ampair)]
@@ -280,4 +280,7 @@ module MICHELSON-SYNTAX
                                      | VariableAnnotationList TypeAnnotationList FieldAnnotationList [symbol, klabel(annotationlists)]
                                      | FieldAnnotationList VariableAnnotationList TypeAnnotationList [symbol, klabel(annotationlists)]
                                      | VariableAnnotationList FieldAnnotationList TypeAnnotationList [symbol, klabel(annotationlists)]
+
+  syntax AnnotatedTypeList ::= TypeAnnotationList FieldAnnotationList [symbol, klabel(annotatedtypelist)]
+                             | FieldAnnotationList TypeAnnotationList [symbol, klabel(annotatedtypelist)] 
 endmodule

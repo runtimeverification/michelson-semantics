@@ -3,7 +3,7 @@
     .
   </k>
   <stack>
-    #CreateContract ( code { DROP .TypeAnnotationList .VariableAnnotationList .FieldAnnotationList ; UNIT .TypeAnnotationList .VariableAnnotationList .FieldAnnotationList ; NIL .TypeAnnotationList .VariableAnnotationList .FieldAnnotationList operation .TypeAnnotationList .FieldAnnotationList ; PAIR .TypeAnnotationList .VariableAnnotationList .FieldAnnotationList ; .InstructionList } ; storage unit .TypeAnnotationList .FieldAnnotationList ; parameter unit .TypeAnnotationList .FieldAnnotationList ; , Some #KeyHash ( "1" ) , #Mutez ( 12 ) , Unit ) ~> #Address ( "0" )
+    #CreateContract ( code { DROP .AnnotationBottomList .AnnotationBottomList .AnnotationBottomList ; UNIT .AnnotationBottomList .AnnotationBottomList .AnnotationBottomList ; NIL .AnnotationBottomList .AnnotationBottomList .AnnotationBottomList operation .AnnotationBottomList .AnnotationBottomList ; PAIR .AnnotationBottomList .AnnotationBottomList .AnnotationBottomList ; .InstructionList } ; storage unit .AnnotationBottomList .AnnotationBottomList ; parameter unit .AnnotationBottomList .AnnotationBottomList ; , Some #KeyHash ( "1" ) , #Mutez ( 12 ) , Unit ) ~> #Address ( "0" )
   </stack>
   <paramtype>
     #NotSet

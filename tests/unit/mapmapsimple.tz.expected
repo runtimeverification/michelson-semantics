@@ -4,7 +4,7 @@
   </k>
   <stack>
     #Map ( 1 |-> 6
-    5 |-> 4 , int .TypeAnnotationList .FieldAnnotationList , int .TypeAnnotationList .FieldAnnotationList )
+    5 |-> 4 , int .AnnotationBottomList .AnnotationBottomList , int .AnnotationBottomList .AnnotationBottomList )
   </stack>
   <paramtype>
     #NotSet

@@ -3,7 +3,7 @@
     .
   </k>
   <stack>
-    #Lambda ( int .TypeAnnotationList .FieldAnnotationList , nat .TypeAnnotationList .FieldAnnotationList , { PUSH .TypeAnnotationList .VariableAnnotationList .FieldAnnotationList string .TypeAnnotationList .FieldAnnotationList "Hi" ; PAIR .TypeAnnotationList .VariableAnnotationList .FieldAnnotationList ; DROP .TypeAnnotationList .VariableAnnotationList .FieldAnnotationList ; PUSH .TypeAnnotationList .VariableAnnotationList .FieldAnnotationList nat .TypeAnnotationList .FieldAnnotationList 1 ; .InstructionList } )
+    #Lambda ( int .AnnotationBottomList .AnnotationBottomList , nat .AnnotationBottomList .AnnotationBottomList , { PUSH .AnnotationBottomList .AnnotationBottomList .AnnotationBottomList string .AnnotationBottomList .AnnotationBottomList "Hi" ; PAIR .AnnotationBottomList .AnnotationBottomList .AnnotationBottomList ; DROP .AnnotationBottomList .AnnotationBottomList .AnnotationBottomList ; PUSH .AnnotationBottomList .AnnotationBottomList .AnnotationBottomList nat .AnnotationBottomList .AnnotationBottomList 1 ; .InstructionList } )
   </stack>
   <paramtype>
     #NotSet

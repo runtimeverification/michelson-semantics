@@ -20,6 +20,7 @@ module MICHELSON
   syntax KItem ::= #HandleAnnotations(InstructionAnnotationList)
 
   syntax InstructionAnnotationList ::= AnnotationList AnnotationList AnnotationList [symbol, klabel(annotationlists)]
+  syntax AnnotatedTypeList ::= AnnotationList AnnotationList [symbol, klabel(annotatedtypelist)]
 
   // Reorder annotation lists to T V F format to make future rule matching easier.
   rule T:TypeAnnotationList F:FieldAnnotationList V:VariableAnnotationList => T V F [macro]
