@@ -3,7 +3,7 @@
     .
   </k>
   <stack>
-    Some #Contract ( #Address ( "12345" ) , unit .AnnotationBottomList .AnnotationBottomList )
+    Some #Contract ( #Address ( "12345" ) , unit .AnnotationList )
   </stack>
   <paramtype>
     #NotSet
@@ -24,7 +24,7 @@
     #Address ( "InvalidMyAddr" )
   </myaddr>
   <knownaddrs>
-    #Address ( "12345" ) |-> #Contract ( #Address ( "12345" ) , unit .AnnotationBottomList .AnnotationBottomList )
+    #Address ( "12345" ) |-> #Contract ( #Address ( "12345" ) , unit .AnnotationList )
   </knownaddrs>
   <sourceaddr>
     #Address ( "InvalidSourceAddr" )

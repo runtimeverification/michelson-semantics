@@ -1,4 +1,4 @@
-module MICHELSON-SYNTAX-BASE
+module MICHELSON-SYNTAX
   imports INT-SYNTAX // TODO maybe use unsigned int so the parser can catch int/nat issues at parse time?
   imports STRING-SYNTAX
   imports BOOL-SYNTAX
@@ -19,21 +19,12 @@ module MICHELSON-SYNTAX-BASE
   syntax MapEntryList ::= List{MapEntry, ";"}
   syntax InstructionList ::= List{Instruction, ";"}
 
-  syntax NoAnnotation ::= "" [klabel(noannotation)]
   syntax TypeAnnotation ::= r":([_a-zA-Z][_0-9a-zA-Z\\.]*)?" [token]
   syntax VariableAnnotation ::= r"@(%|%%|[_a-zA-Z][_0-9a-zA-Z\\.]*)?" [token]
   syntax FieldAnnotation ::= r"%(@|[_a-zA-Z][_0-9a-zA-Z\\.]*)?" [token]
+  syntax Annotation ::= TypeAnnotation | VariableAnnotation | FieldAnnotation
 
-  syntax AnnotationBottom
-  syntax Annotation ::= AnnotationBottom | TypeAnnotation | VariableAnnotation | FieldAnnotation
-  syntax AnnotationBottomList ::= List{AnnotationBottom, ""}          [symbol, klabel(annotationlist)]
-  syntax TypeAnnotationList ::= List{TypeAnnotation, ""}          [symbol, klabel(annotationlist)] | AnnotationBottomList
-  syntax VariableAnnotationList ::= List{VariableAnnotation, ""}  [symbol, klabel(annotationlist)] | AnnotationBottomList
-  syntax FieldAnnotationList ::= List{FieldAnnotation, ""}        [symbol, klabel(annotationlist)] | AnnotationBottomList
-  syntax AnnotationList ::= List{Annotation, " "}        [symbol, klabel(annotationlist)]
-                          | AnnotationBottomList | TypeAnnotationList | VariableAnnotationList | FieldAnnotationList
-
-  syntax InstructionAnnotationList
+  syntax AnnotationList ::= List{Annotation, ""}
 
   syntax BytesLiteral ::= r"0x([0-9a-fA-F]{2})+" [token]
 
@@ -77,32 +68,32 @@ module MICHELSON-SYNTAX-BASE
 			        | "timestamp" 
 			        | "address"   
 
-  syntax SimpleComparableType ::= UnannotatedSimpleComparableType AnnotatedTypeList
+  syntax SimpleComparableType ::= UnannotatedSimpleComparableType AnnotationList
 
   syntax UnannotatedSimpleNoncomparableType ::= "key" 
                     		   | "unit" 
                    		   | "signature"
 		                   | "operation"
 
-  syntax SimpleNoncomparableType ::= UnannotatedSimpleNoncomparableType AnnotatedTypeList
+  syntax SimpleNoncomparableType ::= UnannotatedSimpleNoncomparableType AnnotationList
 
 
-  syntax AnnotatedTypeList 
+  syntax AnnotationList 
 
-  syntax NormalPair ::= "pair" AnnotatedTypeList Type Type [klabel(ampair)]
-  syntax ComparablePair ::= "pair" AnnotatedTypeList SimpleComparableType ComparableType [prefer, klabel(ampair)]
+  syntax NormalPair ::= "pair" AnnotationList Type Type [klabel(ampair)]
+  syntax ComparablePair ::= "pair" AnnotationList SimpleComparableType ComparableType [prefer, klabel(ampair)]
 
   syntax Type ::= ComparableType
                 | SimpleNoncomparableType
 		| NormalPair
-                | "option" AnnotatedTypeList Type
-		| "list" AnnotatedTypeList Type
-		| "set" AnnotatedTypeList ComparableType
-		| "contract" AnnotatedTypeList Type
-                | "or" AnnotatedTypeList Type Type
-		| "lambda" AnnotatedTypeList Type Type
-		| "map" AnnotatedTypeList ComparableType Type
-		| "big_map" AnnotatedTypeList ComparableType Type
+                | "option" AnnotationList Type
+		| "list" AnnotationList Type
+		| "set" AnnotationList ComparableType
+		| "contract" AnnotationList Type
+                | "or" AnnotationList Type Type
+		| "lambda" AnnotationList Type Type
+		| "map" AnnotationList ComparableType Type
+		| "big_map" AnnotationList ComparableType Type
 
   syntax Block ::= "{" InstructionList "}"
                  | "{" "}"
@@ -116,132 +107,132 @@ module MICHELSON-SYNTAX-BASE
 
   syntax ContractBlock ::= "{" Contract "}"
 
-  syntax Instruction ::= "DROP" InstructionAnnotationList
-  syntax Instruction ::= "DROP" InstructionAnnotationList Int
-  syntax Instruction ::= "DIG" InstructionAnnotationList Int
-  syntax Instruction ::= "DUG" InstructionAnnotationList Int
-  syntax Instruction ::= "DUP" InstructionAnnotationList 
-  syntax Instruction ::= "SWAP" InstructionAnnotationList 
-  syntax Instruction ::= "PUSH" InstructionAnnotationList Type Data
-  syntax Instruction ::= "SOME" InstructionAnnotationList 
-  syntax Instruction ::= "NONE" InstructionAnnotationList Type
-  syntax Instruction ::= "UNIT" InstructionAnnotationList 
-  syntax Instruction ::= "IF_NONE" InstructionAnnotationList Block Block
-  syntax Instruction ::= "PAIR" InstructionAnnotationList
-  syntax Instruction ::= "UNPAIR" InstructionAnnotationList
-  syntax Instruction ::= "CAR" InstructionAnnotationList 
-  syntax Instruction ::= "CDR" InstructionAnnotationList 
-  syntax Instruction ::= "LEFT" InstructionAnnotationList Type
-  syntax Instruction ::= "RIGHT" InstructionAnnotationList Type
-  syntax Instruction ::= "IF_LEFT" InstructionAnnotationList Block Block
-  syntax Instruction ::= "IF_RIGHT" InstructionAnnotationList Block Block
-  syntax Instruction ::= "NIL" InstructionAnnotationList Type
-  syntax Instruction ::= "CONS" InstructionAnnotationList 
-  syntax Instruction ::= "IF_CONS" InstructionAnnotationList Block Block
-  syntax Instruction ::= "SIZE" InstructionAnnotationList 
-  syntax Instruction ::= "EMPTY_SET" InstructionAnnotationList ComparableType
-  syntax Instruction ::= "EMPTY_MAP" InstructionAnnotationList ComparableType Type
-  syntax Instruction ::= "EMPTY_BIG_MAP" InstructionAnnotationList ComparableType Type
-  syntax Instruction ::= "MAP" InstructionAnnotationList Block
-  syntax Instruction ::= "ITER" InstructionAnnotationList Block
-  syntax Instruction ::= "MEM" InstructionAnnotationList 
-  syntax Instruction ::= "GET" InstructionAnnotationList 
-  syntax Instruction ::= "UPDATE" InstructionAnnotationList 
-  syntax Instruction ::= "IF" InstructionAnnotationList Block Block
-  syntax Instruction ::= "LOOP" InstructionAnnotationList Block
-  syntax Instruction ::= "LOOP_LEFT" InstructionAnnotationList Block
-  syntax Instruction ::= "LAMBDA" InstructionAnnotationList Type Type Block
-  syntax Instruction ::= "EXEC" InstructionAnnotationList 
-  syntax Instruction ::= "APPLY" InstructionAnnotationList 
-  syntax Instruction ::= "DIP" InstructionAnnotationList Block
-  syntax Instruction ::= "DIP" InstructionAnnotationList Int Block
-  syntax Instruction ::= "FAILWITH" InstructionAnnotationList 
-  syntax Instruction ::= "CAST" InstructionAnnotationList 
-  syntax Instruction ::= "RENAME" InstructionAnnotationList 
-  syntax Instruction ::= "CONCAT" InstructionAnnotationList 
-  syntax Instruction ::= "SLICE" InstructionAnnotationList 
-  syntax Instruction ::= "PACK" InstructionAnnotationList 
-  syntax Instruction ::= "UNPACK" InstructionAnnotationList Type
-  syntax Instruction ::= "ADD" InstructionAnnotationList 
-  syntax Instruction ::= "SUB" InstructionAnnotationList 
-  syntax Instruction ::= "MUL" InstructionAnnotationList 
-  syntax Instruction ::= "EDIV" InstructionAnnotationList 
-  syntax Instruction ::= "ABS" InstructionAnnotationList 
-  syntax Instruction ::= "ISNAT" InstructionAnnotationList 
-  syntax Instruction ::= "INT" InstructionAnnotationList 
-  syntax Instruction ::= "NEG" InstructionAnnotationList 
-  syntax Instruction ::= "LSL" InstructionAnnotationList 
-  syntax Instruction ::= "LSR" InstructionAnnotationList 
-  syntax Instruction ::= "OR" InstructionAnnotationList 
-  syntax Instruction ::= "AND" InstructionAnnotationList 
-  syntax Instruction ::= "XOR" InstructionAnnotationList 
-  syntax Instruction ::= "NOT" InstructionAnnotationList 
-  syntax Instruction ::= "COMPARE" InstructionAnnotationList 
-  syntax Instruction ::= "EQ" InstructionAnnotationList 
-  syntax Instruction ::= "NEQ" InstructionAnnotationList 
-  syntax Instruction ::= "LT" InstructionAnnotationList 
-  syntax Instruction ::= "GT" InstructionAnnotationList 
-  syntax Instruction ::= "LE" InstructionAnnotationList 
-  syntax Instruction ::= "GE" InstructionAnnotationList 
-  syntax Instruction ::= "SELF" InstructionAnnotationList 
-  syntax Instruction ::= "CONTRACT" InstructionAnnotationList Type
-  syntax Instruction ::= "TRANSFER_TOKENS" InstructionAnnotationList 
-  syntax Instruction ::= "SET_DELEGATE" InstructionAnnotationList 
-  syntax Instruction ::= "CREATE_ACCOUNT" InstructionAnnotationList 
-  syntax Instruction ::= "IMPLICIT_ACCOUNT" InstructionAnnotationList 
-  syntax Instruction ::= "NOW" InstructionAnnotationList 
-  syntax Instruction ::= "CHAIN_ID" InstructionAnnotationList 
-  syntax Instruction ::= "AMOUNT" InstructionAnnotationList 
-  syntax Instruction ::= "BALANCE" InstructionAnnotationList 
-  syntax Instruction ::= "CHECK_SIGNATURE" InstructionAnnotationList 
-  syntax Instruction ::= "BLAKE2B" InstructionAnnotationList 
-  syntax Instruction ::= "SHA256" InstructionAnnotationList 
-  syntax Instruction ::= "SHA512" InstructionAnnotationList 
-  syntax Instruction ::= "HASH_KEY" InstructionAnnotationList 
-  syntax Instruction ::= "STEPS_TO_QUOTA" InstructionAnnotationList 
-  syntax Instruction ::= "SOURCE" InstructionAnnotationList 
-  syntax Instruction ::= "SENDER" InstructionAnnotationList 
-  syntax Instruction ::= "ADDRESS" InstructionAnnotationList 
-  syntax Instruction ::= "CMPEQ" InstructionAnnotationList 
-  syntax Instruction ::= "CMPNEQ" InstructionAnnotationList 
-  syntax Instruction ::= "CMPLT" InstructionAnnotationList 
-  syntax Instruction ::= "CMPGT" InstructionAnnotationList 
-  syntax Instruction ::= "CMPLE" InstructionAnnotationList 
-  syntax Instruction ::= "CMPGE" InstructionAnnotationList 
-  syntax Instruction ::= "IFEQ" InstructionAnnotationList Block Block
-  syntax Instruction ::= "IFNEQ" InstructionAnnotationList Block Block
-  syntax Instruction ::= "IFLT" InstructionAnnotationList Block Block
-  syntax Instruction ::= "IFGT" InstructionAnnotationList Block Block
-  syntax Instruction ::= "IFLE" InstructionAnnotationList Block Block
-  syntax Instruction ::= "IFGE" InstructionAnnotationList Block Block
-  syntax Instruction ::= "IFCMPEQ" InstructionAnnotationList Block Block
-  syntax Instruction ::= "IFCMPNEQ" InstructionAnnotationList Block Block
-  syntax Instruction ::= "IFCMPLT" InstructionAnnotationList Block Block
-  syntax Instruction ::= "IFCMPGT" InstructionAnnotationList Block Block
-  syntax Instruction ::= "IFCMPLE" InstructionAnnotationList Block Block
-  syntax Instruction ::= "IFCMPGE" InstructionAnnotationList Block Block
-  syntax Instruction ::= "FAIL" InstructionAnnotationList 
-  syntax Instruction ::= "ASSERT" InstructionAnnotationList 
-  syntax Instruction ::= "ASSERT_EQ" InstructionAnnotationList 
-  syntax Instruction ::= "ASSERT_NEQ" InstructionAnnotationList 
-  syntax Instruction ::= "ASSERT_LT" InstructionAnnotationList 
-  syntax Instruction ::= "ASSERT_LE" InstructionAnnotationList 
-  syntax Instruction ::= "ASSERT_GT" InstructionAnnotationList 
-  syntax Instruction ::= "ASSERT_GE" InstructionAnnotationList 
-  syntax Instruction ::= "ASSERT_CMPEQ" InstructionAnnotationList 
-  syntax Instruction ::= "ASSERT_CMPNEQ" InstructionAnnotationList 
-  syntax Instruction ::= "ASSERT_CMPLT" InstructionAnnotationList 
-  syntax Instruction ::= "ASSERT_CMPLE" InstructionAnnotationList 
-  syntax Instruction ::= "ASSERT_CMPGT" InstructionAnnotationList 
-  syntax Instruction ::= "ASSERT_CMPGE" InstructionAnnotationList 
-  syntax Instruction ::= "ASSERT_NONE" InstructionAnnotationList 
-  syntax Instruction ::= "ASSERT_SOME" InstructionAnnotationList 
-  syntax Instruction ::= "ASSERT_LEFT" InstructionAnnotationList 
-  syntax Instruction ::= "ASSERT_RIGHT" InstructionAnnotationList 
-  syntax Instruction ::= "IF_SOME" InstructionAnnotationList Block Block
-  syntax Instruction ::= "SET_CAR" InstructionAnnotationList 
-  syntax Instruction ::= "SET_CDR" InstructionAnnotationList 
-  syntax Instruction ::= "CREATE_CONTRACT" InstructionAnnotationList ContractBlock 
+  syntax Instruction ::= "DROP" AnnotationList
+  syntax Instruction ::= "DROP" AnnotationList Int
+  syntax Instruction ::= "DIG" AnnotationList Int
+  syntax Instruction ::= "DUG" AnnotationList Int
+  syntax Instruction ::= "DUP" AnnotationList 
+  syntax Instruction ::= "SWAP" AnnotationList 
+  syntax Instruction ::= "PUSH" AnnotationList Type Data
+  syntax Instruction ::= "SOME" AnnotationList 
+  syntax Instruction ::= "NONE" AnnotationList Type
+  syntax Instruction ::= "UNIT" AnnotationList 
+  syntax Instruction ::= "IF_NONE" AnnotationList Block Block
+  syntax Instruction ::= "PAIR" AnnotationList
+  syntax Instruction ::= "UNPAIR" AnnotationList
+  syntax Instruction ::= "CAR" AnnotationList 
+  syntax Instruction ::= "CDR" AnnotationList 
+  syntax Instruction ::= "LEFT" AnnotationList Type
+  syntax Instruction ::= "RIGHT" AnnotationList Type
+  syntax Instruction ::= "IF_LEFT" AnnotationList Block Block
+  syntax Instruction ::= "IF_RIGHT" AnnotationList Block Block
+  syntax Instruction ::= "NIL" AnnotationList Type
+  syntax Instruction ::= "CONS" AnnotationList 
+  syntax Instruction ::= "IF_CONS" AnnotationList Block Block
+  syntax Instruction ::= "SIZE" AnnotationList 
+  syntax Instruction ::= "EMPTY_SET" AnnotationList ComparableType
+  syntax Instruction ::= "EMPTY_MAP" AnnotationList ComparableType Type
+  syntax Instruction ::= "EMPTY_BIG_MAP" AnnotationList ComparableType Type
+  syntax Instruction ::= "MAP" AnnotationList Block
+  syntax Instruction ::= "ITER" AnnotationList Block
+  syntax Instruction ::= "MEM" AnnotationList 
+  syntax Instruction ::= "GET" AnnotationList 
+  syntax Instruction ::= "UPDATE" AnnotationList 
+  syntax Instruction ::= "IF" AnnotationList Block Block
+  syntax Instruction ::= "LOOP" AnnotationList Block
+  syntax Instruction ::= "LOOP_LEFT" AnnotationList Block
+  syntax Instruction ::= "LAMBDA" AnnotationList Type Type Block
+  syntax Instruction ::= "EXEC" AnnotationList 
+  syntax Instruction ::= "APPLY" AnnotationList 
+  syntax Instruction ::= "DIP" AnnotationList Block
+  syntax Instruction ::= "DIP" AnnotationList Int Block
+  syntax Instruction ::= "FAILWITH" AnnotationList 
+  syntax Instruction ::= "CAST" AnnotationList 
+  syntax Instruction ::= "RENAME" AnnotationList 
+  syntax Instruction ::= "CONCAT" AnnotationList 
+  syntax Instruction ::= "SLICE" AnnotationList 
+  syntax Instruction ::= "PACK" AnnotationList 
+  syntax Instruction ::= "UNPACK" AnnotationList Type
+  syntax Instruction ::= "ADD" AnnotationList 
+  syntax Instruction ::= "SUB" AnnotationList 
+  syntax Instruction ::= "MUL" AnnotationList 
+  syntax Instruction ::= "EDIV" AnnotationList 
+  syntax Instruction ::= "ABS" AnnotationList 
+  syntax Instruction ::= "ISNAT" AnnotationList 
+  syntax Instruction ::= "INT" AnnotationList 
+  syntax Instruction ::= "NEG" AnnotationList 
+  syntax Instruction ::= "LSL" AnnotationList 
+  syntax Instruction ::= "LSR" AnnotationList 
+  syntax Instruction ::= "OR" AnnotationList 
+  syntax Instruction ::= "AND" AnnotationList 
+  syntax Instruction ::= "XOR" AnnotationList 
+  syntax Instruction ::= "NOT" AnnotationList 
+  syntax Instruction ::= "COMPARE" AnnotationList 
+  syntax Instruction ::= "EQ" AnnotationList 
+  syntax Instruction ::= "NEQ" AnnotationList 
+  syntax Instruction ::= "LT" AnnotationList 
+  syntax Instruction ::= "GT" AnnotationList 
+  syntax Instruction ::= "LE" AnnotationList 
+  syntax Instruction ::= "GE" AnnotationList 
+  syntax Instruction ::= "SELF" AnnotationList 
+  syntax Instruction ::= "CONTRACT" AnnotationList Type
+  syntax Instruction ::= "TRANSFER_TOKENS" AnnotationList 
+  syntax Instruction ::= "SET_DELEGATE" AnnotationList 
+  syntax Instruction ::= "CREATE_ACCOUNT" AnnotationList 
+  syntax Instruction ::= "IMPLICIT_ACCOUNT" AnnotationList 
+  syntax Instruction ::= "NOW" AnnotationList 
+  syntax Instruction ::= "CHAIN_ID" AnnotationList 
+  syntax Instruction ::= "AMOUNT" AnnotationList 
+  syntax Instruction ::= "BALANCE" AnnotationList 
+  syntax Instruction ::= "CHECK_SIGNATURE" AnnotationList 
+  syntax Instruction ::= "BLAKE2B" AnnotationList 
+  syntax Instruction ::= "SHA256" AnnotationList 
+  syntax Instruction ::= "SHA512" AnnotationList 
+  syntax Instruction ::= "HASH_KEY" AnnotationList 
+  syntax Instruction ::= "STEPS_TO_QUOTA" AnnotationList 
+  syntax Instruction ::= "SOURCE" AnnotationList 
+  syntax Instruction ::= "SENDER" AnnotationList 
+  syntax Instruction ::= "ADDRESS" AnnotationList 
+  syntax Instruction ::= "CMPEQ" AnnotationList 
+  syntax Instruction ::= "CMPNEQ" AnnotationList 
+  syntax Instruction ::= "CMPLT" AnnotationList 
+  syntax Instruction ::= "CMPGT" AnnotationList 
+  syntax Instruction ::= "CMPLE" AnnotationList 
+  syntax Instruction ::= "CMPGE" AnnotationList 
+  syntax Instruction ::= "IFEQ" AnnotationList Block Block
+  syntax Instruction ::= "IFNEQ" AnnotationList Block Block
+  syntax Instruction ::= "IFLT" AnnotationList Block Block
+  syntax Instruction ::= "IFGT" AnnotationList Block Block
+  syntax Instruction ::= "IFLE" AnnotationList Block Block
+  syntax Instruction ::= "IFGE" AnnotationList Block Block
+  syntax Instruction ::= "IFCMPEQ" AnnotationList Block Block
+  syntax Instruction ::= "IFCMPNEQ" AnnotationList Block Block
+  syntax Instruction ::= "IFCMPLT" AnnotationList Block Block
+  syntax Instruction ::= "IFCMPGT" AnnotationList Block Block
+  syntax Instruction ::= "IFCMPLE" AnnotationList Block Block
+  syntax Instruction ::= "IFCMPGE" AnnotationList Block Block
+  syntax Instruction ::= "FAIL" AnnotationList 
+  syntax Instruction ::= "ASSERT" AnnotationList 
+  syntax Instruction ::= "ASSERT_EQ" AnnotationList 
+  syntax Instruction ::= "ASSERT_NEQ" AnnotationList 
+  syntax Instruction ::= "ASSERT_LT" AnnotationList 
+  syntax Instruction ::= "ASSERT_LE" AnnotationList 
+  syntax Instruction ::= "ASSERT_GT" AnnotationList 
+  syntax Instruction ::= "ASSERT_GE" AnnotationList 
+  syntax Instruction ::= "ASSERT_CMPEQ" AnnotationList 
+  syntax Instruction ::= "ASSERT_CMPNEQ" AnnotationList 
+  syntax Instruction ::= "ASSERT_CMPLT" AnnotationList 
+  syntax Instruction ::= "ASSERT_CMPLE" AnnotationList 
+  syntax Instruction ::= "ASSERT_CMPGT" AnnotationList 
+  syntax Instruction ::= "ASSERT_CMPGE" AnnotationList 
+  syntax Instruction ::= "ASSERT_NONE" AnnotationList 
+  syntax Instruction ::= "ASSERT_SOME" AnnotationList 
+  syntax Instruction ::= "ASSERT_LEFT" AnnotationList 
+  syntax Instruction ::= "ASSERT_RIGHT" AnnotationList 
+  syntax Instruction ::= "IF_SOME" AnnotationList Block Block
+  syntax Instruction ::= "SET_CAR" AnnotationList 
+  syntax Instruction ::= "SET_CDR" AnnotationList 
+  syntax Instruction ::= "CREATE_CONTRACT" AnnotationList ContractBlock 
 
  
   syntax CodeDecl ::= "code" Block ";"
@@ -270,17 +261,4 @@ module MICHELSON-SYNTAX-BASE
                  "$senderaddr" String ";" 
                  "$param" Data  ";" 
                  "$storage" Data ";" 
-endmodule
-
-module MICHELSON-SYNTAX
-  imports MICHELSON-SYNTAX-BASE
-  syntax InstructionAnnotationList ::= TypeAnnotationList VariableAnnotationList FieldAnnotationList [symbol, klabel(annotationlists)]
-                                     | TypeAnnotationList FieldAnnotationList VariableAnnotationList [symbol, klabel(annotationlists)]
-                                     | FieldAnnotationList TypeAnnotationList VariableAnnotationList [symbol, klabel(annotationlists)]
-                                     | VariableAnnotationList TypeAnnotationList FieldAnnotationList [symbol, klabel(annotationlists)]
-                                     | FieldAnnotationList VariableAnnotationList TypeAnnotationList [symbol, klabel(annotationlists)]
-                                     | VariableAnnotationList FieldAnnotationList TypeAnnotationList [symbol, klabel(annotationlists)]
-
-  syntax AnnotatedTypeList ::= TypeAnnotationList FieldAnnotationList [symbol, klabel(annotatedtypelist)]
-                             | FieldAnnotationList TypeAnnotationList [symbol, klabel(annotatedtypelist)] 
 endmodule

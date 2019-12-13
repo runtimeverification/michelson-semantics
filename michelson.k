@@ -2,7 +2,7 @@ requires "michelson-syntax.k"
 requires "michelson-config.k"
 
 module MICHELSON
-  imports MICHELSON-SYNTAX-BASE
+  imports MICHELSON-SYNTAX
   imports MICHELSON-CONFIG
   imports DOMAINS 
   imports COLLECTIONS
@@ -17,18 +17,7 @@ module MICHELSON
   syntax KItem ::= #ReadKnownAddrs(ContractInputList)
   syntax KItem ::= #LoadContract(Contract)
 
-  syntax KItem ::= #HandleAnnotations(InstructionAnnotationList)
-
-  syntax InstructionAnnotationList ::= AnnotationList AnnotationList AnnotationList [symbol, klabel(annotationlists)]
-  syntax AnnotatedTypeList ::= AnnotationList AnnotationList [symbol, klabel(annotatedtypelist)]
-
-  // Reorder annotation lists to T V F format to make future rule matching easier.
-  rule T:TypeAnnotationList F:FieldAnnotationList V:VariableAnnotationList => T V F [macro]
-  rule F:FieldAnnotationList T:TypeAnnotationList V:VariableAnnotationList => T V F [macro]
-  rule F:FieldAnnotationList V:VariableAnnotationList T:TypeAnnotationList => T V F [macro]
-  rule V:VariableAnnotationList T:TypeAnnotationList F:FieldAnnotationList => T V F [macro]
-  rule V:VariableAnnotationList F:FieldAnnotationList T:TypeAnnotationList => T V F [macro]
-
+  syntax KItem ::= #HandleAnnotations(AnnotationList)
 
   syntax Data ::= #ConcreteArgToSemantics(Data, Type) [function] 
 
@@ -72,7 +61,7 @@ module MICHELSON
        Pair #ConcreteArgToSemantics(A, T1) #ConcreteArgToSemantics(B, T2)
 
   rule #ConcreteArgToSemantics(Some V, option _ T) => Some #ConcreteArgToSemantics(V, T)
-  rule #ConcreteArgToSemantics(None, option _:AnnotatedTypeList _) => None
+  rule #ConcreteArgToSemantics(None, option _:AnnotationList _) => None
 
   syntax Data ::= #ConcreteArgToSemanticsList(DataList, Type, List) [function]
 
@@ -96,14 +85,14 @@ module MICHELSON
 
   rule #ConcreteArgToSemantics(S:String, contract _ T) => #Contract(#ParseAddress(S), T)
   
-  rule #ConcreteArgToSemantics(Left V, or _:AnnotatedTypeList TL:Type _:Type) => Left #ConcreteArgToSemantics(V, TL)
-  rule #ConcreteArgToSemantics(Right V, or _:AnnotatedTypeList _:Type TR:Type) => Right #ConcreteArgToSemantics(V, TR)
+  rule #ConcreteArgToSemantics(Left V, or _:AnnotationList TL:Type _:Type) => Left #ConcreteArgToSemantics(V, TL)
+  rule #ConcreteArgToSemantics(Right V, or _:AnnotationList _:Type TR:Type) => Right #ConcreteArgToSemantics(V, TR)
 
-  rule #ConcreteArgToSemantics(B:Block, lambda _:AnnotatedTypeList T1 T2) => #Lambda(T1, T2, B)
+  rule #ConcreteArgToSemantics(B:Block, lambda _:AnnotationList T1 T2) => #Lambda(T1, T2, B)
 
   syntax Data ::= #ConcreteArgToSemanticsMap(MapEntryList, Type, Type, Map) [function]
 
-  rule #ConcreteArgToSemantics({ M:MapEntryList }, map _:AnnotatedTypeList K V) =>
+  rule #ConcreteArgToSemantics({ M:MapEntryList }, map _:AnnotationList K V) =>
        #ConcreteArgToSemanticsMap(M, K, V, .Map)
 
   rule #ConcreteArgToSemanticsMap(Elt K V ; ML , KT, VT, M) =>
@@ -111,7 +100,7 @@ module MICHELSON
 
   rule #ConcreteArgToSemanticsMap(.MapEntryList, KT, VT, M) => #Map(M, KT, VT)
 
-  rule #ConcreteArgToSemantics({ M:MapEntryList }, big_map _:AnnotatedTypeList K V) =>
+  rule #ConcreteArgToSemantics({ M:MapEntryList }, big_map _:AnnotationList K V) =>
        #ConcreteArgToSemanticsMap(M, K, V, .Map)
 
 
@@ -186,13 +175,13 @@ module MICHELSON
   rule <k> IF A BT BF => #HandleAnnotations(A) ~> BF ... </k>
        <stack> false => . ... </stack>
 
-  rule <k> LOOP A B => #HandleAnnotations(A) ~> B ~> LOOP NoAnnotations B ... </k>
+  rule <k> LOOP A B => #HandleAnnotations(A) ~> B ~> LOOP .AnnotationList B ... </k>
        <stack> true => . ... </stack>
 
   rule <k> LOOP A B => #HandleAnnotations(A) ... </k>
        <stack> false => . ... </stack>
 
-  rule <k> LOOP_LEFT A B => #HandleAnnotations(A) ~> B ~> LOOP_LEFT NoAnnotations B ... </k>
+  rule <k> LOOP_LEFT A B => #HandleAnnotations(A) ~> B ~> LOOP_LEFT .AnnotationList B ... </k>
        <stack> Left D => D ... </stack>
 
   rule <k> LOOP_LEFT A B => #HandleAnnotations(A) ... </k>
@@ -207,11 +196,7 @@ module MICHELSON
 
   rule <k> DIP A 0 B => #HandleAnnotations(A) ~> B ... </k>
 
-  syntax InstructionAnnotationList ::= "NoAnnotations"
-
-  rule NoAnnotations => .TypeAnnotationList .VariableAnnotationList .FieldAnnotationList [macro]
-
-  rule <k> DIP A I B => #HandleAnnotations(A) ~> DIP NoAnnotations { DIP NoAnnotations  I -Int 1 B } ... </k>
+  rule <k> DIP A I B => #HandleAnnotations(A) ~> DIP .AnnotationList { DIP .AnnotationList  I -Int 1 B } ... </k>
        requires I >Int 0
 
   syntax Data ::= #Lambda(Type, Type, Block)
@@ -225,17 +210,17 @@ module MICHELSON
        <stack> A:Data ~> #Lambda(_, _, C):Data ~> Rs:K => A </stack> 
 
   rule <k> APPLY A => #HandleAnnotations(A) ... </k>
-       <stack> D:Data ~> #Lambda((pair _:AnnotatedTypeList T0 T1):Type, T2, { C } ) => #Lambda(T1, T2, { PUSH NoAnnotations T0 D ; PAIR NoAnnotations ; C } ) ... </stack> 
+       <stack> D:Data ~> #Lambda((pair _:AnnotationList T0 T1):Type, T2, { C } ) => #Lambda(T1, T2, { PUSH .AnnotationList T0 D ; PAIR .AnnotationList ; C } ) ... </stack> 
 
   rule <k> APPLY A => #HandleAnnotations(A) ... </k>
-       <stack> D:Data ~> #Lambda((pair _:AnnotatedTypeList T0 T1):ComparableType, T2, { C } ) => #Lambda(T1, T2, { PUSH NoAnnotations T0 D ; PAIR NoAnnotations ; C }) ... </stack>
+       <stack> D:Data ~> #Lambda((pair _:AnnotationList T0 T1):ComparableType, T2, { C } ) => #Lambda(T1, T2, { PUSH .AnnotationList T0 D ; PAIR .AnnotationList ; C }) ... </stack>
 
   ////Stack operations
 
   rule <k> DROP A =>  #HandleAnnotations(A) ... </k>
        <stack> _:Data => . ... </stack>
 
-  rule <k> DROP A I => #HandleAnnotations(A) ~> DROP NoAnnotations ~> DROP NoAnnotations I -Int 1 ... </k> 
+  rule <k> DROP A I => #HandleAnnotations(A) ~> DROP .AnnotationList ~> DROP .AnnotationList I -Int 1 ... </k> 
        requires I >Int 0
 
   rule <k> DROP A 0 => #HandleAnnotations(A) ... </k> 
@@ -471,7 +456,7 @@ module MICHELSON
   rule <k> ITER A _ => #HandleAnnotations(A) ... </k>
        <stack> .Set => . ... </stack>
 
-  rule <k> ITER A B => #HandleAnnotations(A) ~> B ~> #Push(S -Set SetItem(#MinimalElement(Set2List(S)))) ~> ITER NoAnnotations B ... </k>
+  rule <k> ITER A B => #HandleAnnotations(A) ~> B ~> #Push(S -Set SetItem(#MinimalElement(Set2List(S)))) ~> ITER .AnnotationList B ... </k>
        <stack> S => #MinimalElement(Set2List(S)) ... </stack>
        requires size(S) >Int 0
 
@@ -530,7 +515,7 @@ module MICHELSON
   rule <k> ITER A B => #HandleAnnotations(A)  ... </k>
        <stack> #Map(.Map, _, _) => .K ... </stack>
 
-  rule <k> ITER A B => #HandleAnnotations(A) ~> B ~> #Push(#Map(M[#MinimalKey(M) <- undef], T1, T2)) ~> ITER NoAnnotations B ... </k>
+  rule <k> ITER A B => #HandleAnnotations(A) ~> B ~> #Push(#Map(M[#MinimalKey(M) <- undef], T1, T2)) ~> ITER .AnnotationList B ... </k>
        <stack> #Map(M, T1, T2) => Pair #MinimalKey(M) {M[#MinimalKey(M)]}:>Data ... </stack>
        requires size(M) >Int 0
 
@@ -622,7 +607,7 @@ module MICHELSON
   rule <k> ITER A B =>  #HandleAnnotations(A) ~>. ... </k>
        <stack> .List => . ... </stack>
 
-  rule <k> ITER A B => #HandleAnnotations(A) ~> B ~> #Push(Ls) ~> ITER NoAnnotations B ... </k>
+  rule <k> ITER A B => #HandleAnnotations(A) ~> B ~> #Push(Ls) ~> ITER .AnnotationList B ... </k>
        <stack> ListItem(L) Ls => L ... </stack>
 
   // Domain Specific operations
@@ -651,7 +636,7 @@ module MICHELSON
 
   syntax Data ::= BlockchainOperation
 
-  rule <k> CREATE_CONTRACT A:InstructionAnnotationList { C } => . ... </k>
+  rule <k> CREATE_CONTRACT A:AnnotationList { C } => . ... </k>
        <stack> Delegate:OptionData ~> Initial:Mutez ~> Stor:Data => #CreateContract(C, Delegate, Initial, Stor) ~> #Address(Int2String(!_:Int)) ... </stack>
        requires #IsKeyHashOption(Delegate)
 
@@ -698,7 +683,7 @@ module MICHELSON
        <amount> M </amount>
 
   rule <k> IMPLICIT_ACCOUNT Ann => . ... </k>
-       <stack> #KeyHash(A) => #Contract(#Address(A), unit .TypeAnnotationList .FieldAnnotationList) ... </stack>
+       <stack> #KeyHash(A) => #Contract(#Address(A), unit .AnnotationList) ... </stack>
 
   //// Special Operations
   rule <k> CHAIN_ID A => . ... </k>
@@ -808,48 +793,48 @@ module MICHELSON
 
   rule #DoCompare(#Mutez(I1), #Mutez(I2)) => #DoCompare(I1, I2)
 
-  rule CMPEQ _ => COMPARE NoAnnotations ~> EQ NoAnnotations
-  rule CMPNEQ _ => COMPARE NoAnnotations ~> NEQ NoAnnotations
-  rule CMPLT _ => COMPARE NoAnnotations ~> LT NoAnnotations
-  rule CMPGT _ => COMPARE NoAnnotations ~> GT NoAnnotations
-  rule CMPLE _ => COMPARE NoAnnotations ~> LE NoAnnotations
-  rule CMPGE _ => COMPARE NoAnnotations ~> GE NoAnnotations
+  rule CMPEQ _ => COMPARE .AnnotationList ~> EQ .AnnotationList
+  rule CMPNEQ _ => COMPARE .AnnotationList ~> NEQ .AnnotationList
+  rule CMPLT _ => COMPARE .AnnotationList ~> LT .AnnotationList
+  rule CMPGT _ => COMPARE .AnnotationList ~> GT .AnnotationList
+  rule CMPLE _ => COMPARE .AnnotationList ~> LE .AnnotationList
+  rule CMPGE _ => COMPARE .AnnotationList ~> GE .AnnotationList
 
-  rule IFEQ _ BT BF => EQ NoAnnotations ~> IF NoAnnotations BT BF
-  rule IFNEQ _ BT BF => NEQ NoAnnotations ~> IF NoAnnotations BT BF
-  rule IFLT _ BT BF => LT NoAnnotations ~> IF NoAnnotations BT BF
-  rule IFGT _ BT BF => GT NoAnnotations ~> IF NoAnnotations BT BF
-  rule IFLE _ BT BF => LE NoAnnotations ~> IF NoAnnotations BT BF
-  rule IFGE _ BT BF => GE NoAnnotations ~> IF NoAnnotations BT BF
+  rule IFEQ _ BT BF => EQ .AnnotationList ~> IF .AnnotationList BT BF
+  rule IFNEQ _ BT BF => NEQ .AnnotationList ~> IF .AnnotationList BT BF
+  rule IFLT _ BT BF => LT .AnnotationList ~> IF .AnnotationList BT BF
+  rule IFGT _ BT BF => GT .AnnotationList ~> IF .AnnotationList BT BF
+  rule IFLE _ BT BF => LE .AnnotationList ~> IF .AnnotationList BT BF
+  rule IFGE _ BT BF => GE .AnnotationList ~> IF .AnnotationList BT BF
 
-  rule IFCMPEQ _ BT BF => COMPARE NoAnnotations ~> EQ NoAnnotations ~> IF NoAnnotations BT BF
-  rule IFCMPNEQ _ BT BF => COMPARE NoAnnotations ~> NEQ NoAnnotations ~> IF NoAnnotations BT BF
-  rule IFCMPLT _ BT BF => COMPARE NoAnnotations ~> LT NoAnnotations ~> IF NoAnnotations BT BF
-  rule IFCMPGT _ BT BF => COMPARE NoAnnotations ~> GT NoAnnotations ~> IF NoAnnotations BT BF
-  rule IFCMPLE _ BT BF => COMPARE NoAnnotations ~> LE NoAnnotations ~> IF NoAnnotations BT BF
-  rule IFCMPGE _ BT BF => COMPARE NoAnnotations ~> GE NoAnnotations ~> IF NoAnnotations BT BF
+  rule IFCMPEQ _ BT BF => COMPARE .AnnotationList ~> EQ .AnnotationList ~> IF .AnnotationList BT BF
+  rule IFCMPNEQ _ BT BF => COMPARE .AnnotationList ~> NEQ .AnnotationList ~> IF .AnnotationList BT BF
+  rule IFCMPLT _ BT BF => COMPARE .AnnotationList ~> LT .AnnotationList ~> IF .AnnotationList BT BF
+  rule IFCMPGT _ BT BF => COMPARE .AnnotationList ~> GT .AnnotationList ~> IF .AnnotationList BT BF
+  rule IFCMPLE _ BT BF => COMPARE .AnnotationList ~> LE .AnnotationList ~> IF .AnnotationList BT BF
+  rule IFCMPGE _ BT BF => COMPARE .AnnotationList ~> GE .AnnotationList ~> IF .AnnotationList BT BF
 
-  rule FAIL _ => UNIT NoAnnotations ~> FAILWITH NoAnnotations
+  rule FAIL _ => UNIT .AnnotationList ~> FAILWITH .AnnotationList
 
-  rule ASSERT _ => IF NoAnnotations {} {FAIL NoAnnotations}
+  rule ASSERT _ => IF .AnnotationList {} {FAIL .AnnotationList}
 
-  rule ASSERT_EQ _ => IFEQ NoAnnotations {} {FAIL NoAnnotations}
-  rule ASSERT_NEQ _ => IFNEQ NoAnnotations {} {FAIL NoAnnotations}
-  rule ASSERT_LT _ => IFLT NoAnnotations {} {FAIL NoAnnotations}
-  rule ASSERT_GT _ => IFGT NoAnnotations {} {FAIL NoAnnotations}
-  rule ASSERT_LE _ => IFLE NoAnnotations {} {FAIL NoAnnotations}
-  rule ASSERT_GE _ => IFGE NoAnnotations {} {FAIL NoAnnotations}
+  rule ASSERT_EQ _ => IFEQ .AnnotationList {} {FAIL .AnnotationList}
+  rule ASSERT_NEQ _ => IFNEQ .AnnotationList {} {FAIL .AnnotationList}
+  rule ASSERT_LT _ => IFLT .AnnotationList {} {FAIL .AnnotationList}
+  rule ASSERT_GT _ => IFGT .AnnotationList {} {FAIL .AnnotationList}
+  rule ASSERT_LE _ => IFLE .AnnotationList {} {FAIL .AnnotationList}
+  rule ASSERT_GE _ => IFGE .AnnotationList {} {FAIL .AnnotationList}
 
-  rule ASSERT_CMPEQ _ => IFCMPEQ NoAnnotations {} {FAIL NoAnnotations}
-  rule ASSERT_CMPNEQ _ => IFCMPNEQ NoAnnotations {} {FAIL NoAnnotations}
-  rule ASSERT_CMPLT _ => IFCMPLT NoAnnotations {} {FAIL NoAnnotations}
-  rule ASSERT_CMPGT _ => IFCMPGT NoAnnotations {} {FAIL NoAnnotations}
-  rule ASSERT_CMPLE _ => IFCMPLE NoAnnotations {} {FAIL NoAnnotations}
-  rule ASSERT_CMPGE _ => IFCMPGE NoAnnotations {} {FAIL NoAnnotations}
+  rule ASSERT_CMPEQ _ => IFCMPEQ .AnnotationList {} {FAIL .AnnotationList}
+  rule ASSERT_CMPNEQ _ => IFCMPNEQ .AnnotationList {} {FAIL .AnnotationList}
+  rule ASSERT_CMPLT _ => IFCMPLT .AnnotationList {} {FAIL .AnnotationList}
+  rule ASSERT_CMPGT _ => IFCMPGT .AnnotationList {} {FAIL .AnnotationList}
+  rule ASSERT_CMPLE _ => IFCMPLE .AnnotationList {} {FAIL .AnnotationList}
+  rule ASSERT_CMPGE _ => IFCMPGE .AnnotationList {} {FAIL .AnnotationList}
 
-  rule ASSERT_NONE _ => IF_NONE NoAnnotations {} {FAIL NoAnnotations}
+  rule ASSERT_NONE _ => IF_NONE .AnnotationList {} {FAIL .AnnotationList}
 
-  rule ASSERT_SOME _ => IF_NONE NoAnnotations {FAIL NoAnnotations} {} // TODO: Add annotations
-  rule ASSERT_LEFT _ => IF_LEFT NoAnnotations {} {FAIL NoAnnotations} //  ^
-  rule ASSERT_RIGHT _ => IF_LEFT NoAnnotations {FAIL NoAnnotations} {} // ^
+  rule ASSERT_SOME _ => IF_NONE .AnnotationList {FAIL .AnnotationList} {} // TODO: Add annotations
+  rule ASSERT_LEFT _ => IF_LEFT .AnnotationList {} {FAIL .AnnotationList} //  ^
+  rule ASSERT_RIGHT _ => IF_LEFT .AnnotationList {FAIL .AnnotationList} {} // ^
 endmodule

@@ -3,7 +3,7 @@
     .
   </k>
   <stack>
-    #Contract ( #Address ( "12345" ) , unit .AnnotationBottomList .AnnotationBottomList )
+    #Contract ( #Address ( "12345" ) , unit .AnnotationList )
   </stack>
   <paramtype>
     #NotSet

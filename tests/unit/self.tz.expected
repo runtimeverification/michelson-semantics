@@ -3,10 +3,10 @@
     .
   </k>
   <stack>
-    #Contract ( #Address ( "InvalidMyAddr" ) , int .AnnotationBottomList .AnnotationBottomList )
+    #Contract ( #Address ( "InvalidMyAddr" ) , int .AnnotationList )
   </stack>
   <paramtype>
-    int .AnnotationBottomList .AnnotationBottomList
+    int .AnnotationList
   </paramtype>
   <storagetype>
     #NotSet
