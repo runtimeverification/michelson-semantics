@@ -9,9 +9,6 @@ module MICHELSON
 
   syntax Data ::= Bool
 
-  rule True => true [macro]
-  rule False => false [macro]
-
   syntax KItem ::= "FailedStack"
 
   syntax KItem ::= #ReadKnownAddrs(ContractInputList)
@@ -40,7 +37,7 @@ module MICHELSON
   rule #ConcreteArgToSemantics(I:Int, int _) => I
   rule #ConcreteArgToSemantics(I:Int, nat _) => I requires I >=Int 0
   rule #ConcreteArgToSemantics(S:String, string _) => S
-  rule #ConcreteArgToSemantics(B:BytesLiteral, bytes _) => B
+  rule #ConcreteArgToSemantics(B:MBytesLiteral, bytes _) => B
   rule #ConcreteArgToSemantics(I:Int, mutez _) => #Mutez(I)
   rule #ConcreteArgToSemantics(B:Bool, bool _) => B
   rule #ConcreteArgToSemantics(S:String, key_hash _) => #ParseKeyHash(S)
@@ -476,8 +473,8 @@ module MICHELSON
 
   syntax OptionData ::= #LookupMap(MichelsonMap, Data) [function]
 
-  rule #LookupMap(#Map(M, T0, T1), X) => Some {M[X]}:>Data requires X in_keys(M) [concrete]
-  rule #LookupMap(#Map(M, T0, T1), X) => None requires notBool(X in_keys(M)) [concrete]
+  rule #LookupMap(#Map(M, T0, T1), X) => Some {M[X]}:>Data requires X in_keys(M)
+  rule #LookupMap(#Map(M, T0, T1), X) => None requires notBool(X in_keys(M))
 
   rule <k> MEM A => #HandleAnnotations(A) ~> . ... </k>
        <stack> X ~> #Map(M, _, _) => X in_keys(M) ... </stack>
@@ -659,11 +656,14 @@ module MICHELSON
        <stack> #Contract(A, _) => A ... </stack>
 
   rule <k> CONTRACT Ann T => . ... </k>
-       <stack> A => Some #Contract(A, T) ... </stack>
-       <knownaddrs> ... A |-> #Contract(A, T) ... </knownaddrs>
+       <stack> A => Some {M[A]}:>Data ... </stack>
+       <knownaddrs> M </knownaddrs>
+       requires A in_keys(M)
        
   rule <k> CONTRACT Ann _ => . ... </k>
-       <stack> A:Address => None ... </stack> [owise]
+       <stack> A:Address => None ... </stack>
+       <knownaddrs> M </knownaddrs>
+       requires notBool(A in_keys(M))
 
   rule <k> SOURCE Ann => . ... </k>
        <stack> . => A ... </stack>
@@ -695,11 +695,11 @@ module MICHELSON
        <now> N </now>
 
 
-  //// Operations on Bytes, stubbed for now because of the lack of a documented bytes format.
+  //// Operations on MBytes, stubbed for now because of the lack of a documented bytes format.
 
-  syntax Bytes ::= BytesLiteral | #Packed(Data) | "#UnknownBytes"
+  syntax MBytes ::= MBytesLiteral | #Packed(Data) | "#UnknownMBytes"
 
-  syntax Data ::= Bytes
+  syntax Data ::= MBytes
 
   rule <k> PACK A => #HandleAnnotations(A) ... </k>
        <stack> T => #Packed(T) ... </stack>
@@ -708,40 +708,39 @@ module MICHELSON
        <stack> #Packed(T) => T ... </stack>
 
   rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
-       <stack> B1:Bytes ~> B2:Bytes => #UnknownBytes ... </stack>
+       <stack> B1:MBytes ~> B2:MBytes => #UnknownMBytes ... </stack>
 
   rule <k> SIZE A => #HandleAnnotations(A) ... </k>
-       <stack> B:Bytes => 0 ... </stack> // Would like to make this a ?_ variable but llvm doesn't support those.
+       <stack> B:MBytes => 0 ... </stack> // Would like to make this a ?_ variable but llvm doesn't support those.
 
   rule <k> SLICE A => #HandleAnnotations(A) ... </k>
-       <stack> _:Int ~> _:Int ~> B:Bytes => Some #UnknownBytes ... </stack>
+       <stack> _:Int ~> _:Int ~> B:MBytes => Some #UnknownMBytes ... </stack>
 
-  rule #DoCompare(B1:Bytes, B2:Bytes) => 0 // I can't see a reasonable way of doing this.
+  rule #DoCompare(B1:MBytes, B2:MBytes) => 0 // I can't see a reasonable way of doing this.
 
   //// Cryptographic primitives
 
   syntax String ::= #Blake2BKeyHash(String) [function] // TODO: Blake2B crypto hook.
-  syntax String ::= #Blake2BHash(String)
-  rule #Blake2BKeyHash(S) => #Blake2BHash(S)
+  rule #Blake2BKeyHash(S) => S
 
   rule <k> HASH_KEY A => #HandleAnnotations(A) ... </k>
        <stack> #Key(S) => #KeyHash(#Blake2BKeyHash(S)) ... </stack> 
   
-  syntax Bytes ::= #SHA256(Bytes) | #SHA512(Bytes)
+  syntax MBytes ::= #SHA256(MBytes) | #SHA512(MBytes)
 
   rule <k> SHA256 A => #HandleAnnotations(A) ... </k>
-       <stack> B:Bytes => #SHA256(B) ... </stack>
+       <stack> B:MBytes => #SHA256(B) ... </stack>
        
   rule <k> SHA512 A => #HandleAnnotations(A) ... </k>
-       <stack> B:Bytes => #SHA512(B) ... </stack>
+       <stack> B:MBytes => #SHA512(B) ... </stack>
 
-  syntax Bytes ::= #SignedBytes(Key, Signature, Bytes)
-
-  rule <k> CHECK_SIGNATURE A => #HandleAnnotations(A) ... </k>
-       <stack> #Key(K) ~> #Signature(S) ~> #SignedBytes(#Key(K), #Signature(S), _) => true ... </stack>
+  syntax MBytes ::= #SignedMBytes(Key, Signature, MBytes)
 
   rule <k> CHECK_SIGNATURE A => #HandleAnnotations(A) ... </k>
-       <stack> #Key(_) ~> #Signature(_) ~> _:Bytes => false ... </stack> [owise]
+       <stack> #Key(K) ~> #Signature(S) ~> #SignedMBytes(#Key(K), #Signature(S), _) => true ... </stack>
+
+  rule <k> CHECK_SIGNATURE A => #HandleAnnotations(A) ... </k>
+       <stack> #Key(_) ~> #Signature(_) ~> _:MBytes => false ... </stack> [owise]
 
   rule #DoCompare(#KeyHash(S1), #KeyHash(S2)) => #DoCompare(S1, S2)
 

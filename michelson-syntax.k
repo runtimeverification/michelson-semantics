@@ -26,7 +26,7 @@ module MICHELSON-SYNTAX
 
   syntax AnnotationList ::= List{Annotation, ""}
 
-  syntax BytesLiteral ::= r"0x([0-9a-fA-F]{2})+" [token]
+  syntax MBytesLiteral ::= r"0x([0-9a-fA-F]{2})+" [token]
 
   syntax MichelsonBool ::= "True" [token]
                          | "False" [token] // These just get macro'd to the proper K types.
@@ -43,7 +43,7 @@ module MICHELSON-SYNTAX
   syntax Data ::= Int 
                 | String 
                 | MichelsonBool
-                | BytesLiteral
+                | MBytesLiteral
                 | "Unit" 
                 | Pair
                 | OrData

@@ -1,31 +1,42 @@
 requires "../../michelson.k"
 
+module LEMMAS
+  imports MICHELSON
+ 
+  rule S:String in_keys(M:Map [ S:String <- I:Int]) => true
+
+  rule #LookupMap(#Map(M:Map [S:String <- I:Int], string _, int _), S) => Some I
+
+endmodule 
+
 module VOTE
   imports MICHELSON
-
+  imports LEMMAS
+  
   rule <k>
        { 
-           AMOUNT NoAnnotations ;
-           PUSH NoAnnotations mutez .TypeAnnotationList .FieldAnnotationList 5000000 ;
-           COMPARE NoAnnotations ;
-           GT NoAnnotations ;
-           IF NoAnnotations { FAIL NoAnnotations } { } ;
-           DUP NoAnnotations ; DIP NoAnnotations { CDR NoAnnotations ; DUP NoAnnotations } ;
-           CAR NoAnnotations ; DUP NoAnnotations ;
-           DIP NoAnnotations {
-               GET NoAnnotations ;
-               ASSERT_SOME NoAnnotations ;
-               PUSH NoAnnotations int .TypeAnnotationList .FieldAnnotationList 1 ;
-               ADD NoAnnotations ;
-               SOME NoAnnotations 
+           AMOUNT .AnnotationList ;
+           PUSH .AnnotationList mutez .AnnotationList 5000000 ;
+           COMPARE .AnnotationList ;
+           GT .AnnotationList ;
+           IF .AnnotationList { FAIL .AnnotationList } { } ;
+           DUP .AnnotationList ; DIP .AnnotationList { CDR .AnnotationList ; DUP .AnnotationList } ;
+           CAR .AnnotationList ; DUP .AnnotationList ;
+           DIP .AnnotationList {
+               GET .AnnotationList ;
+               ASSERT_SOME .AnnotationList ;
+               PUSH .AnnotationList int .AnnotationList 1 ;
+               ADD .AnnotationList ;
+               SOME .AnnotationList 
            } ; 
-           UPDATE NoAnnotations ;
-           NIL NoAnnotations operation .TypeAnnotationList .FieldAnnotationList ;
-           PAIR NoAnnotations 
+           UPDATE .AnnotationList ;
+           NIL .AnnotationList operation .AnnotationList ;
+           PAIR .AnnotationList 
        } => . </k>
-        <stack> Pair S:String (M:Map)[S <- I:Int] => Pair .List _ </stack>
-        <paramtype> string .TypeAnnotationList .FieldAnnotationList  </paramtype>
-        <storagetype> map .TypeAnnotationList .FieldAnnotationList string .TypeAnnotationList .FieldAnnotationList int .TypeAnnotationList .FieldAnnotationList </storagetype>
+        <stack> Pair S:String #Map((M:Map)[S <- I:Int], string .AnnotationList, int .AnnotationList) => 
+                Pair .List  #Map(M[S <- I +Int 1], string .AnnotationList, int .AnnotationList)  </stack>
+        <paramtype> string .AnnotationList  </paramtype>
+        <storagetype> map .AnnotationList string .AnnotationList int .AnnotationList </storagetype>
         <balance> #Mutez(0) </balance>
         <amount> #Mutez(A) </amount>
         <now> #Timestamp(0) </now>
