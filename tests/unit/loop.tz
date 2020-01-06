@@ -1,2 +1,2 @@
-$Instructions { LOOP { PUSH int 2 ; ADD ; DUP ; DIP { PUSH int 10 } ; COMPARE ; LE } } ; 
+$Instructions { LOOP { PUSH int 2 ; ADD ; DUP ; DIP { PUSH int 10 ; } ; COMPARE ; LE ; } } ; 
 $Stack ListItem(True) ListItem(1) ;

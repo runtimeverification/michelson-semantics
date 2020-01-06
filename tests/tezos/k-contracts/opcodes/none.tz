@@ -1,0 +1,8 @@
+$contract { parameter unit;
+storage (option nat);
+code { DROP; NONE nat; NIL operation; PAIR; };
+ } ;
+$param Some 10 ;
+$storage Unit ;
+$ExpectedOutput None ;
+

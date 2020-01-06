@@ -1,0 +1,13 @@
+$contract { parameter (pair nat nat);
+storage (pair nat nat);
+code{
+      CAR; UNPAIR;
+      DUP; DIP { ADD };
+      PAIR;
+      NIL operation;
+      PAIR};
+ } ;
+$param (Pair 0 0) ;
+$storage (Pair 1 1) ;
+$ExpectedOutput (Pair 1 2) ;
+

@@ -15,9 +15,11 @@ module TEST-MICHELSON-SYNTAX
 
   syntax OptionalGroup ::= List{Optional,";"}
 
-  syntax Pgm ::= "$Instructions" Block ";"
+  syntax Pgm ::= "$Instructions" "{" InstructionList "}" ";"
                  "$Stack" List ";" // Basic unit test block.
-               |  "$Instructions" Block ";"
+               |  "$Instructions" "{" InstructionList "}" ";"
                  "$Stack" List ";" 
                  OptionalGroup ";"
+
+  syntax Pgm ::= Pgm "$ExpectedOutput" Data ";"
 endmodule 

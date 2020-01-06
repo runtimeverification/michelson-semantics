@@ -1,0 +1,8 @@
+$contract { parameter (pair :param (bool %first) (bool %second));
+storage (option bool);
+code { CAR ; UNPAIR; AND @and; SOME @res; NIL @noop operation; PAIR; UNPAIR @x @y; PAIR %a %b };
+ } ;
+$param None ;
+$storage (Pair True True) ;
+$ExpectedOutput (Some True) ;
+

@@ -1,2 +1,2 @@
 $Instructions { APPLY } ; 
-$Stack ListItem("Hi") ListItem(#Lambda(pair string int, nat, { DROP ; PUSH nat 1 } )) ;
+$Stack ListItem("Hi") ListItem(#Lambda(pair string int, nat, { DROP ; PUSH nat 1 ; } )) ;

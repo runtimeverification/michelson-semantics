@@ -1,0 +1,13 @@
+$contract { parameter nat;
+storage (map string nat);
+# this contract adds the value passed by parameter to each entry in
+# the stored map.
+code { UNPAIR; SWAP;
+       MAP { CDR; DIP {DUP}; ADD; };
+       DIP { DROP; };
+       NIL operation; PAIR; }
+ } ;
+$param { Elt "bar" 5 ; Elt "foo" 1 } ;
+$storage 15 ;
+$ExpectedOutput { Elt "bar" 20 ; Elt "foo" 16 } ;
+

@@ -1,0 +1,8 @@
+$contract { parameter bool;
+storage (option bool);
+code {CAR; NOT; SOME; NIL operation; PAIR};
+ } ;
+$param None ;
+$storage False ;
+$ExpectedOutput (Some True) ;
+

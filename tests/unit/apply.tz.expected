@@ -3,7 +3,7 @@
     .
   </k>
   <stack>
-    #Lambda ( int .AnnotationList , nat .AnnotationList , { PUSH .AnnotationList string .AnnotationList "Hi" ; PAIR .AnnotationList ; DROP .AnnotationList ; PUSH .AnnotationList nat .AnnotationList 1 ; .InstructionList } )
+    #Lambda ( int .AnnotationList , nat .AnnotationList , { PUSH .AnnotationList string .AnnotationList "Hi" ; PAIR .AnnotationList ; DROP .AnnotationList ; PUSH .AnnotationList nat .AnnotationList 1 ; .InstructionList ; } )
   </stack>
   <paramtype>
     #NotSet

@@ -13,6 +13,7 @@ module MICHELSON
 
   syntax KItem ::= #ReadKnownAddrs(ContractInputList)
   syntax KItem ::= #LoadContract(Contract)
+  syntax KItem ::= #InitializeStack(Data, Data)
 
   syntax KItem ::= #HandleAnnotations(AnnotationList)
 
@@ -102,8 +103,6 @@ module MICHELSON
 
 
   rule <k> $contract {C} ;
-           $paramtype Pt ;
-           $storagetype St ;
            $balance B ;
            $amount Amt ;
            $now N ;
@@ -112,10 +111,8 @@ module MICHELSON
            $sourceaddr SourceAddr ;
            $senderaddr SenderAddr ;
            $param P ;
-           $storage S ; => #ReadKnownAddrs(AddrList) ~> #LoadContract(C) </k> 
-       <stack> . => Pair #ConcreteArgToSemantics(P, Pt) #ConcreteArgToSemantics(S, St) </stack>
-       <paramtype> _ => Pt </paramtype>
-       <storagetype> _ => St </storagetype>
+           $storage S ; => #ReadKnownAddrs(AddrList) ~> #LoadContract(C) ~> #InitializeStack(P, S) ... </k> 
+       <stack> . </stack>
        <balance> #Mutez(_ => B) </balance>
        <amount> #Mutez(_ => Amt) </amount>
        <now> #Timestamp(_ => N) </now>
@@ -123,39 +120,48 @@ module MICHELSON
        <sourceaddr> #Address(_ => SourceAddr) </sourceaddr>
        <senderaddr> #Address(_ => SenderAddr) </senderaddr> [structural]
 
+  rule <k> $contract {C} ;
+           $param P ;
+           $storage S ; => #LoadContract(C) ~> #InitializeStack(P, S) ... </k> [structural] 
+
   rule <k> #ReadKnownAddrs(#ContractInput(A, T) Cs => Cs) ... </k>
        <knownaddrs> M => M[#Address(A) <- #Contract(#Address(A), T)] </knownaddrs> [structural]
 
   rule #ReadKnownAddrs( .ContractInputList ) => . [structural]
 
-  rule <k> #LoadContract(code B ; storage St ; parameter Pt ;) => B </k> 
-       <paramtype> Pt </paramtype>
-       <storagetype> St </storagetype> [structural]
+  rule <k> #LoadContract(code B ; storage St ; parameter Pt ) ~> #InitializeStack(P, S) => #InitializeStack(P, S) ~> B ... </k> 
+       <paramtype> _ => Pt </paramtype>
+       <storagetype> _ => St </storagetype> [structural]
 
-  rule <k> #LoadContract(code B ; parameter Pt; storage St ;) => B </k> 
-       <paramtype> Pt </paramtype>
-       <storagetype> St </storagetype> [structural]
+  rule <k> #LoadContract(code B ; parameter Pt ; storage St ) ~> #InitializeStack(P, S) => #InitializeStack(P, S) ~> B ... </k> 
+       <paramtype> _ => Pt </paramtype>
+       <storagetype> _ => St </storagetype> [structural]
 
-  rule <k> #LoadContract(storage St ; code B ; parameter Pt ;) => B </k> 
-       <paramtype> Pt </paramtype>
-       <storagetype> St </storagetype> [structural]
+  rule <k> #LoadContract(storage St ; code B ; parameter Pt ) ~> #InitializeStack(P, S) => #InitializeStack(P, S) ~> B ... </k> 
+       <paramtype> _ => Pt </paramtype>
+       <storagetype> _ => St </storagetype> [structural]
 
-  rule <k> #LoadContract(parameter Pt ; code B ; storage St ;) => B </k> 
-       <paramtype> Pt </paramtype>
-       <storagetype> St </storagetype> [structural]
+  rule <k> #LoadContract(parameter Pt ; code B ; storage St ) ~> #InitializeStack(P, S) => #InitializeStack(P, S) ~> B ... </k> 
+       <paramtype> _ => Pt </paramtype>
+       <storagetype> _ => St </storagetype> [structural]
 
-  rule <k> #LoadContract(storage St ; parameter Pt ; code B ;) => B </k> 
-       <paramtype> Pt </paramtype>
-       <storagetype> St </storagetype> [structural]
+  rule <k> #LoadContract(storage St ; parameter Pt ; code B ) ~> #InitializeStack(P, S) => #InitializeStack(P, S) ~> B ... </k> 
+       <paramtype> _ => Pt </paramtype>
+       <storagetype> _ => St </storagetype> [structural]
 
-  rule <k> #LoadContract(parameter Pt ; storage St ; code B ;) => B </k> 
+  rule <k> #LoadContract(parameter Pt ; storage St ; code B ) ~> #InitializeStack(P, S) => #InitializeStack(P, S) ~> B ... </k> 
+       <paramtype> _ => Pt </paramtype>
+       <storagetype> _ => St </storagetype> [structural]
+
+  rule <k> #InitializeStack(P, S) => . ... </k>
+       <stack> . => Pair #ConcreteArgToSemantics(P, Pt) #ConcreteArgToSemantics(S, St) </stack>
        <paramtype> Pt </paramtype>
-       <storagetype> St </storagetype> [structural]
+       <storagetype> St </storagetype>
 
   rule I:Instruction ; Is:InstructionList => I ~> Is [structural]
   rule .InstructionList => .K [structural]
   rule {} => .K [structrual]
-  rule { Is:InstructionList } => Is [structural]
+  rule { Is:InstructionList ; } => Is [structural]
 
   rule #HandleAnnotations(_) => . [structural]
 
@@ -193,7 +199,7 @@ module MICHELSON
 
   rule <k> DIP A 0 B => #HandleAnnotations(A) ~> B ... </k>
 
-  rule <k> DIP A I B => #HandleAnnotations(A) ~> DIP .AnnotationList { DIP .AnnotationList  I -Int 1 B } ... </k>
+  rule <k> DIP A I B => #HandleAnnotations(A) ~> DIP .AnnotationList { DIP .AnnotationList  I -Int 1 B ; } ... </k>
        requires I >Int 0
 
   syntax Data ::= #Lambda(Type, Type, Block)
@@ -207,10 +213,10 @@ module MICHELSON
        <stack> A:Data ~> #Lambda(_, _, C):Data ~> Rs:K => A </stack> 
 
   rule <k> APPLY A => #HandleAnnotations(A) ... </k>
-       <stack> D:Data ~> #Lambda((pair _:AnnotationList T0 T1):Type, T2, { C } ) => #Lambda(T1, T2, { PUSH .AnnotationList T0 D ; PAIR .AnnotationList ; C } ) ... </stack> 
+       <stack> D:Data ~> #Lambda((pair _:AnnotationList T0 T1):Type, T2, { C ; } ) => #Lambda(T1, T2, { PUSH .AnnotationList T0 D ; PAIR .AnnotationList ; C ; } ) ... </stack> 
 
   rule <k> APPLY A => #HandleAnnotations(A) ... </k>
-       <stack> D:Data ~> #Lambda((pair _:AnnotationList T0 T1):ComparableType, T2, { C } ) => #Lambda(T1, T2, { PUSH .AnnotationList T0 D ; PAIR .AnnotationList ; C }) ... </stack>
+       <stack> D:Data ~> #Lambda((pair _:AnnotationList T0 T1):ComparableType, T2, { C ; } ) => #Lambda(T1, T2, { PUSH .AnnotationList T0 D ; PAIR .AnnotationList ; C ; }) ... </stack>
 
   ////Stack operations
 
@@ -815,25 +821,25 @@ module MICHELSON
 
   rule FAIL _ => UNIT .AnnotationList ~> FAILWITH .AnnotationList
 
-  rule ASSERT _ => IF .AnnotationList {} {FAIL .AnnotationList}
+  rule ASSERT _ => IF .AnnotationList {} {FAIL .AnnotationList ; }
 
-  rule ASSERT_EQ _ => IFEQ .AnnotationList {} {FAIL .AnnotationList}
-  rule ASSERT_NEQ _ => IFNEQ .AnnotationList {} {FAIL .AnnotationList}
-  rule ASSERT_LT _ => IFLT .AnnotationList {} {FAIL .AnnotationList}
-  rule ASSERT_GT _ => IFGT .AnnotationList {} {FAIL .AnnotationList}
-  rule ASSERT_LE _ => IFLE .AnnotationList {} {FAIL .AnnotationList}
-  rule ASSERT_GE _ => IFGE .AnnotationList {} {FAIL .AnnotationList}
+  rule ASSERT_EQ _ => IFEQ .AnnotationList {} {FAIL .AnnotationList ; }
+  rule ASSERT_NEQ _ => IFNEQ .AnnotationList {} {FAIL .AnnotationList ; }
+  rule ASSERT_LT _ => IFLT .AnnotationList {} {FAIL .AnnotationList ; }
+  rule ASSERT_GT _ => IFGT .AnnotationList {} {FAIL .AnnotationList ; }
+  rule ASSERT_LE _ => IFLE .AnnotationList {} {FAIL .AnnotationList ; }
+  rule ASSERT_GE _ => IFGE .AnnotationList {} {FAIL .AnnotationList ; }
 
-  rule ASSERT_CMPEQ _ => IFCMPEQ .AnnotationList {} {FAIL .AnnotationList}
-  rule ASSERT_CMPNEQ _ => IFCMPNEQ .AnnotationList {} {FAIL .AnnotationList}
-  rule ASSERT_CMPLT _ => IFCMPLT .AnnotationList {} {FAIL .AnnotationList}
-  rule ASSERT_CMPGT _ => IFCMPGT .AnnotationList {} {FAIL .AnnotationList}
-  rule ASSERT_CMPLE _ => IFCMPLE .AnnotationList {} {FAIL .AnnotationList}
-  rule ASSERT_CMPGE _ => IFCMPGE .AnnotationList {} {FAIL .AnnotationList}
+  rule ASSERT_CMPEQ _ => IFCMPEQ .AnnotationList {} {FAIL .AnnotationList ; }
+  rule ASSERT_CMPNEQ _ => IFCMPNEQ .AnnotationList {} {FAIL .AnnotationList ; }
+  rule ASSERT_CMPLT _ => IFCMPLT .AnnotationList {} {FAIL .AnnotationList ; }
+  rule ASSERT_CMPGT _ => IFCMPGT .AnnotationList {} {FAIL .AnnotationList ; }
+  rule ASSERT_CMPLE _ => IFCMPLE .AnnotationList {} {FAIL .AnnotationList ; }
+  rule ASSERT_CMPGE _ => IFCMPGE .AnnotationList {} {FAIL .AnnotationList ; }
 
-  rule ASSERT_NONE _ => IF_NONE .AnnotationList {} {FAIL .AnnotationList}
+  rule ASSERT_NONE _ => IF_NONE .AnnotationList {} {FAIL .AnnotationList ; }
 
-  rule ASSERT_SOME _ => IF_NONE .AnnotationList {FAIL .AnnotationList} {} // TODO: Add annotations
-  rule ASSERT_LEFT _ => IF_LEFT .AnnotationList {} {FAIL .AnnotationList} //  ^
-  rule ASSERT_RIGHT _ => IF_LEFT .AnnotationList {FAIL .AnnotationList} {} // ^
+  rule ASSERT_SOME _ => IF_NONE .AnnotationList {FAIL .AnnotationList ; } {} // TODO: Add annotations
+  rule ASSERT_LEFT _ => IF_LEFT .AnnotationList {} {FAIL .AnnotationList ; } //  ^
+  rule ASSERT_RIGHT _ => IF_LEFT .AnnotationList {FAIL .AnnotationList ; } {} // ^
 endmodule

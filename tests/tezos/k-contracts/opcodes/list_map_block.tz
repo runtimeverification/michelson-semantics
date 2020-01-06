@@ -1,0 +1,10 @@
+$contract { parameter (list int);
+storage (list int);
+code { CAR; PUSH int 0; SWAP;
+       MAP { DIP{DUP}; ADD; DIP{PUSH int 1; ADD}};
+       NIL operation; PAIR; DIP{DROP}}
+ } ;
+$param {0} ;
+$storage { 1 ; 2 ; 3 ; 0 } ;
+$ExpectedOutput { 1 ; 3 ; 5 ; 3 } ;
+
