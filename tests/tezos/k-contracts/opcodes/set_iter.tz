@@ -1,0 +1,8 @@
+$contract { parameter (set int);
+storage int;
+code { CAR; PUSH int 0; SWAP; ITER { ADD }; NIL operation; PAIR }
+ } ;
+$param 111 ;
+$storage { -100 ; 1 ; 2 ; 3 } ;
+$ExpectedOutput -94 ;
+

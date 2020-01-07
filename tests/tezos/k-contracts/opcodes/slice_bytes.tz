@@ -1,0 +1,10 @@
+$contract { parameter (pair nat nat);
+storage (option bytes);
+code { UNPAIR; SWAP;
+       IF_SOME {SWAP; UNPAIR; SLICE;} {DROP; NONE bytes;};
+       NIL operation; PAIR}
+ } ;
+$param Some 0xaabbcc ;
+$storage Pair 1 1 ;
+$ExpectedOutput (Some 0xbb) ;
+

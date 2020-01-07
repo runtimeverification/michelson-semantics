@@ -1,0 +1,9 @@
+$contract { parameter (list bytes);
+storage (list bytes);
+code{ CAR;
+      MAP { PUSH bytes 0xFF; CONCAT }; NIL operation; PAIR};
+ } ;
+$param {} ;
+$storage { 0xab ; 0xcd } ;
+$ExpectedOutput { 0xffab ; 0xffcd } ;
+

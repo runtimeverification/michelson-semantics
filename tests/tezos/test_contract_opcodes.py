@@ -1,23 +1,11 @@
-import pytest
-from tools import paths
-from tools.utils import check_run_failure, assert_run_script_success, \
-    assert_run_script_failwith
+#!/usr/bin/python3
 
-CONTRACT_PATH = f'{paths.TEZOS_HOME}/src/bin_client/test/contracts/opcodes/'
+import os
 
+IN_PATH = os.path.join(os.path.dirname(__file__), "contracts", "opcodes")  
+OUT_PATH = os.path.join(os.path.dirname(__file__), "k-contracts", "opcodes")  
 
-@pytest.mark.slow
-@pytest.mark.contract
-class TestContractOpcodes:
-    """Tests for individual opcodes that do not require origination."""
-
-    @pytest.mark.parametrize(
-        "contract,param,storage,expected",
-        [   # FORMAT: assert_output contract_file storage input expected_result
-
-            # TODO add tests for map_car.tz, subset.tz
-            # NB: noop.tz is tested in test_basic.sh
-
+tests = [   #"contract,param,storage,expected",
             ('cons.tz', '{}', '10', '{ 10 }'),
             ('cons.tz', '{ 10 }', '-5', '{ -5 ; 10 }'),
             ('cons.tz', '{ -5 ; 10 }', '99', '{ 99 ; -5 ; 10 }'),
@@ -604,232 +592,15 @@ class TestContractOpcodes:
 
             # Test CHAIN_ID
             ('chain_id_store.tz', 'None', 'Unit', '(Some 0x7a06a770)')
-        ])
-    def test_contract_input_output(self,
-                                   client,
-                                   contract,
-                                   param,
-                                   storage,
-                                   expected):
-        if contract.endswith('.tz'):
-            contract = f'{CONTRACT_PATH}/{contract}'
-            run_script_res = client.run_script(contract, param, storage)
-            assert run_script_res.storage == expected
+]
 
-    @pytest.mark.parametrize(
-        "contract,param,storage,expected,big_map_diff",
-        [   # FORMAT: assert_output contract_file storage input expected_result
-            #         expected_diffs
+template = """$contract {{ {0} }} ;
+$param {1} ;
+$storage {2} ;
+$ExpectedOutput {3} ;
+"""
 
-            # Get the value stored at the given key in the big map
-            ('get_big_map_value.tz', '(Pair { Elt "hello" "hi" } None)',
-             '"hello"', '(Pair 0 (Some "hi"))',
-             [["New map(0) of type (big_map string string)"],
-              ['Set map(0)["hello"] to "hi"']]),
-            ('get_big_map_value.tz', '(Pair { Elt "hello" "hi" } None)', '""',
-             '(Pair 0 None)',
-             [["New map(0) of type (big_map string string)"],
-              ['Set map(0)["hello"] to "hi"']]),
-            ('get_big_map_value.tz',
-             '(Pair { Elt "1" "one" ; Elt "2" "two" } None)',
-             '"1"',
-             '(Pair 0 (Some "one"))',
-             [["New map(0) of type (big_map string string)"],
-              ['Set map(0)["1"] to "one"'],
-              ['Set map(0)["2"] to "two"']]),
-
-            # Test updating big maps
-            ('update_big_map.tz',
-             '(Pair { Elt "1" "one" ; Elt "2" "two" } Unit)',
-             '{}', '(Pair 0 Unit)',
-             [["New map(0) of type (big_map string string)"],
-              ['Set map(0)["1"] to "one"'],
-              ['Set map(0)["2"] to "two"']]),
-            ('update_big_map.tz',
-             '(Pair { Elt "1" "one" ; Elt "2" "two" } Unit)',
-             '{ Elt "1" (Some "two") }', '(Pair 0 Unit)',
-             [["New map(0) of type (big_map string string)"],
-              ['Set map(0)["1"] to "two"'],
-              ['Set map(0)["2"] to "two"']]),
-            ('update_big_map.tz',
-             '(Pair { Elt "1" "one" ; Elt "2" "two" } Unit)',
-             '{ Elt "3" (Some "three") }', '(Pair 0 Unit)',
-             [["New map(0) of type (big_map string string)"],
-              ['Set map(0)["1"] to "one"'],
-              ['Set map(0)["2"] to "two"'],
-              ['Set map(0)["3"] to "three"']]),
-            ('update_big_map.tz',
-             '(Pair { Elt "1" "one" ; Elt "2" "two" } Unit)',
-             '{ Elt "3" None }', '(Pair 0 Unit)',
-             [["New map(0) of type (big_map string string)"],
-              ['Set map(0)["1"] to "one"'],
-              ['Set map(0)["2"] to "two"'],
-              ['Unset map(0)["3"]']]),
-            ('update_big_map.tz',
-             '(Pair { Elt "1" "one" ; Elt "2" "two" } Unit)',
-             '{ Elt "2" None }', '(Pair 0 Unit)',
-             [["New map(0) of type (big_map string string)"],
-              ['Set map(0)["1"] to "one"'],
-              ['Unset map(0)["2"]']]),
-            ('update_big_map.tz',
-             '(Pair { Elt "1" "one" ; Elt "2" "two" } Unit)',
-             '{ Elt "1" (Some "two") }', '(Pair 0 Unit)',
-             [["New map(0) of type (big_map string string)"],
-              ['Set map(0)["1"] to "two"'],
-              ['Set map(0)["2"] to "two"']])
-        ])
-    def test__big_map_contract_io(self,
-                                  client,
-                                  contract,
-                                  param,
-                                  storage,
-                                  expected,
-                                  big_map_diff):
-        contract = f'{CONTRACT_PATH}/{contract}'
-        run_script_res = client.run_script(contract, param, storage)
-        assert run_script_res.storage == expected
-        assert run_script_res.big_map_diff == big_map_diff
-
-    @pytest.mark.parametrize(
-        "param,storage,expected,big_map_diff",
-        [   # test swap
-            ('(Left (Pair { Elt "1" "one" } { Elt "2" "two" }))',
-             '(Left Unit)',
-             '(Left (Pair 0 1))',
-             [['New map(1) of type (big_map string string)'],
-              ['Set map(1)["1"] to "one"'],
-              ['New map(0) of type (big_map string string)'],
-              ['Set map(0)["2"] to "two"']]),
-            # test reset with new map
-            ('(Left (Pair { Elt "1" "one" } { Elt "2" "two" }))',
-             '(Right (Left (Left (Pair { Elt "3" "three" } ' +
-             '{ Elt "4" "four" }))))',
-             '(Left (Pair 0 1))',
-             [['New map(1) of type (big_map string string)'],
-              ['Set map(1)["4"] to "four"'],
-              ['New map(0) of type (big_map string string)'],
-              ['Set map(0)["3"] to "three"']]),
-            # test reset to unit
-            ('(Left (Pair { Elt "1" "one" } { Elt "2" "two" }))',
-             '(Right (Left (Right Unit)))',
-             '(Right Unit)',
-             [['\n']]),
-            # test import to big_map
-            ('(Right Unit)',
-             '(Right (Right (Left (Pair { Pair "foo" "bar" } ' +
-             '{ Pair "gaz" "baz" }) )))',
-             '(Left (Pair 0 1))',
-             [['New map(1) of type (big_map string string)'],
-              ['Set map(1)["gaz"] to "baz"'],
-              ['New map(0) of type (big_map string string)'],
-              ['Set map(0)["foo"] to "bar"']]),
-            # test add to big_map
-            ('(Left (Pair { Elt "1" "one" } { Elt "2" "two" }) )',
-             '(Right (Right (Right (Left { Pair "3" "three" }))))',
-             '(Left (Pair 0 1))',
-             [['New map(1) of type (big_map string string)'],
-              ['Set map(1)["2"] to "two"'],
-              ['New map(0) of type (big_map string string)'],
-              ['Set map(0)["1"] to "one"'],
-              ['Set map(0)["3"] to "three"']]),
-            # test remove from big_map
-            ('(Left (Pair { Elt "1" "one" } { Elt "2" "two" }))',
-             '(Right (Right (Right (Right { "1" }))))',
-             '(Left (Pair 0 1))',
-             [['New map(1) of type (big_map string string)'],
-              ['Set map(1)["2"] to "two"'],
-              ['New map(0) of type (big_map string string)'],
-              ['Unset map(0)["1"]']])
-        ])
-    def test_big_map_magic(self,
-                           client,
-                           param,
-                           storage,
-                           expected,
-                           big_map_diff):
-        contract = f'{paths.TEZOS_HOME}/src/bin_client/test/' + \
-            'contracts/mini_scenarios/big_map_magic.tz'
-        run_script_res = client.run_script(contract, param, storage)
-        assert run_script_res.storage == expected
-        assert run_script_res.big_map_diff == big_map_diff
-
-    def test_packunpack(self, client):
-        """Test PACK/UNPACK and binary format."""
-        assert_run_script_success(
-            client,
-            f'{CONTRACT_PATH}/packunpack.tz',
-            'Unit',
-            '(Pair (Pair (Pair "toto" {3;7;9;1}) {1;2;3}) ' +
-            '0x05070707070100000004746f746f020000000800030' +
-            '007000900010200000006000100020003)'
-        )
-        assert_run_script_failwith(
-            client,
-            f'{CONTRACT_PATH}/packunpack.tz',
-            'Unit',
-            '(Pair (Pair (Pair "toto" {3;7;9;1}) {1;2;3}) ' +
-            '0x05070707070100000004746f746f020000000800030' +
-            '0070009000102000000060001000200030004)'
-        )
-
-    def test_check_signature(self, client):
-        sig = 'edsigthTzJ8X7MPmNeEwybRAvdxS1pupqcM5Mk4uCuyZA' \
-              + 'e7uEk68YpuGDeViW8wSXMrCi5CwoNgqs8V2w8ayB5dMJzrYCHhD8C7'
-        assert_run_script_success(
-            client,
-            f'{CONTRACT_PATH}/check_signature.tz',
-            f'(Pair "{sig}" "hello")',
-            '"edpkuBknW28nW72KG6RoHtYW7p12T6GKc7nAbwYX5m8Wd9sDVC9yav"'
-        )
-        assert_run_script_failwith(
-            client,
-            f'{CONTRACT_PATH}/check_signature.tz',
-            f'(Pair "{sig}" "abcd")',
-            '"edpkuBknW28nW72KG6RoHtYW7p12T6GKc7nAbwYX5m8Wd9sDVC9yav"'
-        )
-
-    def test_hash_consistency_michelson_cli(self, client):
-        hash_result = client.hash(
-            '(Pair 22220000000 (Pair "2017-12-13T04:49:00Z" 034))',
-            '(pair mutez (pair timestamp int))').blake2b
-        hash_contract = f'{CONTRACT_PATH}/hash_consistency_checker.tz'
-        run_script_res = client.run_script(
-            hash_contract, '0x00',
-            '(Pair 22220000000 (Pair "2017-12-13T04:49:00Z" 034))')
-        assert run_script_res.storage == hash_result
-        run_script_res = client.run_script(
-            hash_contract, '0x00',
-            '(Pair 22220000000 (Pair "2017-12-13T04:49:00Z" 034))')
-        assert run_script_res.storage == hash_result
-
-    @pytest.mark.parametrize(
-        "contract,param,storage",
-        [   # FORMAT: assert_output contract_file storage input
-
-            # Test overflow in shift
-            ('shifts.tz', 'None', '(Left (Pair 1 257))'),
-            ('shifts.tz', 'None', '(Left (Pair 123 257))'),
-            ('shifts.tz', 'None', '(Right (Pair 1 257))'),
-            ('shifts.tz', 'None', '(Right (Pair 123 257))'),
-            ('mul_overflow.tz', 'Unit', 'Left Unit'),
-            ('mul_overflow.tz', 'Unit', 'Right Unit')
-        ])
-    def test_arithmetic_overflow(self,
-                                 client,
-                                 contract,
-                                 param,
-                                 storage):
-        contract = f'{CONTRACT_PATH}/{contract}'
-
-        def cmd():
-            client.run_script(contract, param, storage)
-        assert check_run_failure(cmd, r'unexpected arithmetic overflow')
-
-    @pytest.mark.skip(reason="Bug in annotation system")
-    def test_fails_annotated_set_car_cdr(self, client):
-        """Tests the SET_CAR and SET_CDR instructions."""
-        def cmd():
-            client.run_script(f'{CONTRACT_PATH}/set_car.tz',
-                              '(Pair %wrong %field "hello" 0)',
-                              '""')
-        assert check_run_failure(cmd, r'The two annotations do not match')
+for (contract, param, storage, output) in tests:
+    with open(os.path.join(IN_PATH, contract), 'r') as in_file:
+        with open(os.path.join(OUT_PATH, contract), 'w') as out_file:
+            print(template.format(in_file.read(), param, storage, output), file=out_file)

@@ -95,7 +95,7 @@ module MICHELSON-SYNTAX
 		| "map" AnnotationList ComparableType Type
 		| "big_map" AnnotationList ComparableType Type
 
-  syntax Block ::= "{" InstructionList "}"
+  syntax Block ::= "{" InstructionList ";" "}"
                  | "{" "}"
 
   syntax DIPMacro ::= r"DII+P" [token]
@@ -235,23 +235,21 @@ module MICHELSON-SYNTAX
   syntax Instruction ::= "CREATE_CONTRACT" AnnotationList ContractBlock 
 
  
-  syntax CodeDecl ::= "code" Block ";"
-  syntax StorageDecl ::= "storage" Type ";"
-  syntax ParameterDecl ::= "parameter" Type ";"
+  syntax CodeDecl ::= "code" Block 
+  syntax StorageDecl ::= "storage" Type 
+  syntax ParameterDecl ::= "parameter" Type 
 
-  syntax Contract ::= CodeDecl StorageDecl ParameterDecl
-                    | CodeDecl ParameterDecl StorageDecl
-                    | StorageDecl CodeDecl ParameterDecl
-                    | ParameterDecl CodeDecl StorageDecl
-                    | StorageDecl ParameterDecl CodeDecl
-                    | ParameterDecl StorageDecl CodeDecl
+  syntax Contract ::= CodeDecl ";" StorageDecl ";" ParameterDecl
+                    | CodeDecl ";" ParameterDecl ";" StorageDecl
+                    | StorageDecl ";" CodeDecl ";" ParameterDecl
+                    | ParameterDecl ";" CodeDecl ";" StorageDecl
+                    | StorageDecl ";" ParameterDecl ";" CodeDecl
+                    | ParameterDecl ";" StorageDecl ";" CodeDecl
 
   syntax ContractInput ::= #ContractInput(String, Type)
   syntax ContractInputList ::= List{ContractInput, " "} 
 
   syntax Pgm ::= "$contract" "{" Contract "}" ";" 
-                 "$paramtype" Type ";" 
-                 "$storagetype" Type ";" 
                  "$balance" Int ";" 
                  "$amount" Int ";" 
                  "$now" Int ";" 
@@ -260,5 +258,9 @@ module MICHELSON-SYNTAX
                  "$sourceaddr" String ";" 
                  "$senderaddr" String ";" 
                  "$param" Data  ";" 
-                 "$storage" Data ";" 
+                 "$storage" Data ";"
+
+  syntax Pgm ::= "$contract" "{" Contract "}" ";" 
+                 "$param" Data  ";" 
+                 "$storage" Data ";"
 endmodule

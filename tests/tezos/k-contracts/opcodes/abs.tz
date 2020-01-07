@@ -1,0 +1,10 @@
+$contract { parameter nat;
+storage unit;
+code { CAR;
+       DUP; NEG; ABS; COMPARE; ASSERT_EQ;
+       UNIT; NIL operation; PAIR}
+ } ;
+$param Unit ;
+$storage 948 ;
+$ExpectedOutput Unit ;
+

@@ -1,0 +1,8 @@
+$contract { parameter (contract unit);
+storage (option address);
+code {CAR; ADDRESS; SOME; NIL operation; PAIR }
+ } ;
+$param None ;
+$storage "tz1cxcwwnzENRdhe2Kb8ZdTrdNy4bFNyScx5" ;
+$ExpectedOutput (Some "tz1cxcwwnzENRdhe2Kb8ZdTrdNy4bFNyScx5") ;
+

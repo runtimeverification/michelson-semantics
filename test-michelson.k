@@ -19,10 +19,10 @@ module TEST-MICHELSON
   rule ListToKSeqAux(ListItem(O) L, S) => ListToKSeqAux(L, O ~> S)
   rule ListToKSeqAux(.List, S) => S
 
-  rule <k> $Instructions B ; $Stack L ; => B </k>
+  rule <k> $Instructions { B } ; $Stack L ; => B </k>
      <stack> . => ListToKSeq(L) </stack> [structural]
 
-  rule <k> $Instructions B ; $Stack L ; OL ; => OL ~> B </k>
+  rule <k> $Instructions { B } ; $Stack L ; OL ; => OL ~> B </k>
          <stack> . => ListToKSeq(L) </stack> [structural]
 
   rule O:Optional ; OL => O ~> OL [structural]
@@ -31,4 +31,9 @@ module TEST-MICHELSON
     
   rule <k> $ParamType T => . ... </k>
        <paramtype> _ => T </paramtype> [structural]
+
+  syntax KItem ::= #VerifyStorage(Data)
+
+  rule <k> P:Pgm $ExpectedOutput D ; => P ~> #VerifyStorage(#ConcreteArgToSemantics(D, St)) ... </k>
+       <storagetype> St </storagetype>
 endmodule
