@@ -1,0 +1,39 @@
+<generatedTop>
+  <k>
+    .
+  </k>
+  <stack>
+    Pair .List ListItem ( "Hello test1" )
+    ListItem ( "Hello test2" )
+  </stack>
+  <paramtype>
+    list .AnnotationList string .AnnotationList
+  </paramtype>
+  <storagetype>
+    list .AnnotationList string .AnnotationList
+  </storagetype>
+  <balance>
+    #Mutez ( 0 )
+  </balance>
+  <amount>
+    #Mutez ( 0 )
+  </amount>
+  <now>
+    #Timestamp ( -1 )
+  </now>
+  <myaddr>
+    #Address ( "InvalidMyAddr" )
+  </myaddr>
+  <knownaddrs>
+    .Map
+  </knownaddrs>
+  <sourceaddr>
+    #Address ( "InvalidSourceAddr" )
+  </sourceaddr>
+  <senderaddr>
+    #Address ( "InvalidSenderAddr" )
+  </senderaddr>
+  <chainid>
+    #ChainId ( 0 )
+  </chainid>
+</generatedTop>

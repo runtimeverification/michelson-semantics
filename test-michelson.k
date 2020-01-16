@@ -32,8 +32,15 @@ module TEST-MICHELSON
   rule <k> $ParamType T => . ... </k>
        <paramtype> _ => T </paramtype> [structural]
 
+  syntax KItem ::= #TransformExpected(Data)
   syntax KItem ::= #VerifyStorage(Data)
 
-  rule <k> P:Pgm $ExpectedOutput D ; => P ~> #VerifyStorage(#ConcreteArgToSemantics(D, St)) ... </k>
+  rule <k> P:Pgm $ExpectedOutput D ; => P ~> #TransformExpected(D) ... </k>
+
+  rule <k> #TransformExpected(D) => #VerifyStorage(#ConcreteArgToSemantics(D, St)) ... </k>
        <storagetype> St </storagetype>
+
+  rule <k> #VerifyStorage(D1) => . ... </k>
+       <stack> Pair _ D2 </stack>
+       requires D1 ==K D2
 endmodule

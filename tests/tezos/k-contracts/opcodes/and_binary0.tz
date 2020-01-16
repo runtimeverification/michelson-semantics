@@ -1,0 +1,32 @@
+$contract { parameter unit;
+storage unit;
+code { DROP;
+
+       
+       PUSH nat 5; PUSH nat 6; AND; PUSH nat 4; ASSERT_CMPEQ;
+
+       
+       PUSH nat 6; PUSH int 5; AND; PUSH nat 4; ASSERT_CMPEQ;
+
+       
+       
+       
+
+       
+       
+       
+       
+       PUSH nat 12; PUSH int -1; AND; PUSH nat 12; ASSERT_CMPEQ;
+
+       
+       
+       
+       
+       PUSH nat 12; PUSH int -5; AND; PUSH nat 8; ASSERT_CMPEQ;
+
+       UNIT; NIL @noop operation; PAIR; };
+ } ;
+$param Unit ;
+$storage Unit ;
+$ExpectedOutput Unit ;
+

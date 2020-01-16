@@ -22,9 +22,11 @@ module MICHELSON
   syntax KeyHash ::= #ParseKeyHash(String) [function]
   rule #ParseKeyHash(S) => #KeyHash(S)
 
+  syntax Int ::= #ISO2Epoch(String) [function, hook(TIME.ISO2Epoch)]
+
   syntax Timestamp ::= #ParseTimestamp(String) [function]
-  rule #ParseTimestamp(S) => #Timestamp(String2Int(S)) // For the time being we support only unix times.
-  
+  rule #ParseTimestamp(S) => #Timestamp(#ISO2Epoch(S)) requires findString(S, "Z", 0) >=Int 0
+  rule #ParseTimestamp(S) => #Timestamp(String2Int(S)) requires findString(S, "Z", 0) <Int 0
 
   syntax Address ::= #ParseAddress(String) [function]
   rule #ParseAddress(S) => #Address(S)
@@ -35,6 +37,14 @@ module MICHELSON
   syntax Signature ::= #ParseSignature(String) [function]
   rule #ParseSignature(S) => #Signature(S)
 
+  syntax String ::= #CDARToString(CDARMacro) [function, functional, hook(STRING.token2string)]
+  syntax String ::= #MBytesToString(MBytesLiteral) [function, functional, hook(STRING.token2string)]
+  syntax Int ::= #MBytesToInt(MBytesLiteral) [function]
+
+  rule #MBytesToInt(H) => String2Base(substrString(#MBytesToString(H), 2, lengthString(#MBytesToString(H))), 16) requires lengthString(#MBytesToString(H)) >Int 2 
+  rule #MBytesToInt(H) => 0 requires lengthString(#MBytesToString(H)) <=Int 2
+
+  rule #ConcreteArgToSemantics(H:MBytesLiteral, chain_id _) => #ChainId(#MBytesToInt(H))
   rule #ConcreteArgToSemantics(I:Int, int _) => I
   rule #ConcreteArgToSemantics(I:Int, nat _) => I requires I >=Int 0
   rule #ConcreteArgToSemantics(S:String, string _) => S
@@ -63,15 +73,19 @@ module MICHELSON
 
   syntax Data ::= #ConcreteArgToSemanticsList(DataList, Type, List) [function]
 
+  rule #ConcreteArgToSemantics({ }, list _ _) => .List
+
   rule #ConcreteArgToSemantics({ DL:DataList }, list _ T) =>
        #ConcreteArgToSemanticsList(DL, T, .List)
 
   rule #ConcreteArgToSemanticsList(D1 ; DL, T, L) =>
        #ConcreteArgToSemanticsList(DL, T, ListItem(#ConcreteArgToSemantics(D1, T)) L)
 
-  rule #ConcreteArgToSemanticsList(.DataList, _, L) => #ReverseList(L)
+  rule #ConcreteArgToSemanticsList(D1, T, L) => #ReverseList(ListItem(#ConcreteArgToSemantics(D1, T)) L)
 
   syntax Data ::= #ConcreteArgToSemanticsSet(DataList, Type, Set) [function]
+
+  rule #ConcreteArgToSemantics({ }, set _ _) => .Set
 
   rule #ConcreteArgToSemantics({ DL:DataList }, set _ T) =>
        #ConcreteArgToSemanticsSet(DL, T, .Set)
@@ -79,7 +93,7 @@ module MICHELSON
   rule #ConcreteArgToSemanticsSet(D1 ; DL, T, S) =>
        #ConcreteArgToSemanticsSet(DL, T, SetItem(#ConcreteArgToSemantics(D1, T)) S)
 
-  rule #ConcreteArgToSemanticsSet(.DataList, _, S) => S
+  rule #ConcreteArgToSemanticsSet(D, T, S) => SetItem(#ConcreteArgToSemantics(D, T)) S
 
   rule #ConcreteArgToSemantics(S:String, contract _ T) => #Contract(#ParseAddress(S), T)
   
@@ -90,13 +104,17 @@ module MICHELSON
 
   syntax Data ::= #ConcreteArgToSemanticsMap(MapEntryList, Type, Type, Map) [function]
 
+  rule #ConcreteArgToSemantics({ }, map _ K V) => #Map(.Map, K, V)
+
   rule #ConcreteArgToSemantics({ M:MapEntryList }, map _:AnnotationList K V) =>
        #ConcreteArgToSemanticsMap(M, K, V, .Map)
 
-  rule #ConcreteArgToSemanticsMap(Elt K V ; ML , KT, VT, M) =>
-       #ConcreteArgToSemanticsMap(ML , KT, VT, M[#ConcreteArgToSemantics(K, KT) <- #ConcreteArgToSemantics(V, VT)])
+  rule #ConcreteArgToSemanticsMap(Elt K V ; ML, KT, VT, M) =>
+       #ConcreteArgToSemanticsMap(ML, KT, VT, M[#ConcreteArgToSemantics(K, KT) <- #ConcreteArgToSemantics(V, VT)])
 
-  rule #ConcreteArgToSemanticsMap(.MapEntryList, KT, VT, M) => #Map(M, KT, VT)
+  rule #ConcreteArgToSemanticsMap(Elt K V, KT, VT, M) => #Map(M[#ConcreteArgToSemantics(K, KT) <- #ConcreteArgToSemantics(V, VT)], KT, VT)
+
+  rule #ConcreteArgToSemantics({ }, big_map _:AnnotationList K V) => #Map(.Map, K, V)
 
   rule #ConcreteArgToSemantics({ M:MapEntryList }, big_map _:AnnotationList K V) =>
        #ConcreteArgToSemanticsMap(M, K, V, .Map)
@@ -129,27 +147,34 @@ module MICHELSON
 
   rule #ReadKnownAddrs( .ContractInputList ) => . [structural]
 
-  rule <k> #LoadContract(code B ; storage St ; parameter Pt ) ~> #InitializeStack(P, S) => #InitializeStack(P, S) ~> B ... </k> 
+  rule code B ; storage St ; parameter Pt => code B ; storage St ; parameter Pt ; [macro]
+  rule code B ; parameter Pt ; storage St => code B ; parameter Pt ; storage St ; [macro]
+  rule storage St ; code B ; parameter Pt => storage St ; code B ; parameter Pt ; [macro]
+  rule parameter Pt ; code B ; storage St => parameter Pt ; code B ; storage St ; [macro]
+  rule storage St ; parameter Pt ; code B => storage St ; parameter Pt ; code B ; [macro]
+  rule parameter Pt ; storage St ; code B => parameter Pt ; storage St ; code B ; [macro]
+
+  rule <k> #LoadContract(code B ; storage St ; parameter Pt ;) ~> #InitializeStack(P, S) => #InitializeStack(P, S) ~> B ... </k> 
        <paramtype> _ => Pt </paramtype>
        <storagetype> _ => St </storagetype> [structural]
 
-  rule <k> #LoadContract(code B ; parameter Pt ; storage St ) ~> #InitializeStack(P, S) => #InitializeStack(P, S) ~> B ... </k> 
+  rule <k> #LoadContract(code B ; parameter Pt ; storage St ;) ~> #InitializeStack(P, S) => #InitializeStack(P, S) ~> B ... </k> 
        <paramtype> _ => Pt </paramtype>
        <storagetype> _ => St </storagetype> [structural]
 
-  rule <k> #LoadContract(storage St ; code B ; parameter Pt ) ~> #InitializeStack(P, S) => #InitializeStack(P, S) ~> B ... </k> 
+  rule <k> #LoadContract(storage St ; code B ; parameter Pt ;) ~> #InitializeStack(P, S) => #InitializeStack(P, S) ~> B ... </k> 
        <paramtype> _ => Pt </paramtype>
        <storagetype> _ => St </storagetype> [structural]
 
-  rule <k> #LoadContract(parameter Pt ; code B ; storage St ) ~> #InitializeStack(P, S) => #InitializeStack(P, S) ~> B ... </k> 
+  rule <k> #LoadContract(parameter Pt ; code B ; storage St ;) ~> #InitializeStack(P, S) => #InitializeStack(P, S) ~> B ... </k> 
        <paramtype> _ => Pt </paramtype>
        <storagetype> _ => St </storagetype> [structural]
 
-  rule <k> #LoadContract(storage St ; parameter Pt ; code B ) ~> #InitializeStack(P, S) => #InitializeStack(P, S) ~> B ... </k> 
+  rule <k> #LoadContract(storage St ; parameter Pt ; code B ;) ~> #InitializeStack(P, S) => #InitializeStack(P, S) ~> B ... </k> 
        <paramtype> _ => Pt </paramtype>
        <storagetype> _ => St </storagetype> [structural]
 
-  rule <k> #LoadContract(parameter Pt ; storage St ; code B ) ~> #InitializeStack(P, S) => #InitializeStack(P, S) ~> B ... </k> 
+  rule <k> #LoadContract(parameter Pt ; storage St ; code B ;) ~> #InitializeStack(P, S) => #InitializeStack(P, S) ~> B ... </k> 
        <paramtype> _ => Pt </paramtype>
        <storagetype> _ => St </storagetype> [structural]
 
@@ -159,9 +184,10 @@ module MICHELSON
        <storagetype> St </storagetype>
 
   rule I:Instruction ; Is:InstructionList => I ~> Is [structural]
-  rule .InstructionList => .K [structural]
   rule {} => .K [structrual]
+  rule { Is:InstructionList } => Is [structural]
   rule { Is:InstructionList ; } => Is [structural]
+
 
   rule #HandleAnnotations(_) => . [structural]
 
@@ -199,7 +225,7 @@ module MICHELSON
 
   rule <k> DIP A 0 B => #HandleAnnotations(A) ~> B ... </k>
 
-  rule <k> DIP A I B => #HandleAnnotations(A) ~> DIP .AnnotationList { DIP .AnnotationList  I -Int 1 B ; } ... </k>
+  rule <k> DIP A I B => #HandleAnnotations(A) ~> DIP .AnnotationList { DIP .AnnotationList  I -Int 1 B } ... </k>
        requires I >Int 0
 
   syntax Data ::= #Lambda(Type, Type, Block)
@@ -213,10 +239,10 @@ module MICHELSON
        <stack> A:Data ~> #Lambda(_, _, C):Data ~> Rs:K => A </stack> 
 
   rule <k> APPLY A => #HandleAnnotations(A) ... </k>
-       <stack> D:Data ~> #Lambda((pair _:AnnotationList T0 T1):Type, T2, { C ; } ) => #Lambda(T1, T2, { PUSH .AnnotationList T0 D ; PAIR .AnnotationList ; C ; } ) ... </stack> 
+       <stack> D:Data ~> #Lambda((pair _:AnnotationList T0 T1):Type, T2, { C } ) => #Lambda(T1, T2, { PUSH .AnnotationList T0 D ; PAIR .AnnotationList ; C } ) ... </stack> 
 
   rule <k> APPLY A => #HandleAnnotations(A) ... </k>
-       <stack> D:Data ~> #Lambda((pair _:AnnotationList T0 T1):ComparableType, T2, { C ; } ) => #Lambda(T1, T2, { PUSH .AnnotationList T0 D ; PAIR .AnnotationList ; C ; }) ... </stack>
+       <stack> D:Data ~> #Lambda((pair _:AnnotationList T0 T1):ComparableType, T2, { C } ) => #Lambda(T1, T2, { PUSH .AnnotationList T0 D ; PAIR .AnnotationList ; C }) ... </stack>
 
   ////Stack operations
 
@@ -821,25 +847,38 @@ module MICHELSON
 
   rule FAIL _ => UNIT .AnnotationList ~> FAILWITH .AnnotationList
 
-  rule ASSERT _ => IF .AnnotationList {} {FAIL .AnnotationList ; }
+  rule ASSERT _ => IF .AnnotationList {} {FAIL .AnnotationList }
 
-  rule ASSERT_EQ _ => IFEQ .AnnotationList {} {FAIL .AnnotationList ; }
-  rule ASSERT_NEQ _ => IFNEQ .AnnotationList {} {FAIL .AnnotationList ; }
-  rule ASSERT_LT _ => IFLT .AnnotationList {} {FAIL .AnnotationList ; }
-  rule ASSERT_GT _ => IFGT .AnnotationList {} {FAIL .AnnotationList ; }
-  rule ASSERT_LE _ => IFLE .AnnotationList {} {FAIL .AnnotationList ; }
-  rule ASSERT_GE _ => IFGE .AnnotationList {} {FAIL .AnnotationList ; }
+  rule ASSERT_EQ _ => IFEQ .AnnotationList {} {FAIL .AnnotationList }
+  rule ASSERT_NEQ _ => IFNEQ .AnnotationList {} {FAIL .AnnotationList }
+  rule ASSERT_LT _ => IFLT .AnnotationList {} {FAIL .AnnotationList }
+  rule ASSERT_GT _ => IFGT .AnnotationList {} {FAIL .AnnotationList }
+  rule ASSERT_LE _ => IFLE .AnnotationList {} {FAIL .AnnotationList }
+  rule ASSERT_GE _ => IFGE .AnnotationList {} {FAIL .AnnotationList }
 
-  rule ASSERT_CMPEQ _ => IFCMPEQ .AnnotationList {} {FAIL .AnnotationList ; }
-  rule ASSERT_CMPNEQ _ => IFCMPNEQ .AnnotationList {} {FAIL .AnnotationList ; }
-  rule ASSERT_CMPLT _ => IFCMPLT .AnnotationList {} {FAIL .AnnotationList ; }
-  rule ASSERT_CMPGT _ => IFCMPGT .AnnotationList {} {FAIL .AnnotationList ; }
-  rule ASSERT_CMPLE _ => IFCMPLE .AnnotationList {} {FAIL .AnnotationList ; }
-  rule ASSERT_CMPGE _ => IFCMPGE .AnnotationList {} {FAIL .AnnotationList ; }
+  rule ASSERT_CMPEQ _ => IFCMPEQ .AnnotationList {} {FAIL .AnnotationList }
+  rule ASSERT_CMPNEQ _ => IFCMPNEQ .AnnotationList {} {FAIL .AnnotationList }
+  rule ASSERT_CMPLT _ => IFCMPLT .AnnotationList {} {FAIL .AnnotationList }
+  rule ASSERT_CMPGT _ => IFCMPGT .AnnotationList {} {FAIL .AnnotationList }
+  rule ASSERT_CMPLE _ => IFCMPLE .AnnotationList {} {FAIL .AnnotationList }
+  rule ASSERT_CMPGE _ => IFCMPGE .AnnotationList {} {FAIL .AnnotationList }
 
-  rule ASSERT_NONE _ => IF_NONE .AnnotationList {} {FAIL .AnnotationList ; }
+  rule ASSERT_NONE _ => IF_NONE .AnnotationList {} {FAIL .AnnotationList }
 
-  rule ASSERT_SOME _ => IF_NONE .AnnotationList {FAIL .AnnotationList ; } {} // TODO: Add annotations
-  rule ASSERT_LEFT _ => IF_LEFT .AnnotationList {} {FAIL .AnnotationList ; } //  ^
-  rule ASSERT_RIGHT _ => IF_LEFT .AnnotationList {FAIL .AnnotationList ; } {} // ^
+  rule ASSERT_SOME _ => IF_NONE .AnnotationList {FAIL .AnnotationList } {} // TODO: Add annotations
+  rule ASSERT_LEFT _ => IF_LEFT .AnnotationList {} {FAIL .AnnotationList } //  ^
+  rule ASSERT_RIGHT _ => IF_LEFT .AnnotationList {FAIL .AnnotationList } {} // ^
+
+  rule IF_SOME _ BT BF => IF_NONE .AnnotationList BF BT
+
+  syntax KItem ::= #DoCDARMacro(String)
+
+  rule C:CDARMacro _ => #DoCDARMacro(substrString(#CDARToString(C), 1, lengthString(#CDARToString(C)) -Int 1))
+
+  rule #DoCDARMacro("") => . 
+  rule <k> #DoCDARMacro(S => substrString(S, 1, lengthString(S))) ... </k>
+       <stack> Pair A _ => A ... </stack> requires lengthString(S) >Int 0 andBool substrString(S, 0, 1) ==String "A"
+
+  rule <k> #DoCDARMacro(S => substrString(S, 1, lengthString(S))) ... </k>
+       <stack> Pair _ B => B ... </stack> requires lengthString(S) >Int 0 andBool substrString(S, 0, 1) ==String "D"
 endmodule

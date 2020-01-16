@@ -1,0 +1,18 @@
+$contract { parameter (pair int int);
+storage (pair (option (pair int nat)) (pair (option (pair int nat)) (pair (option (pair int nat)) (option (pair nat nat)))));
+code { CAR;
+       
+       DUP; UNPAIR; ABS; DIP { ABS; }; EDIV; SWAP;
+       
+       DUP; UNPAIR; ABS; EDIV; SWAP;
+       
+       DUP; UNPAIR; DIP { ABS; }; EDIV; SWAP;
+       
+       UNPAIR; EDIV;
+       PAPAPAIR;
+       NIL operation; PAIR}
+ } ;
+$param (Pair -8 2) ;
+$storage (Pair None (Pair None (Pair None None))) ;
+$ExpectedOutput (Pair (Some (Pair -4 0)) (Pair (Some (Pair -4 0)) (Pair (Some (Pair 4 0)) (Some (Pair 4 0))))) ;
+

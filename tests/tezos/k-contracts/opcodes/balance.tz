@@ -1,8 +1,0 @@
-$contract { parameter unit;
-storage mutez;
-code {DROP; BALANCE; NIL operation; PAIR};
- } ;
-$param 111 ;
-$storage Unit ;
-$ExpectedOutput 4000000000000 ;
-

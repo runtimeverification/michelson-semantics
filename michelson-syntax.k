@@ -15,9 +15,9 @@ module MICHELSON-SYNTAX
 
   syntax MapEntry ::= "Elt" Data Data
 
-  syntax DataList ::= List{Data, ";"}
-  syntax MapEntryList ::= List{MapEntry, ";"}
-  syntax InstructionList ::= List{Instruction, ";"}
+  syntax DataList ::= Data | Data ";" DataList
+  syntax MapEntryList ::= MapEntry | MapEntry ";" MapEntryList
+  syntax InstructionList ::= Instruction | Instruction ";" InstructionList
 
   syntax TypeAnnotation ::= r":([_a-zA-Z][_0-9a-zA-Z\\.]*)?" [token]
   syntax VariableAnnotation ::= r"@(%|%%|[_a-zA-Z][_0-9a-zA-Z\\.]*)?" [token]
@@ -26,7 +26,7 @@ module MICHELSON-SYNTAX
 
   syntax AnnotationList ::= List{Annotation, ""}
 
-  syntax MBytesLiteral ::= r"0x([0-9a-fA-F]{2})+" [token]
+  syntax MBytesLiteral ::= r"0x([0-9a-fA-F]{2})*" [token]
 
   syntax MichelsonBool ::= "True" [token]
                          | "False" [token] // These just get macro'd to the proper K types.
@@ -74,6 +74,7 @@ module MICHELSON-SYNTAX
                     		   | "unit" 
                    		   | "signature"
 		                   | "operation"
+                                   | "chain_id"
 
   syntax SimpleNoncomparableType ::= UnannotatedSimpleNoncomparableType AnnotationList
 
@@ -83,6 +84,8 @@ module MICHELSON-SYNTAX
   syntax NormalPair ::= "pair" AnnotationList Type Type [klabel(ampair)]
   syntax ComparablePair ::= "pair" AnnotationList SimpleComparableType ComparableType [prefer, klabel(ampair)]
 
+  syntax ComparableType ::= "(" ComparableType ")" [bracket]
+ 
   syntax Type ::= ComparableType
                 | SimpleNoncomparableType
 		| NormalPair
@@ -95,18 +98,22 @@ module MICHELSON-SYNTAX
 		| "map" AnnotationList ComparableType Type
 		| "big_map" AnnotationList ComparableType Type
 
-  syntax Block ::= "{" InstructionList ";" "}"
-                 | "{" "}"
+  syntax EmptyBlock ::= "{" "}"
 
-  syntax DIPMacro ::= r"DII+P" [token]
-  syntax DUPMacro ::= r"DUU+P" [token]
-  syntax PairMacro ::= r"P[AIP]+R" [token] // This regex needs to be far more complex, but not sure how much K actually supports. P(\left=A|P(\left)(\right))(\right=I|P(\left)(\right))R
-  syntax UnpairMacro ::= r"UNP[AIP]+R" [token] // Same as above. UNP(\left=A|P(\left)(\right))(\right=I|P(\left)(\right))R
-  syntax CDARMacro ::= r"C[AD]+R" [token]
-  syntax SetCDARMacro ::= r"SET_C[AD]+R" [token]
+  syntax Block ::= "{" InstructionList "}"
+                 | "{" InstructionList ";" "}"
+                 | EmptyBlock
+
+//  syntax DIPMacro ::= r"DII+P" [token]
+//  syntax DUPMacro ::= r"DUU+P" [token]
+//  syntax PairMacro ::= r"P[AIP]+R" [token] // This regex needs to be far more complex, but not sure how much K actually supports. P(\left=A|P(\left)(\right))(\right=I|P(\left)(\right))R
+//  syntax UnpairMacro ::= r"UNP[AIP]+R" [token] // Same as above. UNP(\left=A|P(\left)(\right))(\right=I|P(\left)(\right))R
+  syntax CDARMacro ::= r"C[A,D]{2,}R" [token]
+//  syntax SetCDARMacro ::= r"SET_C[AD]+R" [token]
 
   syntax ContractBlock ::= "{" Contract "}"
 
+  syntax Instruction ::= CDARMacro AnnotationList
   syntax Instruction ::= "DROP" AnnotationList
   syntax Instruction ::= "DROP" AnnotationList Int
   syntax Instruction ::= "DIG" AnnotationList Int
@@ -174,7 +181,7 @@ module MICHELSON-SYNTAX
   syntax Instruction ::= "GT" AnnotationList 
   syntax Instruction ::= "LE" AnnotationList 
   syntax Instruction ::= "GE" AnnotationList 
-  syntax Instruction ::= "SELF" AnnotationList 
+  syntax Instruction ::= "SELF" AnnotationList  
   syntax Instruction ::= "CONTRACT" AnnotationList Type
   syntax Instruction ::= "TRANSFER_TOKENS" AnnotationList 
   syntax Instruction ::= "SET_DELEGATE" AnnotationList 
@@ -238,6 +245,13 @@ module MICHELSON-SYNTAX
   syntax CodeDecl ::= "code" Block 
   syntax StorageDecl ::= "storage" Type 
   syntax ParameterDecl ::= "parameter" Type 
+
+  syntax Contract ::= CodeDecl ";" StorageDecl ";" ParameterDecl ";"
+                    | CodeDecl ";" ParameterDecl ";" StorageDecl ";"
+                    | StorageDecl ";" CodeDecl ";" ParameterDecl ";"
+                    | ParameterDecl ";" CodeDecl ";" StorageDecl ";"
+                    | StorageDecl ";" ParameterDecl ";" CodeDecl ";"
+                    | ParameterDecl ";" StorageDecl ";" CodeDecl ";"
 
   syntax Contract ::= CodeDecl ";" StorageDecl ";" ParameterDecl
                     | CodeDecl ";" ParameterDecl ";" StorageDecl

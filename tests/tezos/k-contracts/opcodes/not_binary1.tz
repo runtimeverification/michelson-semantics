@@ -1,0 +1,17 @@
+$contract { parameter (or int nat);
+storage (option int);
+code { CAR;
+       IF_LEFT
+         {
+           NOT;
+         }
+         {
+           NOT;
+         } ;
+       SOME; NIL operation ; PAIR
+     }
+ } ;
+$param (Left 8) ;
+$storage None ;
+$ExpectedOutput (Some -9) ;
+

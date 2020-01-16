@@ -1,0 +1,8 @@
+$contract { parameter (pair timestamp timestamp);
+storage int;
+code { CAR; DUP; CAR; DIP{CDR}; SUB; NIL operation; PAIR }
+ } ;
+$param (Pair 0 0) ;
+$storage 111 ;
+$ExpectedOutput 0 ;
+

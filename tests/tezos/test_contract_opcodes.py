@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from collections import defaultdict
 import os
 
 IN_PATH = os.path.join(os.path.dirname(__file__), "contracts", "opcodes")  
@@ -600,7 +601,13 @@ $storage {2} ;
 $ExpectedOutput {3} ;
 """
 
-for (contract, param, storage, output) in tests:
+counters = defaultdict(lambda: 0)
+
+for (contract, storage, param, output) in tests:
+    name = contract[:-3]
+    num = str(counters[contract])
+    counters[contract] += 1
+    ext_name = name + num + ".tz"
     with open(os.path.join(IN_PATH, contract), 'r') as in_file:
-        with open(os.path.join(OUT_PATH, contract), 'w') as out_file:
+        with open(os.path.join(OUT_PATH, ext_name), 'w') as out_file:
             print(template.format(in_file.read(), param, storage, output), file=out_file)

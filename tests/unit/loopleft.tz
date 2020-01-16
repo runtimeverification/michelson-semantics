@@ -1,2 +1,2 @@
-$Instructions { LOOP_LEFT { PUSH int 2 ; ADD ; DUP ; DIP { PUSH int 10 ; } ; COMPARE ; GE ; IF { DROP ; PUSH string "hello" ; RIGHT int ; } { LEFT string ; } ; } } ; 
+$Instructions { LOOP_LEFT { PUSH int 2 ; ADD ; DUP ; DIP { PUSH int 10 } ; COMPARE ; GE ; IF { DROP ; PUSH string "hello" ; RIGHT int } { LEFT string } } } ; 
 $Stack ListItem(Left 1) ;

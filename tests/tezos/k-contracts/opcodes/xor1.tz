@@ -1,0 +1,18 @@
+$contract { parameter (or (pair bool bool) (pair nat nat));
+storage (option (or bool nat));
+code {
+       CAR;
+       IF_LEFT
+         {
+           UNPAIR; XOR; LEFT nat
+         }
+         {
+           UNPAIR; XOR; RIGHT bool
+         } ;
+       SOME; NIL operation ; PAIR
+     }
+ } ;
+$param Left (Pair False True) ;
+$storage None ;
+$ExpectedOutput (Some (Left True)) ;
+

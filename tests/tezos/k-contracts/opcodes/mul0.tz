@@ -1,0 +1,53 @@
+$contract { parameter unit ;
+storage unit ;
+code { CAR ;
+       DROP ;
+       
+       PUSH nat 7987 ;
+       PUSH mutez 10 ;
+       MUL ;
+       PUSH mutez 79870 ;
+       COMPARE ;
+       ASSERT_EQ ;
+       
+       PUSH mutez 10 ;
+       PUSH nat 7987 ;
+       MUL ;
+       PUSH mutez 79870 ;
+       COMPARE ;
+       ASSERT_EQ ;
+       
+       PUSH int 10 ;
+       PUSH int -7987 ;
+       MUL ;
+       PUSH int -79870 ;
+       COMPARE ;
+       ASSERT_EQ ;
+       
+       PUSH nat 10 ;
+       PUSH int -7987 ;
+       MUL ;
+       PUSH int -79870 ;
+       COMPARE ;
+       ASSERT_EQ ;
+       
+       PUSH int -10 ;
+       PUSH nat 7987 ;
+       MUL ;
+       PUSH int -79870 ;
+       COMPARE ;
+       ASSERT_EQ ;
+       
+       PUSH nat 10 ;
+       PUSH nat 7987 ;
+       MUL ;
+       PUSH nat 79870 ;
+       COMPARE ;
+       ASSERT_EQ ;
+
+       UNIT ; NIL operation ; PAIR }
+ } ;
+$param Unit ;
+$storage Unit ;
+$ExpectedOutput Unit ;
+

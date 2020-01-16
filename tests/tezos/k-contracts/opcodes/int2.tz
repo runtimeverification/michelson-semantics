@@ -1,0 +1,10 @@
+$contract { parameter nat;
+storage (option int);
+
+
+code { CAR; INT; SOME; NIL operation; PAIR };
+ } ;
+$param 9999 ;
+$storage None ;
+$ExpectedOutput (Some 9999) ;
+

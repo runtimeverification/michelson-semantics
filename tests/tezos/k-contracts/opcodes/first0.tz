@@ -1,0 +1,8 @@
+$contract { parameter (list nat);
+storage nat;
+code{CAR; IF_CONS {DIP{DROP}} {FAIL}; NIL operation; PAIR};
+ } ;
+$param { 1 ; 2 ; 3 ; 4 } ;
+$storage 111 ;
+$ExpectedOutput 1 ;
+

@@ -1,0 +1,23 @@
+$contract { parameter (or (pair nat nat) (pair nat nat));
+storage (option nat);
+
+
+
+
+
+code { CAR;
+       IF_LEFT {
+                 UNPAIR; LSL;
+               }
+               {
+                 UNPAIR; LSR;
+               };
+       SOME;
+       NIL operation;
+       PAIR;
+     };
+ } ;
+$param (Right (Pair 15 2)) ;
+$storage None ;
+$ExpectedOutput (Some 3) ;
+

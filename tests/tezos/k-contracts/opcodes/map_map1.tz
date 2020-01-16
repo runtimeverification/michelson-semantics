@@ -1,0 +1,13 @@
+$contract { parameter nat;
+storage (map string nat);
+
+
+code { UNPAIR; SWAP;
+       MAP { CDR; DIP {DUP}; ADD; };
+       DIP { DROP; };
+       NIL operation; PAIR; }
+ } ;
+$param 10 ;
+$storage { Elt "foo" 1 } ;
+$ExpectedOutput { Elt "foo" 11 } ;
+

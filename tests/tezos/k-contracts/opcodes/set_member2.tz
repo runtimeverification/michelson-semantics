@@ -1,0 +1,8 @@
+$contract { parameter string;
+storage (pair (set string) (option bool));
+code {DUP; DUP; CAR; DIP{CDAR}; MEM; SOME; DIP {CDAR}; SWAP; PAIR ; NIL operation; PAIR};
+ } ;
+$param "" ;
+$storage (Pair { "Hello" ; "World" } None) ;
+$ExpectedOutput (Pair { "Hello" ; "World" } (Some False)) ;
+

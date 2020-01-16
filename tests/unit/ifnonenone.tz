@@ -1,2 +1,2 @@
-$Instructions { IF_NONE { PUSH nat 1 ; } { UNIT ; FAILWITH ; } } ; 
+$Instructions { IF_NONE { PUSH nat 1 } { UNIT ; FAILWITH } } ; 
 $Stack ListItem(None) ;

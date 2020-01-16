@@ -1,8 +1,0 @@
-$contract { parameter (pair bool bool);
-storage bool;
-code { CAR ; UNPAIR; AND @and; NIL @noop operation; PAIR; };
- } ;
-$param False ;
-$storage (Pair True True) ;
-$ExpectedOutput True ;
-

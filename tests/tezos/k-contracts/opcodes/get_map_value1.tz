@@ -1,0 +1,8 @@
+$contract { parameter string;
+storage (pair (option string) (map string string));
+code {DUP; CAR; DIP{CDDR; DUP}; GET; PAIR; NIL operation; PAIR};
+ } ;
+$param "" ;
+$storage (Pair None { Elt "hello" "hi" }) ;
+$ExpectedOutput (Pair None { Elt "hello" "hi" }) ;
+
