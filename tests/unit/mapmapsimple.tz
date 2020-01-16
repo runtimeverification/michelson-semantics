@@ -1,2 +1,2 @@
-$Instructions { MAP { CDR ; DUP ; ADD ; } } ; 
+$Instructions { MAP { CDR ; DUP ; ADD } } ; 
 $Stack ListItem(#Map(1 |-> 3 5 |-> 2, int, int));

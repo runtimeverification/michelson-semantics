@@ -1,0 +1,12 @@
+$contract { parameter nat;
+storage (pair (map nat nat) (option bool)) ;
+
+
+code { UNPAIR;
+       DIP { CAR; DUP };
+       MEM; SOME; SWAP; PAIR; NIL operation; PAIR;}
+ } ;
+$param 3 ;
+$storage (Pair { Elt 1 4 ; Elt 2 11 } None) ;
+$ExpectedOutput (Pair { Elt 1 4 ; Elt 2 11 } (Some False)) ;
+

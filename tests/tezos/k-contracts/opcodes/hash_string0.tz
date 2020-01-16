@@ -1,0 +1,8 @@
+$contract { parameter string;
+storage bytes;
+code {CAR; PACK ; BLAKE2B; NIL operation; PAIR};
+ } ;
+$param "abcdefg" ;
+$storage 0x00 ;
+$ExpectedOutput 0x46fdbcb4ea4eadad5615cdaa17d67f783e01e21149ce2b27de497600b4cd8f4e ;
+

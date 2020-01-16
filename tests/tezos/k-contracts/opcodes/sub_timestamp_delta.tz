@@ -1,8 +1,0 @@
-$contract { parameter (pair timestamp int);
-storage timestamp;
-code { CAR; DUP; CAR; DIP{CDR}; SUB; NIL operation; PAIR}
- } ;
-$param 111 ;
-$storage (Pair 100 2000000000000000000) ;
-$ExpectedOutput -1999999999999999900 ;
-

@@ -1,8 +1,0 @@
-$contract { parameter (pair nat nat);
-storage nat;
-code { CAR; CDR ; NIL operation ; PAIR }
- } ;
-$param 0 ;
-$storage (Pair 34 17) ;
-$ExpectedOutput 17 ;
-

@@ -1,0 +1,8 @@
+$contract { parameter (option string);
+storage string;
+code { CAR; IF_SOME {} {PUSH string ""}; NIL operation; PAIR}
+ } ;
+$param None ;
+$storage "?" ;
+$ExpectedOutput "" ;
+

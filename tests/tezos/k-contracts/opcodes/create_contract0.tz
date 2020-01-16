@@ -1,0 +1,19 @@
+$contract { parameter unit;
+storage (option address);
+code { DROP;
+       UNIT; 
+       AMOUNT;                   
+       NONE key_hash;                 
+       CREATE_CONTRACT          
+         { parameter unit ;
+           storage unit ;
+           code
+             { CDR;
+               NIL operation;
+               PAIR; } };
+       DROP; SOME; NIL operation; PAIR} 
+ } ;
+$param Unit ;
+$storage None ;
+$ExpectedOutput (Some "KT1Mjjcb6tmSsLm7Cb3DSQszePjfchPM4Uxm") ;
+

@@ -1,0 +1,36 @@
+$contract { parameter (pair key (pair unit (pair signature (pair (option signature) (pair (list unit) (pair (set bool) (pair (pair int int) (pair (or key_hash timestamp) (pair (map int string) (lambda string bytes))))))))));
+storage unit ;
+
+
+
+
+
+code { CAR;
+       
+       
+       DUP; CAR; DIP { UNPAIR; }; PACK; DIP { PACK; UNPACK key; ASSERT_SOME; PACK; }; ASSERT_CMPEQ;
+       
+       DUP; CAR; DIP { UNPAIR; }; PACK; DIP { PACK; UNPACK unit; ASSERT_SOME; PACK; }; ASSERT_CMPEQ;
+       
+       DUP; CAR; DIP { UNPAIR; }; PACK; DIP { PACK; UNPACK (signature); ASSERT_SOME; PACK; }; ASSERT_CMPEQ;
+       
+       DUP; CAR; DIP { UNPAIR; }; PACK; DIP { PACK; UNPACK (option signature); ASSERT_SOME; PACK; }; ASSERT_CMPEQ;
+       
+       DUP; CAR; DIP { UNPAIR; }; PACK; DIP { PACK; UNPACK (list unit); ASSERT_SOME; PACK; }; ASSERT_CMPEQ;
+       
+       DUP; CAR; DIP { UNPAIR; }; PACK; DIP { PACK; UNPACK (set bool); ASSERT_SOME; PACK; }; ASSERT_CMPEQ;
+       
+       DUP; CAR; DIP { UNPAIR; }; PACK; DIP { PACK; UNPACK (pair int int); ASSERT_SOME; PACK; }; ASSERT_CMPEQ;
+       
+       DUP; CAR; DIP { UNPAIR; }; PACK; DIP { PACK; UNPACK (or key_hash timestamp); ASSERT_SOME; PACK; }; ASSERT_CMPEQ;
+       
+       DUP; CAR; DIP { UNPAIR; }; PACK; DIP { PACK; UNPACK (map int string); ASSERT_SOME; PACK; }; ASSERT_CMPEQ;
+       
+       DUP; PACK; DIP { PACK; UNPACK (lambda string bytes); ASSERT_SOME; PACK; }; ASSERT_CMPEQ;
+
+       UNIT ; NIL operation ; PAIR }
+ } ;
+$param (Pair "edpkuBknW28nW72KG6RoHtYW7p12T6GKc7nAbwYX5m8Wd9sDVC9yav" (Pair Unit (Pair "edsigthTzJ8X7MPmNeEwybRAvdxS1pupqcM5Mk4uCuyZAe7uEk68YpuGDeViW8wSXMrCi5CwoNgqs8V2w8ayB5dMJzrYCHhD8C7" (Pair (Some "edsigthTzJ8X7MPmNeEwybRAvdxS1pupqcM5Mk4uCuyZAe7uEk68YpuGDeViW8wSXMrCi5CwoNgqs8V2w8ayB5dMJzrYCHhD8C7") (Pair { Unit }  (Pair { True }  (Pair (Pair 19 10) (Pair (Left "tz1cxcwwnzENRdhe2Kb8ZdTrdNy4bFNyScx5") (Pair { Elt 0 "foo" ; Elt 1 "bar" }  { PACK } ))))))))) ;
+$storage Unit ;
+$ExpectedOutput Unit ;
+

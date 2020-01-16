@@ -1,0 +1,8 @@
+$contract { parameter key;
+storage (option key_hash);
+code {CAR; HASH_KEY; SOME ;NIL operation; PAIR}
+ } ;
+$param "edpkuJqtDcA2m2muMxViSM47MPsGQzmyjnNTawUPqR8vZTAMcx61ES" ;
+$storage None ;
+$ExpectedOutput (Some "tz1XPTDmvT3vVE5Uunngmixm7gj7zmdbPq6k") ;
+

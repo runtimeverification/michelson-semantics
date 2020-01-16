@@ -1,0 +1,38 @@
+<generatedTop>
+  <k>
+    #VerifyStorage ( Some #KeyHash ( "tz1XPTDmvT3vVE5Uunngmixm7gj7zmdbPq6k" ) )
+  </k>
+  <stack>
+    Pair .List Some #KeyHash ( "edpkuJqtDcA2m2muMxViSM47MPsGQzmyjnNTawUPqR8vZTAMcx61ES" )
+  </stack>
+  <paramtype>
+    key .AnnotationList
+  </paramtype>
+  <storagetype>
+    option .AnnotationList key_hash .AnnotationList
+  </storagetype>
+  <balance>
+    #Mutez ( 0 )
+  </balance>
+  <amount>
+    #Mutez ( 0 )
+  </amount>
+  <now>
+    #Timestamp ( -1 )
+  </now>
+  <myaddr>
+    #Address ( "InvalidMyAddr" )
+  </myaddr>
+  <knownaddrs>
+    .Map
+  </knownaddrs>
+  <sourceaddr>
+    #Address ( "InvalidSourceAddr" )
+  </sourceaddr>
+  <senderaddr>
+    #Address ( "InvalidSenderAddr" )
+  </senderaddr>
+  <chainid>
+    #ChainId ( 0 )
+  </chainid>
+</generatedTop>

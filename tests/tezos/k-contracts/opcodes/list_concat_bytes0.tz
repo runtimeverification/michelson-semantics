@@ -1,0 +1,8 @@
+$contract { parameter (list bytes);
+storage bytes;
+code { UNPAIR ; SWAP ; CONS ; CONCAT; NIL operation; PAIR}
+ } ;
+$param { 0xcd ; 0xef ; 0x00 } ;
+$storage 0x00ab ;
+$ExpectedOutput 0x00abcdef00 ;
+

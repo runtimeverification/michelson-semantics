@@ -1,0 +1,8 @@
+$contract { parameter (list int);
+storage nat;
+code {CAR; SIZE; NIL operation; PAIR}
+ } ;
+$param { 1 } ;
+$storage 111 ;
+$ExpectedOutput 1 ;
+

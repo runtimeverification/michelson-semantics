@@ -1,0 +1,8 @@
+$contract { parameter string;
+storage (pair (string %s) (nat %n));
+code { DUP; CDR; DIP{CAR}; SET_CAR %s; NIL operation; PAIR };
+ } ;
+$param "world" ;
+$storage (Pair "hello" 0) ;
+$ExpectedOutput (Pair "world" 0) ;
+

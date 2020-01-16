@@ -1,2 +1,2 @@
-$Instructions { ITER { SWAP ; CONCAT ; } } ; 
+$Instructions { ITER { SWAP ; CONCAT } } ; 
 $Stack ListItem(SetItem("a") SetItem("b") SetItem("c") SetItem("d")) ListItem("")  ;
