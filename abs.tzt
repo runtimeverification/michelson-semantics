@@ -1,0 +1,3 @@
+input { Stack_elt int -5 } ;
+code { ABS } ; 
+output { Stack_elt nat 5 } 

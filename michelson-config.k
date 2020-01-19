@@ -12,7 +12,7 @@ module MICHELSON-CONFIG
                 <storagetype> #NotSet </storagetype>
                 <balance> #Mutez(0) </balance>
                 <amount> #Mutez(0) </amount>
-                <now> #Timestamp(-1) </now>
+                <now> #Timestamp(0) </now>
                 <myaddr> #Address("InvalidMyAddr") </myaddr>
                 <knownaddrs> .Map </knownaddrs>
                 <sourceaddr> #Address("InvalidSourceAddr") </sourceaddr>

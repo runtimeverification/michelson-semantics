@@ -9,7 +9,7 @@ module MICHELSON
 
   syntax Data ::= Bool
 
-  syntax KItem ::= "FailedStack"
+  syntax KItem ::= #FailedStack(Data)
 
   syntax KItem ::= #ReadKnownAddrs(ContractInputList)
   syntax KItem ::= #LoadContract(Contract)
@@ -196,7 +196,7 @@ module MICHELSON
   // Core Instructioons
   //// Control Structures
   rule <k> FAILWITH A ~> _ => #HandleAnnotations(A) ~> Aborted("FAILWITH instruction reached", D) </k>
-       <stack> D ~> _ => FailedStack </stack>
+       <stack> D ~> _ => #FailedStack(D) </stack>
 
   rule <k> IF A BT BF => #HandleAnnotations(A) ~> BT ... </k>
        <stack> true => . ... </stack>
@@ -391,7 +391,7 @@ module MICHELSON
        requires S <=Int 256
 
   rule <k> LSL A ~> _ => #HandleAnnotations(A) ~> Aborted("LSL out of range", S) </k>
-       <stack> _:Data ~> S:Int ~> _ => FailedStack </stack>
+       <stack> _:Data ~> S:Int ~> _ => #FailedStack(S) </stack>
        requires S >Int 256
 
   rule <k> LSR A => #HandleAnnotations(A) ... </k>
@@ -399,7 +399,7 @@ module MICHELSON
        requires S <=Int 256
 
   rule <k> LSR A ~> _ => #HandleAnnotations(A) ~> Aborted("LSR out of range", S) </k>
-       <stack> _:Data ~> S:Int ~> _ => FailedStack </stack>
+       <stack> _:Data ~> S:Int ~> _ => #FailedStack(S) </stack>
        requires S >Int 256
 
   syntax Int ::= #DoCompare(Data, Data) [function]
@@ -793,7 +793,7 @@ module MICHELSON
        requires #IsLegalMutezValue(I) [structural]
 
   rule <k> #ValidateMutezAndPush(#Mutez(I)) ~> _ => Aborted("Mutez out of bounds", I) </k>
-       <stack> _ => FailedStack </stack>
+       <stack> _ => #FailedStack(I) </stack>
        requires notBool #IsLegalMutezValue(I) [structural]
 
   rule <k> ADD A => #ValidateMutezAndPush(#Mutez(I1 +Int I2)) ~> #HandleAnnotations(A) ... </k>
@@ -881,4 +881,12 @@ module MICHELSON
 
   rule <k> #DoCDARMacro(S => substrString(S, 1, lengthString(S))) ... </k>
        <stack> Pair _ B => B ... </stack> requires lengthString(S) >Int 0 andBool substrString(S, 0, 1) ==String "D"
+
+
+  syntax K ::= #ListToKSeq(List) [function]
+  syntax K ::= #ListToKSeqAux(List, K) [function]
+
+  rule #ListToKSeq(L) => #ListToKSeqAux(#ReverseList(L), .K)
+  rule #ListToKSeqAux(ListItem(O) L, S) => #ListToKSeqAux(L, O ~> S)
+  rule #ListToKSeqAux(.List, S) => S
 endmodule

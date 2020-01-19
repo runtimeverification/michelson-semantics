@@ -1,7 +1,9 @@
 requires "michelson.k"
 requires "michelson-syntax.k"
+requires "unit-test-syntax.k"
 
 module TEST-MICHELSON-SYNTAX
+  imports UNIT-TEST-SYNTAX
   imports MICHELSON-SYNTAX
   imports MICHELSON
   imports DOMAINS
