@@ -1,11 +1,18 @@
+requires "michelson.k"
 requires "michelson-syntax.k"
 
 module UNIT-TEST-SYNTAX
   imports MICHELSON-SYNTAX
+  imports MICHELSON-OPERATIONS
 
   syntax StackElement ::= "Stack_elt" Type Data
   syntax StackElementList ::= StackElement | StackElement ";" StackElementList
   syntax LiteralStack ::= EmptyBlock | "{" StackElementList "}"
+
+  syntax OtherContractsMapEntry ::= "Elt" String Type
+  syntax OtherContractsMapEntryList ::= OtherContractsMapEntry | OtherContractsMapEntry ";" OtherContractsMapEntryList
+
+  syntax OtherContractsMap ::= EmptyBlock | "{" OtherContractsMapEntryList "}"
 
   syntax FailedStack ::= "(" "Failed" Data ")"
 
@@ -25,6 +32,7 @@ module UNIT-TEST-SYNTAX
   syntax ParameterGroup ::= ParameterDecl
   syntax AmountGroup ::= "amount" Int
   syntax BalanceGroup ::= "balance" Int
+  syntax ContractsGroup ::= "other_contracts" OtherContractsMap
 
   syntax Group ::= InputGroup
                  | CodeGroup
@@ -37,6 +45,7 @@ module UNIT-TEST-SYNTAX
                  | ParameterGroup
                  | AmountGroup
                  | BalanceGroup
+                 | ContractsGroup
 
   syntax Groups ::= Group | Group ";" Groups
   syntax Pgm ::= Groups

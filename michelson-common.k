@@ -15,6 +15,8 @@ module MICHELSON-COMMON
   syntax Key ::= #Key(String)
   syntax Signature ::= #Signature(String)
 
+  syntax OperationNonce ::= #Nonce(Int)
+
   syntax Data ::= Timestamp 
   syntax Data ::= ChainId
   syntax Data ::= KeyHash

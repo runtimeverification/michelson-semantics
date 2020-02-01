@@ -1,0 +1,4 @@
+code { TRANSFER_TOKENS } ; 
+input { Stack_elt unit Unit ; Stack_elt mutez 5 ; Stack_elt (contract unit) "1" } ;
+output { Stack_elt operation Transfer_tokens(0, Unit, 5, "1") } ;
+other_contracts { Elt "1" unit } 

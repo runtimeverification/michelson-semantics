@@ -12,6 +12,14 @@ module MICHELSON-SYNTAX
   syntax Contract
   syntax ComparableType
   syntax SimpleComparableType
+  syntax Address
+  syntax ContractData
+  syntax Mutez
+  syntax KeyHash
+  syntax ChainId
+  syntax Timestamp
+  syntax Key
+  syntax Signature
 
   syntax MapEntry ::= "Elt" Data Data
 
@@ -52,6 +60,18 @@ module MICHELSON-SYNTAX
                 | "{" DataList "}"
                 | Block
 
+  syntax Data ::= Timestamp 
+  syntax Data ::= ChainId
+  syntax Data ::= KeyHash
+  syntax Data ::= Mutez
+  syntax Data ::= Address
+  syntax Data ::= ContractData
+  syntax Data ::= Key
+  syntax Data ::= Signature
+  
+  syntax Mutez ::= Int
+  syntax Address ::= String
+ 
   syntax Data ::= "(" Data ")" [bracket]
   syntax Type ::= "(" Type ")" [bracket] // Technically incorrect due to rule about primitive app right inside a sequence.  Need to split out Wrapped/Unwrapped sort. 
 

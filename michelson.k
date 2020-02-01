@@ -1,13 +1,28 @@
 requires "michelson-syntax.k"
 requires "michelson-config.k"
 
+module MICHELSON-OPERATIONS
+  imports MICHELSON-SYNTAX
+  imports MICHELSON-CONFIG
+
+  syntax BlockchainOperation ::= "Create_contract" "(" Int "," Contract "," OptionData "," Mutez "," Data ")"
+  syntax BlockchainOperation ::= "Transfer_tokens" "(" Int "," Data "," Mutez "," Address ")"
+  syntax BlockchainOperation ::= "Set_delegate" "(" Int "," OptionData ")"
+
+  syntax Data ::= BlockchainOperation
+endmodule
+
 module MICHELSON
   imports MICHELSON-SYNTAX
   imports MICHELSON-CONFIG
+  imports MICHELSON-OPERATIONS
   imports DOMAINS 
   imports COLLECTIONS
 
   syntax Data ::= Bool
+
+  syntax OperationNonce ::= #NextNonce(OperationNonce) [function]
+  rule #NextNonce(#Nonce(I)) => #Nonce(I +Int 1)
 
   syntax KItem ::= #FailedStack(Data)
 
@@ -60,7 +75,6 @@ module MICHELSON
   rule #ConcreteArgToSemantics(S:String, key _) => #ParseKey(S)
   rule #ConcreteArgToSemantics(Unit, unit _) => Unit
   rule #ConcreteArgToSemantics(S:String, signature _) => #ParseSignature(S)
-  // I do not believe you can input an operation to a contract, so skipping that one.
   
   rule #ConcreteArgToSemantics(Pair A B, pair _ T1:Type T2:Type) => 
        Pair #ConcreteArgToSemantics(A, T1) #ConcreteArgToSemantics(B, T2)
@@ -119,8 +133,35 @@ module MICHELSON
   rule #ConcreteArgToSemantics({ M:MapEntryList }, big_map _:AnnotationList K V) =>
        #ConcreteArgToSemanticsMap(M, K, V, .Map)
 
+  rule #ConcreteArgToSemantics(Create_contract(N, C, O, M, S), operation _) =>
+       Create_contract(
+           N, 
+           C, 
+           {#ConcreteArgToSemantics(O, (option .AnnotationList  key_hash .AnnotationList))}:>OptionData,
+           {#ConcreteArgToSemantics(M, mutez .AnnotationList)}:>Mutez, 
+           #ConcreteArgToSemantics(S, #StorageTypeFromContract(C))
+       )
 
-  rule <k> $contract {C} ;
+  rule #ConcreteArgToSemantics(Set_delegate(N, K), operation _) => 
+       Set_delegate(N, {#ConcreteArgToSemantics(K, (option .AnnotationList key_hash .AnnotationList))}:>OptionData)
+
+  syntax Type ::= #TypeFromContract(ContractData) [function]
+
+  rule #TypeFromContract(#Contract(_, T)) => T
+
+  rule [[ #ConcreteArgToSemantics(Transfer_tokens(N, P, M, A), operation _) 
+          => Transfer_tokens(N, 
+              #ConcreteArgToSemantics(
+                  P, 
+                  #TypeFromContract({Known[#ConcreteArgToSemantics(A, address .AnnotationList)]}:>ContractData)
+              ), 
+              {#ConcreteArgToSemantics(M, mutez .AnnotationList)}:>Mutez, 
+              {#ConcreteArgToSemantics(A, address .AnnotationList)}:>Address
+          ) ]]
+       <knownaddrs> Known </knownaddrs>
+       requires #ConcreteArgToSemantics(A, address .AnnotationList) in_keys(Known)
+
+  rule <k> $contract { code C ; storage St ; parameter Pt ; } ;
            $balance B ;
            $amount Amt ;
            $now N ;
@@ -129,18 +170,22 @@ module MICHELSON
            $sourceaddr SourceAddr ;
            $senderaddr SenderAddr ;
            $param P ;
-           $storage S ; => #ReadKnownAddrs(AddrList) ~> #LoadContract(C) ~> #InitializeStack(P, S) ... </k> 
+           $storage S ; => #ReadKnownAddrs(AddrList) ~> #InitializeStack(P, S) ~> C ... </k> 
        <stack> . </stack>
        <balance> #Mutez(_ => B) </balance>
        <amount> #Mutez(_ => Amt) </amount>
        <now> #Timestamp(_ => N) </now>
        <myaddr> #Address(_ => Addr) </myaddr>
+       <paramtype> _ => Pt </paramtype>
+       <storagetype> _ => St </storagetype>
        <sourceaddr> #Address(_ => SourceAddr) </sourceaddr>
        <senderaddr> #Address(_ => SenderAddr) </senderaddr> [structural]
 
-  rule <k> $contract {C} ;
+  rule <k> $contract { code B ; storage St ; parameter Pt ;} ;
            $param P ;
-           $storage S ; => #LoadContract(C) ~> #InitializeStack(P, S) ... </k> [structural] 
+           $storage S ; => #InitializeStack(P, S) ~> B ... </k> 
+       <paramtype> _ => Pt </paramtype>
+       <storagetype> _ => St </storagetype> [structural]
 
   rule <k> #ReadKnownAddrs(#ContractInput(A, T) Cs => Cs) ... </k>
        <knownaddrs> M => M[#Address(A) <- #Contract(#Address(A), T)] </knownaddrs> [structural]
@@ -148,35 +193,22 @@ module MICHELSON
   rule #ReadKnownAddrs( .ContractInputList ) => . [structural]
 
   rule code B ; storage St ; parameter Pt => code B ; storage St ; parameter Pt ; [macro]
-  rule code B ; parameter Pt ; storage St => code B ; parameter Pt ; storage St ; [macro]
-  rule storage St ; code B ; parameter Pt => storage St ; code B ; parameter Pt ; [macro]
-  rule parameter Pt ; code B ; storage St => parameter Pt ; code B ; storage St ; [macro]
-  rule storage St ; parameter Pt ; code B => storage St ; parameter Pt ; code B ; [macro]
-  rule parameter Pt ; storage St ; code B => parameter Pt ; storage St ; code B ; [macro]
+  rule code B ; parameter Pt ; storage St => code B ; storage St ; parameter Pt ; [macro]
+  rule storage St ; code B ; parameter Pt => code B ; storage St ; parameter Pt ; [macro]
+  rule parameter Pt ; code B ; storage St => code B ; storage St ; parameter Pt ; [macro]
+  rule storage St ; parameter Pt ; code B => code B ; storage St ; parameter Pt ; [macro]
+  rule parameter Pt ; storage St ; code B => code B ; storage St ; parameter Pt ; [macro]
 
-  rule <k> #LoadContract(code B ; storage St ; parameter Pt ;) ~> #InitializeStack(P, S) => #InitializeStack(P, S) ~> B ... </k> 
-       <paramtype> _ => Pt </paramtype>
-       <storagetype> _ => St </storagetype> [structural]
+  rule code B ; parameter Pt ; storage St ; => code B ; storage St ; parameter Pt ; [macro]
+  rule storage St ; code B ; parameter Pt ; => code B ; storage St ; parameter Pt ; [macro]
+  rule parameter Pt ; code B ; storage St ; => code B ; storage St ; parameter Pt ; [macro]
+  rule storage St ; parameter Pt ; code B ; => code B ; storage St ; parameter Pt ; [macro]
+  rule parameter Pt ; storage St ; code B ; => code B ; storage St ; parameter Pt ; [macro]
 
-  rule <k> #LoadContract(code B ; parameter Pt ; storage St ;) ~> #InitializeStack(P, S) => #InitializeStack(P, S) ~> B ... </k> 
-       <paramtype> _ => Pt </paramtype>
-       <storagetype> _ => St </storagetype> [structural]
 
-  rule <k> #LoadContract(storage St ; code B ; parameter Pt ;) ~> #InitializeStack(P, S) => #InitializeStack(P, S) ~> B ... </k> 
-       <paramtype> _ => Pt </paramtype>
-       <storagetype> _ => St </storagetype> [structural]
+  syntax Type ::= #StorageTypeFromContract(Contract) [function]
 
-  rule <k> #LoadContract(parameter Pt ; code B ; storage St ;) ~> #InitializeStack(P, S) => #InitializeStack(P, S) ~> B ... </k> 
-       <paramtype> _ => Pt </paramtype>
-       <storagetype> _ => St </storagetype> [structural]
-
-  rule <k> #LoadContract(storage St ; parameter Pt ; code B ;) ~> #InitializeStack(P, S) => #InitializeStack(P, S) ~> B ... </k> 
-       <paramtype> _ => Pt </paramtype>
-       <storagetype> _ => St </storagetype> [structural]
-
-  rule <k> #LoadContract(parameter Pt ; storage St ; code B ;) ~> #InitializeStack(P, S) => #InitializeStack(P, S) ~> B ... </k> 
-       <paramtype> _ => Pt </paramtype>
-       <storagetype> _ => St </storagetype> [structural]
+  rule #StorageTypeFromContract(code _ ; storage P ; parameter _ ;) => P
 
   rule <k> #InitializeStack(P, S) => . ... </k>
        <stack> . => Pair #ConcreteArgToSemantics(P, Pt) #ConcreteArgToSemantics(S, St) </stack>
@@ -191,12 +223,12 @@ module MICHELSON
 
   rule #HandleAnnotations(_) => . [structural]
 
-  syntax Error ::= Aborted(String, KItem)
+  syntax Error ::= Aborted(String, KItem, K, K)
 
   // Core Instructioons
   //// Control Structures
-  rule <k> FAILWITH A ~> _ => #HandleAnnotations(A) ~> Aborted("FAILWITH instruction reached", D) </k>
-       <stack> D ~> _ => #FailedStack(D) </stack>
+  rule <k> FAILWITH A ~> Rk => #HandleAnnotations(A) ~> Aborted("FAILWITH instruction reached", D, Rk, Rs) </k>
+       <stack> D ~> Rs => #FailedStack(D) </stack>
 
   rule <k> IF A BT BF => #HandleAnnotations(A) ~> BT ... </k>
        <stack> true => . ... </stack>
@@ -390,16 +422,16 @@ module MICHELSON
        <stack> X ~> S => X <<Int S ... </stack>
        requires S <=Int 256
 
-  rule <k> LSL A ~> _ => #HandleAnnotations(A) ~> Aborted("LSL out of range", S) </k>
-       <stack> _:Data ~> S:Int ~> _ => #FailedStack(S) </stack>
+  rule <k> LSL A ~> Rk => #HandleAnnotations(A) ~> Aborted("LSL out of range", S, Rk, Rs) </k>
+       <stack> _:Data ~> S:Int ~> Rs => #FailedStack(S) </stack>
        requires S >Int 256
 
   rule <k> LSR A => #HandleAnnotations(A) ... </k>
        <stack> X ~> S => X >>Int S ... </stack>
        requires S <=Int 256
 
-  rule <k> LSR A ~> _ => #HandleAnnotations(A) ~> Aborted("LSR out of range", S) </k>
-       <stack> _:Data ~> S:Int ~> _ => #FailedStack(S) </stack>
+  rule <k> LSR A ~> Rk => #HandleAnnotations(A) ~> Aborted("LSR out of range", S, Rk, Rs) </k>
+       <stack> _:Data ~> S:Int ~> Rs => #FailedStack(S) </stack>
        requires S >Int 256
 
   syntax Int ::= #DoCompare(Data, Data) [function]
@@ -661,24 +693,19 @@ module MICHELSON
   rule #IsKeyHashOption(None) => true
   rule #IsKeyHashOption(Some _) => false [owise]
 
-  syntax BlockchainOperation ::= #CreateContract(Contract, OptionData, Mutez, Data)
-
-  syntax Data ::= BlockchainOperation
-
   rule <k> CREATE_CONTRACT A:AnnotationList { C } => . ... </k>
-       <stack> Delegate:OptionData ~> Initial:Mutez ~> Stor:Data => #CreateContract(C, Delegate, Initial, Stor) ~> #Address(Int2String(!_:Int)) ... </stack>
+       <stack> Delegate:OptionData ~> Initial:Mutez ~> Stor:Data => Create_contract(O, C, Delegate, Initial, Stor) ~> #Address(Int2String(!_:Int)) ... </stack>
+       <nonce> #Nonce(O) => #NextNonce(#Nonce(O)) </nonce>
        requires #IsKeyHashOption(Delegate)
 
-  syntax BlockchainOperation ::= #TransferTokens(Data, Mutez, ContractData)
-
-  rule <k> TRANSFER_TOKENS A => . ... </k>
-       <stack> D ~> M ~> C => #TransferTokens(D, M, C) ... </stack>
-
-  syntax BlockchainOperation ::= #SetDelegate(OptionData)
+  rule <k> TRANSFER_TOKENS _ => . ... </k>
+       <stack> D ~> M ~> #Contract(A, _) => Transfer_tokens(O, D, M, A) ... </stack>
+       <nonce> #Nonce(O) => #NextNonce(#Nonce(O)) </nonce>
 
   rule <k> SET_DELEGATE A => . ... </k>
-       <stack> O => #SetDelegate(O) ... </stack>
-       requires #IsKeyHashOption(O)
+       <stack> D => Set_delegate(O, D) ... </stack>
+       <nonce> #Nonce(O) => #NextNonce(#Nonce(O)) </nonce>
+       requires #IsKeyHashOption(D)
 
   rule <k> BALANCE A => . ... </k>
        <stack> . => B ... </stack>
@@ -792,8 +819,8 @@ module MICHELSON
        <stack> . => #Mutez(I) ... </stack>
        requires #IsLegalMutezValue(I) [structural]
 
-  rule <k> #ValidateMutezAndPush(#Mutez(I)) ~> _ => Aborted("Mutez out of bounds", I) </k>
-       <stack> _ => #FailedStack(I) </stack>
+  rule <k> #ValidateMutezAndPush(#Mutez(I)) ~> Rk => Aborted("Mutez out of bounds", I, Rk, Rs) </k>
+       <stack> Rs => #FailedStack(I) </stack>
        requires notBool #IsLegalMutezValue(I) [structural]
 
   rule <k> ADD A => #ValidateMutezAndPush(#Mutez(I1 +Int I2)) ~> #HandleAnnotations(A) ... </k>

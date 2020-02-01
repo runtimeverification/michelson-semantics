@@ -11,6 +11,8 @@ module UNIT-TEST
   syntax KItem ::= #LoadGroups(Groups, Group, Group)
 
   rule <k> G:Groups => #LoadGroups(G, #NoGroup, #NoGroup) </k>
+       <returncode> _ => 1 </returncode>
+
   rule <k> #LoadGroups(G ; Gs, C, O) => G ~> #LoadGroups(Gs, C, O) </k>
   rule <k> #LoadGroups(G:Group, C, O) => G ~> #LoadGroups(#EmptyGroups, C, O) </k>
 
@@ -65,13 +67,31 @@ module UNIT-TEST
        <balance> #Mutez(0 => I) </balance> 
        requires #IsLegalMutezValue(I)
 
+  rule <k> other_contracts { } => . ... </k> 
+
+  rule <k> other_contracts { Elt A T } => .  ... </k>
+       <knownaddrs> M => M[#Address(A) <- #Contract(#Address(A), T)] </knownaddrs>
+
+  rule <k> other_contracts { Elt A T ; Rs } => other_contracts { Rs }  ... </k>
+       <knownaddrs> M => M[#Address(A) <- #Contract(#Address(A), T)] </knownaddrs>
+
   syntax KItem ::= #VerifyOutput(K)
 
   rule <k> #LoadGroups(#EmptyGroups, code C, output O) => C ~> #VerifyOutput(#OutputStackToSemantics(O)) </k>
 
-  rule <k> #VerifyOutput(S:Data ~> L => L) </k>
+  rule <k> #VerifyOutput(S:KItem ~> L => L) </k>
        <stack> S => . ... </stack>
 
   rule <k> #VerifyOutput(.) => . </k>
        <stack> . </stack>
+       <returncode> _ => 0 </returncode> 
+
+  syntax KItem ::= #FindVerifyOutput(K) [function]
+
+  rule #FindVerifyOutput(#VerifyOutput(O) ~> _) => #VerifyOutput(O)
+  rule #FindVerifyOutput(.) => #VerifyOutput(.)
+  rule #FindVerifyOutput(_:KItem ~> Rs) => #FindVerifyOutput(Rs) [owise]
+
+  rule <k> Aborted(_, _, Rk, _) => #FindVerifyOutput(Rk) ... </k>
+  
 endmodule

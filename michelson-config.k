@@ -18,4 +18,6 @@ module MICHELSON-CONFIG
                 <sourceaddr> #Address("InvalidSourceAddr") </sourceaddr>
                 <senderaddr> #Address("InvalidSenderAddr") </senderaddr>
                 <chainid> #ChainId(0) </chainid>
+                <nonce> #Nonce(0) </nonce>
+                <returncode exit=""> 0 </returncode>
 endmodule

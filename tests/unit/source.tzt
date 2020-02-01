@@ -1,0 +1,4 @@
+code { SOURCE } ; 
+input { } ; 
+output { Stack_elt address "SourceAddr" } ;
+source "SourceAddr" 

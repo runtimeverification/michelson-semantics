@@ -1,0 +1,3 @@
+code { LSR } ; 
+input { Stack_elt int 32 ; Stack_elt int 300 } ;
+output (Failed 300)

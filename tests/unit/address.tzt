@@ -1,0 +1,3 @@
+code { ADDRESS } ; 
+input { Stack_elt (contract unit) "12345" } ;
+output { Stack_elt address "12345" } 

@@ -1,0 +1,5 @@
+code { SELF } ; 
+input { } ;
+parameter int ;
+self "12345" ;
+output { Stack_elt (contract int) "12345" } 

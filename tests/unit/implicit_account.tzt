@@ -1,0 +1,4 @@
+code { IMPLICIT_ACCOUNT } ; 
+input { Stack_elt key_hash "12345" } ;
+output { Stack_elt (contract unit) "12345" } ;
+other_contracts { Elt "12345" unit }
