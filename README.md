@@ -6,7 +6,7 @@ This will clone and build K and kninja/, once that completes, ./build.py should 
 
 ./michelson.py run $FILE will run a unit test of your choice.  Alternatively,
 
-kompile --backend llvm michelson.k
+kompile --backend llvm -ccopt ../time.cpp -ccopt -std=c++14 --hook-namespaces TIME test-michelson.k
 
 Will compile only the main semantics, excluding the tests.  Then krun will work on the appropriate file:
 
