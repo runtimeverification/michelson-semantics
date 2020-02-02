@@ -133,6 +133,8 @@ module MICHELSON-SYNTAX
 
   syntax ContractBlock ::= "{" Contract "}"
 
+  syntax Instruction ::= Block
+
   syntax Instruction ::= CDARMacro AnnotationList
   syntax Instruction ::= "DROP" AnnotationList
   syntax Instruction ::= "DROP" AnnotationList Int
