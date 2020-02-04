@@ -6,16 +6,8 @@ module UNIT-TEST-EXPANDER
   syntax Block ::= #StackToPush(LiteralStack) [function]
   rule #StackToPush( { } ) => { }
 
-  syntax StackElementList ::= #ReverseStackElementList(StackElementList) [function, functional]
-  syntax StackElementList ::= #ReverseStackElementListAux(StackElementList, StackElementList) [function]
-  rule #ReverseStackElementList(S:StackElement) => S
-  rule #ReverseStackElementList(S:StackElement ; Se:StackElementList) => #ReverseStackElementListAux(Se, S)
-  rule #ReverseStackElementListAux(S:StackElement ; Se:StackElementList, O) => #ReverseStackElementListAux(Se, S ; O)
-  rule #ReverseStackElementListAux(S:StackElement, O) => S ; O
-
-
   syntax Block ::= #StackToPushAux(StackElementList, Block) [function]
-  rule #StackToPush( { Se } ) => #StackToPushAux(#ReverseStackElementList(Se), { DROP .AnnotationList 0 })
+  rule #StackToPush( { Se } ) => #StackToPushAux(Se, { DROP .AnnotationList 0 })
   rule #StackToPushAux(Stack_elt T D ; Ls, { I })  => #StackToPushAux(Ls, { PUSH .AnnotationList T D ; I })
   rule #StackToPushAux(Stack_elt T D, { I })  => { PUSH .AnnotationList T D ; I }
 

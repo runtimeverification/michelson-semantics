@@ -1,0 +1,1 @@
+pcregrep -oM "(?<=\[ )@exitToken[^\\]]*"
