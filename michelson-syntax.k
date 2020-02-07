@@ -88,7 +88,7 @@ module MICHELSON-SYNTAX
 			        | "timestamp" 
 			        | "address"   
 
-  syntax SimpleComparableType ::= UnannotatedSimpleComparableType AnnotationList
+  syntax SimpleComparableType ::= UnannotatedSimpleComparableType AnnotationList [format((%1 %2))]
 
   syntax UnannotatedSimpleNoncomparableType ::= "key" 
                     		   | "unit" 
@@ -96,27 +96,27 @@ module MICHELSON-SYNTAX
 		                   | "operation"
                                    | "chain_id"
 
-  syntax SimpleNoncomparableType ::= UnannotatedSimpleNoncomparableType AnnotationList
+  syntax SimpleNoncomparableType ::= UnannotatedSimpleNoncomparableType AnnotationList [format((%1 %2))]
 
 
   syntax AnnotationList 
 
-  syntax NormalPair ::= "pair" AnnotationList Type Type [klabel(ampair)]
-  syntax ComparablePair ::= "pair" AnnotationList SimpleComparableType ComparableType [prefer, klabel(ampair)]
+  syntax NormalPair ::= "pair" AnnotationList Type Type [klabel(ampair), format((%1 %2 %3 %4))]
+  syntax ComparablePair ::= "pair" AnnotationList SimpleComparableType ComparableType [prefer, klabel(ampair), format((%1 %2 %3 %4))]
 
   syntax ComparableType ::= "(" ComparableType ")" [bracket]
  
   syntax Type ::= ComparableType
                 | SimpleNoncomparableType
 		| NormalPair
-                | "option" AnnotationList Type
-		| "list" AnnotationList Type
-		| "set" AnnotationList ComparableType
-		| "contract" AnnotationList Type
-                | "or" AnnotationList Type Type
-		| "lambda" AnnotationList Type Type
-		| "map" AnnotationList ComparableType Type
-		| "big_map" AnnotationList ComparableType Type
+                | "option" AnnotationList Type [format((%1 %2 %3))]
+		| "list" AnnotationList Type [format((%1 %2 %3))]
+		| "set" AnnotationList ComparableType [format((%1 %2 %3))]
+		| "contract" AnnotationList Type [format((%1 %2 %3))]
+                | "or" AnnotationList Type Type [format((%1 %2 %3 %4))]
+		| "lambda" AnnotationList Type Type [format((%1 %2 %3 %4))]
+		| "map" AnnotationList ComparableType Type [format((%1 %2 %3 %4))]
+		| "big_map" AnnotationList ComparableType Type [format((%1 %2 %3 %4))]
 
   syntax EmptyBlock ::= "{" "}"
 
