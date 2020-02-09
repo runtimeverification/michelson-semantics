@@ -1,2 +1,0 @@
-$Instructions { CDAR } ; 
-$Stack ListItem(Pair "first" "second") ;
