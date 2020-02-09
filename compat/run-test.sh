@@ -1,9 +1,11 @@
 #!/bin/bash
+UT="$1"
+
 function output_if_failing {
     bash -c "$1"
     local r="$?"
     if [ $r -ne 0 ] ; then
-        echo "$2: (exit code $r)" ;
+        echo "$UT: (exit code $r) $2" ;
         exit 1
     fi
 }
@@ -25,7 +27,7 @@ EXPECTED_OUTPUT_FILE="$TEMP_DIR/expected"
 OUTPUT_FILE="$TEMP_DIR/actual-and-expected"
 COMPARE_FILE="$TEMP_DIR/comparison"
 
-output_if_failing "'$SCRIPT_DIR/contract-expander/run.sh' '$1' > '$EXPANDED_FILE'" "Contract did not expand properly"
+output_if_failing "'$SCRIPT_DIR/contract-expander/run.sh' '$UT' > '$EXPANDED_FILE'" "Contract did not expand properly"
 output_if_failing "tezos-client typecheck script '$(cat "$EXPANDED_FILE")' --details  >$TYPECHECK_OUTPUT 2>&1" "Contract did not typecheck"
 output_if_failing "pcregrep -oM '(?<=\[ )@exitToken[^\\]]*' '$TYPECHECK_OUTPUT' > '$RAW_TYPES'" 'Could not find @exitToken in typecheck output'
 sed -E 's/ : /\n/g;s/@%|@%%|%@|[@:%][_a-zA-Z][_0-9a-zA-Z\.%@]*//g' $RAW_TYPES > $TYPES_FILE
