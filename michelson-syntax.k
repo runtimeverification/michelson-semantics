@@ -1,5 +1,5 @@
 module MICHELSON-SYNTAX
-  imports INT-SYNTAX // TODO maybe use unsigned int so the parser can catch int/nat issues at parse time?
+  imports INT-SYNTAX 
   imports STRING-SYNTAX
   imports BOOL-SYNTAX
 
@@ -39,13 +39,14 @@ module MICHELSON-SYNTAX
   syntax MichelsonBool ::= "True" [token]
                          | "False" [token] // These just get macro'd to the proper K types.
  
-  syntax Pair ::= "Pair" Data Data 
+  syntax Pair ::= "Pair" Data Data [format(%1 (%2) (%3))] 
 
-  syntax LeftData ::= "Left" Data
-  syntax RightData ::= "Right" Data
+  syntax LeftData ::= "Left" Data [format(%1 (%2))]
+  syntax RightData ::= "Right" Data [format(%1 (%2))]
+ 
   syntax OrData ::= LeftData | RightData
 
-  syntax OptionData ::= "Some" Data
+  syntax OptionData ::= "Some" Data [format(%1 (%2))]
                       | "None"  
 
   syntax Data ::= Int 
@@ -142,7 +143,7 @@ module MICHELSON-SYNTAX
   syntax Instruction ::= "DUG" AnnotationList Int
   syntax Instruction ::= "DUP" AnnotationList 
   syntax Instruction ::= "SWAP" AnnotationList 
-  syntax Instruction ::= "PUSH" AnnotationList Type Data
+  syntax Instruction ::= "PUSH" AnnotationList Type Data [format(%1 %2 %3 (%4))]
   syntax Instruction ::= "SOME" AnnotationList 
   syntax Instruction ::= "NONE" AnnotationList Type
   syntax Instruction ::= "UNIT" AnnotationList 

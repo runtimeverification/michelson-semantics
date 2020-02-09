@@ -2,7 +2,7 @@ requires "michelson-syntax.k"
 
 module MICHELSON-COMMON
   imports MICHELSON-SYNTAX
-  imports DOMAINS
+  imports DOMAINS-SYNTAX
 
   syntax Type ::= "#NotSet"
 
@@ -25,6 +25,8 @@ module MICHELSON-COMMON
   syntax Data ::= ContractData
   syntax Data ::= Key
   syntax Data ::= Signature
+
+  syntax Data ::= Bool
 
   rule True => true [macro]
   rule False => false [macro]

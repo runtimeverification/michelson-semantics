@@ -1,9 +1,9 @@
-requires "michelson.k"
+requires "michelson-operations-syntax.k"
 requires "michelson-syntax.k"
 
 module UNIT-TEST-SYNTAX
   imports MICHELSON-SYNTAX
-  imports MICHELSON-OPERATIONS
+  imports MICHELSON-OPERATIONS-SYNTAX
 
   syntax StackElement ::= "Stack_elt" Type Data
   syntax StackElementList ::= StackElement | StackElement ";" StackElementList

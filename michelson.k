@@ -1,21 +1,11 @@
 requires "michelson-syntax.k"
 requires "michelson-config.k"
-
-module MICHELSON-OPERATIONS
-  imports MICHELSON-SYNTAX
-  imports MICHELSON-CONFIG
-
-  syntax BlockchainOperation ::= "Create_contract" "(" Int "," Contract "," OptionData "," Mutez "," Data ")"
-  syntax BlockchainOperation ::= "Transfer_tokens" "(" Int "," Data "," Mutez "," Address ")"
-  syntax BlockchainOperation ::= "Set_delegate" "(" Int "," OptionData ")"
-
-  syntax Data ::= BlockchainOperation
-endmodule
+requires "michelson-operations-syntax.k"
 
 module MICHELSON
   imports MICHELSON-SYNTAX
   imports MICHELSON-CONFIG
-  imports MICHELSON-OPERATIONS
+  imports MICHELSON-OPERATIONS-SYNTAX
   imports DOMAINS 
   imports COLLECTIONS
 

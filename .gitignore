@@ -1,5 +1,6 @@
 **/*-kompiled/*
 **/.node-pid
+**/.tezos-ut*
 notes.txt
 *.swp
 template.tz

@@ -1,15 +1,17 @@
 requires "../../unit-test-syntax.k"
+requires "../../michelson-config.k"
 
 module UNIT-TEST-EXPANDER
   imports UNIT-TEST-SYNTAX
+  imports MICHELSON-CONFIG
 
   syntax Block ::= #StackToPush(LiteralStack) [function]
   rule #StackToPush( { } ) => { }
 
   syntax Block ::= #StackToPushAux(StackElementList, Block) [function]
   rule #StackToPush( { Se } ) => #StackToPushAux(Se, { DROP .AnnotationList 0 })
-  rule #StackToPushAux(Stack_elt T D ; Ls, { I })  => #StackToPushAux(Ls, { PUSH .AnnotationList T D ; I })
-  rule #StackToPushAux(Stack_elt T D, { I })  => { PUSH .AnnotationList T D ; I }
+  rule #StackToPushAux(Stack_elt T D ; Ls, { I:InstructionList })  => #StackToPushAux(Ls, { PUSH .AnnotationList T D ; I })
+  rule #StackToPushAux(Stack_elt T D, { I:InstructionList })  => { PUSH .AnnotationList T D ; I }
 
 
   syntax Contract ::= #FillTemplateContract(Block, Block) [function]
