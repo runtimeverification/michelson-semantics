@@ -1,2 +1,0 @@
-$Instructions { EMPTY_BIG_MAP nat nat } ; 
-$Stack .List ;

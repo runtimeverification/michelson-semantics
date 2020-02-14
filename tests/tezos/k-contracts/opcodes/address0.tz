@@ -1,8 +1,0 @@
-$contract { parameter (contract unit);
-storage (option address);
-code {CAR; ADDRESS; SOME; NIL operation; PAIR }
- } ;
-$param "tz1cxcwwnzENRdhe2Kb8ZdTrdNy4bFNyScx5" ;
-$storage None ;
-$ExpectedOutput (Some "tz1cxcwwnzENRdhe2Kb8ZdTrdNy4bFNyScx5") ;
-

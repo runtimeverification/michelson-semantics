@@ -1,2 +1,0 @@
-$Instructions { NIL nat } ; 
-$Stack .List ;

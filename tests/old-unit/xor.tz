@@ -1,2 +1,0 @@
-$Instructions { XOR } ; 
-$Stack ListItem(5) ListItem(3) ;

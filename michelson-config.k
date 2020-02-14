@@ -9,15 +9,17 @@ module MICHELSON-CONFIG
   configuration <k> $PGM:Pgm </k>
                 <stack> .K </stack>
                 <paramtype> #NotSet </paramtype>
+                <paramvalue> #NoData </paramvalue>
                 <storagetype> #NotSet </storagetype>
-                <balance> #Mutez(0) </balance>
-                <amount> #Mutez(0) </amount>
-                <now> #Timestamp(0) </now>
+                <storagevalue> #NoData </storagevalue>
+                <mybalance> #Mutez(0) </mybalance>
+                <myamount> #Mutez(0) </myamount>
+                <mynow> #Timestamp(0) </mynow>
                 <myaddr> #Address("InvalidMyAddr") </myaddr>
                 <knownaddrs> .Map </knownaddrs>
                 <sourceaddr> #Address("InvalidSourceAddr") </sourceaddr>
                 <senderaddr> #Address("InvalidSenderAddr") </senderaddr>
-                <chainid> #ChainId(0) </chainid>
+                <mychainid> #ChainId(0) </mychainid>
                 <nonce> #Nonce(0) </nonce>
-                <returncode exit=""> 0 </returncode>
+                <returncode exit=""> 1 </returncode>
 endmodule

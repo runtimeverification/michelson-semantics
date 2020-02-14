@@ -1,8 +1,0 @@
-$contract { parameter string;
-storage (pair (set string) (option bool));
-code {DUP; DUP; CAR; DIP{CDAR}; MEM; SOME; DIP {CDAR}; SWAP; PAIR ; NIL operation; PAIR};
- } ;
-$param "Hi" ;
-$storage (Pair { "Hi" } None) ;
-$ExpectedOutput (Pair { "Hi" } (Some True)) ;
-

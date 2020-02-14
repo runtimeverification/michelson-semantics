@@ -1,2 +1,0 @@
-$Instructions { GET } ; 
-$Stack ListItem(2) ListItem(#Map(1 |-> 3 5 |-> 2, int, int));

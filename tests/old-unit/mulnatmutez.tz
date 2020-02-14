@@ -1,2 +1,0 @@
-$Instructions { MUL } ; 
-$Stack ListItem(2) ListItem(#Mutez(5)) ;

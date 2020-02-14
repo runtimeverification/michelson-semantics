@@ -1,2 +1,0 @@
-$Instructions { SIZE } ; 
-$Stack ListItem(#Map(1 |-> 3 5 |-> 2 43 |-> 6 129 |-> 3, int, int)) ;

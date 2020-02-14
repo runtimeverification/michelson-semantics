@@ -1,2 +1,0 @@
-$Instructions { UNPAIR } ; 
-$Stack ListItem(Pair "first" "second") ;

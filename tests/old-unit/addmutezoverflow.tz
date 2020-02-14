@@ -1,2 +1,0 @@
-$Instructions { ADD } ; 
-$Stack ListItem(#Mutez(1)) ListItem(#Mutez(9223372036854775807)) ;

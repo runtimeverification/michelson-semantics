@@ -1,8 +1,0 @@
-$contract { parameter (list string);
-storage (list string);
-code {CAR; MAP {}; NIL operation; PAIR}
- } ;
-$param { "1" ; "2" ; "3" } ;
-$storage {""} ;
-$ExpectedOutput { "1" ; "2" ; "3" } ;
-

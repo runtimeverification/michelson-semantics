@@ -1,2 +1,0 @@
-$Instructions { CONS } ; 
-$Stack ListItem(5) ListItem(ListItem(7)) ;

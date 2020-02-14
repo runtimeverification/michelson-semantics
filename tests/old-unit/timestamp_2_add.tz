@@ -1,2 +1,0 @@
-$Instructions { ADD } ; 
-$Stack ListItem(5) ListItem(#Timestamp(5)) ;

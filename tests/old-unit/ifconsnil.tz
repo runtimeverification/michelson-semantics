@@ -1,2 +1,0 @@
-$Instructions { IF_CONS  { UNIT ; FAILWITH } { PUSH int 1 }} ; 
-$Stack ListItem(.List) ;

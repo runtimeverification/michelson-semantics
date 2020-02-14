@@ -1,2 +1,0 @@
-$Instructions { MUL } ; 
-$Stack ListItem(5) ListItem(-2) ;

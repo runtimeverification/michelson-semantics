@@ -1,2 +1,0 @@
-$Instructions { SUB } ; 
-$Stack ListItem(#Timestamp(5)) ListItem(2) ;

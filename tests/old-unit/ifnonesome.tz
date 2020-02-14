@@ -1,2 +1,0 @@
-$Instructions { IF_NONE { UNIT ; FAILWITH } { PUSH int 1 ; ADD } } ; 
-$Stack ListItem(Some 1) ;

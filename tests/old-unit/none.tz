@@ -1,2 +1,0 @@
-$Instructions { NONE int } ; 
-$Stack .List ;

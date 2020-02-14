@@ -1,2 +1,0 @@
-$Instructions { UPDATE } ; 
-$Stack ListItem(1) ListItem(None) ListItem(#Map(1 |-> 3 5 |-> 2, int, int));

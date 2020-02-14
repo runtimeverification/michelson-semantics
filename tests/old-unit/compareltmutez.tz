@@ -1,2 +1,0 @@
-$Instructions { COMPARE } ; 
-$Stack ListItem(#Mutez(1)) ListItem(#Mutez(2)) ;
