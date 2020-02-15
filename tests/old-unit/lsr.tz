@@ -1,2 +1,0 @@
-$Instructions { LSR } ; 
-$Stack ListItem(32) ListItem(3) ;

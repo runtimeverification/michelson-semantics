@@ -9,18 +9,15 @@ module MICHELSON
   imports DOMAINS 
   imports COLLECTIONS
 
-  syntax Data ::= Bool
+  syntax Data ::= List | Set
+  syntax Data ::= #Lambda(Type, Type, Block)
+  syntax MichelsonMap ::= #Map(Map, Type, Type) // Key, Value
+  syntax Data ::= MichelsonMap
 
   syntax OperationNonce ::= #NextNonce(OperationNonce) [function]
   rule #NextNonce(#Nonce(I)) => #Nonce(I +Int 1)
 
   syntax KItem ::= #FailedStack(Data)
-
-  syntax KItem ::= #ReadKnownAddrs(ContractInputList)
-  syntax KItem ::= #LoadContract(Contract)
-  syntax KItem ::= #InitializeStack(Data, Data)
-
-  syntax KItem ::= #HandleAnnotations(AnnotationList)
 
   syntax Data ::= #ConcreteArgToSemantics(Data, Type) [function] 
 
@@ -57,7 +54,6 @@ module MICHELSON
   rule #ConcreteArgToSemantics(I:Int, mutez _) => #Mutez(I)
   rule #ConcreteArgToSemantics(B:Bool, bool _) => B
   rule #ConcreteArgToSemantics(S:String, key_hash _) => #ParseKeyHash(S)
-  rule #ConcreteArgToSemantics(S:String, timestamp _) => #ParseTimestamp(S)
   rule #ConcreteArgToSemantics(I:Int, timestamp _) => #Timestamp(I)
   rule #ConcreteArgToSemantics(I:Int, address _) => #Timestamp(I)
   rule #ConcreteArgToSemantics(S:String, timestamp _) => #ParseTimestamp(S)
@@ -84,6 +80,13 @@ module MICHELSON
 
   rule #ConcreteArgToSemanticsList(D1 ; DL, T, L) =>
        #ConcreteArgToSemanticsList(DL, T, ListItem(#ConcreteArgToSemantics(D1, T)) L)
+
+  syntax List ::= #ReverseList(List) [function]
+  syntax List ::= #ReverseListAux(List, List) [function]
+
+  rule #ReverseList(L) => #ReverseListAux(L, .List)
+  rule #ReverseListAux(ListItem(L1) Ls, Acc) => #ReverseListAux(Ls, ListItem(L1) Acc)
+  rule #ReverseListAux(.List, Acc) => Acc
 
   rule #ConcreteArgToSemanticsList(D1, T, L) => #ReverseList(ListItem(#ConcreteArgToSemantics(D1, T)) L)
 
@@ -123,6 +126,12 @@ module MICHELSON
   rule #ConcreteArgToSemantics({ M:MapEntryList }, big_map _:AnnotationList K V) =>
        #ConcreteArgToSemanticsMap(M, K, V, .Map)
 
+  syntax Type ::= #ParameterTypeFromContract(Contract) [function]
+  rule #ParameterTypeFromContract(code _ ; storage _ ; parameter P ;) => P
+
+  syntax Type ::= #StorageTypeFromContract(Contract) [function]
+  rule #StorageTypeFromContract(code _ ; storage P ; parameter _ ;) => P
+
   rule #ConcreteArgToSemantics(Create_contract(N, C, O, M, S), operation _) =>
        Create_contract(
            N, 
@@ -151,37 +160,6 @@ module MICHELSON
        <knownaddrs> Known </knownaddrs>
        requires #ConcreteArgToSemantics(A, address .AnnotationList) in_keys(Known)
 
-  rule <k> $contract { code C ; storage St ; parameter Pt ; } ;
-           $balance B ;
-           $amount Amt ;
-           $now N ;
-           $myaddr Addr ;
-           $knownaddrs AddrList ;
-           $sourceaddr SourceAddr ;
-           $senderaddr SenderAddr ;
-           $param P ;
-           $storage S ; => #ReadKnownAddrs(AddrList) ~> #InitializeStack(P, S) ~> C ... </k> 
-       <stack> . </stack>
-       <balance> #Mutez(_ => B) </balance>
-       <amount> #Mutez(_ => Amt) </amount>
-       <now> #Timestamp(_ => N) </now>
-       <myaddr> #Address(_ => Addr) </myaddr>
-       <paramtype> _ => Pt </paramtype>
-       <storagetype> _ => St </storagetype>
-       <sourceaddr> #Address(_ => SourceAddr) </sourceaddr>
-       <senderaddr> #Address(_ => SenderAddr) </senderaddr> [structural]
-
-  rule <k> $contract { code B ; storage St ; parameter Pt ;} ;
-           $param P ;
-           $storage S ; => #InitializeStack(P, S) ~> B ... </k> 
-       <paramtype> _ => Pt </paramtype>
-       <storagetype> _ => St </storagetype> [structural]
-
-  rule <k> #ReadKnownAddrs(#ContractInput(A, T) Cs => Cs) ... </k>
-       <knownaddrs> M => M[#Address(A) <- #Contract(#Address(A), T)] </knownaddrs> [structural]
-
-  rule #ReadKnownAddrs( .ContractInputList ) => . [structural]
-
   rule code B ; storage St ; parameter Pt => code B ; storage St ; parameter Pt ; [macro]
   rule code B ; parameter Pt ; storage St => code B ; storage St ; parameter Pt ; [macro]
   rule storage St ; code B ; parameter Pt => code B ; storage St ; parameter Pt ; [macro]
@@ -195,22 +173,136 @@ module MICHELSON
   rule storage St ; parameter Pt ; code B ; => code B ; storage St ; parameter Pt ; [macro]
   rule parameter Pt ; storage St ; code B ; => code B ; storage St ; parameter Pt ; [macro]
 
+//  syntax Int ::= #GroupOrder(Group) [function] // In michelson-common.k
+  rule #GroupOrder(_:ContractGroup) => #GroupOrderMax
+  rule #GroupOrder(_:ParameterValueGroup) => #GroupOrderMax -Int 1
+  rule #GroupOrder(_:StorageValueGroup) => #GroupOrderMax -Int 2
 
-  syntax Type ::= #StorageTypeFromContract(Contract) [function]
+  rule #GroupOrder(_:NowGroup) => 0
+  rule #GroupOrder(_:SenderGroup) => 1
+  rule #GroupOrder(_:SourceGroup) => 2
+  rule #GroupOrder(_:ChainGroup) => 3
+  rule #GroupOrder(_:SelfGroup) => 4
+  rule #GroupOrder(_:AmountGroup) => 5
+  rule #GroupOrder(_:BalanceGroup) => 6
+  rule #GroupOrder(_:ContractsGroup) => 7
+  rule #GroupOrder(_:ParameterDecl) => 8
+  rule #GroupOrder(_:StorageDecl) => 9
 
-  rule #StorageTypeFromContract(code _ ; storage P ; parameter _ ;) => P
+  syntax Group ::= #GetMinOfTwoGroups(Group, Group) [function]
+  rule #GetMinOfTwoGroups(G1, G2) => G1 requires #GroupOrder(G1) <Int #GroupOrder(G2)
+  rule #GetMinOfTwoGroups(G1, G2) => G2 [owise]
 
-  rule <k> #InitializeStack(P, S) => . ... </k>
-       <stack> . => Pair #ConcreteArgToSemantics(P, Pt) #ConcreteArgToSemantics(S, St) </stack>
-       <paramtype> Pt </paramtype>
-       <storagetype> St </storagetype>
+  syntax Group ::= #GetMinGroup(Groups) [function]
+  rule #GetMinGroup(G:Group) => G
+  rule #GetMinGroup(G ; Gs) => #GetMinGroupAux(Gs, G)
+
+  syntax Group ::= #GetMinGroupAux(Groups, Group) [function]
+  rule #GetMinGroupAux(G1, G2) => #GetMinOfTwoGroups(G1, G2)
+  rule #GetMinGroupAux(G1 ; Gs, G2) => #GetMinGroupAux(Gs, #GetMinOfTwoGroups(G1, G2))
+
+  syntax Groups ::= #RemoveGroup(Groups, Group) [function]
+  rule #RemoveGroup(G1:Group ; G2:Group, G:Group) => G1 ; G2 requires G =/=K G1 andBool G =/=K G2
+  rule #RemoveGroup(G1:Group ; G2:Group, G1) => G2
+  rule #RemoveGroup(G1:Group ; G2:Group, G2) => G1
+  rule #RemoveGroup(G1:Group ; G2:Group ; Gs:Groups, G1) => G2 ; Gs
+  rule #RemoveGroup(G ; Gs:Groups, Go:Group) => G ; #RemoveGroup(Gs, Go) [owise]
+
+  syntax Groups ::= #ReorderGroups(Groups) [function, functional]
+  rule #ReorderGroups(G:Group) => G
+  rule #ReorderGroups(G ; Gs) => #GetMinGroup(G ; Gs) ; #ReorderGroups(#RemoveGroup(G ; Gs, #GetMinGroup(G ; Gs))) 
+
+  syntax Contract ::= #FindContract(Groups) [function]
+  rule #FindContract(contract { C }) => C
+  rule #FindContract(contract { C } ; _) => C
+  rule #FindContract(_ ; Gs) => #FindContract(Gs) [owise]
+
+  syntax Group ::= #MakeParameterGroup(Groups) [function]
+  rule #MakeParameterGroup(G) => parameter #ParameterTypeFromContract(#FindContract(G))
+
+  syntax Group ::= #MakeStorageGroup(Groups) [function]
+  rule #MakeStorageGroup(G) => storage #StorageTypeFromContract(#FindContract(G))
+
+  syntax Bool ::= #HasContract(Groups) [function]
+  rule #HasContract(contract { C }) => true
+  rule #HasContract(contract { C } ; _) => true
+  rule #HasContract(_ ; Gs) => #HasContract(Gs) [owise]
+  rule #HasContract(_:Group) => false [owise]
+
+  syntax Groups ::= #ExtendGroups(Groups) [function]
+
+  rule #ExtendGroups(Gs) => #MakeParameterGroup(Gs) ; #MakeStorageGroup(Gs) ; Gs requires #HasContract(Gs)
+  rule #ExtendGroups(Gs) => Gs [owise]
+
+//  syntax KItem ::= #LoadGroups(Groups) // In michelson-common.k
+
+  rule <k> G:Groups => #LoadGroups(#ReorderGroups(#ExtendGroups(G))) </k>  
+
+  rule <k> #LoadGroups(now I ; Gs => Gs) </k>
+       <mynow> #Timestamp(0 => I) </mynow>
+
+  rule <k> #LoadGroups(sender A ; Gs => Gs) </k>
+       <senderaddr> #Address("InvalidSenderAddr" => A) </senderaddr>
+
+  rule <k> #LoadGroups(source A ; Gs => Gs) </k>
+       <sourceaddr> #Address("InvalidSourceAddr" => A) </sourceaddr>
+
+  rule <k> #LoadGroups(chain_id M ; Gs => Gs) </k>
+       <mychainid> #ChainId(0 => #MBytesToInt(M)) </mychainid>
+
+  rule <k> #LoadGroups(self A ; Gs => Gs) </k>
+       <myaddr> #Address("InvalidMyAddr" => A) </myaddr>
+
+  syntax Int ::= "#MutezOverflowLimit" [function]
+  rule #MutezOverflowLimit => 2 ^Int 63 // Signed 64 bit integers.
+
+  syntax Bool ::= #IsLegalMutezValue(Int) [function]
+  rule #IsLegalMutezValue(I) => I >=Int 0 andBool I <Int #MutezOverflowLimit
+
+  rule <k> #LoadGroups(amount I ; Gs => Gs) </k>
+       <myamount> #Mutez(0 => I) </myamount>
+       requires #IsLegalMutezValue(I)
+
+  rule <k> #LoadGroups(balance I ; Gs => Gs) </k>
+       <mybalance> #Mutez(0 => I) </mybalance>
+       requires #IsLegalMutezValue(I)
+
+  syntax Map ::= #OtherContractsMapToKMap(OtherContractsMap) [function]
+  syntax Map ::= #OtherContractsMapEntryListToKMap(OtherContractsMapEntryList) [function]
+  rule #OtherContractsMapToKMap({ }) => .Map
+  rule #OtherContractsMapToKMap({ EL }) => #OtherContractsMapEntryListToKMap(EL)
+  rule #OtherContractsMapEntryListToKMap( Elt A T ) => #Address(A) |-> #Contract(#Address(A), T)
+  rule #OtherContractsMapEntryListToKMap( Elt A T ; Rs ) => #Address(A) |-> #Contract(#Address(A), T) #OtherContractsMapEntryListToKMap(Rs)
+
+  rule <k> #LoadGroups(other_contracts M ; Gs => Gs) </k>
+       <knownaddrs> .Map => #OtherContractsMapToKMap(M) </knownaddrs>
+
+  rule <k> #LoadGroups(parameter T ; Gs => Gs) </k>
+       <paramtype> #NotSet => T </paramtype>
+
+  rule <k> #LoadGroups(storage T ; Gs => Gs) </k>
+       <storagetype> #NotSet => T </storagetype>
+
+  rule <k> #LoadGroups(parameter_value D ; Gs => Gs) </k>
+       <paramtype> T </paramtype>
+       <paramvalue> #NoData => #ConcreteArgToSemantics(D, T) </paramvalue>
+
+  rule <k> #LoadGroups(storage_value D ; Gs => Gs) </k>
+       <storagetype> T </storagetype>
+       <storagevalue> #NoData => #ConcreteArgToSemantics(D, T) </storagevalue>
+
+  rule <k> #LoadGroups(contract { code C ; storage _ ; parameter _ }) => C </k>
+       <stack> . => Pair P S </stack>
+       <paramvalue> P </paramvalue>
+       <storagevalue> S </storagevalue>
+       <returncode> _ => 0 </returncode>
 
   rule I:Instruction ; Is:InstructionList => I ~> Is [structural]
   rule {} => .K [structrual]
   rule { Is:InstructionList } => Is [structural]
   rule { Is:InstructionList ; } => Is [structural]
 
-
+  syntax KItem ::= #HandleAnnotations(AnnotationList)
   rule #HandleAnnotations(_) => . [structural]
 
   syntax Error ::= Aborted(String, KItem, K, K)
@@ -219,6 +311,7 @@ module MICHELSON
   //// Control Structures
   rule <k> FAILWITH A ~> Rk => #HandleAnnotations(A) ~> Aborted("FAILWITH instruction reached", D, Rk, Rs) </k>
        <stack> D ~> Rs => #FailedStack(D) </stack>
+       <returncode> _ => 1 </returncode>
 
   rule <k> IF A BT BF => #HandleAnnotations(A) ~> BT ... </k>
        <stack> true => . ... </stack>
@@ -250,8 +343,6 @@ module MICHELSON
   rule <k> DIP A I B => #HandleAnnotations(A) ~> DIP .AnnotationList { DIP .AnnotationList  I -Int 1 B } ... </k>
        requires I >Int 0
 
-  syntax Data ::= #Lambda(Type, Type, Block)
- 
   syntax KItem ::= #ReturnStack(K)
 
   rule <k> #ReturnStack(Ls) => . ... </k>
@@ -515,9 +606,6 @@ module MICHELSON
        <stack> S:Set => size(S) ... </stack>
 
   //// Operations on maps
-  syntax MichelsonMap ::= #Map(Map, Type, Type) // Key, Value
-  syntax Data ::= MichelsonMap
-
   rule <k> EMPTY_MAP A KT VT => #HandleAnnotations(A) ... </k>
        <stack> . => #Map(.Map, KT, VT) ... </stack>
 
@@ -636,13 +724,6 @@ module MICHELSON
 
   syntax KItem ::= #AddToList(List, List, Block)
 
-  syntax List ::= #ReverseList(List) [function]
-  syntax List ::= #ReverseListAux(List, List) [function]
-
-  rule #ReverseList(L) => #ReverseListAux(L, .List)
-  rule #ReverseListAux(ListItem(L1) Ls, Acc) => #ReverseListAux(Ls, ListItem(L1) Acc)
-  rule #ReverseListAux(.List, Acc) => Acc
-
   rule <k> #PerformMapList(.List, Acc, B) => . ... </k>
        <stack> . => #ReverseList(Acc) ... </stack>
 
@@ -699,7 +780,7 @@ module MICHELSON
 
   rule <k> BALANCE A => . ... </k>
        <stack> . => B ... </stack>
-       <balance> B </balance>
+       <mybalance> B </mybalance>
 
   rule <k> ADDRESS Ann => . ... </k>
        <stack> #Contract(A, _) => A ... </stack>
@@ -729,7 +810,7 @@ module MICHELSON
 
   rule <k> AMOUNT Ann => . ... </k>
        <stack> . => M ... </stack>
-       <amount> M </amount>
+       <myamount> M </myamount>
 
   rule <k> IMPLICIT_ACCOUNT Ann => . ... </k>
        <stack> #KeyHash(A) => #Contract(#Address(A), unit .AnnotationList) ... </stack>
@@ -737,11 +818,11 @@ module MICHELSON
   //// Special Operations
   rule <k> CHAIN_ID A => . ... </k>
        <stack> . => C ... </stack>
-       <chainid> C </chainid>
+       <mychainid> C </mychainid>
 
   rule <k> NOW A => . ... </k> 
        <stack> . => N ... </stack>
-       <now> N </now>
+       <mynow> N </mynow>
 
 
   //// Operations on MBytes, stubbed for now because of the lack of a documented bytes format.
@@ -796,12 +877,6 @@ module MICHELSON
   //// Operations on Mutez
 
   syntax Data ::= Mutez
-
-  syntax Int ::= "#MutezOverflowLimit" [function]
-  rule #MutezOverflowLimit => 2 ^Int 63 // Signed 64 bit integers.
-
-  syntax Bool ::= #IsLegalMutezValue(Int) [function]
-  rule #IsLegalMutezValue(I) => I >=Int 0 andBool I <Int #MutezOverflowLimit
 
   syntax KItem ::= #ValidateMutezAndPush(Mutez)
 

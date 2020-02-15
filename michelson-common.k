@@ -5,6 +5,7 @@ module MICHELSON-COMMON
   imports DOMAINS-SYNTAX
 
   syntax Type ::= "#NotSet"
+  syntax Data ::= "#NoData"
 
   syntax Address ::= #Address(String)
   syntax ContractData ::= #Contract(Address, Type)
@@ -27,6 +28,15 @@ module MICHELSON-COMMON
   syntax Data ::= Signature
 
   syntax Data ::= Bool
+
+  syntax Group ::= ParameterDecl
+  syntax Group ::= StorageDecl
+
+  syntax KItem ::= #LoadGroups(Groups)
+  syntax Int ::= #GroupOrder(Group) [function]
+
+  syntax Int ::= "#GroupOrderMax" [function]
+  rule #GroupOrderMax => 1000
 
   rule True => true [macro]
   rule False => false [macro]

@@ -1,2 +1,0 @@
-$Instructions { UPDATE } ; 
-$Stack ListItem(2) ListItem(False) ListItem(SetItem(1) SetItem(3) SetItem(5) SetItem(7)) ;

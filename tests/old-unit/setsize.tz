@@ -1,2 +1,0 @@
-$Instructions { SIZE } ; 
-$Stack ListItem(SetItem("a") SetItem("b") SetItem("c") SetItem("d"))  ;

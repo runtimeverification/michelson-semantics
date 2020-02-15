@@ -1,2 +1,0 @@
-$Instructions { IF_CONS { PUSH int 1 ; ADD } { UNIT ; FAILWITH } } ; 
-$Stack ListItem(ListItem(2) ListItem(3) ListItem(4)) ;

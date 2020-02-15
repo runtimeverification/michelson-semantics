@@ -1,0 +1,16 @@
+parameter_value 300000 ;
+storage_value 0 ;
+contract { 
+  storage nat ; 
+  parameter nat ; 
+  code { LEFT nat ; 
+         LOOP_LEFT { DUP ;
+                     DIP { CDR } ;
+                     CAR ;
+                     DUP ;
+                     DIP { ADD } ;
+                     PUSH nat 1 ;
+                     SWAP ; 
+                     SUB ;
+                     ISNAT ;
+                     IF_NONE { RIGHT (pair nat nat) } { PAIR ; LEFT nat } } ; NIL operation; PAIR } }

@@ -1,2 +1,0 @@
-$Instructions { ITER { CDR ; SWAP ; SUB } } ; 
-$Stack ListItem(#Map(1 |-> 3 5 |-> 2, int, int)) ListItem(1000);

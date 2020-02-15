@@ -1,9 +1,0 @@
-$contract { parameter (list string);
-storage (list string);
-code{ CAR;
-      MAP { PUSH @hello string "Hello "; CONCAT }; NIL operation; PAIR};
- } ;
-$param { "World!" } ;
-$storage {} ;
-$ExpectedOutput { "Hello World!" } ;
-

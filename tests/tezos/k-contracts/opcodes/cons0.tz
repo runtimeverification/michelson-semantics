@@ -1,8 +1,0 @@
-$contract { parameter int;
-storage (list int);
-code { UNPAIR; CONS; NIL operation; PAIR; };
- } ;
-$param 10 ;
-$storage {} ;
-$ExpectedOutput { 10 } ;
-

@@ -1,2 +1,0 @@
-$Instructions { EMPTY_SET nat } ; 
-$Stack .List ;

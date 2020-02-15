@@ -1,2 +1,0 @@
-$Instructions { DIP { LAMBDA int int { PUSH int 1 ; ADD } } ; EXEC } ; 
-$Stack ListItem(5) ListItem(10) ;

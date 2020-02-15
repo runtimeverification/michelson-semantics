@@ -1,8 +1,0 @@
-$contract { parameter unit;
-storage (option chain_id);
-code { DROP; CHAIN_ID; SOME; NIL operation; PAIR }
- } ;
-$param Unit ;
-$storage None ;
-$ExpectedOutput (Some 0x7a06a770) ;
-

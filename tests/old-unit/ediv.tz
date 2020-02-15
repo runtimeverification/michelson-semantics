@@ -1,2 +1,0 @@
-$Instructions { EDIV } ; 
-$Stack ListItem(5) ListItem(-2) ;

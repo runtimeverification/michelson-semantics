@@ -1,2 +1,0 @@
-$Instructions { DIP { PUSH bool True } } ; 
-$Stack ListItem(5) ;

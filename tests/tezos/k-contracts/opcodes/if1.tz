@@ -1,8 +1,0 @@
-$contract { parameter bool;
-storage (option bool);
-code {CAR; IF {PUSH bool True} {PUSH bool False}; SOME; NIL operation; PAIR};
- } ;
-$param False ;
-$storage None ;
-$ExpectedOutput (Some False) ;
-

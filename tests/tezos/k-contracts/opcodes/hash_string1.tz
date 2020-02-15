@@ -1,8 +1,0 @@
-$contract { parameter string;
-storage bytes;
-code {CAR; PACK ; BLAKE2B; NIL operation; PAIR};
- } ;
-$param "12345" ;
-$storage 0x00 ;
-$ExpectedOutput 0xb4c26c20de52a4eaf0d8a340db47ad8cb1e74049570859c9a9a3952b204c772f ;
-

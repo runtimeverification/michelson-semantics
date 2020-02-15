@@ -1,2 +1,0 @@
-$Instructions { TRANSFER_TOKENS } ; 
-$Stack ListItem(Unit) ListItem(#Mutez(5)) ListItem(#Contract(#Address("1"), unit)) ;

@@ -283,21 +283,34 @@ module MICHELSON-SYNTAX
                     | StorageDecl ";" ParameterDecl ";" CodeDecl
                     | ParameterDecl ";" StorageDecl ";" CodeDecl
 
-  syntax ContractInput ::= #ContractInput(String, Type)
-  syntax ContractInputList ::= List{ContractInput, " "} 
+  syntax OtherContractsMapEntry ::= "Elt" String Type
+  syntax OtherContractsMapEntryList ::= OtherContractsMapEntry | OtherContractsMapEntry ";" OtherContractsMapEntryList
+  syntax OtherContractsMap ::= EmptyBlock | "{" OtherContractsMapEntryList "}"
 
-  syntax Pgm ::= "$contract" "{" Contract "}" ";" 
-                 "$balance" Int ";" 
-                 "$amount" Int ";" 
-                 "$now" Int ";" 
-                 "$myaddr" String ";" 
-                 "$knownaddrs" ContractInputList ";" 
-                 "$sourceaddr" String ";" 
-                 "$senderaddr" String ";" 
-                 "$param" Data  ";" 
-                 "$storage" Data ";"
+  syntax ContractGroup ::= "contract" "{" Contract "}"
+  syntax NowGroup ::= "now" Int
+  syntax SenderGroup ::= "sender" String
+  syntax SourceGroup ::= "source" String
+  syntax ChainGroup ::= "chain_id" MBytesLiteral 
+  syntax SelfGroup ::= "self" String
+  syntax AmountGroup ::= "amount" Int
+  syntax BalanceGroup ::= "balance" Int
+  syntax ContractsGroup ::= "other_contracts" OtherContractsMap
+  syntax ParameterValueGroup ::= "parameter_value" Data
+  syntax StorageValueGroup ::= "storage_value" Data
 
-  syntax Pgm ::= "$contract" "{" Contract "}" ";" 
-                 "$param" Data  ";" 
-                 "$storage" Data ";"
+  syntax Group ::= ContractGroup
+                 | ParameterValueGroup
+                 | StorageValueGroup
+                 | NowGroup
+                 | SenderGroup
+                 | SourceGroup
+                 | ChainGroup
+                 | SelfGroup
+                 | AmountGroup
+                 | BalanceGroup
+                 | ContractsGroup
+
+  syntax Groups ::= Group | Group ";" Groups
+  syntax Pgm ::= Groups
 endmodule
