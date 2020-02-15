@@ -236,7 +236,7 @@ module MICHELSON
 
 //  syntax KItem ::= #LoadGroups(Groups) // In michelson-common.k
 
-  rule <k> G:Groups => #LoadGroups(#ReorderGroups(#ExtendGroups(G))) </k>  
+  rule <k> G:Groups => #LoadGroups(#ReorderGroups(#ExtendGroups(G))) </k> [owise] 
 
   rule <k> #LoadGroups(now I ; Gs => Gs) </k>
        <mynow> #Timestamp(0 => I) </mynow>
