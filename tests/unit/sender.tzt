@@ -1,4 +1,4 @@
 code { SENDER } ; 
 input { } ; 
-sender "SenderAddr" ; 
-output { Stack_elt address "SenderAddr" }
+sender "@Address(SenderAddr)" ; 
+output { Stack_elt address "@Address(SenderAddr)" }

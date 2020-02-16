@@ -30,4 +30,5 @@ module UNIT-TEST-EXPANDER
   rule #FindCodeGroup(_ ; G) => #FindCodeGroup(G) [owise]
 
   rule <k> G:Groups => #FillTemplateContract(#StackToPush(#FindInputGroup(G)), #FindCodeGroup(G)) </k>
+       <returncode> _ => 0 </returncode>
 endmodule

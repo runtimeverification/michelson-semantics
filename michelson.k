@@ -765,7 +765,7 @@ module MICHELSON
   rule #IsKeyHashOption(Some _) => false [owise]
 
   rule <k> CREATE_CONTRACT A:AnnotationList { C } => . ... </k>
-       <stack> Delegate:OptionData ~> Initial:Mutez ~> Stor:Data => Create_contract(O, C, Delegate, Initial, Stor) ~> #Address(Int2String(!_:Int)) ... </stack>
+       <stack> Delegate:OptionData ~> Initial:Mutez ~> Stor:Data => Create_contract(O, C, Delegate, Initial, Stor) ~> #Address("@Address(" +String Int2String(!_:Int) +String ")") ... </stack>
        <nonce> #Nonce(O) => #NextNonce(#Nonce(O)) </nonce>
        requires #IsKeyHashOption(Delegate)
 
