@@ -15,7 +15,13 @@ TEMP_DIR="$(mktemp -d '.tezos-ut.XXXXX' -p "$SCRIPT_DIR")"
 
 #trap "rm -rf $TEMP_DIR" EXIT
 
-FOUND_ADDRESSES="$TEMP_DIR/contracts"
+KNOWN_FAKES="$SCRIPT_DIR/addresses.txt"
+
+FOUND_ADDRESSES="$TEMP_DIR/addresses"
+REAL_ADDRESSES="$TEMP_DIR/contracts"
+FAKE_ADDRESSES="$TEMP_DIR/fake_addresses"
+FAKE_ADDRESS_SUBS="$TEMP_DIR/fake_address_subs"
+FIXED_FAKE_ADDRESS_CONTRACT="$TEMP_DIR/fixed_fake_address"
 ORIGINATION_OUTPUTS="$TEMP_DIR/originations"
 ORIGINATION_SUBS="$TEMP_DIR/origination_subs"
 FIXED_ADDRESS_CONTRACT="$TEMP_DIR/fixed_addrs"
@@ -32,10 +38,15 @@ OUTPUT_FILE="$TEMP_DIR/actual-and-expected"
 COMPARE_FILE="$TEMP_DIR/comparison"
 
 
-output_if_failing "'$SCRIPT_DIR/other-extractor/run.sh' '$UT' > '$FOUND_ADDRESSES'" "Failed to extract dependencies on other contracts."
-output_if_failing "python3 '$SCRIPT_DIR/originate.py' '$FOUND_ADDRESSES' > '$ORIGINATION_OUTPUTS'" "Failed to originate contracts"
-paste -d '/' <(cut -d'#' -f1 "$FOUND_ADDRESSES") <(grep -Po '(?<=New contract )[a-zA-Z0-9_]*' "$ORIGINATION_OUTPUTS") | sed -E 's|(.*)|s/\1/|' > "$ORIGINATION_SUBS"
-sed -f "$ORIGINATION_SUBS" "$UT" > "$FIXED_ADDRESS_CONTRACT"
+grep -o '@Address([^)"]*)' "$UT" | sort | uniq > "$FOUND_ADDRESSES"
+output_if_failing "'$SCRIPT_DIR/other-extractor/run.sh' '$UT' > '$REAL_ADDRESSES'" "Failed to extract dependencies on other contracts."
+diff --new-line-format="" --unchanged-line-format="" "$FOUND_ADDRESSES" <(cut -d'#' -f 1 "$REAL_ADDRESSES") > "$FAKE_ADDRESSES"
+paste -d'/' "$FAKE_ADDRESSES" <(head -n "$(wc -l "$FAKE_ADDRESSES" | grep -o "^[0-9]*")" $KNOWN_FAKES  ) | sed -E 's|(.*)|s/\1/|' > "$FAKE_ADDRESS_SUBS"
+
+output_if_failing "python3 '$SCRIPT_DIR/originate.py' '$REAL_ADDRESSES' > '$ORIGINATION_OUTPUTS'" "Failed to originate contracts"
+paste -d '/' <(cut -d'#' -f1 "$REAL_ADDRESSES") <(grep -Po '(?<=New contract )[a-zA-Z0-9_]*' "$ORIGINATION_OUTPUTS") | sed -E 's|(.*)|s/\1/|' > "$ORIGINATION_SUBS"
+
+cat "$FAKE_ADDRESS_SUBS" "$ORIGINATION_SUBS" | sed -f /dev/stdin "$UT" > "$FIXED_ADDRESS_CONTRACT"
 
 output_if_failing "'$SCRIPT_DIR/contract-expander/run.sh' '$FIXED_ADDRESS_CONTRACT' > '$EXPANDED_FILE'" "Contract did not expand properly"
 output_if_failing "tezos-client typecheck script '$(cat "$EXPANDED_FILE")' --details  >$TYPECHECK_OUTPUT 2>&1" "Contract did not typecheck"

@@ -14,10 +14,10 @@ module UNIT-TEST-EXPANDER
   rule #StackToPushAux(Stack_elt T D, { I:InstructionList })  => { PUSH .AnnotationList T D ; I }
 
 
-  syntax Contract ::= #FillTemplateContract(Block, Block) [function]
+  syntax Contract ::= #FillTemplateContract(Block, Block, Type) [function]
   
-  rule #FillTemplateContract(PushBlock, CodeBlock) =>
-  parameter unit .AnnotationList ; storage unit .AnnotationList ; code { DROP .AnnotationList ; PushBlock ; CodeBlock ; UNIT @exitToken ; FAILWITH .AnnotationList } ; 
+  rule #FillTemplateContract(PushBlock, CodeBlock, ParamType) =>
+  parameter ParamType ; storage unit .AnnotationList ; code { DROP .AnnotationList ; PushBlock ; CodeBlock ; UNIT @exitToken ; FAILWITH .AnnotationList } ; 
 
   syntax LiteralStack ::= #FindInputGroup(Groups) [function]
   rule #FindInputGroup(input T) => T
@@ -29,6 +29,12 @@ module UNIT-TEST-EXPANDER
   rule #FindCodeGroup(code T ; _) => { T } 
   rule #FindCodeGroup(_ ; G) => #FindCodeGroup(G) [owise]
 
-  rule <k> G:Groups => #FillTemplateContract(#StackToPush(#FindInputGroup(G)), #FindCodeGroup(G)) </k>
+  syntax Type ::= #FindParamType(Groups) [function]
+  rule #FindParamType(parameter T) => T
+  rule #FindParamType(parameter T ; Rs) => #FindParamType(Rs)
+  rule #FindParamType(_:Group) => unit .AnnotationList [owise]
+  rule #FindParamType(_ ; Rs) => #FindParamType(Rs) [owise]
+
+  rule <k> G:Groups => #FillTemplateContract(#StackToPush(#FindInputGroup(G)), #FindCodeGroup(G), #FindParamType(G)) </k>
        <returncode> _ => 0 </returncode>
 endmodule
