@@ -67,7 +67,10 @@ output_if_failing "pcregrep -oM '(?<=\[ )@exitToken[^\\]]*' '$TYPECHECK_OUTPUT' 
 sed -E 's/ : /\n/g;s/@%|@%%|%@|[@:%][_a-zA-Z][_0-9a-zA-Z\.%@]*//g' $RAW_TYPES > $TYPES_FILE
 
 
-tezos-client run script "$(cat $EXPANDED_FILE)" on storage Unit and input Unit --trace-stack > "$EXECUTION" 2>&1
+AMOUNT="$(output_if_failing "'$SCRIPT_DIR/extractor/run.sh' '$UT' amount true | sed 's/#NoGroup/0/'" "Failed to extract amount")"
+AMOUNT="$(python -c "import sys ; print('%f' % (float(sys.argv[1]) / 1000000.0))" $AMOUNT)"
+
+tezos-client run script "$(cat $EXPANDED_FILE)" on storage Unit and input Unit --amount "$AMOUNT" --trace-stack > "$EXECUTION" 2>&1
 output_if_failing "pcregrep -oM '(?<=\[)\s*Unit\s*@exitToken[^\\]]*' $EXECUTION > $RAW_DATA" "Could not find @exitToken in execution output"
 sed -E 's/@%|@%%|%@|[@:%][_a-zA-Z][_0-9a-zA-Z\.%@]*//g' "$RAW_DATA" > "$DATA_FILE"
 
