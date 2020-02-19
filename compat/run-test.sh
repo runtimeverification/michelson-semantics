@@ -39,7 +39,20 @@ COMPARE_FILE="$TEMP_DIR/comparison"
 
 
 grep -o '@Address([^)"]*)' "$UT" | sort | uniq > "$FOUND_ADDRESSES"
-output_if_failing "'$SCRIPT_DIR/other-extractor/run.sh' '$UT' > '$REAL_ADDRESSES'" "Failed to extract dependencies on other contracts."
+
+OTHER_EXTRACTOR_CMD=$(cat <<EOF
+'$SCRIPT_DIR/extractor/run.sh' '$UT' other_contracts true |  
+    tr -d '{}' | 
+    tr ';' '\n' | 
+    sed '/#NoGroup/d' |
+    sed 's/^\s*//;s/\s*$//' | 
+    sed -E 's/Elt\s*"([^"]*)"\s*(.*)/\1#\2/' | 
+    sort | 
+    uniq > '$REAL_ADDRESSES'
+EOF
+)
+
+output_if_failing "$OTHER_EXTRACTOR_CMD" "Failed to extract dependencies on other contracts."
 diff --new-line-format="" --unchanged-line-format="" "$FOUND_ADDRESSES" <(cut -d'#' -f 1 "$REAL_ADDRESSES") > "$FAKE_ADDRESSES"
 paste -d'/' "$FAKE_ADDRESSES" <(head -n "$(wc -l "$FAKE_ADDRESSES" | grep -o "^[0-9]*")" $KNOWN_FAKES  ) | sed -E 's|(.*)|s/\1/|' > "$FAKE_ADDRESS_SUBS"
 
@@ -59,7 +72,7 @@ output_if_failing "pcregrep -oM '(?<=\[)\s*Unit\s*@exitToken[^\\]]*' $EXECUTION 
 sed -E 's/@%|@%%|%@|[@:%][_a-zA-Z][_0-9a-zA-Z\.%@]*//g' "$RAW_DATA" > "$DATA_FILE"
 
 python "$SCRIPT_DIR/combine.py" $TYPES_FILE $DATA_FILE > $REAL_OUTPUT_FILE
-"$SCRIPT_DIR/output-extractor/run.sh" "$1" | sed -f "$ORIGINATION_SUBS" > $EXPECTED_OUTPUT_FILE
+"$SCRIPT_DIR/extractor/run.sh" "$1" 'output' 'false' | sed -f "$ORIGINATION_SUBS" > $EXPECTED_OUTPUT_FILE
 
 echo | cat "$REAL_OUTPUT_FILE" "$EXPECTED_OUTPUT_FILE" - > "$OUTPUT_FILE"
 

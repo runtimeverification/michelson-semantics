@@ -2,7 +2,10 @@
 import subprocess, sys
 TEMPLATE = "tezos-client originate contract {0} transferring 0 from bootstrap1 running 'parameter {1} ; storage unit ; code {{ DROP ; UNIT ; NIL operation ; PAIR }}' --burn-cap 10000000 --force"
 with open(sys.argv[1], "r") as f:
-    contracts = [line.split("#") for line in f.readlines()]
+    lines = f.readlines()
+    if len(lines) == 1 and lines[0].strip() == "#NoGroup":
+        sys.exit(0)
+    contracts = [line.split("#") for line in lines]
     if len(contracts) > 0 and contracts[-1][0].isspace():
         contracts = contracts[:-1]
     for contract in contracts:

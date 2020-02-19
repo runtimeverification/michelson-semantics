@@ -6,5 +6,5 @@ notes.txt
 template.tz
 diff_file.txt
 /.build
-/.krun*
-/.kprove*
+**/.krun*
+**/.kprove*
