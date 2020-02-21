@@ -1,1 +1,1 @@
-kompile extractor.k --backend llvm
+kompile extractor.k $KOMPILE_OPTS

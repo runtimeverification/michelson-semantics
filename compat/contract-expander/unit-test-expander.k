@@ -5,14 +5,19 @@ module UNIT-TEST-EXPANDER
   imports UNIT-TEST-SYNTAX
   imports MICHELSON-CONFIG
 
+  syntax Block ::= #StackEltToPush(StackElement) [function]
+  rule #StackEltToPush(Stack_elt (contract _:AnnotationList T:Type) D:Data) => { PUSH .AnnotationList address .AnnotationList D ; 
+                                                                                 CONTRACT .AnnotationList T ; 
+                                                                                 IF_SOME .AnnotationList { } { UNIT .AnnotationList ; FAILWITH .AnnotationList } }
+  rule #StackEltToPush(Stack_elt T D) => { PUSH .AnnotationList T D } [owise] 
+
   syntax Block ::= #StackToPush(LiteralStack) [function]
   rule #StackToPush( { } ) => { }
 
   syntax Block ::= #StackToPushAux(StackElementList, Block) [function]
   rule #StackToPush( { Se } ) => #StackToPushAux(Se, { DROP .AnnotationList 0 })
-  rule #StackToPushAux(Stack_elt T D ; Ls, { I:InstructionList })  => #StackToPushAux(Ls, { PUSH .AnnotationList T D ; I })
-  rule #StackToPushAux(Stack_elt T D, { I:InstructionList })  => { PUSH .AnnotationList T D ; I }
-
+  rule #StackToPushAux(Se ; Ls, { I:InstructionList })  => #StackToPushAux(Ls, { #StackEltToPush(Se) ; I })
+  rule #StackToPushAux(Se, { I:InstructionList })  => { #StackEltToPush(Se) ; I }
 
   syntax Contract ::= #FillTemplateContract(Block, Block, Type) [function]
   
@@ -31,7 +36,7 @@ module UNIT-TEST-EXPANDER
 
   syntax Type ::= #FindParamType(Groups) [function]
   rule #FindParamType(parameter T) => T
-  rule #FindParamType(parameter T ; Rs) => #FindParamType(Rs)
+  rule #FindParamType(parameter T ; Rs) => T
   rule #FindParamType(_:Group) => unit .AnnotationList [owise]
   rule #FindParamType(_ ; Rs) => #FindParamType(Rs) [owise]
 

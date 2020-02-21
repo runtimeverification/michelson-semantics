@@ -1,1 +1,1 @@
-kompile unit-test-expander.k --backend llvm --syntax-module UNIT-TEST-SYNTAX
+kompile unit-test-expander.k $KOMPILE_OPTS --syntax-module UNIT-TEST-SYNTAX

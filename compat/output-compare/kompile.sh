@@ -1,1 +1,1 @@
-kompile output-compare.k --backend llvm
+kompile output-compare.k $KOMPILE_OPTS

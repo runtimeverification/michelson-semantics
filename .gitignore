@@ -1,6 +1,7 @@
 **/*-kompiled/*
 **/.node-pid
 **/.tezos-ut*
+**/.failure
 notes.txt
 *.swp
 template.tz
