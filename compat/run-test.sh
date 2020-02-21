@@ -1,6 +1,6 @@
 #!/bin/bash
 UT="$1"
-SCRIPT_DIR="$(dirname $0)"
+SCRIPT_DIR="$(dirname "$(readlink -f "$BASH_SOURCE")")"
 FAIL_DIR="$SCRIPT_DIR/.failure"
 
 

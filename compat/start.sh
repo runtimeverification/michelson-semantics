@@ -2,7 +2,7 @@
 
 shopt -s expand_aliases
 
-SCRIPT_DIR="$(dirname $0)"
+SCRIPT_DIR="$(dirname "$(readlink -f "$BASH_SOURCE")")"
 
 "$SCRIPT_DIR/tezos/src/bin_node/tezos-sandboxed-node.sh" 1 --connections 1 >/dev/null 2>&1 &
 node_pid=$!
