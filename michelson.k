@@ -866,11 +866,11 @@ module MICHELSON
 
   syntax MBytes ::= #SignedMBytes(Key, Signature, MBytes)
 
-  rule <k> CHECK_SIGNATURE A => #HandleAnnotations(A) ... </k>
+/*  rule <k> CHECK_SIGNATURE A => #HandleAnnotations(A) ... </k>
        <stack> #Key(K) ~> #Signature(S) ~> #SignedMBytes(#Key(K), #Signature(S), _) => true ... </stack>
 
   rule <k> CHECK_SIGNATURE A => #HandleAnnotations(A) ... </k>
-       <stack> #Key(_) ~> #Signature(_) ~> _:MBytes => false ... </stack> [owise]
+       <stack> #Key(_) ~> #Signature(_) ~> _:MBytes => false ... </stack> [owise]*/ // TODO: Bug - The haskell backend does not support distinguishing these rules.
 
   rule #DoCompare(#KeyHash(S1), #KeyHash(S2)) => #DoCompare(S1, S2)
 

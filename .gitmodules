@@ -1,9 +1,3 @@
 [submodule "ext/k"]
 	path = ext/k
 	url = https://github.com/kframework/k/
-[submodule "ext/kninja"]
-	path = ext/kninja
-	url = https://github.com/nishantjr/kninja
-[submodule "compat/tezos"]
-	path = compat/tezos
-	url = https://gitlab.com/tezos/tezos
