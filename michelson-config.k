@@ -6,6 +6,8 @@ module MICHELSON-CONFIG
   imports MICHELSON-COMMON
   imports DOMAINS
 
+  rule <k> Gs:Groups ; => Gs </k> [owise]
+
   configuration <k> $PGM:Pgm </k>
                 <stack> .K </stack>
                 <paramtype> #NotSet </paramtype>

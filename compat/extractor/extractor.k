@@ -77,13 +77,14 @@ module EXTRACTOR
   rule #Ungroup(query Q B) => query Q B
 
   syntax K ::= #DoQuery(Groups, Group) [function]
-  rule #DoQuery(Gs, query Q false) => #FindGroup(Gs, Q)
+  rule #DoQuery(Gs, query Q false) => #FindGroup(Gs, Q) ;
   rule #DoQuery(Gs, query Q true) => #Ungroup(#FindGroup(Gs, Q))
   rule #DoQuery(_, #NoGroup) => #NoGroup
 
   syntax K ::= #Extract(Groups) [function]
   rule #Extract(Gs) => #DoQuery(Gs, #FindGroup(Gs, query)) 
 
-  rule <k> Gs:Groups => #Extract(#ReverseGroups(#NoGroup ; Gs)) </k>
+  rule <k> Gs:Groups => . </k>
+       <stack> _ => #Extract(#ReverseGroups(#NoGroup ; Gs)) </stack>
        <returncode> 1 => 0 </returncode>
 endmodule

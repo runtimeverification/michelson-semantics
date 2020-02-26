@@ -312,5 +312,5 @@ module MICHELSON-SYNTAX
                  | ContractsGroup
 
   syntax Groups ::= Group | Group ";" Groups
-  syntax Pgm ::= Groups
+  syntax Pgm ::= Groups | Groups ";"
 endmodule

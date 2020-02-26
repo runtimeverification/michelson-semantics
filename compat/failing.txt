@@ -8,4 +8,3 @@
 ../tests/unit/now.tzt: (exit code 113) Output did not compare correctly
 ../tests/unit/set_delegate.tzt: (exit code 1) Contract did not typecheck
 ../tests/unit/submutezunderflow.tzt: (exit code 1) Could not find @exitToken in execution output
-../tests/unit/transfer_tokens.tzt: (exit code 1) Contract did not typecheck

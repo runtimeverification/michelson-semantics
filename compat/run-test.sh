@@ -1,4 +1,5 @@
 #!/bin/bash
+
 UT="$1"
 SCRIPT_DIR="$(dirname "$(readlink -f "$BASH_SOURCE")")"
 FAIL_DIR="$SCRIPT_DIR/.failure"
@@ -39,6 +40,7 @@ INPUT_FILE="$TEMP_DIR/input"
 EXECUTION="$TEMP_DIR/execution"
 RAW_DATA="$TEMP_DIR/rawdata"
 DATA_FILE="$TEMP_DIR/data"
+FIXED_ADDRS_OUTPUT="$TEMP_DIR/others_fixed"
 REAL_OUTPUT_FILE="$TEMP_DIR/actual"
 EXPECTED_OUTPUT_FILE="$TEMP_DIR/expected"
 OUTPUT_FILE="$TEMP_DIR/actual-and-expected"
@@ -85,7 +87,7 @@ if [ ! -z $FAKE_SELF ] ; then
 fi
 
 output_if_failing "python3 '$SCRIPT_DIR/originate.py' '$REAL_ADDRESSES' > '$ORIGINATION_OUTPUTS'" "Failed to originate contracts"
-paste -d '/' <(cut -d'#' -f1 "$REAL_ADDRESSES") <(grep -Po '(?<=New contract )[a-zA-Z0-9_]*' "$ORIGINATION_OUTPUTS") | sed -E 's|(.*)|s/\1/|' > "$ORIGINATION_SUBS"
+paste -d '/' <(cut -d'#' -f1 "$REAL_ADDRESSES") <(grep -Po '(?<=New contract )[a-zA-Z0-9_]*' "$ORIGINATION_OUTPUTS") | sed -E 's|(.*)|s/\1/|;s|s///||' > "$ORIGINATION_SUBS"
 
 
 REAL_SENDER="$(grep "$FAKE_SENDER" $ORIGINATION_SUBS | sed -E 's|s/[^/]*/([^/]*)/|\1|')"
@@ -100,8 +102,8 @@ output_if_failing "pcregrep -oM '(?<=\[ )@exitToken[^\\]]*' '$TYPECHECK_OUTPUT' 
 sed -E 's/ : /\n/g;s/@%|@%%|%@|[@:%][_a-zA-Z][_0-9a-zA-Z\.%@]*//g' $RAW_TYPES > $TYPES_FILE
 
 
-AMOUNT="$(output_if_failing "'$SCRIPT_DIR/extractor/run.sh' '$UT' amount true | sed 's/#NoGroup/0/'" "Failed to extract amount")"
-AMOUNT="$(python -c "import sys ; print('%f' % (float(sys.argv[1]) / 1000000.0))" $AMOUNT)"
+AMOUNT="$(output_if_failing "'$SCRIPT_DIR/extractor/run.sh' '$UT' amount true" "Failed to extract amount")"
+AMOUNT="$(python -c "import sys ; print('%f' % (float(sys.argv[1]) / 1000000.0) if len(sys.argv) > 1 else 0)" $AMOUNT)"
 
 if [ ! -z "$REAL_SOURCE" ] ; then
     SOURCE_CLI="--payer $REAL_SOURCE"
@@ -120,9 +122,11 @@ output_if_failing "pcregrep -oM '(?<=\[)\s*Unit\s*@exitToken[^\\]]*' $EXECUTION 
 sed -E 's/@%|@%%|%@|[@:%][_a-zA-Z][_0-9a-zA-Z\.%@]*//g' "$RAW_DATA" > "$DATA_FILE"
 
 python "$SCRIPT_DIR/combine.py" $TYPES_FILE $DATA_FILE > $REAL_OUTPUT_FILE
-"$SCRIPT_DIR/extractor/run.sh" "$1" 'output' 'false' | sed -f "$ALL_SUBS" > $EXPECTED_OUTPUT_FILE
+"$SCRIPT_DIR/extractor/run.sh" "$1" 'output' 'false' | sed -f "$ALL_SUBS" > "$EXPECTED_OUTPUT_FILE"
 
-echo | cat "$REAL_OUTPUT_FILE" "$EXPECTED_OUTPUT_FILE" - > "$OUTPUT_FILE"
+"$SCRIPT_DIR/extractor/run.sh" "$UT" 'other_contracts' 'false' 2>/dev/null | sed -f "$ALL_SUBS" > "$FIXED_ADDRS_OUTPUT"
+
+echo | cat "$FIXED_ADDRS_OUTPUT" "$REAL_OUTPUT_FILE" "$EXPECTED_OUTPUT_FILE" - > "$OUTPUT_FILE"
 
 output_if_failing "'$SCRIPT_DIR/output-compare/run.sh' '$OUTPUT_FILE' > '$COMPARE_FILE'" "Output did not compare correctly"
 

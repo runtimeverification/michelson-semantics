@@ -41,4 +41,7 @@ module INPUT-CREATOR
 
   rule <k> G:Groups => #DataForType(#FindParamType(G)) </k>
        <returncode> _ => 0 </returncode>
+
+  rule <k> Gs:Groups ; => Gs </k> [owise]
+
 endmodule

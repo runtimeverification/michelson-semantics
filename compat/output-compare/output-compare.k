@@ -6,24 +6,27 @@ module OUTPUT-COMPARE-SYNTAX
   imports UNIT-TEST-SYNTAX
 
   syntax RealOutputStack ::= "real_output" OutputStack
+  syntax Contract ::= "{" Contract "}"
   syntax Group ::= RealOutputStack
+  syntax Pgm ::= Data
 endmodule
 
 module OUTPUT-COMPARE
   imports OUTPUT-COMPARE-SYNTAX
+  imports K-REFLECTION
   imports MICHELSON
 
-  syntax OutputStack ::= #FindOutputStack(Groups) [function]
-  rule #FindOutputStack(output T) => T
-  rule #FindOutputStack(output T ; _) => T
-  rule #FindOutputStack(_ ; G) => #FindOutputStack(G) [owise]
+  rule ({ C:Contract }):Contract => C [macro]
 
-  syntax OutputStack ::= #FindRealOutputStack(Groups) [function]
-  rule #FindRealOutputStack(real_output T) => T
-  rule #FindRealOutputStack(real_output T ; _) => T
-  rule #FindRealOutputStack(_ ; G) => #FindRealOutputStack(G) [owise]
+  syntax String ::= #decodeBinaryRepresentation(String) [function, hook(MICHELSON.decode)]
+
+  syntax BlockchainOperation ::= #parseOperation(String) [function]
+  rule #parseOperation(S) => #parseKORE(S)
+
 
   syntax KItem ::= #CheckOutput(OutputStack, OutputStack) // Expected, Actual
+
+  rule #ConcreteArgToSemantics(B:MBytesLiteral, operation _) => #ConcreteArgToSemantics(#parseOperation(#decodeBinaryRepresentation(#MBytesToString(B))), operation .AnnotationList)
 
   rule <k> #CheckOutput( { } , { } ) => . </k>
        <returncode> _ => 0 </returncode>
@@ -32,9 +35,19 @@ module OUTPUT-COMPARE
        <returncode> _ => 0 </returncode>
        requires #ConcreteArgToSemantics(ED, ET) ==K #ConcreteArgToSemantics(AD, AT)
 
+  rule <k> #CheckOutput( { Stack_elt ET ED } , { Stack_elt AT AD } )  </k>
+       <stack> . => #ConcreteArgToSemantics(ED, ET) ~> #ConcreteArgToSemantics(AD, AT) ~> #ConcreteArgToSemantics(ED, ET) ==K #ConcreteArgToSemantics(AD, AT) </stack> [owise]
+
   rule <k> #CheckOutput( { Stack_elt ET ED ; Es } , { Stack_elt AT AD ; As } ) => #CheckOutput( { Es } , { As } ) </k>
        requires #ConcreteArgToSemantics(ED, ET) ==K #ConcreteArgToSemantics(AD, AT)
 
-  rule <k> Gs => #CheckOutput(#FindOutputStack(Gs), #FindRealOutputStack(Gs)) </k>
+  rule <k> other_contracts M ; Gs => Gs </k>
+       <knownaddrs> _ => #OtherContractsMapToKMap(M) </knownaddrs>
        <returncode> _ => 1 </returncode>
+
+  rule <k> real_output AOS ; output EOS => #CheckOutput(EOS, AOS) </k>
+       <returncode> _ => 1 </returncode>
+
+  rule <k> Gs:Groups </k>
+       <returncode> 0 => 1 </returncode> [owise]
 endmodule
