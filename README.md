@@ -6,7 +6,7 @@ First, initialize the submodules using
 
     git submodule update --init --recursive
 
-This will check out a copy of k in the `ext/k` subdirectory.  As a first time setup step, cd into this directory and execute `mvn package` to build k.
+This will check out a copy of k in the `ext/k` subdirectory.  As a first time setup step, cd into this directory and execute `mvn package` to build k.  Then, `source common.sh` in the main directory to add the copy of k to the PATH variable.
 
 Afterwards, simply executing 
 
