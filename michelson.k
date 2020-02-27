@@ -300,7 +300,7 @@ module MICHELSON
   rule I:Instruction ; Is:InstructionList => I ~> Is [structural]
   rule {} => .K [structrual]
   rule { Is:InstructionList } => Is [structural]
-  rule { Is:InstructionList ; } => Is [structural]
+  rule { Is:InstructionList ; } => { Is } [macro]
 
   syntax KItem ::= #HandleAnnotations(AnnotationList)
   rule #HandleAnnotations(_) => . [structural]
@@ -785,15 +785,17 @@ module MICHELSON
   rule <k> ADDRESS Ann => . ... </k>
        <stack> #Contract(A, _) => A ... </stack>
 
-  rule <k> CONTRACT Ann T => . ... </k>
+  syntax Type ::= #TypeFromContractStruct(Data) [function]
+  rule #TypeFromContractStruct(#Contract(_, T)) => T
+
+  rule <k> CONTRACT _ T => . ... </k>
        <stack> A => Some {M[A]}:>Data ... </stack>
        <knownaddrs> M </knownaddrs>
-       requires A in_keys(M)
+       requires A in_keys(M) andBool #TypeFromContractStruct({M[A]}:>Data) ==K T
        
-  rule <k> CONTRACT Ann _ => . ... </k>
+  rule <k> CONTRACT _ T => . ... </k>
        <stack> A:Address => None ... </stack>
-       <knownaddrs> M </knownaddrs>
-       requires notBool(A in_keys(M))
+       <knownaddrs> M </knownaddrs> [owise]
 
   rule <k> SOURCE Ann => . ... </k>
        <stack> . => A ... </stack>

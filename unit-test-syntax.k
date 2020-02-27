@@ -17,5 +17,7 @@ module UNIT-TEST-SYNTAX
   syntax CodeGroup ::= "code" TestCode
   syntax OutputGroup ::= "output" OutputStack
 
+  syntax Address ::= "#AnyAddress"
+
   syntax Group ::= InputGroup | CodeGroup | OutputGroup | ParameterDecl
 endmodule 

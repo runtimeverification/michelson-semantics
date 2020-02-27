@@ -5,6 +5,8 @@ module UNIT-TEST
   imports UNIT-TEST-SYNTAX
   imports MICHELSON
 
+  rule #ConcreteArgToSemantics(#AnyAddress, address _) => #AnyAddress
+
   syntax K ::= #LiteralStackToSemantics(LiteralStack) [function]
   rule #LiteralStackToSemantics( { } ) => .
   rule #LiteralStackToSemantics( { L } ) => #LiteralStackToSemanticsAux(L, .List)
@@ -37,6 +39,9 @@ module UNIT-TEST
 
   rule <k> #VerifyOutput(S:KItem ~> L => L) </k>
        <stack> S => . ... </stack>
+
+  rule <k> #VerifyOutput(#AnyAddress ~> L => L) </k>
+       <stack> #Address(_) => . ... </stack>
 
   rule <k> #VerifyOutput(.) => . </k>
        <stack> . </stack>
