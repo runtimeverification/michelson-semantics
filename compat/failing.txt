@@ -4,5 +4,5 @@
 ../tests/unit/lslbig.tzt: (exit code 1) Could not find @exitToken in execution output
 ../tests/unit/lsrbig.tzt: (exit code 1) Could not find @exitToken in execution output
 ../tests/unit/mapmapharder.tzt: (exit code 1) Output did not compare correctly
-../tests/unit/now.tzt: (exit code 113) Output did not compare correctly
+../tests/unit/now.tzt: (exit code 1) Output did not compare correctly
 ../tests/unit/submutezunderflow.tzt: (exit code 1) Could not find @exitToken in execution output

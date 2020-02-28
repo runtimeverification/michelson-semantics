@@ -53,7 +53,7 @@ OTHER_EXTRACTOR_CMD=$(cat <<EOF
 '$SCRIPT_DIR/extractor/run.sh' '$UT' other_contracts true |  
     tr -d '{}' | 
     tr ';' '\n' | 
-    sed -E '/#NoGroup/d;s/^\s*//;s/\s*$//;s/Elt\s*"([^"]*)"\s*(.*)/\1#\2/' > '$REAL_ADDRESSES_UNSORTED'
+    sed -E '/#NoGroup/d;s/^\s*//;s/\s*$//;s/Elt\s*"([^"]*)"\s*(.*)/\1#\2/;/^\s*$/d' > '$REAL_ADDRESSES_UNSORTED'
 EOF
 )
 
