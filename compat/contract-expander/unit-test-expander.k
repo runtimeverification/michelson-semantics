@@ -22,7 +22,7 @@ module UNIT-TEST-EXPANDER
   syntax Contract ::= #FillTemplateContract(Block, Block, Type) [function]
   
   rule #FillTemplateContract(PushBlock, CodeBlock, ParamType) =>
-  parameter ParamType ; storage unit .AnnotationList ; code { DROP .AnnotationList ; PushBlock ; CodeBlock ; UNIT @exitToken ; FAILWITH .AnnotationList } ; 
+  parameter ParamType ; storage unit .AnnotationList ; code { DROP .AnnotationList ; PushBlock ; PUSH .AnnotationList bool .AnnotationList true ; IF .AnnotationList { CodeBlock } {} ; UNIT @exitToken ; FAILWITH .AnnotationList }  ;
 
   syntax LiteralStack ::= #FindInputGroup(Groups) [function]
   rule #FindInputGroup(input T) => T

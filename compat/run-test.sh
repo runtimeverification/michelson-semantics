@@ -118,15 +118,28 @@ output_if_failing "'$SCRIPT_DIR/input-creator/run.sh' '$UT' > '$INPUT_FILE'" "Co
 tezos-client run script "$(cat $EXPANDED_FILE)" on storage Unit and input $(cat "$INPUT_FILE") --amount "$AMOUNT" --trace-stack $SENDER_CLI $SOURCE_CLI > "$EXECUTION" 2>&1
 # For some reason, the cli argument for "SENDER" is "--source" and "SOURCE" is "--payer"
 
-output_if_failing "pcregrep -oM '(?<=\[)\s*Unit\s*@exitToken[^\\]]*' $EXECUTION > $RAW_DATA" "Could not find @exitToken in execution output"
-sed -E 's/@%|@%%|%@|[@:%][_a-zA-Z][_0-9a-zA-Z\.%@]*//g' "$RAW_DATA" > "$DATA_FILE"
+pcregrep -oM '(?<=\[)\s*Unit\s*@exitToken[^\\]]*' "$EXECUTION" > "$RAW_DATA"
+FOUND="$?"
 
-python "$SCRIPT_DIR/combine.py" $TYPES_FILE $DATA_FILE > $REAL_OUTPUT_FILE
-"$SCRIPT_DIR/extractor/run.sh" "$1" 'output' 'false' | sed -f "$ALL_SUBS" > "$EXPECTED_OUTPUT_FILE"
+sed -E 's/@%|@%%|%@|[@:%][_a-zA-Z][_0-9a-zA-Z\.%@]*//g' "$RAW_DATA" > "$DATA_FILE" ;
+"$SCRIPT_DIR/extractor/run.sh" "$UT" 'other_contracts' 'false' 2>/dev/null | sed -f "$ALL_SUBS" > "$FIXED_ADDRS_OUTPUT" ;
+"$SCRIPT_DIR/extractor/run.sh" "$1" 'output' 'false' | sed -f "$ALL_SUBS" > "$EXPECTED_OUTPUT_FILE" ;
 
-"$SCRIPT_DIR/extractor/run.sh" "$UT" 'other_contracts' 'false' 2>/dev/null | sed -f "$ALL_SUBS" > "$FIXED_ADDRS_OUTPUT"
+if [ "$FOUND" -eq "0" ]; then
+    python "$SCRIPT_DIR/combine.py" $TYPES_FILE $DATA_FILE > $REAL_OUTPUT_FILE ;
+else 
+    rm -rf "$FAIL_DIR" ; #TODO delete me
+    cp -r "$TEMP_DIR" "$FAIL_DIR" ; #TODO delete me
+ 
+    if grep "script reached FAILWITH instruction" "$EXECUTION" >/dev/null 2>&1; then
+        grep -oP "(?<=^with ).*$" "$EXECUTION" | sed -E 's/(.*)/real_output ( Failed \1 ) ;/' > "$REAL_OUTPUT_FILE" ;
+#    elif grep "script reached FAILWITH instruction" "$EXECUTION" >/dev/null 2>&1; then
+       
+    fi ;
+fi
 
-echo | cat "$FIXED_ADDRS_OUTPUT" "$REAL_OUTPUT_FILE" "$EXPECTED_OUTPUT_FILE" - > "$OUTPUT_FILE"
+
+echo | cat "$FIXED_ADDRS_OUTPUT" "$REAL_OUTPUT_FILE" "$EXPECTED_OUTPUT_FILE" - > "$OUTPUT_FILE" ;
 
 output_if_failing "'$SCRIPT_DIR/output-compare/run.sh' '$OUTPUT_FILE' > '$COMPARE_FILE'" "Output did not compare correctly"
 

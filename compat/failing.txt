@@ -1,8 +1,8 @@
 ../tests/unit/addmutezoverflow.tzt: (exit code 1) Could not find @exitToken in execution output
-../tests/unit/balance.tzt: (exit code 1) Output did not compare correctly
+#../tests/unit/balance.tzt: (exit code 1) Output did not compare correctly
 ../tests/unit/failwith.tzt: (exit code 1) Contract did not typecheck
 ../tests/unit/lslbig.tzt: (exit code 1) Could not find @exitToken in execution output
 ../tests/unit/lsrbig.tzt: (exit code 1) Could not find @exitToken in execution output
-../tests/unit/mapmapharder.tzt: (exit code 1) Output did not compare correctly
-../tests/unit/now.tzt: (exit code 1) Output did not compare correctly
+#../tests/unit/mapmapharder.tzt: (exit code 1) Output did not compare correctly
+#../tests/unit/now.tzt: (exit code 1) Output did not compare correctly
 ../tests/unit/submutezunderflow.tzt: (exit code 1) Could not find @exitToken in execution output

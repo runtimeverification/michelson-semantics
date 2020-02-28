@@ -1,14 +1,14 @@
-requires "michelson-operations-syntax.k"
+requires "michelson-internal-syntax.k"
 requires "michelson-syntax.k"
 
 module UNIT-TEST-SYNTAX
   imports MICHELSON-SYNTAX
-  imports MICHELSON-OPERATIONS-SYNTAX
+  imports MICHELSON-INTERNAL-SYNTAX
 
   syntax StackElement ::= "Stack_elt" Type Data
   syntax StackElementList ::= StackElement | StackElement ";" StackElementList
   syntax LiteralStack ::= EmptyBlock | "{" StackElementList "}"
-  syntax FailedStack ::= "(" "Failed" Data ")"
+  
   syntax OutputStack ::= LiteralStack | FailedStack
 
   syntax TestCode ::= Instruction | Block

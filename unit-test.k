@@ -21,7 +21,7 @@ module UNIT-TEST
 
   syntax K ::= #OutputStackToSemantics(OutputStack) [function]
   rule #OutputStackToSemantics(L:LiteralStack) => #LiteralStackToSemantics(L)
-  rule #OutputStackToSemantics( ( Failed D ) ) => #FailedStack(D)
+  rule #OutputStackToSemantics(X:FailedStack) => X
 
   rule #GroupOrder(_:CodeGroup) => #GroupOrderMax
   rule #GroupOrder(_:OutputGroup) => #GroupOrderMax -Int 1

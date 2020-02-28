@@ -30,6 +30,9 @@ module OUTPUT-COMPARE
 
   rule #ConcreteArgToSemantics(B:MBytesLiteral, operation _) => #ConcreteArgToSemantics(#parseOperation(#decodeBinaryRepresentation(#MBytesToString(B))), operation .AnnotationList)
 
+  rule <k> #CheckOutput( X:FailedStack , X:FailedStack ) => . </k>
+       <returncode> _ => 0 </returncode>
+
   rule <k> #CheckOutput( { } , { } ) => . </k>
        <returncode> _ => 0 </returncode>
 

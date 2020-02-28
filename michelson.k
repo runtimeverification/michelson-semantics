@@ -1,11 +1,11 @@
 requires "michelson-syntax.k"
 requires "michelson-config.k"
-requires "michelson-operations-syntax.k"
+requires "michelson-internal-syntax.k"
 
 module MICHELSON
   imports MICHELSON-SYNTAX
   imports MICHELSON-CONFIG
-  imports MICHELSON-OPERATIONS-SYNTAX
+  imports MICHELSON-INTERNAL-SYNTAX
   imports DOMAINS 
   imports COLLECTIONS
 
@@ -16,8 +16,6 @@ module MICHELSON
 
   syntax OperationNonce ::= #NextNonce(OperationNonce) [function]
   rule #NextNonce(#Nonce(I)) => #Nonce(I +Int 1)
-
-  syntax KItem ::= #FailedStack(Data)
 
   syntax Data ::= #ConcreteArgToSemantics(Data, Type) [function] 
 
@@ -310,7 +308,7 @@ module MICHELSON
   // Core Instructioons
   //// Control Structures
   rule <k> FAILWITH A ~> Rk => #HandleAnnotations(A) ~> Aborted("FAILWITH instruction reached", D, Rk, Rs) </k>
-       <stack> D ~> Rs => #FailedStack(D) </stack>
+       <stack> D ~> Rs => ( Failed D ) </stack>
        <returncode> _ => 1 </returncode>
 
   rule <k> IF A BT BF => #HandleAnnotations(A) ~> BT ... </k>
@@ -504,7 +502,7 @@ module MICHELSON
        requires S <=Int 256
 
   rule <k> LSL A ~> Rk => #HandleAnnotations(A) ~> Aborted("LSL out of range", S, Rk, Rs) </k>
-       <stack> _:Data ~> S:Int ~> Rs => #FailedStack(S) </stack>
+       <stack> C:Int ~> S:Int ~> Rs => ( GeneralOverflow C S )  </stack>
        requires S >Int 256
 
   rule <k> LSR A => #HandleAnnotations(A) ... </k>
@@ -512,7 +510,7 @@ module MICHELSON
        requires S <=Int 256
 
   rule <k> LSR A ~> Rk => #HandleAnnotations(A) ~> Aborted("LSR out of range", S, Rk, Rs) </k>
-       <stack> _:Data ~> S:Int ~> Rs => #FailedStack(S) </stack>
+       <stack> C:Int ~> S:Int ~> Rs => ( GeneralOverflow C S ) </stack>
        requires S >Int 256
 
   syntax Int ::= #DoCompare(Data, Data) [function]
@@ -880,26 +878,31 @@ module MICHELSON
 
   syntax Data ::= Mutez
 
-  syntax KItem ::= #ValidateMutezAndPush(Mutez)
+  syntax KItem ::= #ValidateMutezAndPush(Mutez, Int, Int)
 
-  rule <k> #ValidateMutezAndPush(#Mutez(I)) => . ... </k>
+  syntax FailedStack ::= #FailureFromMutezValue(Mutez, Int, Int) [function]
+  rule #FailureFromMutezValue(#Mutez(I), I1, I2) => ( MutezOverflow I1 I2 ) requires I >=Int #MutezOverflowLimit
+  rule #FailureFromMutezValue(#Mutez(I), I1, I2) => ( MutezUnderflow I1 I2 ) requires I <Int 0
+
+
+  rule <k> #ValidateMutezAndPush(#Mutez(I), _, _) => . ... </k>
        <stack> . => #Mutez(I) ... </stack>
        requires #IsLegalMutezValue(I) [structural]
 
-  rule <k> #ValidateMutezAndPush(#Mutez(I)) ~> Rk => Aborted("Mutez out of bounds", I, Rk, Rs) </k>
-       <stack> Rs => #FailedStack(I) </stack>
+  rule <k> #ValidateMutezAndPush(#Mutez(I), I1, I2) ~> Rk => Aborted("Mutez out of bounds", I, Rk, Rs) </k>
+       <stack> Rs => #FailureFromMutezValue(#Mutez(I), I1, I2) </stack>
        requires notBool #IsLegalMutezValue(I) [structural]
 
-  rule <k> ADD A => #ValidateMutezAndPush(#Mutez(I1 +Int I2)) ~> #HandleAnnotations(A) ... </k>
+  rule <k> ADD A => #ValidateMutezAndPush(#Mutez(I1 +Int I2), I1, I2) ~> #HandleAnnotations(A) ... </k>
        <stack> #Mutez(I1) ~> #Mutez(I2) => . ... </stack>
 
-  rule <k> SUB A => #ValidateMutezAndPush(#Mutez(I1 -Int I2)) ~> #HandleAnnotations(A) ... </k>
+  rule <k> SUB A => #ValidateMutezAndPush(#Mutez(I1 -Int I2), I1, I2) ~> #HandleAnnotations(A) ... </k>
        <stack> #Mutez(I1) ~> #Mutez(I2) => . ... </stack>
 
-  rule <k> MUL A => #ValidateMutezAndPush(#Mutez(I1 *Int I2)) ~> #HandleAnnotations(A) ... </k>
+  rule <k> MUL A => #ValidateMutezAndPush(#Mutez(I1 *Int I2), I1, I2) ~> #HandleAnnotations(A) ... </k>
        <stack> #Mutez(I1) ~> I2 => . ... </stack>
 
-  rule <k> MUL A => #ValidateMutezAndPush(#Mutez(I1 *Int I2)) ~> #HandleAnnotations(A) ... </k>
+  rule <k> MUL A => #ValidateMutezAndPush(#Mutez(I1 *Int I2), I1, I2) ~> #HandleAnnotations(A) ... </k>
        <stack> I1 ~> #Mutez(I2) => . ... </stack>
 
   rule <k> EDIV A => #HandleAnnotations(A) ... </k>
