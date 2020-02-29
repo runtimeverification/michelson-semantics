@@ -20,6 +20,7 @@ module EXTRACTOR-SYNTAX
                    | "input"
                    | "output"
                    | "query"
+                   | "code_or_contract"
 
   syntax QueryGroup ::= "query" GroupId Bool
   syntax Group ::= QueryGroup
@@ -56,7 +57,10 @@ module EXTRACTOR
   rule #FindGroupAux(G:InputGroup ; _, input) => G
   rule #FindGroupAux(G:OutputGroup ; _, output) => G
   rule #FindGroupAux(G:QueryGroup ; _, query) => G
+  rule #FindGroupAux(G:CodeGroup ; _, code_or_contract) => G
+  rule #FindGroupAux(G:ContractGroup ; _, code_or_contract) => G
   rule #FindGroupAux(_ ; Gs, Q) => #FindGroupAux(Gs, Q) [owise]
+
 
   syntax K ::= #Ungroup(Group) [function]
   rule #Ungroup(#NoGroup) => #NoGroup

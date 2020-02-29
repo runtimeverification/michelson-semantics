@@ -63,9 +63,6 @@ module MICHELSON
   rule #ConcreteArgToSemantics(Pair A B, pair _ T1:Type T2:Type) => 
        Pair #ConcreteArgToSemantics(A, T1) #ConcreteArgToSemantics(B, T2)
 
-  rule #ConcreteArgToSemantics(Pair A B, pair _ T1:SimpleComparableType T2:SimpleComparableType) => 
-       Pair #ConcreteArgToSemantics(A, T1) #ConcreteArgToSemantics(B, T2)
-
   rule #ConcreteArgToSemantics(Some V, option _ T) => Some #ConcreteArgToSemantics(V, T)
   rule #ConcreteArgToSemantics(None, option _:AnnotationList _) => None
 
@@ -351,9 +348,6 @@ module MICHELSON
 
   rule <k> APPLY A => #HandleAnnotations(A) ... </k>
        <stack> D:Data ~> #Lambda((pair _:AnnotationList T0 T1):Type, T2, { C } ) => #Lambda(T1, T2, { PUSH .AnnotationList T0 D ; PAIR .AnnotationList ; { C } } ) ... </stack> 
-
-  rule <k> APPLY A => #HandleAnnotations(A) ... </k>
-       <stack> D:Data ~> #Lambda((pair _:AnnotationList T0 T1):ComparableType, T2, { C } ) => #Lambda(T1, T2, { PUSH .AnnotationList T0 D ; PAIR .AnnotationList ; { C } }) ... </stack>
 
   ////Stack operations
 
@@ -920,65 +914,6 @@ module MICHELSON
        requires I2 >Int 0
 
   rule #DoCompare(#Mutez(I1), #Mutez(I2)) => #DoCompare(I1, I2)
-
-  rule CMPEQ _ => COMPARE .AnnotationList ~> EQ .AnnotationList
-  rule CMPNEQ _ => COMPARE .AnnotationList ~> NEQ .AnnotationList
-  rule CMPLT _ => COMPARE .AnnotationList ~> LT .AnnotationList
-  rule CMPGT _ => COMPARE .AnnotationList ~> GT .AnnotationList
-  rule CMPLE _ => COMPARE .AnnotationList ~> LE .AnnotationList
-  rule CMPGE _ => COMPARE .AnnotationList ~> GE .AnnotationList
-
-  rule IFEQ _ BT BF => EQ .AnnotationList ~> IF .AnnotationList BT BF
-  rule IFNEQ _ BT BF => NEQ .AnnotationList ~> IF .AnnotationList BT BF
-  rule IFLT _ BT BF => LT .AnnotationList ~> IF .AnnotationList BT BF
-  rule IFGT _ BT BF => GT .AnnotationList ~> IF .AnnotationList BT BF
-  rule IFLE _ BT BF => LE .AnnotationList ~> IF .AnnotationList BT BF
-  rule IFGE _ BT BF => GE .AnnotationList ~> IF .AnnotationList BT BF
-
-  rule IFCMPEQ _ BT BF => COMPARE .AnnotationList ~> EQ .AnnotationList ~> IF .AnnotationList BT BF
-  rule IFCMPNEQ _ BT BF => COMPARE .AnnotationList ~> NEQ .AnnotationList ~> IF .AnnotationList BT BF
-  rule IFCMPLT _ BT BF => COMPARE .AnnotationList ~> LT .AnnotationList ~> IF .AnnotationList BT BF
-  rule IFCMPGT _ BT BF => COMPARE .AnnotationList ~> GT .AnnotationList ~> IF .AnnotationList BT BF
-  rule IFCMPLE _ BT BF => COMPARE .AnnotationList ~> LE .AnnotationList ~> IF .AnnotationList BT BF
-  rule IFCMPGE _ BT BF => COMPARE .AnnotationList ~> GE .AnnotationList ~> IF .AnnotationList BT BF
-
-  rule FAIL _ => UNIT .AnnotationList ~> FAILWITH .AnnotationList
-
-  rule ASSERT _ => IF .AnnotationList {} {FAIL .AnnotationList }
-
-  rule ASSERT_EQ _ => IFEQ .AnnotationList {} {FAIL .AnnotationList }
-  rule ASSERT_NEQ _ => IFNEQ .AnnotationList {} {FAIL .AnnotationList }
-  rule ASSERT_LT _ => IFLT .AnnotationList {} {FAIL .AnnotationList }
-  rule ASSERT_GT _ => IFGT .AnnotationList {} {FAIL .AnnotationList }
-  rule ASSERT_LE _ => IFLE .AnnotationList {} {FAIL .AnnotationList }
-  rule ASSERT_GE _ => IFGE .AnnotationList {} {FAIL .AnnotationList }
-
-  rule ASSERT_CMPEQ _ => IFCMPEQ .AnnotationList {} {FAIL .AnnotationList }
-  rule ASSERT_CMPNEQ _ => IFCMPNEQ .AnnotationList {} {FAIL .AnnotationList }
-  rule ASSERT_CMPLT _ => IFCMPLT .AnnotationList {} {FAIL .AnnotationList }
-  rule ASSERT_CMPGT _ => IFCMPGT .AnnotationList {} {FAIL .AnnotationList }
-  rule ASSERT_CMPLE _ => IFCMPLE .AnnotationList {} {FAIL .AnnotationList }
-  rule ASSERT_CMPGE _ => IFCMPGE .AnnotationList {} {FAIL .AnnotationList }
-
-  rule ASSERT_NONE _ => IF_NONE .AnnotationList {} {FAIL .AnnotationList }
-
-  rule ASSERT_SOME _ => IF_NONE .AnnotationList {FAIL .AnnotationList } {} // TODO: Add annotations
-  rule ASSERT_LEFT _ => IF_LEFT .AnnotationList {} {FAIL .AnnotationList } //  ^
-  rule ASSERT_RIGHT _ => IF_LEFT .AnnotationList {FAIL .AnnotationList } {} // ^
-
-  rule IF_SOME _ BT BF => IF_NONE .AnnotationList BF BT
-
-  syntax KItem ::= #DoCDARMacro(String)
-
-  rule C:CDARMacro _ => #DoCDARMacro(substrString(#CDARToString(C), 1, lengthString(#CDARToString(C)) -Int 1))
-
-  rule #DoCDARMacro("") => . 
-  rule <k> #DoCDARMacro(S => substrString(S, 1, lengthString(S))) ... </k>
-       <stack> Pair A _ => A ... </stack> requires lengthString(S) >Int 0 andBool substrString(S, 0, 1) ==String "A"
-
-  rule <k> #DoCDARMacro(S => substrString(S, 1, lengthString(S))) ... </k>
-       <stack> Pair _ B => B ... </stack> requires lengthString(S) >Int 0 andBool substrString(S, 0, 1) ==String "D"
-
 
   syntax K ::= #ListToKSeq(List) [function]
   syntax K ::= #ListToKSeqAux(List, K) [function]
