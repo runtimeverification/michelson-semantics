@@ -38,6 +38,7 @@ RAW_TYPES="$TEMP_DIR/rawtypes"
 TYPES_FILE="$TEMP_DIR/types"
 INPUT_FILE="$TEMP_DIR/input"
 EXECUTION="$TEMP_DIR/execution"
+ERROR_FILE="$TEMP_DIR/error"
 RAW_DATA="$TEMP_DIR/rawdata"
 DATA_FILE="$TEMP_DIR/data"
 FIXED_ADDRS_OUTPUT="$TEMP_DIR/others_fixed"
@@ -98,8 +99,11 @@ sed -f "$ALL_SUBS" "$UT" > "$FIXED_ADDRESS_CONTRACT"
 
 output_if_failing "'$SCRIPT_DIR/contract-expander/run.sh' '$FIXED_ADDRESS_CONTRACT' > '$EXPANDED_FILE'" "Contract did not expand properly"
 output_if_failing "tezos-client typecheck script '$(cat "$EXPANDED_FILE")' --details  >$TYPECHECK_OUTPUT 2>&1" "Contract did not typecheck"
-output_if_failing "pcregrep -oM '(?<=\[ )@exitToken[^\\]]*' '$TYPECHECK_OUTPUT' > '$RAW_TYPES'" 'Could not find @exitToken in typecheck output'
-sed -E 's/ : /\n/g;s/@%|@%%|%@|[@:%][_a-zA-Z][_0-9a-zA-Z\.%@]*//g' $RAW_TYPES > $TYPES_FILE
+
+pcregrep -oM '(?<=\[)\s*@exitToken[^]]*' "$TYPECHECK_OUTPUT" > "$RAW_TYPES"
+FOUND_TYPES="$?"
+
+sed -E 's/ : /\n/g;s/@%|@%%|%@|[@:%][_a-zA-Z][_0-9a-zA-Z\.%@]*//g' "$RAW_TYPES" > "$TYPES_FILE"
 
 
 AMOUNT="$(output_if_failing "'$SCRIPT_DIR/extractor/run.sh' '$UT' amount true" "Failed to extract amount")"
@@ -118,23 +122,31 @@ output_if_failing "'$SCRIPT_DIR/input-creator/run.sh' '$UT' > '$INPUT_FILE'" "Co
 tezos-client run script "$(cat $EXPANDED_FILE)" on storage Unit and input $(cat "$INPUT_FILE") --amount "$AMOUNT" --trace-stack $SENDER_CLI $SOURCE_CLI > "$EXECUTION" 2>&1
 # For some reason, the cli argument for "SENDER" is "--source" and "SOURCE" is "--payer"
 
-pcregrep -oM '(?<=\[)\s*Unit\s*@exitToken[^\\]]*' "$EXECUTION" > "$RAW_DATA"
+pcregrep -oM '(?<=\[)\s*Unit\s*@exitToken[^]]*' "$EXECUTION" > "$RAW_DATA"
 FOUND="$?"
 
-sed -E 's/@%|@%%|%@|[@:%][_a-zA-Z][_0-9a-zA-Z\.%@]*//g' "$RAW_DATA" > "$DATA_FILE" ;
+sed -E "s/@%|@%%|%@|[@:%][_a-zA-Z][_0-9a-zA-Z\.%@]*//g" "$RAW_DATA" > "$DATA_FILE" ;
 "$SCRIPT_DIR/extractor/run.sh" "$UT" 'other_contracts' 'false' 2>/dev/null | sed -f "$ALL_SUBS" > "$FIXED_ADDRS_OUTPUT" ;
 "$SCRIPT_DIR/extractor/run.sh" "$1" 'output' 'false' | sed -f "$ALL_SUBS" > "$EXPECTED_OUTPUT_FILE" ;
 
 if [ "$FOUND" -eq "0" ]; then
+    if [ "$FOUND_TYPES" -ne "0" ]; then
+        echo "Found unexpected exitToken" ;
+        exit 1 ;
+    fi ;
     python "$SCRIPT_DIR/combine.py" $TYPES_FILE $DATA_FILE > $REAL_OUTPUT_FILE ;
 else 
     rm -rf "$FAIL_DIR" ; #TODO delete me
     cp -r "$TEMP_DIR" "$FAIL_DIR" ; #TODO delete me
  
-    if grep "script reached FAILWITH instruction" "$EXECUTION" >/dev/null 2>&1; then
+    if grep -q "script reached FAILWITH instruction" "$EXECUTION" >/dev/null 2>&1; then
         grep -oP "(?<=^with ).*$" "$EXECUTION" | sed -E 's/(.*)/real_output ( Failed \1 ) ;/' > "$REAL_OUTPUT_FILE" ;
-#    elif grep "script reached FAILWITH instruction" "$EXECUTION" >/dev/null 2>&1; then
-       
+    elif grep -o "Overflowing addition of [0-9.]* tez and [0-9.]* tez" "$EXECUTION" >"$ERROR_FILE" 2>/dev/null; then
+        sed -E 's/Overflowing addition of ([0-9.]*) tez and ([0-9.]*) tez/real_output ( MutezOverflow \1 \2 ) ;/' "$ERROR_FILE" | tr -d '.' > "$REAL_OUTPUT_FILE" ; 
+    elif grep -o "Underflowing subtraction of [0-9.]* tez and [0-9.]* tez" "$EXECUTION" >"$ERROR_FILE" 2>/dev/null; then
+        sed -E 's/Underflowing subtraction of ([0-9.]*) tez and ([0-9.]*) tez/real_output ( MutezUnderflow \1 \2 ) ;/' "$ERROR_FILE" | tr -d '.' > "$REAL_OUTPUT_FILE" ;
+    elif grep -q "unexpected arithmetic overflow" "$EXECUTION" >/dev/null 2>&1; then
+        cat .failure/execution | tr '\n' ' ' | grep -o "\[[^]]*\]" | tail -n 1 | tr -d '[]' | sed -E 's/(.*)/real_output ( GeneralOverflow \1 ) ;/' > "$REAL_OUTPUT_FILE"
     fi ;
 fi
 

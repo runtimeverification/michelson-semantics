@@ -5,6 +5,7 @@ module UNIT-TEST-EXPANDER
   imports UNIT-TEST-SYNTAX
   imports MICHELSON-CONFIG
 
+
   syntax Block ::= #StackEltToPush(StackElement) [function]
   rule #StackEltToPush(Stack_elt (contract _:AnnotationList T:Type) D:Data) => { PUSH .AnnotationList address .AnnotationList D ; 
                                                                                  CONTRACT .AnnotationList T ; 
@@ -20,9 +21,20 @@ module UNIT-TEST-EXPANDER
   rule #StackToPushAux(Se, { I:InstructionList })  => { #StackEltToPush(Se) ; I }
 
   syntax Contract ::= #FillTemplateContract(Block, Block, Type) [function]
-  
+ 
+  syntax Bool ::= #CodeBlockEndsWithFail(Block) [function]
+  rule #CodeBlockEndsWithFail( { } ) => false
+  rule #CodeBlockEndsWithFail( { { Is } } ) => #CodeBlockEndsWithFail( { Is } )
+  rule #CodeBlockEndsWithFail( { I:Instruction } ) => ((FAILWITH _) :=K I) [owise] 
+  rule #CodeBlockEndsWithFail( { _:Instruction ; Is } ) => #CodeBlockEndsWithFail( { Is } )
+
   rule #FillTemplateContract(PushBlock, CodeBlock, ParamType) =>
-  parameter ParamType ; storage unit .AnnotationList ; code { DROP .AnnotationList ; PushBlock ; PUSH .AnnotationList bool .AnnotationList true ; IF .AnnotationList { CodeBlock } {} ; UNIT @exitToken ; FAILWITH .AnnotationList }  ;
+  parameter ParamType ; storage unit .AnnotationList ; code { DROP .AnnotationList ; PushBlock ; CodeBlock ; UNIT @exitToken ; FAILWITH .AnnotationList }  ;
+  requires notBool #CodeBlockEndsWithFail(CodeBlock)
+
+  rule #FillTemplateContract(PushBlock, CodeBlock, ParamType) =>
+  parameter ParamType ; storage unit .AnnotationList ; code { DROP .AnnotationList ; PushBlock ; CodeBlock }  ;
+  requires #CodeBlockEndsWithFail(CodeBlock)
 
   syntax LiteralStack ::= #FindInputGroup(Groups) [function]
   rule #FindInputGroup(input T) => T
