@@ -1,3 +1,6 @@
 [submodule "ext/k"]
 	path = ext/k
 	url = https://github.com/kframework/k/
+[submodule "ext/tezos"]
+	path = ext/tezos
+	url = https://gitlab.com/tezos/tezos/

@@ -4,9 +4,9 @@ shopt -s expand_aliases
 
 SCRIPT_DIR="$(dirname "$(readlink -f "$BASH_SOURCE")")"
 
-export PATH="$SCRIPT_DIR/tezos:$PATH"
+export PATH="$SCRIPT_DIR/../ext/tezos:$PATH"
 
-"$SCRIPT_DIR/tezos/src/bin_node/tezos-sandboxed-node.sh" 1 --connections 1 >/dev/null 2>&1 &
+"$SCRIPT_DIR/../ext/tezos/src/bin_node/tezos-sandboxed-node.sh" 1 --connections 1 >/dev/null 2>&1 &
 node_pid=$!
 sleep 5
 
@@ -17,6 +17,6 @@ fi
 
 echo "$node_pid" > ".node-pid"
 
-eval `"$SCRIPT_DIR/tezos/src/bin_client/tezos-init-sandboxed-client.sh" 1`
+eval `"$SCRIPT_DIR/../ext/tezos/src/bin_client/tezos-init-sandboxed-client.sh" 1`
 tezos-activate-alpha
 tezos-autocomplete
