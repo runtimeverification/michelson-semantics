@@ -906,7 +906,7 @@ module MICHELSON
        <stack> #Mutez(I1) ~> 0 => None ... </stack>
 
   rule <k> EDIV A => #HandleAnnotations(A) ... </k>
-       <stack> #Mutez(I1) ~> #Mutez(I2) => Some (Pair #Mutez(I1 /Int I2) #Mutez(I1 %Int I2)) ... </stack>
+       <stack> #Mutez(I1) ~> #Mutez(I2) => Some (Pair (I1 /Int I2) #Mutez(I1 %Int I2)) ... </stack>
        requires I2 >Int 0
 
   rule <k> EDIV A => #HandleAnnotations(A) ... </k>
