@@ -538,11 +538,11 @@ module MICHELSON
 
   rule <k> SLICE A => #HandleAnnotations(A) ... </k>
        <stack> O ~> L ~> S => Some substrString(S, O, O +Int L) ... </stack>
-       requires O >=Int 0 andBool L >=Int 0 andBool (O +Int L) <Int lengthString(S)
+       requires O >=Int 0 andBool L >=Int 0 andBool (O +Int L) <=Int lengthString(S)
 
   rule <k> SLICE A => #HandleAnnotations(A) ... </k>
        <stack> O ~> L ~> S => None ... </stack>
-       requires notBool(O >=Int 0 andBool L >=Int 0 andBool (O +Int L) <Int lengthString(S))
+       requires notBool(O >=Int 0 andBool L >=Int 0 andBool (O +Int L) <=Int lengthString(S))
 
 
   //// Operations on pairs
