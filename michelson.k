@@ -9,10 +9,8 @@ module MICHELSON
   imports DOMAINS 
   imports COLLECTIONS
 
-  syntax Data ::= List | Set
+  syntax Data ::= List | Set | Map
   syntax Data ::= #Lambda(Type, Type, Block)
-  syntax MichelsonMap ::= #Map(Map, Type, Type) // Key, Value
-  syntax Data ::= MichelsonMap
 
   syntax OperationNonce ::= #NextNonce(OperationNonce) [function]
   rule #NextNonce(#Nonce(I)) => #Nonce(I +Int 1)
@@ -106,7 +104,7 @@ module MICHELSON
 
   syntax Data ::= #ConcreteArgToSemanticsMap(MapEntryList, Type, Type, Map) [function]
 
-  rule #ConcreteArgToSemantics({ }, map _ K V) => #Map(.Map, K, V)
+  rule #ConcreteArgToSemantics({ }, map _ K V) => .Map
 
   rule #ConcreteArgToSemantics({ M:MapEntryList }, map _:AnnotationList K V) =>
        #ConcreteArgToSemanticsMap(M, K, V, .Map)
@@ -114,9 +112,9 @@ module MICHELSON
   rule #ConcreteArgToSemanticsMap(Elt K V ; ML, KT, VT, M) =>
        #ConcreteArgToSemanticsMap(ML, KT, VT, M[#ConcreteArgToSemantics(K, KT) <- #ConcreteArgToSemantics(V, VT)])
 
-  rule #ConcreteArgToSemanticsMap(Elt K V, KT, VT, M) => #Map(M[#ConcreteArgToSemantics(K, KT) <- #ConcreteArgToSemantics(V, VT)], KT, VT)
+  rule #ConcreteArgToSemanticsMap(Elt K V, KT, VT, M) => M[#ConcreteArgToSemantics(K, KT) <- #ConcreteArgToSemantics(V, VT)]
 
-  rule #ConcreteArgToSemantics({ }, big_map _:AnnotationList K V) => #Map(.Map, K, V)
+  rule #ConcreteArgToSemantics({ }, big_map _:AnnotationList K V) => .Map
 
   rule #ConcreteArgToSemantics({ M:MapEntryList }, big_map _:AnnotationList K V) =>
        #ConcreteArgToSemanticsMap(M, K, V, .Map)
@@ -517,6 +515,9 @@ module MICHELSON
   rule #DoCompare(S1:String, S2:String) => 0 requires S1 ==String S2
   rule #DoCompare(S1:String, S2:String) => 1 requires S1 >String S2
 
+  rule #DoCompare((Pair A1 A2), (Pair B1 B2)) => -1                 requires #DoCompare(A1, B1) ==Int -1
+  rule #DoCompare((Pair A1 A2), (Pair B1 B2)) => #DoCompare(A2, B2) requires #DoCompare(A1, B1) ==Int 0
+  rule #DoCompare((Pair A1 A2), (Pair B1 B2)) => 1                  requires #DoCompare(A1, B1) ==Int 1
 
   rule <k> COMPARE A => #HandleAnnotations(A) ... </k>
        <stack> V1 ~> V2 => #DoCompare(V1, V2) ... </stack>
@@ -598,65 +599,65 @@ module MICHELSON
        <stack> S:Set => size(S) ... </stack>
 
   //// Operations on maps
-  rule <k> EMPTY_MAP A KT VT => #HandleAnnotations(A) ... </k>
-       <stack> . => #Map(.Map, KT, VT) ... </stack>
+  rule <k> EMPTY_MAP A _ _ => #HandleAnnotations(A) ... </k>
+       <stack> . => .Map ... </stack>
 
   rule <k> GET A => #HandleAnnotations(A) ... </k>
-       <stack> X ~> #Map(M, _, _) => None ... </stack>
+       <stack> X ~> M => None ... </stack>
        requires notBool(X in_keys(M))
 
-  syntax OptionData ::= #LookupMap(MichelsonMap, Data) [function]
+  syntax OptionData ::= #LookupMap(Map, Data) [function]
 
-  rule #LookupMap(#Map(M, T0, T1), X) => Some {M[X]}:>Data requires X in_keys(M)
-  rule #LookupMap(#Map(M, T0, T1), X) => None requires notBool(X in_keys(M))
+  rule #LookupMap(M, X) => Some {M[X]}:>Data requires X in_keys(M)
+  rule #LookupMap(M, X) => None requires notBool(X in_keys(M))
 
   rule <k> MEM A => #HandleAnnotations(A) ~> . ... </k>
-       <stack> X ~> #Map(M, _, _) => X in_keys(M) ... </stack>
+       <stack> X ~> M => X in_keys(M) ... </stack>
 
   rule <k> GET A => #HandleAnnotations(A) ... </k>
        <stack> X ~> M => #LookupMap(M, X) ... </stack>
 
   rule <k> UPDATE A => #HandleAnnotations(A)  ... </k>
-       <stack> K ~> Some V ~> #Map(M:Map, T1, T2) => #Map(M[K <- V], T1, T2) ... </stack>
+       <stack> K ~> Some V ~> M:Map => M[K <- V] ... </stack>
 
   rule <k> UPDATE A => #HandleAnnotations(A)  ... </k>
-       <stack> K ~> None ~> #Map(M:Map, T1, T2) => #Map(M[K <- undef], T1, T2) ... </stack>
+       <stack> K ~> None ~> M:Map => M[K <- undef] ... </stack>
 
-  syntax KItem ::= #PerformMap(MichelsonMap, MichelsonMap, Block)
+  syntax KItem ::= #PerformMap(Map, Map, Block)
 
-  rule <k> MAP A B => #HandleAnnotations(A) ~> #PerformMap(#Map(M, T1, T2), #Map(.Map, T1, T2), B) ... </k>
-       <stack> #Map(M, T1, T2) => . ... </stack>
+  rule <k> MAP A B => #HandleAnnotations(A) ~> #PerformMap(M, .Map, B) ... </k>
+       <stack> M => . ... </stack>
 
   syntax KItem ::= #PopNewVal(Data)
 
-  rule <k> #PopNewVal(K) ~> #PerformMap(#Map(M1, T1, T2), #Map(M2, T1, T2), B) => #PerformMap(#Map(M1, T1, T2), #Map(M2[K <- V], T1, T2), B) ... </k>
+  rule <k> #PopNewVal(K) ~> #PerformMap(M1, M2, B) => #PerformMap(M1, M2[K <- V], B) ... </k>
        <stack> V => . ... </stack>
 
   syntax Data ::= #MinimalKey(Map) [function]
   rule #MinimalKey(M) => #MinimalElement(keys_list(M))
 
-  rule <k> #PerformMap(#Map(M1, T1, T2), M2, B) => B ~> #PopNewVal(#MinimalKey(M1)) 
-        ~> #PerformMap(#Map(M1[#MinimalKey(M1) <- undef], T1, T2), M2, B) ... </k>
+  rule <k> #PerformMap(M1, M2, B) => B ~> #PopNewVal(#MinimalKey(M1)) 
+        ~> #PerformMap(M1[#MinimalKey(M1) <- undef], M2, B) ... </k>
        <stack> . => Pair #MinimalKey(M1) {M1[#MinimalKey(M1)]}:>Data ... </stack>
        requires size(M1) >Int 0
 
-  rule <k> #PerformMap(#Map(.Map, _, _), M, _) => . ... </k>
+  rule <k> #PerformMap(.Map, M, _) => . ... </k>
        <stack> . => M ... </stack>
 
   rule <k> ITER A B => #HandleAnnotations(A)  ... </k>
-       <stack> #Map(.Map, _, _) => .K ... </stack>
+       <stack> .Map => . ... </stack>
 
-  rule <k> ITER A B => #HandleAnnotations(A) ~> B ~> #Push(#Map(M[#MinimalKey(M) <- undef], T1, T2)) ~> ITER .AnnotationList B ... </k>
-       <stack> #Map(M, T1, T2) => Pair #MinimalKey(M) {M[#MinimalKey(M)]}:>Data ... </stack>
+  rule <k> ITER A B => #HandleAnnotations(A) ~> B ~> #Push(M[#MinimalKey(M) <- undef]) ~> ITER .AnnotationList B ... </k>
+       <stack> M:Map => Pair #MinimalKey(M) {M[#MinimalKey(M)]}:>Data ... </stack>
        requires size(M) >Int 0
 
   rule <k> SIZE A => #HandleAnnotations(A)  ... </k>
-       <stack> #Map(M, T1, T2) => size(M) ... </stack>
+       <stack> M:Map => size(M) ... </stack>
 
   //// Operations on big maps
 
-  rule <k> EMPTY_BIG_MAP A T1 T2 => #HandleAnnotations(A)  ... </k>
-       <stack> . => #Map(.Map, T1, T2) ... </stack>
+  rule <k> EMPTY_BIG_MAP A _ _ => #HandleAnnotations(A)  ... </k>
+       <stack> . => .Map ... </stack>
 
   // Same as maps
 
