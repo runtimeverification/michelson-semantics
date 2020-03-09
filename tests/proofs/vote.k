@@ -5,7 +5,7 @@ module LEMMAS
  
   rule S:String in_keys(M:Map [ S:String <- I:Int]) => true
 
-  rule #LookupMap(#Map(M:Map [S:String <- I:Int], string _, int _), S) => Some I
+  rule #LookupMap(M:Map [S:String <- I:Int], S) => Some I
 
 endmodule 
 
@@ -33,8 +33,8 @@ module VOTE
            NIL .AnnotationList operation .AnnotationList ;
            PAIR .AnnotationList 
        } => . </k>
-        <stack> Pair S:String #Map((M:Map)[S <- I:Int], string .AnnotationList, int .AnnotationList) => 
-                Pair .List  #Map(M[S <- I +Int 1], string .AnnotationList, int .AnnotationList)  </stack>
+        <stack> Pair S:String (M:Map)[S <- I:Int] => 
+                Pair .List M[S <- I +Int 1]  </stack>
         <paramtype> string .AnnotationList  </paramtype>
         <storagetype> map .AnnotationList string .AnnotationList int .AnnotationList </storagetype>
         <balance> #Mutez(0) </balance>

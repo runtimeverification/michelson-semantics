@@ -17,7 +17,7 @@ struct TempFile {
     }
 
     ~TempFile() {
-//        unlink(name);
+        unlink(name);
         close(fd);
     }
 

@@ -7,11 +7,11 @@ module MICHELSON-SYNTAX
   // Sorts
   syntax Data
   syntax Instruction
-  syntax ComparableType
+  syntax Type
   syntax Type
   syntax Contract
-  syntax ComparableType
-  syntax SimpleComparableType
+  syntax Type
+  syntax SimpleType
   syntax Address
   syntax ContractData
   syntax Mutez
@@ -76,48 +76,33 @@ module MICHELSON-SYNTAX
   syntax Data ::= "(" Data ")" [bracket]
   syntax Type ::= "(" Type ")" [bracket] // Technically incorrect due to rule about primitive app right inside a sequence.  Need to split out Wrapped/Unwrapped sort. 
 
-  syntax ComparableType ::= SimpleComparableType 
-                          | ComparablePair
+  syntax UnannotatedSimpleType ::= "int" 
+                                 | "nat" 
+                                 | "string" 
+                                 | "bytes" 
+                                 | "mutez" 
+                                 | "bool" 
+                                 | "key_hash" 
+                                 | "timestamp" 
+                                 | "address"
+                                 | "key" 
+                                 | "unit" 
+                                 | "signature"
+                                 | "operation"
+                                 | "chain_id"
 
-  syntax UnannotatedSimpleComparableType ::= "int" 
-	  		        | "nat" 
-			        | "string" 
-          			| "bytes" 
-			        | "mutez" 
-			        | "bool" 
-			        | "key_hash" 
-			        | "timestamp" 
-			        | "address"   
+  syntax SimpleType ::= UnannotatedSimpleType AnnotationList [format((%1 %2))]
 
-  syntax SimpleComparableType ::= UnannotatedSimpleComparableType AnnotationList [format((%1 %2))]
-
-  syntax UnannotatedSimpleNoncomparableType ::= "key" 
-                    		   | "unit" 
-                   		   | "signature"
-		                   | "operation"
-                                   | "chain_id"
-
-  syntax SimpleNoncomparableType ::= UnannotatedSimpleNoncomparableType AnnotationList [format((%1 %2))]
-
-
-  syntax AnnotationList 
-
-  syntax NormalPair ::= "pair" AnnotationList Type Type [klabel(ampair), format((%1 %2 %3 %4))]
-  syntax ComparablePair ::= "pair" AnnotationList SimpleComparableType ComparableType [prefer, klabel(ampair), format((%1 %2 %3 %4))]
-
-  syntax ComparableType ::= "(" ComparableType ")" [bracket]
- 
-  syntax Type ::= ComparableType
-                | SimpleNoncomparableType
-		| NormalPair
+  syntax Type ::= SimpleType
+                | "pair" AnnotationList Type Type [klabel(ampair), format((%1 %2 %3 %4))]
                 | "option" AnnotationList Type [format((%1 %2 %3))]
-		| "list" AnnotationList Type [format((%1 %2 %3))]
-		| "set" AnnotationList ComparableType [format((%1 %2 %3))]
-		| "contract" AnnotationList Type [format((%1 %2 %3))]
+                | "list" AnnotationList Type [format((%1 %2 %3))]
+                | "set" AnnotationList Type [format((%1 %2 %3))]
+                | "contract" AnnotationList Type [format((%1 %2 %3))]
                 | "or" AnnotationList Type Type [format((%1 %2 %3 %4))]
-		| "lambda" AnnotationList Type Type [format((%1 %2 %3 %4))]
-		| "map" AnnotationList ComparableType Type [format((%1 %2 %3 %4))]
-		| "big_map" AnnotationList ComparableType Type [format((%1 %2 %3 %4))]
+                | "lambda" AnnotationList Type Type [format((%1 %2 %3 %4))]
+                | "map" AnnotationList Type Type [format((%1 %2 %3 %4))]
+                | "big_map" AnnotationList Type Type [format((%1 %2 %3 %4))]
 
   syntax EmptyBlock ::= "{" "}"
 
@@ -125,18 +110,10 @@ module MICHELSON-SYNTAX
                  | "{" InstructionList ";" "}"
                  | EmptyBlock
 
-//  syntax DIPMacro ::= r"DII+P" [token]
-//  syntax DUPMacro ::= r"DUU+P" [token]
-//  syntax PairMacro ::= r"P[AIP]+R" [token] // This regex needs to be far more complex, but not sure how much K actually supports. P(\left=A|P(\left)(\right))(\right=I|P(\left)(\right))R
-//  syntax UnpairMacro ::= r"UNP[AIP]+R" [token] // Same as above. UNP(\left=A|P(\left)(\right))(\right=I|P(\left)(\right))R
-  syntax CDARMacro ::= r"C[A,D]{2,}R" [token]
-//  syntax SetCDARMacro ::= r"SET_C[AD]+R" [token]
-
   syntax ContractBlock ::= "{" Contract "}"
 
   syntax Instruction ::= Block
 
-  syntax Instruction ::= CDARMacro AnnotationList
   syntax Instruction ::= "DROP" AnnotationList
   syntax Instruction ::= "DROP" AnnotationList Int
   syntax Instruction ::= "DIG" AnnotationList Int
@@ -160,9 +137,9 @@ module MICHELSON-SYNTAX
   syntax Instruction ::= "CONS" AnnotationList 
   syntax Instruction ::= "IF_CONS" AnnotationList Block Block
   syntax Instruction ::= "SIZE" AnnotationList 
-  syntax Instruction ::= "EMPTY_SET" AnnotationList ComparableType
-  syntax Instruction ::= "EMPTY_MAP" AnnotationList ComparableType Type
-  syntax Instruction ::= "EMPTY_BIG_MAP" AnnotationList ComparableType Type
+  syntax Instruction ::= "EMPTY_SET" AnnotationList Type
+  syntax Instruction ::= "EMPTY_MAP" AnnotationList Type Type
+  syntax Instruction ::= "EMPTY_BIG_MAP" AnnotationList Type Type
   syntax Instruction ::= "MAP" AnnotationList Block
   syntax Instruction ::= "ITER" AnnotationList Block
   syntax Instruction ::= "MEM" AnnotationList 
@@ -223,46 +200,64 @@ module MICHELSON-SYNTAX
   syntax Instruction ::= "SOURCE" AnnotationList 
   syntax Instruction ::= "SENDER" AnnotationList 
   syntax Instruction ::= "ADDRESS" AnnotationList 
-  syntax Instruction ::= "CMPEQ" AnnotationList 
-  syntax Instruction ::= "CMPNEQ" AnnotationList 
-  syntax Instruction ::= "CMPLT" AnnotationList 
-  syntax Instruction ::= "CMPGT" AnnotationList 
-  syntax Instruction ::= "CMPLE" AnnotationList 
-  syntax Instruction ::= "CMPGE" AnnotationList 
-  syntax Instruction ::= "IFEQ" AnnotationList Block Block
-  syntax Instruction ::= "IFNEQ" AnnotationList Block Block
-  syntax Instruction ::= "IFLT" AnnotationList Block Block
-  syntax Instruction ::= "IFGT" AnnotationList Block Block
-  syntax Instruction ::= "IFLE" AnnotationList Block Block
-  syntax Instruction ::= "IFGE" AnnotationList Block Block
-  syntax Instruction ::= "IFCMPEQ" AnnotationList Block Block
-  syntax Instruction ::= "IFCMPNEQ" AnnotationList Block Block
-  syntax Instruction ::= "IFCMPLT" AnnotationList Block Block
-  syntax Instruction ::= "IFCMPGT" AnnotationList Block Block
-  syntax Instruction ::= "IFCMPLE" AnnotationList Block Block
-  syntax Instruction ::= "IFCMPGE" AnnotationList Block Block
-  syntax Instruction ::= "FAIL" AnnotationList 
-  syntax Instruction ::= "ASSERT" AnnotationList 
-  syntax Instruction ::= "ASSERT_EQ" AnnotationList 
-  syntax Instruction ::= "ASSERT_NEQ" AnnotationList 
-  syntax Instruction ::= "ASSERT_LT" AnnotationList 
-  syntax Instruction ::= "ASSERT_LE" AnnotationList 
-  syntax Instruction ::= "ASSERT_GT" AnnotationList 
-  syntax Instruction ::= "ASSERT_GE" AnnotationList 
-  syntax Instruction ::= "ASSERT_CMPEQ" AnnotationList 
-  syntax Instruction ::= "ASSERT_CMPNEQ" AnnotationList 
-  syntax Instruction ::= "ASSERT_CMPLT" AnnotationList 
-  syntax Instruction ::= "ASSERT_CMPLE" AnnotationList 
-  syntax Instruction ::= "ASSERT_CMPGT" AnnotationList 
-  syntax Instruction ::= "ASSERT_CMPGE" AnnotationList 
-  syntax Instruction ::= "ASSERT_NONE" AnnotationList 
-  syntax Instruction ::= "ASSERT_SOME" AnnotationList 
-  syntax Instruction ::= "ASSERT_LEFT" AnnotationList 
-  syntax Instruction ::= "ASSERT_RIGHT" AnnotationList 
-  syntax Instruction ::= "IF_SOME" AnnotationList Block Block
-  syntax Instruction ::= "SET_CAR" AnnotationList 
-  syntax Instruction ::= "SET_CDR" AnnotationList 
-  syntax Instruction ::= "CREATE_CONTRACT" AnnotationList ContractBlock 
+
+  syntax Macro
+  syntax Instruction ::= Macro
+
+  syntax DIPMacro ::= r"DII+P" [token]
+  syntax DUPMacro ::= r"DUU+P" [token]
+  syntax PairMacro ::= r"P[AIP]+R" [token] // This regex needs to be far more complex, but not sure how much K actually supports. P(\left=A|P(\left)(\right))(\right=I|P(\left)(\right))R
+  syntax UnpairMacro ::= r"UNP[AIP]+R" [token] // Same as above. UNP(\left=A|P(\left)(\right))(\right=I|P(\left)(\right))R
+  syntax CDARMacro ::= r"C[A,D]{2,}R" [token]
+  syntax SetCDARMacro ::= r"SET_C[AD]+R" [token]
+
+  syntax Macro ::= DIPMacro
+  syntax Macro ::= DUPMacro
+  syntax Macro ::= PairMacro
+  syntax Macro ::= UnpairMacro
+  syntax Macro ::= CDARMacro
+  syntax Macro ::= SetCDARMacro
+
+  syntax Macro ::= "CMPEQ" AnnotationList 
+  syntax Macro ::= "CMPNEQ" AnnotationList 
+  syntax Macro ::= "CMPLT" AnnotationList 
+  syntax Macro ::= "CMPGT" AnnotationList 
+  syntax Macro ::= "CMPLE" AnnotationList 
+  syntax Macro ::= "CMPGE" AnnotationList 
+  syntax Macro ::= "IFEQ" AnnotationList Block Block
+  syntax Macro ::= "IFNEQ" AnnotationList Block Block
+  syntax Macro ::= "IFLT" AnnotationList Block Block
+  syntax Macro ::= "IFGT" AnnotationList Block Block
+  syntax Macro ::= "IFLE" AnnotationList Block Block
+  syntax Macro ::= "IFGE" AnnotationList Block Block
+  syntax Macro ::= "IFCMPEQ" AnnotationList Block Block
+  syntax Macro ::= "IFCMPNEQ" AnnotationList Block Block
+  syntax Macro ::= "IFCMPLT" AnnotationList Block Block
+  syntax Macro ::= "IFCMPGT" AnnotationList Block Block
+  syntax Macro ::= "IFCMPLE" AnnotationList Block Block
+  syntax Macro ::= "IFCMPGE" AnnotationList Block Block
+  syntax Macro ::= "FAIL" AnnotationList 
+  syntax Macro ::= "ASSERT" AnnotationList 
+  syntax Macro ::= "ASSERT_EQ" AnnotationList 
+  syntax Macro ::= "ASSERT_NEQ" AnnotationList 
+  syntax Macro ::= "ASSERT_LT" AnnotationList 
+  syntax Macro ::= "ASSERT_LE" AnnotationList 
+  syntax Macro ::= "ASSERT_GT" AnnotationList 
+  syntax Macro ::= "ASSERT_GE" AnnotationList 
+  syntax Macro ::= "ASSERT_CMPEQ" AnnotationList 
+  syntax Macro ::= "ASSERT_CMPNEQ" AnnotationList 
+  syntax Macro ::= "ASSERT_CMPLT" AnnotationList 
+  syntax Macro ::= "ASSERT_CMPLE" AnnotationList 
+  syntax Macro ::= "ASSERT_CMPGT" AnnotationList 
+  syntax Macro ::= "ASSERT_CMPGE" AnnotationList 
+  syntax Macro ::= "ASSERT_NONE" AnnotationList 
+  syntax Macro ::= "ASSERT_SOME" AnnotationList 
+  syntax Macro ::= "ASSERT_LEFT" AnnotationList 
+  syntax Macro ::= "ASSERT_RIGHT" AnnotationList 
+  syntax Macro ::= "IF_SOME" AnnotationList Block Block
+  syntax Macro ::= "SET_CAR" AnnotationList 
+  syntax Macro ::= "SET_CDR" AnnotationList 
+  syntax Macro ::= "CREATE_CONTRACT" AnnotationList ContractBlock 
 
  
   syntax CodeDecl ::= "code" Block 

@@ -9,10 +9,8 @@ module MICHELSON
   imports DOMAINS 
   imports COLLECTIONS
 
-  syntax Data ::= List | Set
+  syntax Data ::= List | Set | Map
   syntax Data ::= #Lambda(Type, Type, Block)
-  syntax MichelsonMap ::= #Map(Map, Type, Type) // Key, Value
-  syntax Data ::= MichelsonMap
 
   syntax OperationNonce ::= #NextNonce(OperationNonce) [function]
   rule #NextNonce(#Nonce(I)) => #Nonce(I +Int 1)
@@ -53,7 +51,6 @@ module MICHELSON
   rule #ConcreteArgToSemantics(B:Bool, bool _) => B
   rule #ConcreteArgToSemantics(S:String, key_hash _) => #ParseKeyHash(S)
   rule #ConcreteArgToSemantics(I:Int, timestamp _) => #Timestamp(I)
-  rule #ConcreteArgToSemantics(I:Int, address _) => #Timestamp(I)
   rule #ConcreteArgToSemantics(S:String, timestamp _) => #ParseTimestamp(S)
   rule #ConcreteArgToSemantics(S:String, address _) => #ParseAddress(S)
   rule #ConcreteArgToSemantics(S:String, key _) => #ParseKey(S)
@@ -61,9 +58,6 @@ module MICHELSON
   rule #ConcreteArgToSemantics(S:String, signature _) => #ParseSignature(S)
   
   rule #ConcreteArgToSemantics(Pair A B, pair _ T1:Type T2:Type) => 
-       Pair #ConcreteArgToSemantics(A, T1) #ConcreteArgToSemantics(B, T2)
-
-  rule #ConcreteArgToSemantics(Pair A B, pair _ T1:SimpleComparableType T2:SimpleComparableType) => 
        Pair #ConcreteArgToSemantics(A, T1) #ConcreteArgToSemantics(B, T2)
 
   rule #ConcreteArgToSemantics(Some V, option _ T) => Some #ConcreteArgToSemantics(V, T)
@@ -109,7 +103,7 @@ module MICHELSON
 
   syntax Data ::= #ConcreteArgToSemanticsMap(MapEntryList, Type, Type, Map) [function]
 
-  rule #ConcreteArgToSemantics({ }, map _ K V) => #Map(.Map, K, V)
+  rule #ConcreteArgToSemantics({ }, map _ K V) => .Map
 
   rule #ConcreteArgToSemantics({ M:MapEntryList }, map _:AnnotationList K V) =>
        #ConcreteArgToSemanticsMap(M, K, V, .Map)
@@ -117,9 +111,9 @@ module MICHELSON
   rule #ConcreteArgToSemanticsMap(Elt K V ; ML, KT, VT, M) =>
        #ConcreteArgToSemanticsMap(ML, KT, VT, M[#ConcreteArgToSemantics(K, KT) <- #ConcreteArgToSemantics(V, VT)])
 
-  rule #ConcreteArgToSemanticsMap(Elt K V, KT, VT, M) => #Map(M[#ConcreteArgToSemantics(K, KT) <- #ConcreteArgToSemantics(V, VT)], KT, VT)
+  rule #ConcreteArgToSemanticsMap(Elt K V, KT, VT, M) => M[#ConcreteArgToSemantics(K, KT) <- #ConcreteArgToSemantics(V, VT)]
 
-  rule #ConcreteArgToSemantics({ }, big_map _:AnnotationList K V) => #Map(.Map, K, V)
+  rule #ConcreteArgToSemantics({ }, big_map _:AnnotationList K V) => .Map
 
   rule #ConcreteArgToSemantics({ M:MapEntryList }, big_map _:AnnotationList K V) =>
        #ConcreteArgToSemanticsMap(M, K, V, .Map)
@@ -295,13 +289,13 @@ module MICHELSON
        <storagevalue> S </storagevalue>
        <returncode> _ => 0 </returncode>
 
-  rule I:Instruction ; Is:InstructionList => I ~> Is [structural]
+  rule I:Instruction ; Is:InstructionList => I ~> Is 
   rule {} => .K [structrual]
-  rule { Is:InstructionList } => Is [structural]
+  rule { Is:InstructionList } => Is 
   rule { Is:InstructionList ; } => { Is } [macro]
 
   syntax KItem ::= #HandleAnnotations(AnnotationList)
-  rule #HandleAnnotations(_) => . [structural]
+  rule #HandleAnnotations(_) => . 
 
   syntax Error ::= Aborted(String, KItem, K, K)
 
@@ -331,7 +325,7 @@ module MICHELSON
 
   syntax KItem ::= #Push(Data)
   rule <k> #Push(D) => . ... </k>
-       <stack> . => D ... </stack> [structural]
+       <stack> . => D ... </stack> 
 
   rule <k> DIP A B => #HandleAnnotations(A) ~> B ~> #Push(D) ... </k>
        <stack> D:Data => . ... </stack>
@@ -351,9 +345,6 @@ module MICHELSON
 
   rule <k> APPLY A => #HandleAnnotations(A) ... </k>
        <stack> D:Data ~> #Lambda((pair _:AnnotationList T0 T1):Type, T2, { C } ) => #Lambda(T1, T2, { PUSH .AnnotationList T0 D ; PAIR .AnnotationList ; { C } } ) ... </stack> 
-
-  rule <k> APPLY A => #HandleAnnotations(A) ... </k>
-       <stack> D:Data ~> #Lambda((pair _:AnnotationList T0 T1):ComparableType, T2, { C } ) => #Lambda(T1, T2, { PUSH .AnnotationList T0 D ; PAIR .AnnotationList ; { C } }) ... </stack>
 
   ////Stack operations
 
@@ -375,17 +366,17 @@ module MICHELSON
   syntax KItem ::= #DoDig(Int, K, OptionData)
 
   rule <k> DIG A I => #HandleAnnotations(A) ~> #DoDig(I, .K, None) ... </k>
-       <stack> S </stack> [structural]
+       <stack> S </stack> 
 
   rule <k> #DoDig(I, A, None) => #DoDig(I -Int 1, F ~> A, None) ... </k>
        <stack> F:Data => . ... </stack>
-       requires I >Int 0 [structural]
+       requires I >Int 0 
 
   rule <k> #DoDig(0, A, None) => #DoDig(-1, A, Some F) ... </k>
-       <stack> F:Data => . ... </stack> [structural]
+       <stack> F:Data => . ... </stack> 
 
   rule <k> #DoDig(-1, F:Data ~> A, Some T) => #DoDig(-1, A, Some T) ... </k>
-       <stack> . => F ... </stack> [structural]
+       <stack> . => F ... </stack> 
 
   rule <k> #DoDig(-1, .K, Some T) => . ... </k>
        <stack> . => T ... </stack>
@@ -393,17 +384,17 @@ module MICHELSON
   syntax KItem ::= #DoDug(Int, K, Data)
 
   rule <k> DUG A I => #HandleAnnotations(A) ~> #DoDug(I, .K, T) ... </k>
-       <stack> T => .K ... </stack> [structural]
+       <stack> T => .K ... </stack> 
 
   rule <k> #DoDug(I, S, R) => #DoDug(I -Int 1, T ~> S, R) ... </k>
        <stack> T:Data => .K ... </stack>
-       requires I >Int 0 [structural]
+       requires I >Int 0 
 
   rule <k> #DoDug(0, S, R) => #DoDug(-1, S, R) ... </k>
-       <stack> .K => R ... </stack> [structural]
+       <stack> .K => R ... </stack> 
 
   rule <k> #DoDug(-1, T:Data ~> S, R) => #DoDug(-1, S, R) ... </k>
-       <stack> .K => T ... </stack> [structural]
+       <stack> .K => T ... </stack> 
 
   rule <k> #DoDug(-1, .K, _) => .K ... </k>
 
@@ -523,6 +514,9 @@ module MICHELSON
   rule #DoCompare(S1:String, S2:String) => 0 requires S1 ==String S2
   rule #DoCompare(S1:String, S2:String) => 1 requires S1 >String S2
 
+  rule #DoCompare((Pair A1 A2), (Pair B1 B2)) => -1                 requires #DoCompare(A1, B1) ==Int -1
+  rule #DoCompare((Pair A1 A2), (Pair B1 B2)) => #DoCompare(A2, B2) requires #DoCompare(A1, B1) ==Int 0
+  rule #DoCompare((Pair A1 A2), (Pair B1 B2)) => 1                  requires #DoCompare(A1, B1) ==Int 1
 
   rule <k> COMPARE A => #HandleAnnotations(A) ... </k>
        <stack> V1 ~> V2 => #DoCompare(V1, V2) ... </stack>
@@ -544,19 +538,16 @@ module MICHELSON
 
   rule <k> SLICE A => #HandleAnnotations(A) ... </k>
        <stack> O ~> L ~> S => Some substrString(S, O, O +Int L) ... </stack>
-       requires O >=Int 0 andBool L >=Int 0 andBool (O +Int L) <Int lengthString(S)
+       requires O >=Int 0 andBool L >=Int 0 andBool (O +Int L) <=Int lengthString(S)
 
   rule <k> SLICE A => #HandleAnnotations(A) ... </k>
        <stack> O ~> L ~> S => None ... </stack>
-       requires notBool(O >=Int 0 andBool L >=Int 0 andBool (O +Int L) <Int lengthString(S))
+       requires notBool(O >=Int 0 andBool L >=Int 0 andBool (O +Int L) <=Int lengthString(S))
 
 
   //// Operations on pairs
   rule <k> PAIR A => #HandleAnnotations(A) ... </k>
        <stack> L ~> R => Pair L R ... </stack>
-
-  rule <k> UNPAIR A => #HandleAnnotations(A) ... </k>
-       <stack> Pair L R => L ~> R ... </stack>
 
   rule <k> CAR A => #HandleAnnotations(A) ... </k>
        <stack> Pair L _ => L ... </stack>
@@ -604,65 +595,65 @@ module MICHELSON
        <stack> S:Set => size(S) ... </stack>
 
   //// Operations on maps
-  rule <k> EMPTY_MAP A KT VT => #HandleAnnotations(A) ... </k>
-       <stack> . => #Map(.Map, KT, VT) ... </stack>
+  rule <k> EMPTY_MAP A _ _ => #HandleAnnotations(A) ... </k>
+       <stack> . => .Map ... </stack>
 
   rule <k> GET A => #HandleAnnotations(A) ... </k>
-       <stack> X ~> #Map(M, _, _) => None ... </stack>
+       <stack> X ~> M => None ... </stack>
        requires notBool(X in_keys(M))
 
-  syntax OptionData ::= #LookupMap(MichelsonMap, Data) [function]
+  syntax OptionData ::= #LookupMap(Map, Data) [function]
 
-  rule #LookupMap(#Map(M, T0, T1), X) => Some {M[X]}:>Data requires X in_keys(M)
-  rule #LookupMap(#Map(M, T0, T1), X) => None requires notBool(X in_keys(M))
+  rule #LookupMap(M, X) => Some {M[X]}:>Data requires X in_keys(M)
+  rule #LookupMap(M, X) => None requires notBool(X in_keys(M))
 
   rule <k> MEM A => #HandleAnnotations(A) ~> . ... </k>
-       <stack> X ~> #Map(M, _, _) => X in_keys(M) ... </stack>
+       <stack> X ~> M => X in_keys(M) ... </stack>
 
   rule <k> GET A => #HandleAnnotations(A) ... </k>
        <stack> X ~> M => #LookupMap(M, X) ... </stack>
 
   rule <k> UPDATE A => #HandleAnnotations(A)  ... </k>
-       <stack> K ~> Some V ~> #Map(M:Map, T1, T2) => #Map(M[K <- V], T1, T2) ... </stack>
+       <stack> K ~> Some V ~> M:Map => M[K <- V] ... </stack>
 
   rule <k> UPDATE A => #HandleAnnotations(A)  ... </k>
-       <stack> K ~> None ~> #Map(M:Map, T1, T2) => #Map(M[K <- undef], T1, T2) ... </stack>
+       <stack> K ~> None ~> M:Map => M[K <- undef] ... </stack>
 
-  syntax KItem ::= #PerformMap(MichelsonMap, MichelsonMap, Block)
+  syntax KItem ::= #PerformMap(Map, Map, Block)
 
-  rule <k> MAP A B => #HandleAnnotations(A) ~> #PerformMap(#Map(M, T1, T2), #Map(.Map, T1, T2), B) ... </k>
-       <stack> #Map(M, T1, T2) => . ... </stack>
+  rule <k> MAP A B => #HandleAnnotations(A) ~> #PerformMap(M, .Map, B) ... </k>
+       <stack> M => . ... </stack>
 
   syntax KItem ::= #PopNewVal(Data)
 
-  rule <k> #PopNewVal(K) ~> #PerformMap(#Map(M1, T1, T2), #Map(M2, T1, T2), B) => #PerformMap(#Map(M1, T1, T2), #Map(M2[K <- V], T1, T2), B) ... </k>
+  rule <k> #PopNewVal(K) ~> #PerformMap(M1, M2, B) => #PerformMap(M1, M2[K <- V], B) ... </k>
        <stack> V => . ... </stack>
 
   syntax Data ::= #MinimalKey(Map) [function]
   rule #MinimalKey(M) => #MinimalElement(keys_list(M))
 
-  rule <k> #PerformMap(#Map(M1, T1, T2), M2, B) => B ~> #PopNewVal(#MinimalKey(M1)) 
-        ~> #PerformMap(#Map(M1[#MinimalKey(M1) <- undef], T1, T2), M2, B) ... </k>
+  rule <k> #PerformMap(M1, M2, B) => B ~> #PopNewVal(#MinimalKey(M1)) 
+        ~> #PerformMap(M1[#MinimalKey(M1) <- undef], M2, B) ... </k>
        <stack> . => Pair #MinimalKey(M1) {M1[#MinimalKey(M1)]}:>Data ... </stack>
        requires size(M1) >Int 0
 
-  rule <k> #PerformMap(#Map(.Map, _, _), M, _) => . ... </k>
+  rule <k> #PerformMap(.Map, M, _) => . ... </k>
        <stack> . => M ... </stack>
 
   rule <k> ITER A B => #HandleAnnotations(A)  ... </k>
-       <stack> #Map(.Map, _, _) => .K ... </stack>
+       <stack> .Map => . ... </stack>
 
-  rule <k> ITER A B => #HandleAnnotations(A) ~> B ~> #Push(#Map(M[#MinimalKey(M) <- undef], T1, T2)) ~> ITER .AnnotationList B ... </k>
-       <stack> #Map(M, T1, T2) => Pair #MinimalKey(M) {M[#MinimalKey(M)]}:>Data ... </stack>
+  rule <k> ITER A B => #HandleAnnotations(A) ~> B ~> #Push(M[#MinimalKey(M) <- undef]) ~> ITER .AnnotationList B ... </k>
+       <stack> M:Map => Pair #MinimalKey(M) {M[#MinimalKey(M)]}:>Data ... </stack>
        requires size(M) >Int 0
 
   rule <k> SIZE A => #HandleAnnotations(A)  ... </k>
-       <stack> #Map(M, T1, T2) => size(M) ... </stack>
+       <stack> M:Map => size(M) ... </stack>
 
   //// Operations on big maps
 
-  rule <k> EMPTY_BIG_MAP A T1 T2 => #HandleAnnotations(A)  ... </k>
-       <stack> . => #Map(.Map, T1, T2) ... </stack>
+  rule <k> EMPTY_BIG_MAP A _ _ => #HandleAnnotations(A)  ... </k>
+       <stack> . => .Map ... </stack>
 
   // Same as maps
 
@@ -887,11 +878,11 @@ module MICHELSON
 
   rule <k> #ValidateMutezAndPush(#Mutez(I), _, _) => . ... </k>
        <stack> . => #Mutez(I) ... </stack>
-       requires #IsLegalMutezValue(I) [structural]
+       requires #IsLegalMutezValue(I) 
 
   rule <k> #ValidateMutezAndPush(#Mutez(I), I1, I2) ~> Rk => Aborted("Mutez out of bounds", I, Rk, Rs) </k>
        <stack> Rs => #FailureFromMutezValue(#Mutez(I), I1, I2) </stack>
-       requires notBool #IsLegalMutezValue(I) [structural]
+       requires notBool #IsLegalMutezValue(I) 
 
   rule <k> ADD A => #ValidateMutezAndPush(#Mutez(I1 +Int I2), I1, I2) ~> #HandleAnnotations(A) ... </k>
        <stack> #Mutez(I1) ~> #Mutez(I2) => . ... </stack>
@@ -912,7 +903,7 @@ module MICHELSON
        <stack> #Mutez(I1) ~> 0 => None ... </stack>
 
   rule <k> EDIV A => #HandleAnnotations(A) ... </k>
-       <stack> #Mutez(I1) ~> #Mutez(I2) => Some (Pair #Mutez(I1 /Int I2) #Mutez(I1 %Int I2)) ... </stack>
+       <stack> #Mutez(I1) ~> #Mutez(I2) => Some (Pair (I1 /Int I2) #Mutez(I1 %Int I2)) ... </stack>
        requires I2 >Int 0
 
   rule <k> EDIV A => #HandleAnnotations(A) ... </k>
@@ -920,65 +911,6 @@ module MICHELSON
        requires I2 >Int 0
 
   rule #DoCompare(#Mutez(I1), #Mutez(I2)) => #DoCompare(I1, I2)
-
-  rule CMPEQ _ => COMPARE .AnnotationList ~> EQ .AnnotationList
-  rule CMPNEQ _ => COMPARE .AnnotationList ~> NEQ .AnnotationList
-  rule CMPLT _ => COMPARE .AnnotationList ~> LT .AnnotationList
-  rule CMPGT _ => COMPARE .AnnotationList ~> GT .AnnotationList
-  rule CMPLE _ => COMPARE .AnnotationList ~> LE .AnnotationList
-  rule CMPGE _ => COMPARE .AnnotationList ~> GE .AnnotationList
-
-  rule IFEQ _ BT BF => EQ .AnnotationList ~> IF .AnnotationList BT BF
-  rule IFNEQ _ BT BF => NEQ .AnnotationList ~> IF .AnnotationList BT BF
-  rule IFLT _ BT BF => LT .AnnotationList ~> IF .AnnotationList BT BF
-  rule IFGT _ BT BF => GT .AnnotationList ~> IF .AnnotationList BT BF
-  rule IFLE _ BT BF => LE .AnnotationList ~> IF .AnnotationList BT BF
-  rule IFGE _ BT BF => GE .AnnotationList ~> IF .AnnotationList BT BF
-
-  rule IFCMPEQ _ BT BF => COMPARE .AnnotationList ~> EQ .AnnotationList ~> IF .AnnotationList BT BF
-  rule IFCMPNEQ _ BT BF => COMPARE .AnnotationList ~> NEQ .AnnotationList ~> IF .AnnotationList BT BF
-  rule IFCMPLT _ BT BF => COMPARE .AnnotationList ~> LT .AnnotationList ~> IF .AnnotationList BT BF
-  rule IFCMPGT _ BT BF => COMPARE .AnnotationList ~> GT .AnnotationList ~> IF .AnnotationList BT BF
-  rule IFCMPLE _ BT BF => COMPARE .AnnotationList ~> LE .AnnotationList ~> IF .AnnotationList BT BF
-  rule IFCMPGE _ BT BF => COMPARE .AnnotationList ~> GE .AnnotationList ~> IF .AnnotationList BT BF
-
-  rule FAIL _ => UNIT .AnnotationList ~> FAILWITH .AnnotationList
-
-  rule ASSERT _ => IF .AnnotationList {} {FAIL .AnnotationList }
-
-  rule ASSERT_EQ _ => IFEQ .AnnotationList {} {FAIL .AnnotationList }
-  rule ASSERT_NEQ _ => IFNEQ .AnnotationList {} {FAIL .AnnotationList }
-  rule ASSERT_LT _ => IFLT .AnnotationList {} {FAIL .AnnotationList }
-  rule ASSERT_GT _ => IFGT .AnnotationList {} {FAIL .AnnotationList }
-  rule ASSERT_LE _ => IFLE .AnnotationList {} {FAIL .AnnotationList }
-  rule ASSERT_GE _ => IFGE .AnnotationList {} {FAIL .AnnotationList }
-
-  rule ASSERT_CMPEQ _ => IFCMPEQ .AnnotationList {} {FAIL .AnnotationList }
-  rule ASSERT_CMPNEQ _ => IFCMPNEQ .AnnotationList {} {FAIL .AnnotationList }
-  rule ASSERT_CMPLT _ => IFCMPLT .AnnotationList {} {FAIL .AnnotationList }
-  rule ASSERT_CMPGT _ => IFCMPGT .AnnotationList {} {FAIL .AnnotationList }
-  rule ASSERT_CMPLE _ => IFCMPLE .AnnotationList {} {FAIL .AnnotationList }
-  rule ASSERT_CMPGE _ => IFCMPGE .AnnotationList {} {FAIL .AnnotationList }
-
-  rule ASSERT_NONE _ => IF_NONE .AnnotationList {} {FAIL .AnnotationList }
-
-  rule ASSERT_SOME _ => IF_NONE .AnnotationList {FAIL .AnnotationList } {} // TODO: Add annotations
-  rule ASSERT_LEFT _ => IF_LEFT .AnnotationList {} {FAIL .AnnotationList } //  ^
-  rule ASSERT_RIGHT _ => IF_LEFT .AnnotationList {FAIL .AnnotationList } {} // ^
-
-  rule IF_SOME _ BT BF => IF_NONE .AnnotationList BF BT
-
-  syntax KItem ::= #DoCDARMacro(String)
-
-  rule C:CDARMacro _ => #DoCDARMacro(substrString(#CDARToString(C), 1, lengthString(#CDARToString(C)) -Int 1))
-
-  rule #DoCDARMacro("") => . 
-  rule <k> #DoCDARMacro(S => substrString(S, 1, lengthString(S))) ... </k>
-       <stack> Pair A _ => A ... </stack> requires lengthString(S) >Int 0 andBool substrString(S, 0, 1) ==String "A"
-
-  rule <k> #DoCDARMacro(S => substrString(S, 1, lengthString(S))) ... </k>
-       <stack> Pair _ B => B ... </stack> requires lengthString(S) >Int 0 andBool substrString(S, 0, 1) ==String "D"
-
 
   syntax K ::= #ListToKSeq(List) [function]
   syntax K ::= #ListToKSeqAux(List, K) [function]

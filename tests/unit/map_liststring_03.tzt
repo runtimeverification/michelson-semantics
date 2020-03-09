@@ -1,0 +1,3 @@
+code { MAP { UNIT ; FAILWITH } } ; 
+input { Stack_elt (list string) {  } } ;
+output { Stack_elt (list string) {  } } 
