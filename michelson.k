@@ -51,7 +51,6 @@ module MICHELSON
   rule #ConcreteArgToSemantics(B:Bool, bool _) => B
   rule #ConcreteArgToSemantics(S:String, key_hash _) => #ParseKeyHash(S)
   rule #ConcreteArgToSemantics(I:Int, timestamp _) => #Timestamp(I)
-  rule #ConcreteArgToSemantics(I:Int, address _) => #Timestamp(I)
   rule #ConcreteArgToSemantics(S:String, timestamp _) => #ParseTimestamp(S)
   rule #ConcreteArgToSemantics(S:String, address _) => #ParseAddress(S)
   rule #ConcreteArgToSemantics(S:String, key _) => #ParseKey(S)
@@ -290,13 +289,13 @@ module MICHELSON
        <storagevalue> S </storagevalue>
        <returncode> _ => 0 </returncode>
 
-  rule I:Instruction ; Is:InstructionList => I ~> Is [structural]
+  rule I:Instruction ; Is:InstructionList => I ~> Is 
   rule {} => .K [structrual]
-  rule { Is:InstructionList } => Is [structural]
+  rule { Is:InstructionList } => Is 
   rule { Is:InstructionList ; } => { Is } [macro]
 
   syntax KItem ::= #HandleAnnotations(AnnotationList)
-  rule #HandleAnnotations(_) => . [structural]
+  rule #HandleAnnotations(_) => . 
 
   syntax Error ::= Aborted(String, KItem, K, K)
 
@@ -326,7 +325,7 @@ module MICHELSON
 
   syntax KItem ::= #Push(Data)
   rule <k> #Push(D) => . ... </k>
-       <stack> . => D ... </stack> [structural]
+       <stack> . => D ... </stack> 
 
   rule <k> DIP A B => #HandleAnnotations(A) ~> B ~> #Push(D) ... </k>
        <stack> D:Data => . ... </stack>
@@ -367,17 +366,17 @@ module MICHELSON
   syntax KItem ::= #DoDig(Int, K, OptionData)
 
   rule <k> DIG A I => #HandleAnnotations(A) ~> #DoDig(I, .K, None) ... </k>
-       <stack> S </stack> [structural]
+       <stack> S </stack> 
 
   rule <k> #DoDig(I, A, None) => #DoDig(I -Int 1, F ~> A, None) ... </k>
        <stack> F:Data => . ... </stack>
-       requires I >Int 0 [structural]
+       requires I >Int 0 
 
   rule <k> #DoDig(0, A, None) => #DoDig(-1, A, Some F) ... </k>
-       <stack> F:Data => . ... </stack> [structural]
+       <stack> F:Data => . ... </stack> 
 
   rule <k> #DoDig(-1, F:Data ~> A, Some T) => #DoDig(-1, A, Some T) ... </k>
-       <stack> . => F ... </stack> [structural]
+       <stack> . => F ... </stack> 
 
   rule <k> #DoDig(-1, .K, Some T) => . ... </k>
        <stack> . => T ... </stack>
@@ -385,17 +384,17 @@ module MICHELSON
   syntax KItem ::= #DoDug(Int, K, Data)
 
   rule <k> DUG A I => #HandleAnnotations(A) ~> #DoDug(I, .K, T) ... </k>
-       <stack> T => .K ... </stack> [structural]
+       <stack> T => .K ... </stack> 
 
   rule <k> #DoDug(I, S, R) => #DoDug(I -Int 1, T ~> S, R) ... </k>
        <stack> T:Data => .K ... </stack>
-       requires I >Int 0 [structural]
+       requires I >Int 0 
 
   rule <k> #DoDug(0, S, R) => #DoDug(-1, S, R) ... </k>
-       <stack> .K => R ... </stack> [structural]
+       <stack> .K => R ... </stack> 
 
   rule <k> #DoDug(-1, T:Data ~> S, R) => #DoDug(-1, S, R) ... </k>
-       <stack> .K => T ... </stack> [structural]
+       <stack> .K => T ... </stack> 
 
   rule <k> #DoDug(-1, .K, _) => .K ... </k>
 
@@ -549,9 +548,6 @@ module MICHELSON
   //// Operations on pairs
   rule <k> PAIR A => #HandleAnnotations(A) ... </k>
        <stack> L ~> R => Pair L R ... </stack>
-
-  rule <k> UNPAIR A => #HandleAnnotations(A) ... </k>
-       <stack> Pair L R => L ~> R ... </stack>
 
   rule <k> CAR A => #HandleAnnotations(A) ... </k>
        <stack> Pair L _ => L ... </stack>
@@ -882,11 +878,11 @@ module MICHELSON
 
   rule <k> #ValidateMutezAndPush(#Mutez(I), _, _) => . ... </k>
        <stack> . => #Mutez(I) ... </stack>
-       requires #IsLegalMutezValue(I) [structural]
+       requires #IsLegalMutezValue(I) 
 
   rule <k> #ValidateMutezAndPush(#Mutez(I), I1, I2) ~> Rk => Aborted("Mutez out of bounds", I, Rk, Rs) </k>
        <stack> Rs => #FailureFromMutezValue(#Mutez(I), I1, I2) </stack>
-       requires notBool #IsLegalMutezValue(I) [structural]
+       requires notBool #IsLegalMutezValue(I) 
 
   rule <k> ADD A => #ValidateMutezAndPush(#Mutez(I1 +Int I2), I1, I2) ~> #HandleAnnotations(A) ... </k>
        <stack> #Mutez(I1) ~> #Mutez(I2) => . ... </stack>
