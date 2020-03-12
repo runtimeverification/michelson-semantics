@@ -5,6 +5,7 @@ module MICHELSON-SYNTAX
 
 
   // Sorts
+  syntax SimpleData
   syntax Data
   syntax Instruction
   syntax Type
@@ -49,31 +50,33 @@ module MICHELSON-SYNTAX
   syntax OptionData ::= "Some" Data [format(%1 (%2))]
                       | "None"  
 
-  syntax Data ::= Int 
-                | String 
-                | MichelsonBool
-                | MBytesLiteral
-                | "Unit" 
-                | Pair
-                | OrData
-                | OptionData
-                | "{" MapEntryList "}"
-                | "{" DataList "}"
-                | Block
+  syntax ApplicationData ::= Pair | OrData | OptionData
+  syntax Data ::= ApplicationData
 
-  syntax Data ::= Timestamp 
-  syntax Data ::= ChainId
-  syntax Data ::= KeyHash
-  syntax Data ::= Mutez
-  syntax Data ::= Address
-  syntax Data ::= ContractData
-  syntax Data ::= Key
-  syntax Data ::= Signature
-  
+  syntax SequenceData ::= "{" MapEntryList "}" | "{" DataList "}" | Block
+  syntax Data ::= SequenceData
+
+  syntax SimpleData ::= Int
+  syntax SimpleData ::= String 
+  syntax SimpleData ::= MichelsonBool
+  syntax SimpleData ::= MBytesLiteral
+  syntax SimpleData ::= "Unit" 
+  syntax SimpleData ::= Timestamp 
+  syntax SimpleData ::= ChainId
+  syntax SimpleData ::= KeyHash
+  syntax SimpleData ::= Mutez
+  syntax SimpleData ::= Address
+  syntax SimpleData ::= ContractData
+  syntax SimpleData ::= Key
+  syntax SimpleData ::= Signature
+ 
+  syntax Data ::= SimpleData
+
   syntax Mutez ::= Int
   syntax Address ::= String
  
   syntax Data ::= "(" Data ")" [bracket]
+
   syntax Type ::= "(" Type ")" [bracket] // Technically incorrect due to rule about primitive app right inside a sequence.  Need to split out Wrapped/Unwrapped sort. 
 
   syntax UnannotatedSimpleType ::= "int" 
