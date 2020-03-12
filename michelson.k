@@ -9,9 +9,6 @@ module MICHELSON
   imports DOMAINS 
   imports COLLECTIONS
 
-  syntax Data ::= List | Set | Map
-  syntax Data ::= #Lambda(Type, Type, Block)
-
   syntax OperationNonce ::= #NextNonce(OperationNonce) [function]
   rule #NextNonce(#Nonce(I)) => #Nonce(I +Int 1)
 
@@ -556,8 +553,6 @@ module MICHELSON
        <stack> Pair _ R => R ... </stack>
 
   //// Operations on sets
-  syntax Data ::= Set
-
   rule <k> EMPTY_SET A _ => #HandleAnnotations(A) ... </k>
        <stack> . => .Set ... </stack>
 
@@ -691,9 +686,6 @@ module MICHELSON
        <stack> Left V => V ... </stack>
 
   //// Operations on lists
- 
-  syntax Data ::= List
-
   rule <k> CONS A => #HandleAnnotations(A)  ... </k>
        <stack> V ~> L => ListItem(V) L ... </stack>
   
@@ -817,11 +809,6 @@ module MICHELSON
 
 
   //// Operations on MBytes, stubbed for now because of the lack of a documented bytes format.
-
-  syntax MBytes ::= MBytesLiteral | #Packed(Data) | "#UnknownMBytes"
-
-  syntax Data ::= MBytes
-
   rule <k> PACK A => #HandleAnnotations(A) ... </k>
        <stack> T => #Packed(T) ... </stack>
 
@@ -866,9 +853,6 @@ module MICHELSON
   rule #DoCompare(#KeyHash(S1), #KeyHash(S2)) => #DoCompare(S1, S2)
 
   //// Operations on Mutez
-
-  syntax Data ::= Mutez
-
   syntax KItem ::= #ValidateMutezAndPush(Mutez, Int, Int)
 
   syntax FailedStack ::= #FailureFromMutezValue(Mutez, Int, Int) [function]

@@ -15,8 +15,8 @@ module MICHELSON-COMMON
   syntax Timestamp ::= #Timestamp(Int) 
   syntax Key ::= #Key(String)
   syntax Signature ::= #Signature(String)
-
   syntax OperationNonce ::= #Nonce(Int)
+  syntax MBytes ::= MBytesLiteral | #Packed(Data)
 
   syntax Data ::= Timestamp 
   syntax Data ::= ChainId
@@ -26,8 +26,9 @@ module MICHELSON-COMMON
   syntax Data ::= ContractData
   syntax Data ::= Key
   syntax Data ::= Signature
-
   syntax Data ::= Bool
+  syntax Data ::= #Lambda(Type, Type, Block)
+  syntax Data ::= MBytes
 
   syntax Group ::= ParameterDecl
   syntax Group ::= StorageDecl
