@@ -9,6 +9,8 @@ module MICHELSON
   imports DOMAINS 
   imports COLLECTIONS
 
+  syntax Data ::= List | Map | Set
+
   syntax OperationNonce ::= #NextNonce(OperationNonce) [function]
   rule #NextNonce(#Nonce(I)) => #Nonce(I +Int 1)
 
@@ -34,16 +36,28 @@ module MICHELSON
 
   syntax String ::= #CDARToString(CDARMacro) [function, functional, hook(STRING.token2string)]
   syntax String ::= #MBytesToString(MBytesLiteral) [function, functional, hook(STRING.token2string)]
+
+  syntax String ::= #MBytesContent(MBytesLiteral) [function, functional]
+  rule #MBytesContent(H) => substrString(#MBytesToString(H), 2, lengthString(#MBytesToString(H)))
+
   syntax Int ::= #MBytesToInt(MBytesLiteral) [function]
 
-  rule #MBytesToInt(H) => String2Base(substrString(#MBytesToString(H), 2, lengthString(#MBytesToString(H))), 16) requires lengthString(#MBytesToString(H)) >Int 2 
-  rule #MBytesToInt(H) => 0 requires lengthString(#MBytesToString(H)) <=Int 2
+  rule #MBytesToInt(H) => String2Base(#MBytesContent(H), 16) requires lengthString(#MBytesContent(H)) >Int 0
+  rule #MBytesToInt(H) => 0 requires lengthString(#MBytesContent(H)) ==Int 0
+
+  syntax MBytesLiteral ::= #StringToMBytes(String) [function, hook(STRING.string2token)]
+
+  syntax MBytesLiteral ::= #IntToMBytes(Int) [function]
+  rule #IntToMBytes(I) => #StringToMBytes("0x" +String Base2String(I, 16))
+
+  syntax MBytesLiteral ::= #StandardizeMBytesLiteral(MBytesLiteral) [function]
+  rule #StandardizeMBytesLiteral(B) => #IntToMBytes(#MBytesToInt(B))
 
   rule #ConcreteArgToSemantics(H:MBytesLiteral, chain_id _) => #ChainId(#MBytesToInt(H))
   rule #ConcreteArgToSemantics(I:Int, int _) => I
   rule #ConcreteArgToSemantics(I:Int, nat _) => I requires I >=Int 0
   rule #ConcreteArgToSemantics(S:String, string _) => S
-  rule #ConcreteArgToSemantics(B:MBytesLiteral, bytes _) => B
+  rule #ConcreteArgToSemantics(B:MBytesLiteral, bytes _) => #StandardizeMBytesLiteral(B)
   rule #ConcreteArgToSemantics(I:Int, mutez _) => #Mutez(I)
   rule #ConcreteArgToSemantics(B:Bool, bool _) => B
   rule #ConcreteArgToSemantics(S:String, key_hash _) => #ParseKeyHash(S)
@@ -533,14 +547,15 @@ module MICHELSON
   rule <k> SIZE A => #HandleAnnotations(A) ... </k>
        <stack> S => lengthString(S) ... </stack> 
 
-  rule <k> SLICE A => #HandleAnnotations(A) ... </k>
-       <stack> O ~> L ~> S => Some substrString(S, O, O +Int L) ... </stack>
-       requires O >=Int 0 andBool L >=Int 0 andBool (O +Int L) <=Int lengthString(S)
+  syntax OptionData ::= #SliceString(String, Int, Int) [function]
+
+  rule #SliceString(S, O, L) => Some substrString(S, O, O +Int L)
+  requires O >=Int 0 andBool L >=Int 0 andBool (O +Int L) <=Int lengthString(S)
+
+  rule #SliceString(S, O, L) => None [owise]
 
   rule <k> SLICE A => #HandleAnnotations(A) ... </k>
-       <stack> O ~> L ~> S => None ... </stack>
-       requires notBool(O >=Int 0 andBool L >=Int 0 andBool (O +Int L) <=Int lengthString(S))
-
+       <stack> O ~> L ~> S => #SliceString(S, O, L)  ... </stack>
 
   //// Operations on pairs
   rule <k> PAIR A => #HandleAnnotations(A) ... </k>
@@ -816,15 +831,19 @@ module MICHELSON
        <stack> #Packed(T) => T ... </stack>
 
   rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
-       <stack> B1:MBytes ~> B2:MBytes => #UnknownMBytes ... </stack>
+       <stack> B1:MBytesLiteral ~> B2:MBytesLiteral => #StandardizeMBytesLiteral(#StringToMBytes("0x" +String #MBytesContent(B1) +String #MBytesContent(B2))) ... </stack>
 
   rule <k> SIZE A => #HandleAnnotations(A) ... </k>
-       <stack> B:MBytes => 0 ... </stack> // Would like to make this a ?_ variable but llvm doesn't support those.
+       <stack> B:MBytesLiteral => lengthString(#MBytesContent(B)) /Int 2 ... </stack> 
+
+  syntax OptionData ::= #OptionBytesFromOptionContent(Data) [function]
+  rule #OptionBytesFromOptionContent(None) => None
+  rule #OptionBytesFromOptionContent(Some S:String) => Some #StandardizeMBytesLiteral(#StringToMBytes("0x" +String S)) 
 
   rule <k> SLICE A => #HandleAnnotations(A) ... </k>
-       <stack> _:Int ~> _:Int ~> B:MBytes => Some #UnknownMBytes ... </stack>
+       <stack> O:Int ~> L:Int ~> B:MBytesLiteral => #OptionBytesFromOptionContent(#SliceString(#MBytesContent(B), 2 *Int O, 2 *Int L))  ... </stack>
 
-  rule #DoCompare(B1:MBytes, B2:MBytes) => 0 // I can't see a reasonable way of doing this.
+  rule #DoCompare(B1:MBytesLiteral, B2:MBytesLiteral) => #DoCompare(#MBytesContent(B1), #MBytesContent(B2)) 
 
   //// Cryptographic primitives
 
