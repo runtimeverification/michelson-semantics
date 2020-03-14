@@ -53,7 +53,10 @@ module MICHELSON-SYNTAX
   syntax ApplicationData ::= Pair | OrData | OptionData
   syntax Data ::= ApplicationData
 
-  syntax SequenceData ::= "{" MapEntryList "}" | "{" DataList "}" | Block
+  syntax MapLiteral ::= "{" MapEntryList "}"
+  syntax ListLiteral ::= "{" DataList "}"
+
+  syntax SequenceData ::= MapLiteral | ListLiteral | Block
   syntax Data ::= SequenceData
 
   syntax SimpleData ::= Int
@@ -285,6 +288,11 @@ module MICHELSON-SYNTAX
   syntax OtherContractsMapEntryList ::= OtherContractsMapEntry | OtherContractsMapEntry ";" OtherContractsMapEntryList
   syntax OtherContractsMap ::= EmptyBlock | "{" OtherContractsMapEntryList "}"
 
+  syntax BigMapEntry ::= "Big_map" Int Type Type MapLiteral
+                       | "Big_map" Int Type Type EmptyBlock
+  syntax BigMapEntryList ::= BigMapEntry | BigMapEntry ";" BigMapEntryList
+  syntax BigMapMap ::= EmptyBlock | "{" BigMapEntryList "}"
+
   syntax ContractGroup ::= "contract" "{" Contract "}"
   syntax NowGroup ::= "now" Int
   syntax SenderGroup ::= "sender" String
@@ -296,6 +304,7 @@ module MICHELSON-SYNTAX
   syntax ContractsGroup ::= "other_contracts" OtherContractsMap
   syntax ParameterValueGroup ::= "parameter_value" Data
   syntax StorageValueGroup ::= "storage_value" Data
+  syntax BigMapGroup ::= "big_maps" BigMapMap
 
   syntax Group ::= ContractGroup
                  | ParameterValueGroup
@@ -308,6 +317,7 @@ module MICHELSON-SYNTAX
                  | AmountGroup
                  | BalanceGroup
                  | ContractsGroup
+                 | BigMapGroup
 
   syntax Groups ::= Group | Group ";" Groups
   syntax Pgm ::= Groups | Groups ";"
