@@ -540,6 +540,11 @@ module MICHELSON
 
   syntax Int ::= #DoCompare(Data, Data) [function]
 
+  rule #DoCompare(true, true) => 0
+  rule #DoCompare(false, false) => 0
+  rule #DoCompare(false, true) => -1
+  rule #DoCompare(true, false) => 1
+
   rule #DoCompare(I1:Int, I2:Int) => -1 requires I1 <Int I2
   rule #DoCompare(I1:Int, I2:Int) => 0 requires I1 ==Int I2
   rule #DoCompare(I1:Int, I2:Int) => 1 requires I1 >Int I2
