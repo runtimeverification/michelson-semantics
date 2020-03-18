@@ -9,7 +9,10 @@ module MICHELSON
   imports DOMAINS 
   imports COLLECTIONS
 
-  syntax Data ::= List | Map | Set
+  syntax String ::= #ToLowerCase(String) [function, functional, hook(STRING.tolowercase)]
+
+  syntax Data ::= List | Set | Map
+  syntax Data ::= #Lambda(Type, Type, Block)
 
   syntax OperationNonce ::= #NextNonce(OperationNonce) [function]
   rule #NextNonce(#Nonce(I)) => #Nonce(I +Int 1)
@@ -50,14 +53,11 @@ module MICHELSON
   syntax MBytesLiteral ::= #IntToMBytes(Int) [function]
   rule #IntToMBytes(I) => #StringToMBytes("0x" +String Base2String(I, 16))
 
-  syntax MBytesLiteral ::= #StandardizeMBytesLiteral(MBytesLiteral) [function]
-  rule #StandardizeMBytesLiteral(B) => #IntToMBytes(#MBytesToInt(B))
-
   rule #ConcreteArgToSemantics(H:MBytesLiteral, chain_id _) => #ChainId(#MBytesToInt(H))
   rule #ConcreteArgToSemantics(I:Int, int _) => I
   rule #ConcreteArgToSemantics(I:Int, nat _) => I requires I >=Int 0
   rule #ConcreteArgToSemantics(S:String, string _) => S
-  rule #ConcreteArgToSemantics(B:MBytesLiteral, bytes _) => #StandardizeMBytesLiteral(B)
+  rule #ConcreteArgToSemantics(B:MBytesLiteral, bytes _) => #StringToMBytes(#ToLowerCase(#MBytesToString(B)))
   rule #ConcreteArgToSemantics(I:Int, mutez _) => #Mutez(I)
   rule #ConcreteArgToSemantics(B:Bool, bool _) => B
   rule #ConcreteArgToSemantics(S:String, key_hash _) => #ParseKeyHash(S)
@@ -163,6 +163,9 @@ module MICHELSON
        <knownaddrs> Known </knownaddrs>
        requires #ConcreteArgToSemantics(A, address .AnnotationList) in_keys(Known)
 
+  rule [[ #ConcreteArgToSemantics(I:Int, big_map _:AnnotationList K V) => {M[I]}:>Data ]]
+       <bigmaps> M:Map </bigmaps>
+
   rule code B ; storage St ; parameter Pt => code B ; storage St ; parameter Pt ; [macro]
   rule code B ; parameter Pt ; storage St => code B ; storage St ; parameter Pt ; [macro]
   rule storage St ; code B ; parameter Pt => code B ; storage St ; parameter Pt ; [macro]
@@ -188,9 +191,10 @@ module MICHELSON
   rule #GroupOrder(_:SelfGroup) => 4
   rule #GroupOrder(_:AmountGroup) => 5
   rule #GroupOrder(_:BalanceGroup) => 6
-  rule #GroupOrder(_:ContractsGroup) => 7
-  rule #GroupOrder(_:ParameterDecl) => 8
-  rule #GroupOrder(_:StorageDecl) => 9
+  rule #GroupOrder(_:BigMapGroup) => 7
+  rule #GroupOrder(_:ContractsGroup) => 8
+  rule #GroupOrder(_:ParameterDecl) => 9
+  rule #GroupOrder(_:StorageDecl) => 10
 
   syntax Group ::= #GetMinOfTwoGroups(Group, Group) [function]
   rule #GetMinOfTwoGroups(G1, G2) => G1 requires #GroupOrder(G1) <Int #GroupOrder(G2)
@@ -285,6 +289,25 @@ module MICHELSON
 
   rule <k> #LoadGroups(storage T ; Gs => Gs) </k>
        <storagetype> #NotSet => T </storagetype>
+
+  syntax Map ::= #BigMapsToKMap(BigMapMap) [function]
+  syntax Map ::= #BigMapsEntryListToKMap(BigMapEntryList) [function] 
+  syntax Map ::= #BigMapsEntryToKMap(BigMapEntry) [function]
+
+  rule #BigMapsToKMap({ }) => .Map
+  rule #BigMapsToKMap({ EL }) => #BigMapsEntryListToKMap(EL)
+
+  rule #BigMapsEntryListToKMap(E) => #BigMapsEntryToKMap(E)
+  rule #BigMapsEntryListToKMap(E ; Es) => #BigMapsEntryToKMap(E) #BigMapsEntryListToKMap(Es)
+ 
+  rule #BigMapsEntryToKMap(Big_map I T1 T2 { }) => 
+    I |-> #ConcreteArgToSemantics({ }, big_map .AnnotationList T1 T2)
+
+  rule #BigMapsEntryToKMap(Big_map I T1 T2 ML:MapLiteral) => 
+    I |-> #ConcreteArgToSemantics(ML, big_map .AnnotationList T1 T2)
+
+  rule <k> #LoadGroups(big_maps M ; Gs => Gs) </k>
+       <bigmaps> .Map => #BigMapsToKMap(M) </bigmaps>
 
   rule <k> #LoadGroups(parameter_value D ; Gs => Gs) </k>
        <paramtype> T </paramtype>
@@ -517,6 +540,11 @@ module MICHELSON
 
   syntax Int ::= #DoCompare(Data, Data) [function]
 
+  rule #DoCompare(true, true) => 0
+  rule #DoCompare(false, false) => 0
+  rule #DoCompare(false, true) => -1
+  rule #DoCompare(true, false) => 1
+
   rule #DoCompare(I1:Int, I2:Int) => -1 requires I1 <Int I2
   rule #DoCompare(I1:Int, I2:Int) => 0 requires I1 ==Int I2
   rule #DoCompare(I1:Int, I2:Int) => 1 requires I1 >Int I2
@@ -536,10 +564,14 @@ module MICHELSON
 
   rule #ConcatAll(.List, A) => A
   rule #ConcatAll(ListItem(S1) DL, A) => #ConcatAll(DL, A +String S1)
+  rule #ConcatAll(ListItem(B1:MBytesLiteral) DL, A) => #ConcatAll(DL, A +String #MBytesContent(B1)) requires lengthString(A) >Int 0
 
   //// Operations on strings
   rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
        <stack> S1 ~> S2 => S1 +String S2 ... </stack>
+
+  rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
+       <stack> .List => "" ... </stack>
 
   rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
        <stack> L => #ConcatAll(L, "") ... </stack>
@@ -831,14 +863,14 @@ module MICHELSON
        <stack> #Packed(T) => T ... </stack>
 
   rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
-       <stack> B1:MBytesLiteral ~> B2:MBytesLiteral => #StandardizeMBytesLiteral(#StringToMBytes("0x" +String #MBytesContent(B1) +String #MBytesContent(B2))) ... </stack>
+       <stack> B1:MBytesLiteral ~> B2:MBytesLiteral => #StringToMBytes("0x" +String #MBytesContent(B1) +String #MBytesContent(B2)) ... </stack>
 
   rule <k> SIZE A => #HandleAnnotations(A) ... </k>
        <stack> B:MBytesLiteral => lengthString(#MBytesContent(B)) /Int 2 ... </stack> 
 
   syntax OptionData ::= #OptionBytesFromOptionContent(Data) [function]
   rule #OptionBytesFromOptionContent(None) => None
-  rule #OptionBytesFromOptionContent(Some S:String) => Some #StandardizeMBytesLiteral(#StringToMBytes("0x" +String S)) 
+  rule #OptionBytesFromOptionContent(Some S:String) => Some #StringToMBytes("0x" +String S) 
 
   rule <k> SLICE A => #HandleAnnotations(A) ... </k>
        <stack> O:Int ~> L:Int ~> B:MBytesLiteral => #OptionBytesFromOptionContent(#SliceString(#MBytesContent(B), 2 *Int O, 2 *Int L))  ... </stack>

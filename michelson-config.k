@@ -23,5 +23,6 @@ module MICHELSON-CONFIG
                 <senderaddr> #Address("InvalidSenderAddr") </senderaddr>
                 <mychainid> #ChainId(0) </mychainid>
                 <nonce> #Nonce(0) </nonce>
+                <bigmaps> .Map </bigmaps>
                 <returncode exit=""> 1 </returncode>
 endmodule
