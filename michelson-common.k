@@ -41,4 +41,17 @@ module MICHELSON-COMMON
 
   rule True => true [macro]
   rule False => false [macro]
+
+  rule code B ; storage St ; parameter Pt => code B ; storage St ; parameter Pt ; [macro]
+  rule code B ; parameter Pt ; storage St => code B ; storage St ; parameter Pt ; [macro]
+  rule storage St ; code B ; parameter Pt => code B ; storage St ; parameter Pt ; [macro]
+  rule parameter Pt ; code B ; storage St => code B ; storage St ; parameter Pt ; [macro]
+  rule storage St ; parameter Pt ; code B => code B ; storage St ; parameter Pt ; [macro]
+  rule parameter Pt ; storage St ; code B => code B ; storage St ; parameter Pt ; [macro]
+
+  rule code B ; parameter Pt ; storage St ; => code B ; storage St ; parameter Pt ; [macro]
+  rule storage St ; code B ; parameter Pt ; => code B ; storage St ; parameter Pt ; [macro]
+  rule parameter Pt ; code B ; storage St ; => code B ; storage St ; parameter Pt ; [macro]
+  rule storage St ; parameter Pt ; code B ; => code B ; storage St ; parameter Pt ; [macro]
+  rule parameter Pt ; storage St ; code B ; => code B ; storage St ; parameter Pt ; [macro]
 endmodule

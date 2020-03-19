@@ -12,7 +12,6 @@ module MICHELSON
   syntax String ::= #ToLowerCase(String) [function, functional, hook(STRING.tolowercase)]
 
   syntax Data ::= List | Set | Map
-  syntax Data ::= #Lambda(Type, Type, Block)
 
   syntax OperationNonce ::= #NextNonce(OperationNonce) [function]
   rule #NextNonce(#Nonce(I)) => #Nonce(I +Int 1)
@@ -165,19 +164,6 @@ module MICHELSON
 
   rule [[ #ConcreteArgToSemantics(I:Int, big_map _:AnnotationList K V) => {M[I]}:>Data ]]
        <bigmaps> M:Map </bigmaps>
-
-  rule code B ; storage St ; parameter Pt => code B ; storage St ; parameter Pt ; [macro]
-  rule code B ; parameter Pt ; storage St => code B ; storage St ; parameter Pt ; [macro]
-  rule storage St ; code B ; parameter Pt => code B ; storage St ; parameter Pt ; [macro]
-  rule parameter Pt ; code B ; storage St => code B ; storage St ; parameter Pt ; [macro]
-  rule storage St ; parameter Pt ; code B => code B ; storage St ; parameter Pt ; [macro]
-  rule parameter Pt ; storage St ; code B => code B ; storage St ; parameter Pt ; [macro]
-
-  rule code B ; parameter Pt ; storage St ; => code B ; storage St ; parameter Pt ; [macro]
-  rule storage St ; code B ; parameter Pt ; => code B ; storage St ; parameter Pt ; [macro]
-  rule parameter Pt ; code B ; storage St ; => code B ; storage St ; parameter Pt ; [macro]
-  rule storage St ; parameter Pt ; code B ; => code B ; storage St ; parameter Pt ; [macro]
-  rule parameter Pt ; storage St ; code B ; => code B ; storage St ; parameter Pt ; [macro]
 
 //  syntax Int ::= #GroupOrder(Group) [function] // In michelson-common.k
   rule #GroupOrder(_:ContractGroup) => #GroupOrderMax

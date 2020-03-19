@@ -8,21 +8,23 @@ module MICHELSON-CONFIG
 
   rule <k> Gs:Groups ; => Gs </k> [owise]
 
-  configuration <k> $PGM:Pgm </k>
-                <stack> .K </stack>
-                <paramtype> #NotSet </paramtype>
-                <paramvalue> #NoData </paramvalue>
-                <storagetype> #NotSet </storagetype>
-                <storagevalue> #NoData </storagevalue>
-                <mybalance> #Mutez(0) </mybalance>
-                <myamount> #Mutez(0) </myamount>
-                <mynow> #Timestamp(0) </mynow>
-                <myaddr> #Address("InvalidMyAddr") </myaddr>
-                <knownaddrs> .Map </knownaddrs>
-                <sourceaddr> #Address("InvalidSourceAddr") </sourceaddr>
-                <senderaddr> #Address("InvalidSenderAddr") </senderaddr>
-                <mychainid> #ChainId(0) </mychainid>
-                <nonce> #Nonce(0) </nonce>
-                <bigmaps> .Map </bigmaps>
-                <returncode exit=""> 1 </returncode>
+  configuration <michelsonTop>
+                  <k> $PGM:Pgm </k>
+                  <stack> .K </stack>
+                  <paramtype> #NotSet </paramtype>
+                  <paramvalue> #NoData </paramvalue>
+                  <storagetype> #NotSet </storagetype>
+                  <storagevalue> #NoData </storagevalue>
+                  <mybalance> #Mutez(0) </mybalance>
+                  <myamount> #Mutez(0) </myamount>
+                  <mynow> #Timestamp(0) </mynow>
+                  <myaddr> #Address("InvalidMyAddr") </myaddr>
+                  <knownaddrs> .Map </knownaddrs>
+                  <sourceaddr> #Address("InvalidSourceAddr") </sourceaddr>
+                  <senderaddr> #Address("InvalidSenderAddr") </senderaddr>
+                  <mychainid> #ChainId(0) </mychainid>
+                  <nonce> #Nonce(0) </nonce>
+                  <bigmaps> .Map </bigmaps>
+                  <returncode exit=""> 1 </returncode>
+                </michelsonTop>
 endmodule

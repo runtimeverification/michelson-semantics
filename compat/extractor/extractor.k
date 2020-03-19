@@ -1,5 +1,6 @@
 requires "../../unit-test-syntax.k"
 requires "../../michelson-config.k"
+requires "../../unparser/michelson-unparser.k"
 
 module EXTRACTOR-SYNTAX
   imports UNIT-TEST-SYNTAX
@@ -29,6 +30,8 @@ endmodule
 module EXTRACTOR
   imports EXTRACTOR-SYNTAX
   imports MICHELSON-CONFIG
+  imports MICHELSON-UNPARSER
+  imports LIST
 
   syntax Group ::= "#NoGroup"
 
@@ -88,7 +91,9 @@ module EXTRACTOR
   syntax K ::= #Extract(Groups) [function]
   rule #Extract(Gs) => #DoQuery(Gs, #FindGroup(Gs, query)) 
 
+  configuration <michelsonTop/> <out stream="stdout"> .List </out>
+
   rule <k> Gs:Groups => . </k>
-       <stack> _ => #Extract(#ReverseGroups(#NoGroup ; Gs)) </stack>
+       <out> ... .List => ListItem(#unparse(#Extract(#ReverseGroups(#NoGroup ; Gs)))) </out>
        <returncode> 1 => 0 </returncode>
 endmodule

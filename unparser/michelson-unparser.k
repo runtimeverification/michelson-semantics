@@ -2,7 +2,6 @@ requires "../michelson-syntax.k"
 requires "../michelson-common.k"
 
 module MICHELSON-UNPARSER
-  imports MICHELSON-UNPARSER-SYNTAX
   imports MICHELSON-COMMON
   imports DOMAINS
 
@@ -278,4 +277,80 @@ module MICHELSON-UNPARSER
   rule #doUnparse(SET_CAR AList, _) => "SET_CAR" +String #doUnparse(AList, false)
   rule #doUnparse(SET_CDR AList, _) => "SET_CDR" +String #doUnparse(AList, false)
   rule #doUnparse(CREATE_CONTRACT AList CBlock, _) => "CREATE_CONTRACT" +String #doUnparse(AList, false) +String " " +String #doUnparse(CBlock, true)
+
+  rule #doUnparse(code B, _) => "code " +String #doUnparse(B, true)
+  rule #doUnparse(storage T, _) => "storage " +String #doUnparse(T, true)
+  rule #doUnparse(parameter T, _) => "parameter " +String #doUnparse(T, true)
+
+  rule #doUnparse(C:CodeDecl ; S:StorageDecl ; P:ParameterDecl, _) => 
+    #doUnparse(C, false) +String 
+    "; " +String
+    #doUnparse(S, false) +String
+    "; " +String
+    #doUnparse(P, false)
+
+  rule #doUnparse(Elt S:String T:Type, _) => 
+    "Elt " +String
+    #doUnparse(S, false) +String
+    " " +String
+    #doUnparse(T, false)
+
+  rule #doUnparse(O:OtherContractsMapEntry ; Os:OtherContractsMapEntryList, _) =>
+    #doUnparse(O, false) +String
+    "; " +String
+    #doUnparse(Os, false)
+
+  rule #doUnparse({ Os:OtherContractsMapEntryList }, _) => 
+    "{" +String 
+    #doUnparse(Os, false) +String 
+    "}"
+
+  rule #doUnparse(Big_map I T1 T2 { }, _) => 
+    "Big_map" +String
+    #doUnparse(I, false) +String
+    " " +String
+    #doUnparse(T1, true) +String
+    " " +String
+    #doUnparse(T2, true) +String
+    " { }"
+
+  rule #doUnparse(Big_map I T1 T2 ML:MapLiteral, _) => 
+    "Big_map" +String
+    #doUnparse(I, false) +String
+    " " +String
+    #doUnparse(T1, true) +String
+    " " +String
+    #doUnparse(T2, true) +String
+    " " +String
+    #doUnparse(ML, false)
+
+  rule #doUnparse(O:BigMapEntry ; Os:BigMapEntryList, _) =>
+    #doUnparse(O, false) +String
+    "; " +String
+    #doUnparse(Os, false)
+
+  rule #doUnparse({ Os:BigMapEntryList }, _) => 
+    "{" +String 
+    #doUnparse(Os, false) +String 
+    "}"  
+
+  rule #doUnparse(contract { C }, _) => "contract { " +String #doUnparse(C, false) +String "}"
+  rule #doUnparse(now I, _) => "now " +String #doUnparse(I, false)
+  rule #doUnparse(sender S, _) => "sender " +String #doUnparse(S, false)
+  rule #doUnparse(source S, _) => "source " +String #doUnparse(S, false)
+  rule #doUnparse((chain_id S):Group, _) => "chain_id " +String #doUnparse(S, false)
+  rule #doUnparse(self S, _) => "self " +String #doUnparse(S, false)
+  rule #doUnparse(amount S, _) => "amount " +String #doUnparse(S, false)
+  rule #doUnparse(balance S, _) => "balance " +String #doUnparse(S, false)
+  rule #doUnparse(other_contracts S, _) => "other_contracts " +String #doUnparse(S, false)
+  rule #doUnparse(parameter_value S, _) => "parameter_value " +String #doUnparse(S, false)
+  rule #doUnparse(storage_value S, _) => "storage_value " +String #doUnparse(S, false)
+  rule #doUnparse(big_maps S, _) => "big_maps " +String #doUnparse(S, false)
+
+  rule #doUnparse(G:Group ; Gs:Groups, _) => 
+    #doUnparse(G, false) +String 
+    "; " +String 
+    #doUnparse(Gs, false)
+
+  rule #doUnparse(Gs:Groups ;, _) => #doUnparse(Gs, false) +String ";"
 endmodule

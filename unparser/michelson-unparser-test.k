@@ -7,5 +7,13 @@ endmodule
 
 module MICHELSON-UNPARSER-TEST
   imports MICHELSON-UNPARSER
-  configuration <k> #unparse($PGM:K) </k>
+  imports DOMAINS
+
+  syntax KItem ::= #OutputUnparse(K)
+
+  rule <k> #OutputUnparse(T) => . </k>
+       <out> _ => ListItem(#unparse(T)) </out>
+
+  configuration <k> #OutputUnparse($PGM:K) </k>
+                <out stream="stdout"> .List </out>
 endmodule
