@@ -1,6 +1,7 @@
+requires "../../unit-test.k"
 requires "../../unit-test-syntax.k"
 requires "../../michelson-config.k"
-requires "../../unparser/michelson-unparser.k"
+requires "../../michelson-unparser.k"
 
 module EXTRACTOR-SYNTAX
   imports UNIT-TEST-SYNTAX
@@ -28,6 +29,7 @@ module EXTRACTOR-SYNTAX
 endmodule
 
 module EXTRACTOR
+  imports UNIT-TEST
   imports EXTRACTOR-SYNTAX
   imports MICHELSON-CONFIG
   imports MICHELSON-UNPARSER

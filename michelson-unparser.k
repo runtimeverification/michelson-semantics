@@ -1,9 +1,13 @@
-requires "../michelson-syntax.k"
-requires "../michelson-common.k"
+requires "michelson-syntax.k"
+requires "michelson-internal-syntax.k"
+requires "michelson-common.k"
+requires "unit-test-syntax.k"
 
 module MICHELSON-UNPARSER
   imports MICHELSON-SYNTAX
+  imports MICHELSON-INTERNAL-SYNTAX
   imports MICHELSON-COMMON
+  imports UNIT-TEST-SYNTAX
   imports DOMAINS
 
   syntax String ::= #unparse(K) [function]
@@ -278,4 +282,168 @@ module MICHELSON-UNPARSER
   rule #doUnparse(SET_CAR AList, _) => "SET_CAR" +String #doUnparse(AList, false)
   rule #doUnparse(SET_CDR AList, _) => "SET_CDR" +String #doUnparse(AList, false)
   rule #doUnparse(CREATE_CONTRACT AList CBlock, _) => "CREATE_CONTRACT" +String #doUnparse(AList, false) +String " " +String #doUnparse(CBlock, true)
+
+  rule #doUnparse(storage T, _) => "storage " +String #doUnparse(T, true)
+  rule #doUnparse(parameter T, _) => "parameter " +String #doUnparse(T, true)
+
+  rule #doUnparse(C:CodeDecl ; S:StorageDecl ; P:ParameterDecl, _) => 
+    #doUnparse(C, false) +String 
+    "; " +String
+    #doUnparse(S, false) +String
+    "; " +String
+    #doUnparse(P, false)
+
+  rule #doUnparse(C:CodeDecl ; S:StorageDecl ; P:ParameterDecl ;, _) => 
+    #doUnparse(C, false) +String 
+    "; " +String
+    #doUnparse(S, false) +String
+    "; " +String
+    #doUnparse(P, false) +String
+    ";"
+
+
+
+  rule #doUnparse({ C:Contract }, _) => "{" +String #doUnparse(C, false) +String "}"
+
+  rule #doUnparse(Elt S:String T:Type, _) => 
+    "Elt " +String
+    #doUnparse(S, false) +String
+    " " +String
+    #doUnparse(T, false)
+
+  rule #doUnparse(O:OtherContractsMapEntry ; Os:OtherContractsMapEntryList, _) =>
+    #doUnparse(O, false) +String
+    "; " +String
+    #doUnparse(Os, false)
+
+  rule #doUnparse({ Os:OtherContractsMapEntryList }, _) => 
+    "{" +String 
+    #doUnparse(Os, false) +String 
+    "}"
+
+  rule #doUnparse(Big_map I T1 T2 { }, _) => 
+    "Big_map" +String
+    #doUnparse(I, false) +String
+    " " +String
+    #doUnparse(T1, true) +String
+    " " +String
+    #doUnparse(T2, true) +String
+    " { }"
+
+  rule #doUnparse(Big_map I T1 T2 ML:MapLiteral, _) => 
+    "Big_map" +String
+    #doUnparse(I, false) +String
+    " " +String
+    #doUnparse(T1, true) +String
+    " " +String
+    #doUnparse(T2, true) +String
+    " " +String
+    #doUnparse(ML, false)
+
+  rule #doUnparse(O:BigMapEntry ; Os:BigMapEntryList, _) =>
+    #doUnparse(O, false) +String
+    "; " +String
+    #doUnparse(Os, false)
+
+  rule #doUnparse({ Os:BigMapEntryList }, _) => 
+    "{" +String 
+    #doUnparse(Os, false) +String 
+    "}"  
+
+  rule #doUnparse(contract { C }, _) => "contract { " +String #doUnparse(C, false) +String "}"
+  rule #doUnparse(now I, _) => "now " +String #doUnparse(I, false)
+  rule #doUnparse(sender S, _) => "sender " +String #doUnparse(S, false)
+  rule #doUnparse(source S, _) => "source " +String #doUnparse(S, false)
+  rule #doUnparse((chain_id S):Group, _) => "chain_id " +String #doUnparse(S, false)
+  rule #doUnparse(self S, _) => "self " +String #doUnparse(S, false)
+  rule #doUnparse(amount S, _) => "amount " +String #doUnparse(S, false)
+  rule #doUnparse(balance S, _) => "balance " +String #doUnparse(S, false)
+  rule #doUnparse(other_contracts S, _) => "other_contracts " +String #doUnparse(S, false)
+  rule #doUnparse(parameter_value S, _) => "parameter_value " +String #doUnparse(S, false)
+  rule #doUnparse(storage_value S, _) => "storage_value " +String #doUnparse(S, false)
+  rule #doUnparse(big_maps S, _) => "big_maps " +String #doUnparse(S, false)
+
+  rule #doUnparse(G:Group ; Gs:Groups, _) => 
+    #doUnparse(G, false) +String 
+    "; " +String 
+    #doUnparse(Gs, false)
+
+  rule #doUnparse(Gs:Groups ;, _) => #doUnparse(Gs, false) +String ";"
+
+  rule #doUnparse(Stack_elt T D, _) =>
+    "Stack_elt " +String
+    #doUnparse(T, true) +String
+    " " +String
+    #doUnparse(D, true)
+
+  rule #doUnparse(S:StackElement ; Ss:StackElementList, _) =>
+    #doUnparse(S, false) +String
+    "; " +String
+    #doUnparse(Ss, false)
+
+  rule #doUnparse({ S:StackElementList }, _) => 
+    "{" +String
+    #doUnparse(S, false) +String
+    "}"
+
+  rule #doUnparse(Create_contract(I, C, O, M, D), _) => 
+    "Create_contract (" +String
+    #doUnparse(I, true) +String
+    ", " +String
+    #doUnparse(C, true) +String
+    ", " +String
+    #doUnparse(O, true) +String
+    ", " +String
+    #doUnparse(M, true) +String
+    ", " +String
+    #doUnparse(D, true) +String
+    ")"
+
+  rule #doUnparse(Transfer_tokens(I, O, M, A), _) =>
+    "Transfer_tokens (" +String
+    #doUnparse(I, true) +String
+    ", " +String
+    #doUnparse(O, true) +String
+    ", " +String
+    #doUnparse(M, true) +String
+    ", " +String
+    #doUnparse(A, true) +String
+    ")"
+
+  rule #doUnparse(Set_delegate(I, O), _) =>
+    "Transfer_tokens (" +String
+    #doUnparse(I, true) +String
+    ", " +String
+    #doUnparse(O, true) +String
+    ")"
+
+  rule #doUnparse(( Failed D ), _) => "( Failed " +String #doUnparse(D, true) +String ")"
+
+  rule #doUnparse(( MutezOverflow I1 I2 ), _) => 
+    "( MutezOverflow " +String 
+    #doUnparse(I1, true) +String 
+    " " +String
+    #doUnparse(I2, true) +String
+    ")"
+
+  rule #doUnparse(( MutezUnderflow I1 I2 ), _) => 
+    "( MutezUnderflow " +String 
+    #doUnparse(I1, true) +String 
+    " " +String
+    #doUnparse(I2, true) +String
+    ")"
+
+  rule #doUnparse(( GeneralOverflow I1 I2 ), _) => 
+    "( GeneralOverflow " +String 
+    #doUnparse(I1, true) +String 
+    " " +String
+    #doUnparse(I2, true) +String
+    ")"
+
+  rule #doUnparse((code C:Block):CodeDecl, _) => "code " +String #doUnparse(C, true)
+  rule #doUnparse((code I:TestCode):CodeGroup, _) => "code " +String #doUnparse(I, true)
+  rule #doUnparse(input C, _) => "input " +String #doUnparse(C, true)
+  rule #doUnparse(output LS, _) => "output " +String #doUnparse(LS, true)
+
+  rule #doUnparse(#AnyAddress, _) => "#AnyAddress"
 endmodule

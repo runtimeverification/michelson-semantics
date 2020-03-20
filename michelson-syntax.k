@@ -40,14 +40,14 @@ module MICHELSON-SYNTAX
   syntax MichelsonBool ::= "True" [token]
                          | "False" [token] // These just get macro'd to the proper K types.
  
-  syntax Pair ::= "Pair" Data Data [format(%1 (%2) (%3))] 
+  syntax Pair ::= "Pair" Data Data  
 
-  syntax LeftData ::= "Left" Data [format(%1 (%2))]
-  syntax RightData ::= "Right" Data [format(%1 (%2))]
+  syntax LeftData ::= "Left" Data 
+  syntax RightData ::= "Right" Data 
  
   syntax OrData ::= LeftData | RightData
 
-  syntax OptionData ::= "Some" Data [format(%1 (%2))]
+  syntax OptionData ::= "Some" Data 
                       | "None"  
 
   syntax ApplicationData ::= Pair | OrData | OptionData
@@ -97,18 +97,18 @@ module MICHELSON-SYNTAX
                                  | "operation"
                                  | "chain_id"
 
-  syntax SimpleType ::= UnannotatedSimpleType AnnotationList [format((%1 %2))]
+  syntax SimpleType ::= UnannotatedSimpleType AnnotationList 
 
   syntax Type ::= SimpleType
-                | "pair" AnnotationList Type Type [klabel(ampair), format((%1 %2 %3 %4))]
-                | "option" AnnotationList Type [format((%1 %2 %3))]
-                | "list" AnnotationList Type [format((%1 %2 %3))]
-                | "set" AnnotationList Type [format((%1 %2 %3))]
-                | "contract" AnnotationList Type [format((%1 %2 %3))]
-                | "or" AnnotationList Type Type [format((%1 %2 %3 %4))]
-                | "lambda" AnnotationList Type Type [format((%1 %2 %3 %4))]
-                | "map" AnnotationList Type Type [format((%1 %2 %3 %4))]
-                | "big_map" AnnotationList Type Type [format((%1 %2 %3 %4))]
+                | "pair" AnnotationList Type Type
+                | "option" AnnotationList Type 
+                | "list" AnnotationList Type 
+                | "set" AnnotationList Type 
+                | "contract" AnnotationList Type 
+                | "or" AnnotationList Type Type 
+                | "lambda" AnnotationList Type Type 
+                | "map" AnnotationList Type Type 
+                | "big_map" AnnotationList Type Type 
 
   syntax EmptyBlock ::= "{" "}"
 
@@ -126,7 +126,7 @@ module MICHELSON-SYNTAX
   syntax Instruction ::= "DUG" AnnotationList Int
   syntax Instruction ::= "DUP" AnnotationList 
   syntax Instruction ::= "SWAP" AnnotationList 
-  syntax Instruction ::= "PUSH" AnnotationList Type Data [format(%1 %2 %3 (%4))]
+  syntax Instruction ::= "PUSH" AnnotationList Type Data 
   syntax Instruction ::= "SOME" AnnotationList 
   syntax Instruction ::= "NONE" AnnotationList Type
   syntax Instruction ::= "UNIT" AnnotationList 

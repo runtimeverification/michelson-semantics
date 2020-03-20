@@ -182,28 +182,15 @@ module MICHELSON
   rule #GroupOrder(_:ParameterDecl) => 9
   rule #GroupOrder(_:StorageDecl) => 10
 
-  syntax Group ::= #GetMinOfTwoGroups(Group, Group) [function]
-  rule #GetMinOfTwoGroups(G1, G2) => G1 requires #GroupOrder(G1) <Int #GroupOrder(G2)
-  rule #GetMinOfTwoGroups(G1, G2) => G2 [owise]
+  syntax Groups ::= #InsertInOrder(Groups, Group) [function]
+  rule #InsertInOrder(G1:Group, G2:Group) => G1 ; G2              requires #GroupOrder(G1) <Int #GroupOrder(G2)
+  rule #InsertInOrder(G1:Group, G2:Group) => G2 ; G1              requires #GroupOrder(G1) >=Int #GroupOrder(G2)
+  rule #InsertInOrder(G1 ; Gs, G2) => G1 ; #InsertInOrder(Gs, G2) requires #GroupOrder(G1) <Int #GroupOrder(G2)
+  rule #InsertInOrder(G1 ; Gs, G2) => G2 ; G1 ; Gs                requires #GroupOrder(G1) >=Int #GroupOrder(G2)
 
-  syntax Group ::= #GetMinGroup(Groups) [function]
-  rule #GetMinGroup(G:Group) => G
-  rule #GetMinGroup(G ; Gs) => #GetMinGroupAux(Gs, G)
-
-  syntax Group ::= #GetMinGroupAux(Groups, Group) [function]
-  rule #GetMinGroupAux(G1, G2) => #GetMinOfTwoGroups(G1, G2)
-  rule #GetMinGroupAux(G1 ; Gs, G2) => #GetMinGroupAux(Gs, #GetMinOfTwoGroups(G1, G2))
-
-  syntax Groups ::= #RemoveGroup(Groups, Group) [function]
-  rule #RemoveGroup(G1:Group ; G2:Group, G:Group) => G1 ; G2 requires G =/=K G1 andBool G =/=K G2
-  rule #RemoveGroup(G1:Group ; G2:Group, G1) => G2
-  rule #RemoveGroup(G1:Group ; G2:Group, G2) => G1
-  rule #RemoveGroup(G1:Group ; G2:Group ; Gs:Groups, G1) => G2 ; Gs
-  rule #RemoveGroup(G ; Gs:Groups, Go:Group) => G ; #RemoveGroup(Gs, Go) [owise]
-
-  syntax Groups ::= #ReorderGroups(Groups) [function, functional]
-  rule #ReorderGroups(G:Group) => G
-  rule #ReorderGroups(G ; Gs) => #GetMinGroup(G ; Gs) ; #ReorderGroups(#RemoveGroup(G ; Gs, #GetMinGroup(G ; Gs))) 
+  syntax Groups ::= #InsertionSort(Groups) [function] // Note that this is a *stable* insertion sort.
+  rule #InsertionSort(G:Group) => G
+  rule #InsertionSort(G ; Gs) => #InsertInOrder(#InsertionSort(Gs), G)
 
   syntax Contract ::= #FindContract(Groups) [function]
   rule #FindContract(contract { C }) => C
@@ -227,9 +214,7 @@ module MICHELSON
   rule #ExtendGroups(Gs) => #MakeParameterGroup(Gs) ; #MakeStorageGroup(Gs) ; Gs requires #HasContract(Gs)
   rule #ExtendGroups(Gs) => Gs [owise]
 
-//  syntax KItem ::= #LoadGroups(Groups) // In michelson-common.k
-
-  rule <k> G:Groups => #LoadGroups(#ReorderGroups(#ExtendGroups(G))) </k> [owise] 
+  rule <k> G:Groups => #LoadGroups(#InsertionSort(#ExtendGroups(G))) </k> [owise] 
 
   rule <k> #LoadGroups(now I ; Gs => Gs) </k>
        <mynow> #Timestamp(0 => I) </mynow>
@@ -302,6 +287,8 @@ module MICHELSON
   rule <k> #LoadGroups(storage_value D ; Gs => Gs) </k>
        <storagetype> T </storagetype>
        <storagevalue> #NoData => #ConcreteArgToSemantics(D, T) </storagevalue>
+
+  rule <k> #LoadGroups(C:ContractGroup ; Cs) => #LoadGroups(C) </k>
 
   rule <k> #LoadGroups(contract { code C ; storage _ ; parameter _ }) => C </k>
        <stack> . => Pair P S </stack>
@@ -521,7 +508,7 @@ module MICHELSON
        requires S <=Int 256
 
   rule <k> LSR A ~> Rk => #HandleAnnotations(A) ~> Aborted("LSR out of range", S, Rk, Rs) </k>
-       <stack> C:Int ~> S:Int ~> Rs => ( GeneralOverflow C S ) </stack>
+       <stack> X ~> S ~> Rs => ( GeneralOverflow X S ) </stack>
        requires S >Int 256
 
   syntax Int ::= #DoCompare(Data, Data) [function]
@@ -578,6 +565,9 @@ module MICHELSON
   //// Operations on pairs
   rule <k> PAIR A => #HandleAnnotations(A) ... </k>
        <stack> L ~> R => Pair L R ... </stack>
+
+  rule <k> UNPAIR A => #HandleAnnotations(A) ... </k>
+       <stack> Pair L R => L ~> R ... </stack>
 
   rule <k> CAR A => #HandleAnnotations(A) ... </k>
        <stack> Pair L _ => L ... </stack>

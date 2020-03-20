@@ -1,11 +1,10 @@
 requires "unit-test-syntax.k"
 requires "michelson.k"
-requires 
 
 module UNIT-TEST
   imports UNIT-TEST-SYNTAX
   imports MICHELSON
-
+  
   rule #ConcreteArgToSemantics(#AnyAddress, address _) => #AnyAddress
 
   syntax K ::= #LiteralStackToSemantics(LiteralStack) [function]
@@ -36,7 +35,8 @@ module UNIT-TEST
   rule <k> #LoadGroups(output Os ; Gs) => #LoadGroups(Gs) ~> #VerifyOutput(#OutputStackToSemantics(Os)) </k>
 
   rule <k> #LoadGroups(code C) => C ... </k>
-       <returncode> _ => 1 </returncode>
+  rule <k> #LoadGroups(code C ; _) => C ... </k>
+
 
   rule <k> #VerifyOutput(S:KItem ~> L => L) </k>
        <stack> S => . ... </stack>
