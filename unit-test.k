@@ -4,7 +4,37 @@ requires "michelson.k"
 module UNIT-TEST
   imports UNIT-TEST-SYNTAX
   imports MICHELSON
-  
+
+  syntax Data ::= List
+
+  syntax Data ::= #DropListTypesData(Data) [function]
+
+  rule #DropListTypesData(#List(L, T)) => #DropListTypesData(L)
+
+  rule #DropListTypesData(.List) => .List
+  rule #DropListTypesData(ListItem(L1) L) => ListItem(#DropListTypesData(L1)) {#DropListTypesData(L)}:>List
+
+  rule #DropListTypesData(.Set) => .Set
+  rule #DropListTypesData(SetItem(S1) S) => SetItem(#DropListTypesData(S1)) {#DropListTypesData(S)}:>Set
+
+  rule #DropListTypesData(.Map) => .Map
+  rule #DropListTypesData((K |-> V) M) => (#DropListTypesData(K) |-> #DropListTypesData(V)) {#DropListTypesData(M)}:>Map
+
+  rule #DropListTypesData(Create_contract(I, C, O, M, D)) => Create_contract(I, C, O, M, #DropListTypesData(D))
+  rule #DropListTypesData(Transfer_tokens(I, D, M, A)) => Transfer_tokens(I, #DropListTypesData(D), M, A)
+
+  rule #DropListTypesData(Pair L R) => Pair #DropListTypesData(L) #DropListTypesData(R)
+  rule #DropListTypesData(Some D) => Some #DropListTypesData(D)
+  rule #DropListTypesData(Left D) => Left #DropListTypesData(D)
+  rule #DropListTypesData(Right D) => Right #DropListTypesData(D)
+
+  rule #DropListTypesData(D) => D [owise] // Simple data.
+
+  syntax KItem ::= #DropListTypes(KItem) [function]
+ 
+  rule #DropListTypes(D:Data) => #DropListTypesData(D)
+  rule #DropListTypes(O) => O [owise]
+
   rule #ConcreteArgToSemantics(#AnyAddress, address _) => #AnyAddress
 
   syntax K ::= #LiteralStackToSemantics(LiteralStack) [function]
@@ -38,8 +68,9 @@ module UNIT-TEST
   rule <k> #LoadGroups(code C ; _) => C ... </k>
 
 
-  rule <k> #VerifyOutput(S:KItem ~> L => L) </k>
-       <stack> S => . ... </stack>
+  rule <k> #VerifyOutput(S1 ~> L => L) </k>
+       <stack> S2 => . ... </stack>
+       requires #DropListTypes(S1) ==K #DropListTypes(S2)
 
   rule <k> #VerifyOutput(#AnyAddress ~> L => L) </k>
        <stack> #Address(_) => . ... </stack>
