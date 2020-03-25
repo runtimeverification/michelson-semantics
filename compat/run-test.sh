@@ -107,7 +107,7 @@ sed -E 's/ : /\n/g;s/@%|@%%|%@|[@:%][_a-zA-Z][_0-9a-zA-Z\.%@]*//g' "$RAW_TYPES" 
 
 
 AMOUNT="$(output_if_failing "'$SCRIPT_DIR/extractor/run.sh' '$UT' amount true" "Failed to extract amount")"
-AMOUNT="$(python -c "import sys ; print('%f' % (float(sys.argv[1]) / 1000000.0) if len(sys.argv) > 1 else 0)" $AMOUNT)"
+AMOUNT="$(python -c "import sys ; print('' if len(sys.argv) <= 1 or sys.argv[1] == '#NoGroup' else '%f' % (float(sys.argv[1]) / 1000000.0))" $AMOUNT)"
 
 if [ ! -z "$REAL_SOURCE" ] ; then
     SOURCE_CLI="--payer $REAL_SOURCE"
@@ -126,7 +126,7 @@ pcregrep -oM '(?<=\[)\s*Unit\s*@exitToken[^]]*' "$EXECUTION" > "$RAW_DATA"
 FOUND="$?"
 
 sed -E "s/@%|@%%|%@|[@:%][_a-zA-Z][_0-9a-zA-Z\.%@]*//g" "$RAW_DATA" > "$DATA_FILE" ;
-"$SCRIPT_DIR/extractor/run.sh" "$UT" 'other_contracts' 'false' 2>/dev/null | sed -f "$ALL_SUBS" > "$FIXED_ADDRS_OUTPUT" ;
+"$SCRIPT_DIR/extractor/run.sh" "$UT" 'other_contracts' 'false' 2>/dev/null | sed -f "$ALL_SUBS" | sed '/#NoGroup/d' > "$FIXED_ADDRS_OUTPUT" ;
 "$SCRIPT_DIR/extractor/run.sh" "$1" 'output' 'false' | sed -f "$ALL_SUBS" > "$EXPECTED_OUTPUT_FILE" ;
 
 if [ "$FOUND" -eq "0" ]; then

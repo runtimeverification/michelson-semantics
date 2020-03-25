@@ -1,7 +1,5 @@
-requires "../../unit-test-syntax.k"
-requires "../../unit-test.k"
-requires "../../michelson-config.k"
 requires "../../michelson.k"
+requires "../common.k"
 
 module OUTPUT-COMPARE-SYNTAX
   imports UNIT-TEST-SYNTAX
@@ -16,7 +14,7 @@ endmodule
 
 module OUTPUT-COMPARE
   imports OUTPUT-COMPARE-SYNTAX
-  imports UNIT-TEST
+  imports COMPAT-COMMON
 
   rule ({ C:Contract }):Contract => C [macro]
 
