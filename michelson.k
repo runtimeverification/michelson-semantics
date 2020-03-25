@@ -557,7 +557,7 @@ module MICHELSON
   syntax OptionData ::= #SliceString(String, Int, Int) [function]
 
   rule #SliceString(S, O, L) => Some substrString(S, O, O +Int L)
-  requires O >=Int 0 andBool L >=Int 0 andBool (O +Int L) <=Int lengthString(S)
+  requires O >=Int 0 andBool L >=Int 0 andBool (O +Int L) <Int lengthString(S)
 
   rule #SliceString(S, O, L) => None [owise]
 

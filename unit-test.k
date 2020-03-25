@@ -65,8 +65,6 @@ module UNIT-TEST
   rule <k> #LoadGroups(output Os ; Gs) => #LoadGroups(Gs) ~> #VerifyOutput(#OutputStackToSemantics(Os)) </k>
 
   rule <k> #LoadGroups(code C) => C ... </k>
-  rule <k> #LoadGroups(code C ; _) => C ... </k>
-
 
   rule <k> #VerifyOutput(S1 ~> L => L) </k>
        <stack> S2 => . ... </stack>
@@ -82,7 +80,6 @@ module UNIT-TEST
   syntax KItem ::= #FindVerifyOutput(K) [function]
 
   rule #FindVerifyOutput(#VerifyOutput(O) ~> _) => #VerifyOutput(O)
-  rule #FindVerifyOutput(.) => #VerifyOutput(.)
   rule #FindVerifyOutput(_:KItem ~> Rs) => #FindVerifyOutput(Rs) [owise]
 
   rule <k> Aborted(_, _, Rk, _) => #FindVerifyOutput(Rk) ... </k>
