@@ -53,9 +53,6 @@ module MICHELSON
 
   syntax MBytesLiteral ::= #StringToMBytes(String) [function, hook(STRING.string2token)]
 
-  syntax MBytesLiteral ::= #IntToMBytes(Int) [function]
-  rule #IntToMBytes(I) => #StringToMBytes("0x" +String Base2String(I, 16))
-
   rule #ConcreteArgToSemantics(H:MBytesLiteral, chain_id _) => #ChainId(#MBytesToInt(H))
   rule #ConcreteArgToSemantics(I:Int, int _) => I
   rule #ConcreteArgToSemantics(I:Int, nat _) => I requires I >=Int 0
@@ -557,7 +554,7 @@ module MICHELSON
   syntax OptionData ::= #SliceString(String, Int, Int) [function]
 
   rule #SliceString(S, O, L) => Some substrString(S, O, O +Int L)
-  requires O >=Int 0 andBool L >=Int 0 andBool (O +Int L) <Int lengthString(S)
+  requires O >=Int 0 andBool L >=Int 0 andBool O <Int lengthString(S) andBool (O +Int L) <=Int lengthString(S)
 
   rule #SliceString(S, O, L) => None [owise]
 
@@ -619,19 +616,15 @@ module MICHELSON
        <stack> . => .Map ... </stack>
 
   rule <k> GET A => #HandleAnnotations(A) ... </k>
+       <stack> X ~> M => Some {M[X]}:>Data ... </stack>
+       requires X in_keys(M)
+
+  rule <k> GET A => #HandleAnnotations(A) ... </k>
        <stack> X ~> M => None ... </stack>
        requires notBool(X in_keys(M))
 
-  syntax OptionData ::= #LookupMap(Map, Data) [function]
-
-  rule #LookupMap(M, X) => Some {M[X]}:>Data requires X in_keys(M)
-  rule #LookupMap(M, X) => None requires notBool(X in_keys(M))
-
   rule <k> MEM A => #HandleAnnotations(A) ~> . ... </k>
        <stack> X ~> M => X in_keys(M) ... </stack>
-
-  rule <k> GET A => #HandleAnnotations(A) ... </k>
-       <stack> X ~> M => #LookupMap(M, X) ... </stack>
 
   rule <k> UPDATE A => #HandleAnnotations(A)  ... </k>
        <stack> K ~> Some V ~> M:Map => M[K <- V] ... </stack>
@@ -875,8 +868,6 @@ module MICHELSON
   rule <k> HASH_KEY A => #HandleAnnotations(A) ... </k>
        <stack> #Key(S) => #KeyHash(#Blake2BKeyHash(S)) ... </stack> 
   
-  syntax MBytes ::= #SHA256(MBytes) | #SHA512(MBytes)
-
   rule <k> SHA256 A => #HandleAnnotations(A) ... </k>
        <stack> B:MBytes => #SHA256(B) ... </stack>
        
@@ -889,7 +880,7 @@ module MICHELSON
        <stack> #Key(K) ~> #Signature(S) ~> #SignedMBytes(#Key(K), #Signature(S), _) => true ... </stack>
 
   rule <k> CHECK_SIGNATURE A => #HandleAnnotations(A) ... </k>
-       <stack> #Key(_) ~> #Signature(_) ~> _:MBytes => false ... </stack> [owise]*/ // TODO: Bug - The haskell backend does not support distinguishing these rules.
+       <stack> #Key(_) ~> #Signature(_) ~> _:MBytes => false ... </stack> [owise] // TODO: Bug - The haskell backend does not support distinguishing these rules.*/
 
   rule #DoCompare(#KeyHash(S1), #KeyHash(S2)) => #DoCompare(S1, S2)
 

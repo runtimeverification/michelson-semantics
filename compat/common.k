@@ -1,5 +1,5 @@
 requires "../unit-test.k"
-requires "../michelson-unparser.k"
+requires "michelson-unparser.k"
 
 module COMPAT-COMMON
   imports UNIT-TEST
