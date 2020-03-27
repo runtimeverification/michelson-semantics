@@ -445,5 +445,5 @@ module MICHELSON-UNPARSER
   rule #doUnparse(input C, _) => "input " +String #doUnparse(C, true)
   rule #doUnparse(output LS, _) => "output " +String #doUnparse(LS, true)
 
-  rule #doUnparse(#AnyAddress, _) => "#AnyAddress"
+  rule #doUnparse(#Any, _) => "_"
 endmodule
