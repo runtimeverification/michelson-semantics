@@ -44,6 +44,8 @@ module MICHELSON-COMMON
   syntax Int ::= "#GroupOrderMax" [function]
   rule #GroupOrderMax => 1000
 
+  rule Gs:Groups ; => Gs [macro]
+
   rule True => true [macro]
   rule False => false [macro]
 
