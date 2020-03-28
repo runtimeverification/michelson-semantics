@@ -1,3 +1,4 @@
+```k
 requires "michelson-syntax.k"
 requires "michelson-config.k"
 requires "michelson-internal-syntax.k"
@@ -935,3 +936,4 @@ module MICHELSON
   rule #ListToKSeqAux(ListItem(O) L, S) => #ListToKSeqAux(L, O ~> S)
   rule #ListToKSeqAux(.List, S) => S
 endmodule
+```

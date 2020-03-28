@@ -1,4 +1,4 @@
-requires "../common.k"
+requires "common.k"
 
 module UNIT-TEST-EXPANDER
   imports COMPAT-COMMON

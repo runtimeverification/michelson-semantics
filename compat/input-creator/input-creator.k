@@ -1,6 +1,11 @@
-requires "../common.k"
+requires "common.k"
+
+module INPUT-CREATOR-SYNTAX
+  imports UNIT-TEST-SYNTAX
+endmodule
 
 module INPUT-CREATOR
+  imports INPUT-CREATOR-SYNTAX
   imports COMPAT-COMMON
 
   syntax Data ::= #DataForType(Type) [function]

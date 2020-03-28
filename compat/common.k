@@ -1,4 +1,4 @@
-requires "../unit-test.k"
+requires "unit-test.k"
 requires "michelson-unparser.k"
 
 module COMPAT-COMMON

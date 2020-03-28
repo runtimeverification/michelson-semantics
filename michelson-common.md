@@ -1,3 +1,4 @@
+```k 
 requires "michelson-syntax.k"
 
 module MICHELSON-COMMON
@@ -59,3 +60,4 @@ module MICHELSON-COMMON
   rule storage St ; parameter Pt ; code B ; => code B ; storage St ; parameter Pt ; [macro]
   rule parameter Pt ; storage St ; code B ; => code B ; storage St ; parameter Pt ; [macro]
 endmodule
+```

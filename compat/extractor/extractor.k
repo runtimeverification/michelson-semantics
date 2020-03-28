@@ -1,6 +1,6 @@
-requires "../../unit-test-syntax.k"
-requires "../../michelson-config.k"
-requires "../common.k"
+requires "unit-test-syntax.k"
+requires "michelson-config.k"
+requires "common.k"
 
 module EXTRACTOR-SYNTAX
   imports UNIT-TEST-SYNTAX

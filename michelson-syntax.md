@@ -1,3 +1,4 @@
+```k
 module MICHELSON-SYNTAX
   imports INT-SYNTAX 
   imports STRING-SYNTAX
@@ -324,3 +325,4 @@ module MICHELSON-SYNTAX
   syntax Groups ::= Group | Group ";" Groups
   syntax Pgm ::= Groups | Groups ";"
 endmodule
+```

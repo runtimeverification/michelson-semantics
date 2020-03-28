@@ -1,3 +1,4 @@
+```k
 requires "michelson-syntax.k"
 requires "michelson-common.k"
 
@@ -28,3 +29,4 @@ module MICHELSON-CONFIG
                   <returncode exit=""> 1 </returncode>
                 </michelsonTop>
 endmodule
+```

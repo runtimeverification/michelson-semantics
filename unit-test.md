@@ -1,3 +1,4 @@
+```k
 requires "unit-test-syntax.k"
 requires "michelson.k"
 
@@ -94,3 +95,4 @@ module UNIT-TEST
 
   rule <k> Aborted(_, _, Rk, _) => #FindVerifyOutput(Rk) ... </k>
 endmodule
+```

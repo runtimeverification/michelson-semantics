@@ -1,5 +1,5 @@
-requires "../../michelson.k"
-requires "../common.k"
+requires "michelson.k"
+requires "common.k"
 
 module OUTPUT-COMPARE-SYNTAX
   imports UNIT-TEST-SYNTAX

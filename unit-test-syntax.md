@@ -1,3 +1,4 @@
+```k
 requires "michelson-internal-syntax.k"
 requires "michelson-syntax.k"
 
@@ -21,3 +22,4 @@ module UNIT-TEST-SYNTAX
 
   syntax Group ::= InputGroup | CodeGroup | OutputGroup | ParameterDecl
 endmodule 
+```
