@@ -1,15 +1,18 @@
+This module declares the syntax of a K-Michelson input file.  In particular, it contains the syntax of a Michelson contract and the additional data necessary to fully specify a contract execution.
+
 ```k
 module MICHELSON-SYNTAX
   imports INT-SYNTAX 
   imports STRING-SYNTAX
-  imports BOOL-SYNTAX
+```
 
+Here we declare many of the data sorts we will use.  Note that, in this module at least, some of these sorts are empty (e.g. ContractData) - as they should not be in an input file.
 
+```k
   // Sorts
   syntax SimpleData
   syntax Data
   syntax Instruction
-  syntax Type
   syntax Type
   syntax Contract
   syntax Type
@@ -22,25 +25,49 @@ module MICHELSON-SYNTAX
   syntax Timestamp
   syntax Key
   syntax Signature
+```
 
+An element in a map in Michelson is specified in the form `Elt Key Value`. A map literal is a sequence of these pairs.
+
+```k
   syntax MapEntry ::= "Elt" Data Data
+```
 
+Here we define the three sequence sorts in Michelson.  Note that these sorts cover only *nonempty* sequences - the empty sequence is defined separately to avoid parsing ambiguities.
+
+```k
   syntax DataList ::= Data | Data ";" DataList
   syntax MapEntryList ::= MapEntry | MapEntry ";" MapEntryList
   syntax InstructionList ::= Instruction | Instruction ";" InstructionList
+```
 
+Here we define annotations.  Michelson actually has more stringent requirements for annotation lists to be well formed, but we do not yet enforce these requirements as annotations do very little in an execution semantics.  It is possible to fully specify the real requirements in the K grammar, and indeed an older version of the semantics did so.  However, the number of productions and rules necessary came at an unacceptable performance penalty when compared to the minimal benefit gained by rejecting such contracts.
+
+```k
   syntax TypeAnnotation ::= r":([_a-zA-Z][_0-9a-zA-Z\\.]*)?" [token]
   syntax VariableAnnotation ::= r"@(%|%%|[_a-zA-Z][_0-9a-zA-Z\\.]*)?" [token]
   syntax FieldAnnotation ::= r"%(@|[_a-zA-Z][_0-9a-zA-Z\\.]*)?" [token]
   syntax Annotation ::= TypeAnnotation | VariableAnnotation | FieldAnnotation
 
   syntax AnnotationList ::= List{Annotation, ""}
+```
 
+The bytes literal is expressed here.  We accept mixed type bytes of the form `0xaAfF01` but standardize them to all lowercase during load time.
+
+```k
   syntax MBytesLiteral ::= r"0x([0-9a-fA-F]{2})*" [token]
+```
 
+K boolean values use all lowercase `true` and `false` - hence we need to add tokens for Michelson bools.  As the comment indicates, these are simply converted to K bools immediately after parsing by macro rules.
+
+```k
   syntax MichelsonBool ::= "True" [token]
                          | "False" [token] // These just get macro'd to the proper K types.
- 
+```
+
+Here we specify the various complex types offered by Michelson, making the best possible use of K sorts.
+
+```k
   syntax Pair ::= "Pair" Data Data  
 
   syntax LeftData ::= "Left" Data 
@@ -53,13 +80,27 @@ module MICHELSON-SYNTAX
 
   syntax ApplicationData ::= Pair | OrData | OptionData
   syntax Data ::= ApplicationData
+```
 
+Here we specify the various forms of sequence literals in Michelson, including Map and List literals, and blocks.  The former two are converted to K's hooked sorts during load time. 
+
+```k
   syntax MapLiteral ::= "{" MapEntryList "}"
   syntax ListLiteral ::= "{" DataList "}"
 
+  syntax EmptyBlock ::= "{" "}"
+
+  syntax Block ::= "{" InstructionList "}"
+                 | "{" InstructionList ";" "}"
+                 | EmptyBlock
+
   syntax SequenceData ::= MapLiteral | ListLiteral | Block
   syntax Data ::= SequenceData
+```
 
+Here we define the simple data literals.
+
+```k
   syntax SimpleData ::= Int
   syntax SimpleData ::= String 
   syntax SimpleData ::= MichelsonBool
@@ -75,16 +116,26 @@ module MICHELSON-SYNTAX
   syntax SimpleData ::= Signature
  
   syntax Data ::= SimpleData
+```
 
+Mutez and Addresses are specified in Michelson contracts as the simpler Int and String types, and need to be wrapped during load time so they retain their type information.
+
+```k
   syntax Mutez ::= Int
   syntax Address ::= String
+```
 
+K offers the bracket attribute for productions that should not actually be retained in the AST, but instead simply give information on disambiguating the AST (such as parentheses).
+
+```k
   syntax OptionData ::= "(" OptionData ")" [bracket]
-
   syntax Data ::= "(" Data ")" [bracket]
-
   syntax Type ::= "(" Type ")" [bracket] // Technically incorrect due to rule about primitive app right inside a sequence.  Need to split out Wrapped/Unwrapped sort. 
+```
 
+In Michelson a simple type can be any of the following list, followed by an optional AnnotationList.
+
+```k
   syntax UnannotatedSimpleType ::= "int" 
                                  | "nat" 
                                  | "string" 
@@ -101,7 +152,11 @@ module MICHELSON-SYNTAX
                                  | "chain_id"
 
   syntax SimpleType ::= UnannotatedSimpleType AnnotationList 
+```
 
+Note the positioning of the AnnotationList.
+
+```k
   syntax Type ::= SimpleType
                 | "pair" AnnotationList Type Type
                 | "option" AnnotationList Type 
@@ -112,15 +167,11 @@ module MICHELSON-SYNTAX
                 | "lambda" AnnotationList Type Type 
                 | "map" AnnotationList Type Type 
                 | "big_map" AnnotationList Type Type 
+``` 
 
-  syntax EmptyBlock ::= "{" "}"
+We now specify the MICHELSON instruction set.
 
-  syntax Block ::= "{" InstructionList "}"
-                 | "{" InstructionList ";" "}"
-                 | EmptyBlock
-
-  syntax ContractBlock ::= "{" Contract "}"
-
+```k
   syntax Instruction ::= Block
 
   syntax Instruction ::= "DROP" AnnotationList
@@ -209,7 +260,12 @@ module MICHELSON-SYNTAX
   syntax Instruction ::= "SOURCE" AnnotationList 
   syntax Instruction ::= "SENDER" AnnotationList 
   syntax Instruction ::= "ADDRESS" AnnotationList 
+  syntax Instruction ::= "CREATE_CONTRACT" AnnotationList "{" Contract "}" 
+```
 
+We list Macros separately, although in practice macros should not exist by this point (since the external parser eliminates them), we keep them in the grammar for future work.
+
+```k
   syntax Macro
   syntax Instruction ::= Macro
 
@@ -266,9 +322,11 @@ module MICHELSON-SYNTAX
   syntax Macro ::= "IF_SOME" AnnotationList Block Block
   syntax Macro ::= "SET_CAR" AnnotationList 
   syntax Macro ::= "SET_CDR" AnnotationList 
-  syntax Macro ::= "CREATE_CONTRACT" AnnotationList ContractBlock 
+```
 
- 
+Here we specify the different formats a Michelson Contract may take.  These will be converted to the first format (`Code ; Storage ; Parameter ;`) by macros immediately after parsing.
+
+```k
   syntax CodeDecl ::= "code" Block 
   syntax StorageDecl ::= "storage" Type 
   syntax ParameterDecl ::= "parameter" Type 
@@ -286,16 +344,43 @@ module MICHELSON-SYNTAX
                     | ParameterDecl ";" CodeDecl ";" StorageDecl
                     | StorageDecl ";" ParameterDecl ";" CodeDecl
                     | ParameterDecl ";" StorageDecl ";" CodeDecl
+```
 
+These sorts construct a mapping from Addresses to Types which will specify which contracts are available for this contract to access with the `CONTRACT T` instruction. In principle, any contract on the blockchain should be so accessible, but in practice this would be infeasible and needlessly overcomplicate using the semantics. 
+
+```k
   syntax OtherContractsMapEntry ::= "Elt" String Type
   syntax OtherContractsMapEntryList ::= OtherContractsMapEntry | OtherContractsMapEntry ";" OtherContractsMapEntryList
   syntax OtherContractsMap ::= EmptyBlock | "{" OtherContractsMapEntryList "}"
+```
 
+These sorts construct a mapping from Ints to big\_maps and specify the contents of any big\_maps identified by their index in the storage field.
+
+```k
   syntax BigMapEntry ::= "Big_map" Int Type Type MapLiteral
                        | "Big_map" Int Type Type EmptyBlock
   syntax BigMapEntryList ::= BigMapEntry | BigMapEntry ";" BigMapEntryList
   syntax BigMapMap ::= EmptyBlock | "{" BigMapEntryList "}"
+```
 
+These sorts define the *Loading Groups* for the contract.  Loading groups specify information about the contract execution.  They intentionally look like Micheline primitive applications.  A program in the Michelson semantics consists of a sequence of loading groups separated by semicolons.  The order of these groups does not matter as the sequence is sorted before loading occurs.  
+
+- Contract specifies the Michelson contract to execute.
+- Now specifies the timestamp output by the `NOW` instruction.
+- Sender specifies the address output by the `SENDER` instruction.
+- Source specifies the address output by the `SOURCE` instruction.
+- Chain specifies the chain\_id output by the `CHAIN_ID` function.
+- Self specifies the address of the contract output by the `SELF` instruction (the parameter type from the contract group specifies its type).
+- Amount specifies the mutez quantity output by the `AMOUNT` instruction.
+- Balance specifies the mutez quantity output by the `BALANCE` instruction.
+- Contracts specifies the other smart contracts this execution knows about and might query with the `CONTRACT` instruction.
+- ParameterValue specifies the data passed to this execution as a parameter.
+- StorageValue specifies the data passed to this execution as its last storage value.
+- BigMap specifies the big\_map data stored at each big\_map index.
+
+Programs consist of sequences of these groups, potentially with an extra semicolon on the end.  Contract, ParameterValue and StorageValue are required, and all other groups are optional.  Accordingly, no empty sequence of groups exists in the parser, since at least three groups must be present for an execution to work.
+
+```k
   syntax ContractGroup ::= "contract" "{" Contract "}"
   syntax NowGroup ::= "now" Int
   syntax SenderGroup ::= "sender" String
