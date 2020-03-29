@@ -1,7 +1,7 @@
-requires "../michelson-syntax.k"
-requires "../michelson-internal-syntax.k"
-requires "../michelson-common.k"
-requires "../unit-test-syntax.k"
+requires "michelson-syntax.k"
+requires "michelson-internal-syntax.k"
+requires "michelson-common.k"
+requires "unit-test-syntax.k"
 
 module MICHELSON-UNPARSER
   imports MICHELSON-SYNTAX
@@ -281,7 +281,7 @@ module MICHELSON-UNPARSER
   rule #doUnparse(IF_SOME AList B1 B2, _) => "IF_SOME" +String #doUnparse(AList, false) +String " " +String #doUnparse(B1, true) +String " " +String #doUnparse(B2, true)
   rule #doUnparse(SET_CAR AList, _) => "SET_CAR" +String #doUnparse(AList, false)
   rule #doUnparse(SET_CDR AList, _) => "SET_CDR" +String #doUnparse(AList, false)
-  rule #doUnparse(CREATE_CONTRACT AList CBlock, _) => "CREATE_CONTRACT" +String #doUnparse(AList, false) +String " " +String #doUnparse(CBlock, true)
+  rule #doUnparse(CREATE_CONTRACT AList { C }, _) => "CREATE_CONTRACT" +String #doUnparse(AList, false) +String " {" +String #doUnparse(C, true) +String "}"
 
   rule #doUnparse(storage T, _) => "storage " +String #doUnparse(T, true)
   rule #doUnparse(parameter T, _) => "parameter " +String #doUnparse(T, true)
@@ -300,10 +300,6 @@ module MICHELSON-UNPARSER
     "; " +String
     #doUnparse(P, false) +String
     ";"
-
-
-
-  rule #doUnparse({ C:Contract }, _) => "{" +String #doUnparse(C, false) +String "}"
 
   rule #doUnparse(Elt S:String T:Type, _) => 
     "Elt " +String
@@ -367,8 +363,6 @@ module MICHELSON-UNPARSER
     #doUnparse(G, false) +String 
     "; " +String 
     #doUnparse(Gs, false)
-
-  rule #doUnparse(Gs:Groups ;, _) => #doUnparse(Gs, false) +String ";"
 
   rule #doUnparse(Stack_elt T D, _) =>
     "Stack_elt " +String

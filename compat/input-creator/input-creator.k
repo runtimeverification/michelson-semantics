@@ -41,7 +41,6 @@ module INPUT-CREATOR
   rule #FindParamType(parameter T ; Rs) => T
   rule #FindParamType(_:Group) => unit .AnnotationList [owise]
   rule #FindParamType(_ ; Rs) => #FindParamType(Rs) [owise]
-  rule #FindParamType(Gs ;) => #FindParamType(Gs) [owise]
 
   rule <k> G:Pgm => . </k>
        <out> ... .List => ListItem(#unparse(#DataForType(#FindParamType(G)))) </out>
