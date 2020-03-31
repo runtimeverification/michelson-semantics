@@ -1,0 +1,3 @@
+code { HASH_KEY } ;
+input { Stack_elt key "@Key(123)" } ;
+output { Stack_elt key_hash "@Key(123)" } 

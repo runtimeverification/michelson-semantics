@@ -1,10 +1,7 @@
-requires "../../unit-test-syntax.k"
-requires "../../michelson-config.k"
+requires "../common.k"
 
 module UNIT-TEST-EXPANDER
-  imports UNIT-TEST-SYNTAX
-  imports MICHELSON-CONFIG
-
+  imports COMPAT-COMMON
 
   syntax Block ::= #StackEltToPush(StackElement) [function]
   rule #StackEltToPush(Stack_elt (contract _:AnnotationList T:Type) D:Data) => { PUSH .AnnotationList address .AnnotationList D ; 
@@ -52,6 +49,7 @@ module UNIT-TEST-EXPANDER
   rule #FindParamType(_:Group) => unit .AnnotationList [owise]
   rule #FindParamType(_ ; Rs) => #FindParamType(Rs) [owise]
 
-  rule <k> G:Groups => #FillTemplateContract(#StackToPush(#FindInputGroup(G)), #FindCodeGroup(G), #FindParamType(G)) </k>
+  rule <k> G:Groups => . </k>
+       <out> ... .List => ListItem(#unparse(#FillTemplateContract(#StackToPush(#FindInputGroup(G)), #FindCodeGroup(G), #FindParamType(G)))) </out>
        <returncode> _ => 0 </returncode>
 endmodule

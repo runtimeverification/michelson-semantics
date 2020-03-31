@@ -1,7 +1,5 @@
-requires "../../unit-test-syntax.k"
-requires "../../unit-test.k"
-requires "../../michelson-config.k"
 requires "../../michelson.k"
+requires "../common.k"
 
 module OUTPUT-COMPARE-SYNTAX
   imports UNIT-TEST-SYNTAX
@@ -16,7 +14,7 @@ endmodule
 
 module OUTPUT-COMPARE
   imports OUTPUT-COMPARE-SYNTAX
-  imports UNIT-TEST
+  imports COMPAT-COMMON
 
   rule ({ C:Contract }):Contract => C [macro]
 
@@ -38,19 +36,16 @@ module OUTPUT-COMPARE
 
   rule <k> #CheckOutput( { Stack_elt ET ED } , { Stack_elt AT AD } ) => . </k>
        <returncode> _ => 0 </returncode>
-       requires #ConcreteArgToSemantics(ED, ET) ==K #ConcreteArgToSemantics(AD, AT)
+       requires #Matches(#ConcreteArgToSemantics(ED, ET), #ConcreteArgToSemantics(AD, AT))
 
-  rule <k> #CheckOutput( { Stack_elt (address _) #AnyAddress } , { Stack_elt (address _) A:String } ) => 
-           #CheckOutput( { Stack_elt (address .AnnotationList) A } , { Stack_elt (address .AnnotationList) A } ) </k>
- 
   rule <k> #CheckOutput( { Stack_elt ET ED } , { Stack_elt AT AD } )  </k>
-       <stack> . => #ConcreteArgToSemantics(ED, ET) ~> #ConcreteArgToSemantics(AD, AT) ~> #ConcreteArgToSemantics(ED, ET) ==K #ConcreteArgToSemantics(AD, AT) </stack> [owise]
+       <stack> . => #ConcreteArgToSemantics(ED, ET) ~> #ConcreteArgToSemantics(AD, AT) </stack> [owise]
 
   rule <k> #CheckOutput( { Stack_elt ET ED ; Es } , { Stack_elt AT AD ; As } ) => #CheckOutput( { Es } , { As } ) </k>
-       requires #ConcreteArgToSemantics(ED, ET) ==K #ConcreteArgToSemantics(AD, AT)
+       requires #Matches(#ConcreteArgToSemantics(ED, ET), #ConcreteArgToSemantics(AD, AT))
 
   rule <k> #CheckOutput( { Stack_elt ET ED ; Es } , { Stack_elt AT AD ; As } )  </k>
-       <stack> . => #ConcreteArgToSemantics(ED, ET) ~> #ConcreteArgToSemantics(AD, AT) ~> #ConcreteArgToSemantics(ED, ET) ==K #ConcreteArgToSemantics(AD, AT) </stack> [owise]
+       <stack> . => #ConcreteArgToSemantics(ED, ET) ~> #ConcreteArgToSemantics(AD, AT) </stack> [owise]
 
   rule <k> other_contracts M ; Gs => Gs </k>
        <knownaddrs> _ => #OtherContractsMapToKMap(M) </knownaddrs>

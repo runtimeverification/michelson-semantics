@@ -77,7 +77,9 @@ module MICHELSON-SYNTAX
 
   syntax Mutez ::= Int
   syntax Address ::= String
- 
+
+  syntax OptionData ::= "(" OptionData ")" [bracket]
+
   syntax Data ::= "(" Data ")" [bracket]
 
   syntax Type ::= "(" Type ")" [bracket] // Technically incorrect due to rule about primitive app right inside a sequence.  Need to split out Wrapped/Unwrapped sort. 

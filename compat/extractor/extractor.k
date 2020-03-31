@@ -1,7 +1,6 @@
-requires "../../unit-test.k"
 requires "../../unit-test-syntax.k"
 requires "../../michelson-config.k"
-requires "../../michelson-unparser.k"
+requires "../common.k"
 
 module EXTRACTOR-SYNTAX
   imports UNIT-TEST-SYNTAX
@@ -29,10 +28,8 @@ module EXTRACTOR-SYNTAX
 endmodule
 
 module EXTRACTOR
-  imports UNIT-TEST
+  imports COMPAT-COMMON
   imports EXTRACTOR-SYNTAX
-  imports MICHELSON-CONFIG
-  imports MICHELSON-UNPARSER
   imports LIST
 
   syntax Group ::= "#NoGroup"
@@ -66,6 +63,7 @@ module EXTRACTOR
   rule #FindGroupAux(G:ContractGroup ; _, code_or_contract) => G
   rule #FindGroupAux(_ ; Gs, Q) => #FindGroupAux(Gs, Q) [owise]
 
+  rule #doUnparse(#NoGroup, _) => "#NoGroup"
 
   syntax K ::= #Ungroup(Group) [function]
   rule #Ungroup(#NoGroup) => #NoGroup
@@ -92,8 +90,6 @@ module EXTRACTOR
 
   syntax K ::= #Extract(Groups) [function]
   rule #Extract(Gs) => #DoQuery(Gs, #FindGroup(Gs, query)) 
-
-  configuration <michelsonTop/> <out stream="stdout"> .List </out>
 
   rule <k> Gs:Groups => . </k>
        <out> ... .List => ListItem(#unparse(#Extract(#ReverseGroups(#NoGroup ; Gs)))) </out>

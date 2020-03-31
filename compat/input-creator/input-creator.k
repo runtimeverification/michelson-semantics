@@ -1,9 +1,7 @@
-requires "../../unit-test-syntax.k"
-requires "../../michelson-config.k"
+requires "../common.k"
 
 module INPUT-CREATOR
-  imports UNIT-TEST-SYNTAX
-  imports MICHELSON-CONFIG
+  imports COMPAT-COMMON
 
   syntax Data ::= #DataForType(Type) [function]
   rule #DataForType(int _) => 0
@@ -33,15 +31,14 @@ module INPUT-CREATOR
   rule #DataForType(map _ _ _) => { }
   rule #DataForType(big_map _ _ _) => { }
 
-  syntax Type ::= #FindParamType(Groups) [function]
+  syntax Type ::= #FindParamType(Pgm) [function]
   rule #FindParamType(parameter T) => T
   rule #FindParamType(parameter T ; Rs) => T
   rule #FindParamType(_:Group) => unit .AnnotationList [owise]
   rule #FindParamType(_ ; Rs) => #FindParamType(Rs) [owise]
+  rule #FindParamType(Gs ;) => #FindParamType(Gs) [owise]
 
-  rule <k> G:Groups => #DataForType(#FindParamType(G)) </k>
+  rule <k> G:Pgm => . </k>
+       <out> ... .List => ListItem(#unparse(#DataForType(#FindParamType(G)))) </out>
        <returncode> _ => 0 </returncode>
-
-  rule <k> Gs:Groups ; => Gs </k> [owise]
-
 endmodule

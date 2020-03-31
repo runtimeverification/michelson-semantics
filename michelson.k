@@ -11,7 +11,11 @@ module MICHELSON
 
   syntax String ::= #ToLowerCase(String) [function, functional, hook(STRING.tolowercase)]
 
-  syntax Data ::= List | Set | Map
+  syntax MichelsonList ::= #List(List, Type)
+
+  syntax Data ::= Set | Map
+
+  syntax Data ::= MichelsonList
 
   syntax OperationNonce ::= #NextNonce(OperationNonce) [function]
   rule #NextNonce(#Nonce(I)) => #Nonce(I +Int 1)
@@ -49,9 +53,6 @@ module MICHELSON
 
   syntax MBytesLiteral ::= #StringToMBytes(String) [function, hook(STRING.string2token)]
 
-  syntax MBytesLiteral ::= #IntToMBytes(Int) [function]
-  rule #IntToMBytes(I) => #StringToMBytes("0x" +String Base2String(I, 16))
-
   rule #ConcreteArgToSemantics(H:MBytesLiteral, chain_id _) => #ChainId(#MBytesToInt(H))
   rule #ConcreteArgToSemantics(I:Int, int _) => I
   rule #ConcreteArgToSemantics(I:Int, nat _) => I requires I >=Int 0
@@ -75,7 +76,7 @@ module MICHELSON
 
   syntax Data ::= #ConcreteArgToSemanticsList(DataList, Type, List) [function]
 
-  rule #ConcreteArgToSemantics({ }, list _ _) => .List
+  rule #ConcreteArgToSemantics({ }, list _ T) => #List(.List, T)
 
   rule #ConcreteArgToSemantics({ DL:DataList }, list _ T) =>
        #ConcreteArgToSemanticsList(DL, T, .List)
@@ -90,7 +91,7 @@ module MICHELSON
   rule #ReverseListAux(ListItem(L1) Ls, Acc) => #ReverseListAux(Ls, ListItem(L1) Acc)
   rule #ReverseListAux(.List, Acc) => Acc
 
-  rule #ConcreteArgToSemanticsList(D1, T, L) => #ReverseList(ListItem(#ConcreteArgToSemantics(D1, T)) L)
+  rule #ConcreteArgToSemanticsList(D1, T, L) => #List(#ReverseList(ListItem(#ConcreteArgToSemantics(D1, T)) L), T)
 
   syntax Data ::= #ConcreteArgToSemanticsSet(DataList, Type, Set) [function]
 
@@ -533,21 +534,19 @@ module MICHELSON
   rule <k> COMPARE A => #HandleAnnotations(A) ... </k>
        <stack> V1 ~> V2 => #DoCompare(V1, V2) ... </stack>
 
-  syntax String ::= #ConcatAll(List, String) [function]
-
-  rule #ConcatAll(.List, A) => A
-  rule #ConcatAll(ListItem(S1) DL, A) => #ConcatAll(DL, A +String S1)
-  rule #ConcatAll(ListItem(B1:MBytesLiteral) DL, A) => #ConcatAll(DL, A +String #MBytesContent(B1)) requires lengthString(A) >Int 0
+  syntax String ::= #ConcatStrings(List, String) [function]
+  rule #ConcatStrings(.List, A) => A
+  rule #ConcatStrings(ListItem(S1) DL, A) => #ConcatStrings(DL, A +String S1)
 
   //// Operations on strings
   rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
        <stack> S1 ~> S2 => S1 +String S2 ... </stack>
 
   rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
-       <stack> .List => "" ... </stack>
+       <stack> #List(L, string _) => #ConcatStrings(L, "") ... </stack>
 
   rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
-       <stack> L => #ConcatAll(L, "") ... </stack>
+       <stack> #List(ListItem(S:String) L, _) => #ConcatStrings(ListItem(S) L, "") ... </stack>
 
   rule <k> SIZE A => #HandleAnnotations(A) ... </k>
        <stack> S => lengthString(S) ... </stack> 
@@ -555,7 +554,7 @@ module MICHELSON
   syntax OptionData ::= #SliceString(String, Int, Int) [function]
 
   rule #SliceString(S, O, L) => Some substrString(S, O, O +Int L)
-  requires O >=Int 0 andBool L >=Int 0 andBool (O +Int L) <=Int lengthString(S)
+  requires O >=Int 0 andBool L >=Int 0 andBool O <Int lengthString(S) andBool (O +Int L) <=Int lengthString(S)
 
   rule #SliceString(S, O, L) => None [owise]
 
@@ -617,19 +616,15 @@ module MICHELSON
        <stack> . => .Map ... </stack>
 
   rule <k> GET A => #HandleAnnotations(A) ... </k>
+       <stack> X ~> M => Some {M[X]}:>Data ... </stack>
+       requires X in_keys(M)
+
+  rule <k> GET A => #HandleAnnotations(A) ... </k>
        <stack> X ~> M => None ... </stack>
        requires notBool(X in_keys(M))
 
-  syntax OptionData ::= #LookupMap(Map, Data) [function]
-
-  rule #LookupMap(M, X) => Some {M[X]}:>Data requires X in_keys(M)
-  rule #LookupMap(M, X) => None requires notBool(X in_keys(M))
-
   rule <k> MEM A => #HandleAnnotations(A) ~> . ... </k>
        <stack> X ~> M => X in_keys(M) ... </stack>
-
-  rule <k> GET A => #HandleAnnotations(A) ... </k>
-       <stack> X ~> M => #LookupMap(M, X) ... </stack>
 
   rule <k> UPDATE A => #HandleAnnotations(A)  ... </k>
        <stack> K ~> Some V ~> M:Map => M[K <- V] ... </stack>
@@ -710,41 +705,43 @@ module MICHELSON
 
   //// Operations on lists
   rule <k> CONS A => #HandleAnnotations(A)  ... </k>
-       <stack> V ~> L => ListItem(V) L ... </stack>
+       <stack> V ~> #List(L, T) => #List(ListItem(V) L, T) ... </stack>
   
-  rule <k> NIL A _ => #HandleAnnotations(A)  ... </k> 
-       <stack> . => .List ... </stack>
+  rule <k> NIL A T => #HandleAnnotations(A)  ... </k> 
+       <stack> . => #List(.List, T) ... </stack>
 
   rule <k> IF_CONS A BT BF => #HandleAnnotations(A) ~> BT ... </k>
-       <stack> ListItem(L1) Ls => L1 ~> Ls ... </stack>
+       <stack> #List(ListItem(L1) Ls, T) => L1 ~> #List(Ls, T) ... </stack>
 
   rule <k> IF_CONS A BT BF => #HandleAnnotations(A) ~> BF ... </k>
-       <stack> .List => . ... </stack>
+       <stack> #List(.List, _) => . ... </stack>
 
-  syntax KItem ::= #PerformMapList(List, List, Block)
+  syntax KItem ::= #PerformMapList(MichelsonList, MichelsonList, Block)
 
-  rule <k> MAP A B => #HandleAnnotations(A) ~> #PerformMapList(Ls, .List, B) ... </k>
-       <stack> Ls => . ... </stack>
+  syntax Type ::= "#UnknownType"
 
-  syntax KItem ::= #AddToList(List, List, Block)
+  rule <k> MAP A B => #HandleAnnotations(A) ~> #PerformMapList(#List(Ls, T), #List(.List, #UnknownType), B) ... </k>
+       <stack> #List(Ls, T) => . ... </stack>
 
-  rule <k> #PerformMapList(.List, Acc, B) => . ... </k>
-       <stack> . => #ReverseList(Acc) ... </stack>
+  syntax KItem ::= #AddToList(MichelsonList, MichelsonList, Block)
 
-  rule <k> #PerformMapList(ListItem(L) Ls, Acc, B) => B ~> #AddToList(Ls, Acc, B) ... </k>
+  rule <k> #PerformMapList(#List(.List, _), #List(Acc, T), B) => . ... </k>
+       <stack> . => #List(#ReverseList(Acc), T) ... </stack>
+
+  rule <k> #PerformMapList(#List(ListItem(L) Ls, T), #List(Acc, T1), B) => B ~> #AddToList(#List(Ls, T), #List(Acc, T1), B) ... </k>
        <stack> . => L ... </stack>
 
-  rule <k> #AddToList(Ls, Acc, B) => #PerformMapList(Ls, ListItem(L) Acc, B) ... </k>
+  rule <k> #AddToList(#List(Ls, T), #List(Acc, T1), B) => #PerformMapList(#List(Ls, T), #List(ListItem(L) Acc, T1), B) ... </k>
        <stack> L => . ... </stack>
 
   rule <k> SIZE A => #HandleAnnotations(A)  ... </k>
-       <stack> L:List => size(L) ... </stack>
+       <stack> #List(L, T) => size(L) ... </stack>
 
   rule <k> ITER A B =>  #HandleAnnotations(A) ~>. ... </k>
-       <stack> .List => . ... </stack>
+       <stack> #List(.List, _) => . ... </stack>
 
-  rule <k> ITER A B => #HandleAnnotations(A) ~> B ~> #Push(Ls) ~> ITER .AnnotationList B ... </k>
-       <stack> ListItem(L) Ls => L ... </stack>
+  rule <k> ITER A B => #HandleAnnotations(A) ~> B ~> #Push(#List(Ls, T)) ~> ITER .AnnotationList B ... </k>
+       <stack> #List(ListItem(L) Ls, T) => L ... </stack>
 
   // Domain Specific operations
   //// Operations on timestamps
@@ -841,6 +838,16 @@ module MICHELSON
   rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
        <stack> B1:MBytesLiteral ~> B2:MBytesLiteral => #StringToMBytes("0x" +String #MBytesContent(B1) +String #MBytesContent(B2)) ... </stack>
 
+  syntax MBytesLiteral ::= #ConcatBytes(List, String) [function]
+  rule #ConcatBytes(.List, A) => #StringToMBytes(A)
+  rule #ConcatBytes(ListItem(B1) DL, A) => #ConcatBytes(DL, A +String #MBytesContent(B1))
+
+  rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
+       <stack> #List(L, bytes _) => #ConcatBytes(L, "0x") ... </stack>
+
+  rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
+       <stack> #List(ListItem(M:MBytesLiteral) L, _) => #ConcatBytes(ListItem(M) L, "0x") ... </stack>
+
   rule <k> SIZE A => #HandleAnnotations(A) ... </k>
        <stack> B:MBytesLiteral => lengthString(#MBytesContent(B)) /Int 2 ... </stack> 
 
@@ -861,8 +868,6 @@ module MICHELSON
   rule <k> HASH_KEY A => #HandleAnnotations(A) ... </k>
        <stack> #Key(S) => #KeyHash(#Blake2BKeyHash(S)) ... </stack> 
   
-  syntax MBytes ::= #SHA256(MBytes) | #SHA512(MBytes)
-
   rule <k> SHA256 A => #HandleAnnotations(A) ... </k>
        <stack> B:MBytes => #SHA256(B) ... </stack>
        
@@ -875,7 +880,7 @@ module MICHELSON
        <stack> #Key(K) ~> #Signature(S) ~> #SignedMBytes(#Key(K), #Signature(S), _) => true ... </stack>
 
   rule <k> CHECK_SIGNATURE A => #HandleAnnotations(A) ... </k>
-       <stack> #Key(_) ~> #Signature(_) ~> _:MBytes => false ... </stack> [owise]*/ // TODO: Bug - The haskell backend does not support distinguishing these rules.
+       <stack> #Key(_) ~> #Signature(_) ~> _:MBytes => false ... </stack> [owise] // TODO: Bug - The haskell backend does not support distinguishing these rules.*/
 
   rule #DoCompare(#KeyHash(S1), #KeyHash(S2)) => #DoCompare(S1, S2)
 
