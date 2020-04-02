@@ -434,8 +434,7 @@ module MICHELSON-UNPARSER
     #doUnparse(I2, true) +String
     ")"
 
-  rule #doUnparse((code C:Block):CodeDecl, _) => "code " +String #doUnparse(C, true)
-  rule #doUnparse((code I:TestCode):CodeGroup, _) => "code " +String #doUnparse(I, true)
+  rule #doUnparse(code I, _) => "code " +String #doUnparse(I, true)
   rule #doUnparse(input C, _) => "input " +String #doUnparse(C, true)
   rule #doUnparse(output LS, _) => "output " +String #doUnparse(LS, true)
 
