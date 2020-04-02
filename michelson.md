@@ -880,6 +880,9 @@ module MICHELSON
   rule <k> SHA256 A => #HandleAnnotations(A) ... </k>
        <stack> B:MBytes => #SHA256(B) ... </stack>
 
+  rule <k> SHA256 A => #HandleAnnotations(A) ... </k>
+       <stack> B:MBytesLiteral => #StringToMBytes("0x" +String Sha2_256  (Bytes2String(Int2Bytes(lengthString(#MBytesContent(B)) >>Int 1,#MBytesToInt(B),BE)))) ... </stack>
+       
   rule <k> SHA512 A => #HandleAnnotations(A) ... </k>
        <stack> B:MBytes => #SHA512(B) ... </stack>
 
