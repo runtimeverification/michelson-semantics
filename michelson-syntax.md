@@ -2,7 +2,7 @@ This module declares the syntax of a K-Michelson input file.  In particular, it 
 
 ```k
 module MICHELSON-SYNTAX
-  imports INT-SYNTAX 
+  imports INT-SYNTAX
   imports STRING-SYNTAX
 ```
 
@@ -41,6 +41,8 @@ Here we define the three sequence sorts in Michelson.  Note that these sorts cov
   syntax InstructionList ::= Instruction | Instruction ";" InstructionList
 ```
 
+# What about sets?
+
 Here we define annotations.  Michelson actually has more stringent requirements for annotation lists to be well formed, but we do not yet enforce these requirements as annotations do very little in an execution semantics.  It is possible to fully specify the real requirements in the K grammar, and indeed an older version of the semantics did so.  However, the number of productions and rules necessary came at an unacceptable performance penalty when compared to the minimal benefit gained by rejecting such contracts.
 
 ```k
@@ -65,24 +67,28 @@ K boolean values use all lowercase `true` and `false` - hence we need to add tok
                          | "False" [token] // These just get macro'd to the proper K types.
 ```
 
+# Maybe indicate here that the said macro is defined in the MICHELSON-COMMON module.
+
 Here we specify the various complex types offered by Michelson, making the best possible use of K sorts.
 
 ```k
-  syntax Pair ::= "Pair" Data Data  
+  syntax Pair ::= "Pair" Data Data
 
-  syntax LeftData ::= "Left" Data 
-  syntax RightData ::= "Right" Data 
- 
+  syntax LeftData ::= "Left" Data
+  syntax RightData ::= "Right" Data
+
   syntax OrData ::= LeftData | RightData
 
-  syntax OptionData ::= "Some" Data 
-                      | "None"  
+  syntax OptionData ::= "Some" Data
+                      | "None"
 
   syntax ApplicationData ::= Pair | OrData | OptionData
   syntax Data ::= ApplicationData
 ```
 
-Here we specify the various forms of sequence literals in Michelson, including Map and List literals, and blocks.  The former two are converted to K's hooked sorts during load time. 
+# What is the role of `ApplicationData`? grepping it does not return much result
+
+Here we specify the various forms of sequence literals in Michelson, including Map and List literals, and blocks.  The former two are converted to K's hooked sorts during load time.
 
 ```k
   syntax MapLiteral ::= "{" MapEntryList "}"
@@ -102,11 +108,11 @@ Here we define the simple data literals.
 
 ```k
   syntax SimpleData ::= Int
-  syntax SimpleData ::= String 
+  syntax SimpleData ::= String
   syntax SimpleData ::= MichelsonBool
   syntax SimpleData ::= MBytesLiteral
-  syntax SimpleData ::= "Unit" 
-  syntax SimpleData ::= Timestamp 
+  syntax SimpleData ::= "Unit"
+  syntax SimpleData ::= Timestamp
   syntax SimpleData ::= ChainId
   syntax SimpleData ::= KeyHash
   syntax SimpleData ::= Mutez
@@ -114,7 +120,7 @@ Here we define the simple data literals.
   syntax SimpleData ::= ContractData
   syntax SimpleData ::= Key
   syntax SimpleData ::= Signature
- 
+
   syntax Data ::= SimpleData
 ```
 
@@ -130,28 +136,30 @@ K offers the bracket attribute for productions that should not actually be retai
 ```k
   syntax OptionData ::= "(" OptionData ")" [bracket]
   syntax Data ::= "(" Data ")" [bracket]
-  syntax Type ::= "(" Type ")" [bracket] // Technically incorrect due to rule about primitive app right inside a sequence.  Need to split out Wrapped/Unwrapped sort. 
+  syntax Type ::= "(" Type ")" [bracket] // Technically incorrect due to rule about primitive app right inside a sequence.  Need to split out Wrapped/Unwrapped sort.
 ```
+
+# If you want to forbid { (prim arg) }, you should probably have a complete intermediate representation corresponding to Micheline.
 
 In Michelson a simple type can be any of the following list, followed by an optional AnnotationList.
 
 ```k
-  syntax UnannotatedSimpleType ::= "int" 
-                                 | "nat" 
-                                 | "string" 
-                                 | "bytes" 
-                                 | "mutez" 
-                                 | "bool" 
-                                 | "key_hash" 
-                                 | "timestamp" 
+  syntax UnannotatedSimpleType ::= "int"
+                                 | "nat"
+                                 | "string"
+                                 | "bytes"
+                                 | "mutez"
+                                 | "bool"
+                                 | "key_hash"
+                                 | "timestamp"
                                  | "address"
-                                 | "key" 
-                                 | "unit" 
+                                 | "key"
+                                 | "unit"
                                  | "signature"
                                  | "operation"
                                  | "chain_id"
 
-  syntax SimpleType ::= UnannotatedSimpleType AnnotationList 
+  syntax SimpleType ::= UnannotatedSimpleType AnnotationList
 ```
 
 Note the positioning of the AnnotationList.
@@ -159,15 +167,15 @@ Note the positioning of the AnnotationList.
 ```k
   syntax Type ::= SimpleType
                 | "pair" AnnotationList Type Type
-                | "option" AnnotationList Type 
-                | "list" AnnotationList Type 
-                | "set" AnnotationList Type 
-                | "contract" AnnotationList Type 
-                | "or" AnnotationList Type Type 
-                | "lambda" AnnotationList Type Type 
-                | "map" AnnotationList Type Type 
-                | "big_map" AnnotationList Type Type 
-``` 
+                | "option" AnnotationList Type
+                | "list" AnnotationList Type
+                | "set" AnnotationList Type
+                | "contract" AnnotationList Type
+                | "or" AnnotationList Type Type
+                | "lambda" AnnotationList Type Type
+                | "map" AnnotationList Type Type
+                | "big_map" AnnotationList Type Type
+```
 
 We now specify the MICHELSON instruction set.
 
@@ -178,89 +186,89 @@ We now specify the MICHELSON instruction set.
   syntax Instruction ::= "DROP" AnnotationList Int
   syntax Instruction ::= "DIG" AnnotationList Int
   syntax Instruction ::= "DUG" AnnotationList Int
-  syntax Instruction ::= "DUP" AnnotationList 
-  syntax Instruction ::= "SWAP" AnnotationList 
-  syntax Instruction ::= "PUSH" AnnotationList Type Data 
-  syntax Instruction ::= "SOME" AnnotationList 
+  syntax Instruction ::= "DUP" AnnotationList
+  syntax Instruction ::= "SWAP" AnnotationList
+  syntax Instruction ::= "PUSH" AnnotationList Type Data
+  syntax Instruction ::= "SOME" AnnotationList
   syntax Instruction ::= "NONE" AnnotationList Type
-  syntax Instruction ::= "UNIT" AnnotationList 
+  syntax Instruction ::= "UNIT" AnnotationList
   syntax Instruction ::= "IF_NONE" AnnotationList Block Block
   syntax Instruction ::= "PAIR" AnnotationList
   syntax Instruction ::= "UNPAIR" AnnotationList
-  syntax Instruction ::= "CAR" AnnotationList 
-  syntax Instruction ::= "CDR" AnnotationList 
+  syntax Instruction ::= "CAR" AnnotationList
+  syntax Instruction ::= "CDR" AnnotationList
   syntax Instruction ::= "LEFT" AnnotationList Type
   syntax Instruction ::= "RIGHT" AnnotationList Type
   syntax Instruction ::= "IF_LEFT" AnnotationList Block Block
   syntax Instruction ::= "IF_RIGHT" AnnotationList Block Block
   syntax Instruction ::= "NIL" AnnotationList Type
-  syntax Instruction ::= "CONS" AnnotationList 
+  syntax Instruction ::= "CONS" AnnotationList
   syntax Instruction ::= "IF_CONS" AnnotationList Block Block
-  syntax Instruction ::= "SIZE" AnnotationList 
+  syntax Instruction ::= "SIZE" AnnotationList
   syntax Instruction ::= "EMPTY_SET" AnnotationList Type
   syntax Instruction ::= "EMPTY_MAP" AnnotationList Type Type
   syntax Instruction ::= "EMPTY_BIG_MAP" AnnotationList Type Type
   syntax Instruction ::= "MAP" AnnotationList Block
   syntax Instruction ::= "ITER" AnnotationList Block
-  syntax Instruction ::= "MEM" AnnotationList 
-  syntax Instruction ::= "GET" AnnotationList 
-  syntax Instruction ::= "UPDATE" AnnotationList 
+  syntax Instruction ::= "MEM" AnnotationList
+  syntax Instruction ::= "GET" AnnotationList
+  syntax Instruction ::= "UPDATE" AnnotationList
   syntax Instruction ::= "IF" AnnotationList Block Block
   syntax Instruction ::= "LOOP" AnnotationList Block
   syntax Instruction ::= "LOOP_LEFT" AnnotationList Block
   syntax Instruction ::= "LAMBDA" AnnotationList Type Type Block
-  syntax Instruction ::= "EXEC" AnnotationList 
-  syntax Instruction ::= "APPLY" AnnotationList 
+  syntax Instruction ::= "EXEC" AnnotationList
+  syntax Instruction ::= "APPLY" AnnotationList
   syntax Instruction ::= "DIP" AnnotationList Block
   syntax Instruction ::= "DIP" AnnotationList Int Block
-  syntax Instruction ::= "FAILWITH" AnnotationList 
-  syntax Instruction ::= "CAST" AnnotationList 
-  syntax Instruction ::= "RENAME" AnnotationList 
-  syntax Instruction ::= "CONCAT" AnnotationList 
-  syntax Instruction ::= "SLICE" AnnotationList 
-  syntax Instruction ::= "PACK" AnnotationList 
+  syntax Instruction ::= "FAILWITH" AnnotationList
+  syntax Instruction ::= "CAST" AnnotationList
+  syntax Instruction ::= "RENAME" AnnotationList
+  syntax Instruction ::= "CONCAT" AnnotationList
+  syntax Instruction ::= "SLICE" AnnotationList
+  syntax Instruction ::= "PACK" AnnotationList
   syntax Instruction ::= "UNPACK" AnnotationList Type
-  syntax Instruction ::= "ADD" AnnotationList 
-  syntax Instruction ::= "SUB" AnnotationList 
-  syntax Instruction ::= "MUL" AnnotationList 
-  syntax Instruction ::= "EDIV" AnnotationList 
-  syntax Instruction ::= "ABS" AnnotationList 
-  syntax Instruction ::= "ISNAT" AnnotationList 
-  syntax Instruction ::= "INT" AnnotationList 
-  syntax Instruction ::= "NEG" AnnotationList 
-  syntax Instruction ::= "LSL" AnnotationList 
-  syntax Instruction ::= "LSR" AnnotationList 
-  syntax Instruction ::= "OR" AnnotationList 
-  syntax Instruction ::= "AND" AnnotationList 
-  syntax Instruction ::= "XOR" AnnotationList 
-  syntax Instruction ::= "NOT" AnnotationList 
-  syntax Instruction ::= "COMPARE" AnnotationList 
-  syntax Instruction ::= "EQ" AnnotationList 
-  syntax Instruction ::= "NEQ" AnnotationList 
-  syntax Instruction ::= "LT" AnnotationList 
-  syntax Instruction ::= "GT" AnnotationList 
-  syntax Instruction ::= "LE" AnnotationList 
-  syntax Instruction ::= "GE" AnnotationList 
-  syntax Instruction ::= "SELF" AnnotationList  
+  syntax Instruction ::= "ADD" AnnotationList
+  syntax Instruction ::= "SUB" AnnotationList
+  syntax Instruction ::= "MUL" AnnotationList
+  syntax Instruction ::= "EDIV" AnnotationList
+  syntax Instruction ::= "ABS" AnnotationList
+  syntax Instruction ::= "ISNAT" AnnotationList
+  syntax Instruction ::= "INT" AnnotationList
+  syntax Instruction ::= "NEG" AnnotationList
+  syntax Instruction ::= "LSL" AnnotationList
+  syntax Instruction ::= "LSR" AnnotationList
+  syntax Instruction ::= "OR" AnnotationList
+  syntax Instruction ::= "AND" AnnotationList
+  syntax Instruction ::= "XOR" AnnotationList
+  syntax Instruction ::= "NOT" AnnotationList
+  syntax Instruction ::= "COMPARE" AnnotationList
+  syntax Instruction ::= "EQ" AnnotationList
+  syntax Instruction ::= "NEQ" AnnotationList
+  syntax Instruction ::= "LT" AnnotationList
+  syntax Instruction ::= "GT" AnnotationList
+  syntax Instruction ::= "LE" AnnotationList
+  syntax Instruction ::= "GE" AnnotationList
+  syntax Instruction ::= "SELF" AnnotationList
   syntax Instruction ::= "CONTRACT" AnnotationList Type
-  syntax Instruction ::= "TRANSFER_TOKENS" AnnotationList 
-  syntax Instruction ::= "SET_DELEGATE" AnnotationList 
-  syntax Instruction ::= "CREATE_ACCOUNT" AnnotationList 
-  syntax Instruction ::= "IMPLICIT_ACCOUNT" AnnotationList 
-  syntax Instruction ::= "NOW" AnnotationList 
-  syntax Instruction ::= "CHAIN_ID" AnnotationList 
-  syntax Instruction ::= "AMOUNT" AnnotationList 
-  syntax Instruction ::= "BALANCE" AnnotationList 
-  syntax Instruction ::= "CHECK_SIGNATURE" AnnotationList 
-  syntax Instruction ::= "BLAKE2B" AnnotationList 
-  syntax Instruction ::= "SHA256" AnnotationList 
-  syntax Instruction ::= "SHA512" AnnotationList 
-  syntax Instruction ::= "HASH_KEY" AnnotationList 
-  syntax Instruction ::= "STEPS_TO_QUOTA" AnnotationList 
-  syntax Instruction ::= "SOURCE" AnnotationList 
-  syntax Instruction ::= "SENDER" AnnotationList 
-  syntax Instruction ::= "ADDRESS" AnnotationList 
-  syntax Instruction ::= "CREATE_CONTRACT" AnnotationList "{" Contract "}" 
+  syntax Instruction ::= "TRANSFER_TOKENS" AnnotationList
+  syntax Instruction ::= "SET_DELEGATE" AnnotationList
+  syntax Instruction ::= "CREATE_ACCOUNT" AnnotationList
+  syntax Instruction ::= "IMPLICIT_ACCOUNT" AnnotationList
+  syntax Instruction ::= "NOW" AnnotationList
+  syntax Instruction ::= "CHAIN_ID" AnnotationList
+  syntax Instruction ::= "AMOUNT" AnnotationList
+  syntax Instruction ::= "BALANCE" AnnotationList
+  syntax Instruction ::= "CHECK_SIGNATURE" AnnotationList
+  syntax Instruction ::= "BLAKE2B" AnnotationList
+  syntax Instruction ::= "SHA256" AnnotationList
+  syntax Instruction ::= "SHA512" AnnotationList
+  syntax Instruction ::= "HASH_KEY" AnnotationList
+  syntax Instruction ::= "STEPS_TO_QUOTA" AnnotationList
+  syntax Instruction ::= "SOURCE" AnnotationList
+  syntax Instruction ::= "SENDER" AnnotationList
+  syntax Instruction ::= "ADDRESS" AnnotationList
+  syntax Instruction ::= "CREATE_CONTRACT" AnnotationList "{" Contract "}"
 ```
 
 We list Macros separately, although in practice macros should not exist by this point (since the external parser eliminates them), we keep them in the grammar for future work.
@@ -283,12 +291,12 @@ We list Macros separately, although in practice macros should not exist by this 
   syntax Macro ::= CDARMacro
   syntax Macro ::= SetCDARMacro
 
-  syntax Macro ::= "CMPEQ" AnnotationList 
-  syntax Macro ::= "CMPNEQ" AnnotationList 
-  syntax Macro ::= "CMPLT" AnnotationList 
-  syntax Macro ::= "CMPGT" AnnotationList 
-  syntax Macro ::= "CMPLE" AnnotationList 
-  syntax Macro ::= "CMPGE" AnnotationList 
+  syntax Macro ::= "CMPEQ" AnnotationList
+  syntax Macro ::= "CMPNEQ" AnnotationList
+  syntax Macro ::= "CMPLT" AnnotationList
+  syntax Macro ::= "CMPGT" AnnotationList
+  syntax Macro ::= "CMPLE" AnnotationList
+  syntax Macro ::= "CMPGE" AnnotationList
   syntax Macro ::= "IFEQ" AnnotationList Block Block
   syntax Macro ::= "IFNEQ" AnnotationList Block Block
   syntax Macro ::= "IFLT" AnnotationList Block Block
@@ -301,35 +309,37 @@ We list Macros separately, although in practice macros should not exist by this 
   syntax Macro ::= "IFCMPGT" AnnotationList Block Block
   syntax Macro ::= "IFCMPLE" AnnotationList Block Block
   syntax Macro ::= "IFCMPGE" AnnotationList Block Block
-  syntax Macro ::= "FAIL" AnnotationList 
-  syntax Macro ::= "ASSERT" AnnotationList 
-  syntax Macro ::= "ASSERT_EQ" AnnotationList 
-  syntax Macro ::= "ASSERT_NEQ" AnnotationList 
-  syntax Macro ::= "ASSERT_LT" AnnotationList 
-  syntax Macro ::= "ASSERT_LE" AnnotationList 
-  syntax Macro ::= "ASSERT_GT" AnnotationList 
-  syntax Macro ::= "ASSERT_GE" AnnotationList 
-  syntax Macro ::= "ASSERT_CMPEQ" AnnotationList 
-  syntax Macro ::= "ASSERT_CMPNEQ" AnnotationList 
-  syntax Macro ::= "ASSERT_CMPLT" AnnotationList 
-  syntax Macro ::= "ASSERT_CMPLE" AnnotationList 
-  syntax Macro ::= "ASSERT_CMPGT" AnnotationList 
-  syntax Macro ::= "ASSERT_CMPGE" AnnotationList 
-  syntax Macro ::= "ASSERT_NONE" AnnotationList 
-  syntax Macro ::= "ASSERT_SOME" AnnotationList 
-  syntax Macro ::= "ASSERT_LEFT" AnnotationList 
-  syntax Macro ::= "ASSERT_RIGHT" AnnotationList 
+  syntax Macro ::= "FAIL" AnnotationList
+  syntax Macro ::= "ASSERT" AnnotationList
+  syntax Macro ::= "ASSERT_EQ" AnnotationList
+  syntax Macro ::= "ASSERT_NEQ" AnnotationList
+  syntax Macro ::= "ASSERT_LT" AnnotationList
+  syntax Macro ::= "ASSERT_LE" AnnotationList
+  syntax Macro ::= "ASSERT_GT" AnnotationList
+  syntax Macro ::= "ASSERT_GE" AnnotationList
+  syntax Macro ::= "ASSERT_CMPEQ" AnnotationList
+  syntax Macro ::= "ASSERT_CMPNEQ" AnnotationList
+  syntax Macro ::= "ASSERT_CMPLT" AnnotationList
+  syntax Macro ::= "ASSERT_CMPLE" AnnotationList
+  syntax Macro ::= "ASSERT_CMPGT" AnnotationList
+  syntax Macro ::= "ASSERT_CMPGE" AnnotationList
+  syntax Macro ::= "ASSERT_NONE" AnnotationList
+  syntax Macro ::= "ASSERT_SOME" AnnotationList
+  syntax Macro ::= "ASSERT_LEFT" AnnotationList
+  syntax Macro ::= "ASSERT_RIGHT" AnnotationList
   syntax Macro ::= "IF_SOME" AnnotationList Block Block
-  syntax Macro ::= "SET_CAR" AnnotationList 
-  syntax Macro ::= "SET_CDR" AnnotationList 
+  syntax Macro ::= "SET_CAR" AnnotationList
+  syntax Macro ::= "SET_CDR" AnnotationList
 ```
 
 Here we specify the different formats a Michelson Contract may take.  These will be converted to the first format (`Code ; Storage ; Parameter ;`) by macros immediately after parsing.
 
+# Here again you could say that the macros are defined in MICHELSON-COMMON.
+
 ```k
-  syntax CodeDecl ::= "code" Block 
-  syntax StorageDecl ::= "storage" Type 
-  syntax ParameterDecl ::= "parameter" Type 
+  syntax CodeDecl ::= "code" Block
+  syntax StorageDecl ::= "storage" Type
+  syntax ParameterDecl ::= "parameter" Type
 
   syntax Contract ::= CodeDecl ";" StorageDecl ";" ParameterDecl ";"
                     | CodeDecl ";" ParameterDecl ";" StorageDecl ";"
@@ -346,7 +356,9 @@ Here we specify the different formats a Michelson Contract may take.  These will
                     | ParameterDecl ";" StorageDecl ";" CodeDecl
 ```
 
-These sorts construct a mapping from Addresses to Types which will specify which contracts are available for this contract to access with the `CONTRACT T` instruction. In principle, any contract on the blockchain should be so accessible, but in practice this would be infeasible and needlessly overcomplicate using the semantics. 
+# I suggest to rename "Contract" into "Script"; in Tezos, "contract" usually means everything that is stored at a given address: this includes the script but also the storage and the balance.
+
+These sorts construct a mapping from Addresses to Types which will specify which contracts are available for this contract to access with the `CONTRACT T` instruction. In principle, any contract on the blockchain should be so accessible, but in practice this would be infeasible and needlessly overcomplicate using the semantics.
 
 ```k
   syntax OtherContractsMapEntry ::= "Elt" String Type
@@ -363,7 +375,7 @@ These sorts construct a mapping from Ints to big\_maps and specify the contents 
   syntax BigMapMap ::= EmptyBlock | "{" BigMapEntryList "}"
 ```
 
-These sorts define the *Loading Groups* for the contract.  Loading groups specify information about the contract execution.  They intentionally look like Micheline primitive applications.  A program in the Michelson semantics consists of a sequence of loading groups separated by semicolons.  The order of these groups does not matter as the sequence is sorted before loading occurs.  
+These sorts define the *Loading Groups* for the contract.  Loading groups specify information about the contract execution.  They intentionally look like Micheline primitive applications.  A program in the Michelson semantics consists of a sequence of loading groups separated by semicolons.  The order of these groups does not matter as the sequence is sorted before loading occurs.
 
 - Contract specifies the Michelson contract to execute.
 - Now specifies the timestamp output by the `NOW` instruction.
@@ -380,12 +392,14 @@ These sorts define the *Loading Groups* for the contract.  Loading groups specif
 
 Programs consist of sequences of these groups, potentially with an extra semicolon on the end.  Contract, ParameterValue and StorageValue are required, and all other groups are optional.  Accordingly, no empty sequence of groups exists in the parser, since at least three groups must be present for an execution to work.
 
+# Are ParameterValue and StorageValue ever used?
+
 ```k
   syntax ContractGroup ::= "contract" "{" Contract "}"
   syntax NowGroup ::= "now" Int
   syntax SenderGroup ::= "sender" String
   syntax SourceGroup ::= "source" String
-  syntax ChainGroup ::= "chain_id" MBytesLiteral 
+  syntax ChainGroup ::= "chain_id" MBytesLiteral
   syntax SelfGroup ::= "self" String
   syntax AmountGroup ::= "amount" Int
   syntax BalanceGroup ::= "balance" Int

@@ -7,7 +7,7 @@ module MICHELSON
   imports MICHELSON-SYNTAX
   imports MICHELSON-CONFIG
   imports MICHELSON-INTERNAL-SYNTAX
-  imports DOMAINS 
+  imports DOMAINS
   imports COLLECTIONS
 
   syntax String ::= #ToLowerCase(String) [function, functional, hook(STRING.tolowercase)]
@@ -21,7 +21,7 @@ module MICHELSON
   syntax OperationNonce ::= #NextNonce(OperationNonce) [function]
   rule #NextNonce(#Nonce(I)) => #Nonce(I +Int 1)
 
-  syntax Data ::= #ConcreteArgToSemantics(Data, Type) [function] 
+  syntax Data ::= #ConcreteArgToSemantics(Data, Type) [function]
 
   syntax KeyHash ::= #ParseKeyHash(String) [function]
   rule #ParseKeyHash(S) => #KeyHash(S)
@@ -68,8 +68,8 @@ module MICHELSON
   rule #ConcreteArgToSemantics(S:String, key _) => #ParseKey(S)
   rule #ConcreteArgToSemantics(Unit, unit _) => Unit
   rule #ConcreteArgToSemantics(S:String, signature _) => #ParseSignature(S)
-  
-  rule #ConcreteArgToSemantics(Pair A B, pair _ T1:Type T2:Type) => 
+
+  rule #ConcreteArgToSemantics(Pair A B, pair _ T1:Type T2:Type) =>
        Pair #ConcreteArgToSemantics(A, T1) #ConcreteArgToSemantics(B, T2)
 
   rule #ConcreteArgToSemantics(Some V, option _ T) => Some #ConcreteArgToSemantics(V, T)
@@ -107,7 +107,7 @@ module MICHELSON
   rule #ConcreteArgToSemanticsSet(D, T, S) => SetItem(#ConcreteArgToSemantics(D, T)) S
 
   rule #ConcreteArgToSemantics(S:String, contract _ T) => #Contract(#ParseAddress(S), T)
-  
+
   rule #ConcreteArgToSemantics(Left V, or _:AnnotationList TL:Type _:Type) => Left #ConcreteArgToSemantics(V, TL)
   rule #ConcreteArgToSemantics(Right V, or _:AnnotationList _:Type TR:Type) => Right #ConcreteArgToSemantics(V, TR)
 
@@ -138,27 +138,27 @@ module MICHELSON
 
   rule #ConcreteArgToSemantics(Create_contract(N, C, O, M, S), operation _) =>
        Create_contract(
-           N, 
-           C, 
+           N,
+           C,
            {#ConcreteArgToSemantics(O, (option .AnnotationList  key_hash .AnnotationList))}:>OptionData,
-           {#ConcreteArgToSemantics(M, mutez .AnnotationList)}:>Mutez, 
+           {#ConcreteArgToSemantics(M, mutez .AnnotationList)}:>Mutez,
            #ConcreteArgToSemantics(S, #StorageTypeFromContract(C))
        )
 
-  rule #ConcreteArgToSemantics(Set_delegate(N, K), operation _) => 
+  rule #ConcreteArgToSemantics(Set_delegate(N, K), operation _) =>
        Set_delegate(N, {#ConcreteArgToSemantics(K, (option .AnnotationList key_hash .AnnotationList))}:>OptionData)
 
   syntax Type ::= #TypeFromContract(ContractData) [function]
 
   rule #TypeFromContract(#Contract(_, T)) => T
 
-  rule [[ #ConcreteArgToSemantics(Transfer_tokens(N, P, M, A), operation _) 
-          => Transfer_tokens(N, 
+  rule [[ #ConcreteArgToSemantics(Transfer_tokens(N, P, M, A), operation _)
+          => Transfer_tokens(N,
               #ConcreteArgToSemantics(
-                  P, 
+                  P,
                   #TypeFromContract({Known[#ConcreteArgToSemantics(A, address .AnnotationList)]}:>ContractData)
-              ), 
-              {#ConcreteArgToSemantics(M, mutez .AnnotationList)}:>Mutez, 
+              ),
+              {#ConcreteArgToSemantics(M, mutez .AnnotationList)}:>Mutez,
               {#ConcreteArgToSemantics(A, address .AnnotationList)}:>Address
           ) ]]
        <knownaddrs> Known </knownaddrs>
@@ -216,7 +216,7 @@ module MICHELSON
   rule #ExtendGroups(Gs) => #MakeParameterGroup(Gs) ; #MakeStorageGroup(Gs) ; Gs requires #HasContract(Gs)
   rule #ExtendGroups(Gs) => Gs [owise]
 
-  rule <k> G:Groups => #LoadGroups(#InsertionSort(#ExtendGroups(G))) </k> [owise] 
+  rule <k> G:Groups => #LoadGroups(#InsertionSort(#ExtendGroups(G))) </k> [owise]
 
   rule <k> #LoadGroups(now I ; Gs => Gs) </k>
        <mynow> #Timestamp(0 => I) </mynow>
@@ -264,7 +264,7 @@ module MICHELSON
        <storagetype> #NotSet => T </storagetype>
 
   syntax Map ::= #BigMapsToKMap(BigMapMap) [function]
-  syntax Map ::= #BigMapsEntryListToKMap(BigMapEntryList) [function] 
+  syntax Map ::= #BigMapsEntryListToKMap(BigMapEntryList) [function]
   syntax Map ::= #BigMapsEntryToKMap(BigMapEntry) [function]
 
   rule #BigMapsToKMap({ }) => .Map
@@ -272,11 +272,11 @@ module MICHELSON
 
   rule #BigMapsEntryListToKMap(E) => #BigMapsEntryToKMap(E)
   rule #BigMapsEntryListToKMap(E ; Es) => #BigMapsEntryToKMap(E) #BigMapsEntryListToKMap(Es)
- 
-  rule #BigMapsEntryToKMap(Big_map I T1 T2 { }) => 
+
+  rule #BigMapsEntryToKMap(Big_map I T1 T2 { }) =>
     I |-> #ConcreteArgToSemantics({ }, big_map .AnnotationList T1 T2)
 
-  rule #BigMapsEntryToKMap(Big_map I T1 T2 ML:MapLiteral) => 
+  rule #BigMapsEntryToKMap(Big_map I T1 T2 ML:MapLiteral) =>
     I |-> #ConcreteArgToSemantics(ML, big_map .AnnotationList T1 T2)
 
   rule <k> #LoadGroups(big_maps M ; Gs => Gs) </k>
@@ -298,13 +298,13 @@ module MICHELSON
        <storagevalue> S </storagevalue>
        <returncode> _ => 0 </returncode>
 
-  rule I:Instruction ; Is:InstructionList => I ~> Is 
+  rule I:Instruction ; Is:InstructionList => I ~> Is
   rule {} => .K [structrual]
-  rule { Is:InstructionList } => Is 
+  rule { Is:InstructionList } => Is
   rule { Is:InstructionList ; } => { Is } [macro]
 
   syntax KItem ::= #HandleAnnotations(AnnotationList)
-  rule #HandleAnnotations(_) => . 
+  rule #HandleAnnotations(_) => .
 
   syntax Error ::= Aborted(String, KItem, K, K)
 
@@ -334,7 +334,7 @@ module MICHELSON
 
   syntax KItem ::= #Push(Data)
   rule <k> #Push(D) => . ... </k>
-       <stack> . => D ... </stack> 
+       <stack> . => D ... </stack>
 
   rule <k> DIP A B => #HandleAnnotations(A) ~> B ~> #Push(D) ... </k>
        <stack> D:Data => . ... </stack>
@@ -350,20 +350,20 @@ module MICHELSON
        <stack> R:Data => R ~> Ls </stack>
 
   rule <k> EXEC B => #HandleAnnotations(B) ~> C ~> #ReturnStack(Rs) ... </k>
-       <stack> A:Data ~> #Lambda(_, _, C):Data ~> Rs:K => A </stack> 
+       <stack> A:Data ~> #Lambda(_, _, C):Data ~> Rs:K => A </stack>
 
   rule <k> APPLY A => #HandleAnnotations(A) ... </k>
-       <stack> D:Data ~> #Lambda((pair _:AnnotationList T0 T1):Type, T2, { C } ) => #Lambda(T1, T2, { PUSH .AnnotationList T0 D ; PAIR .AnnotationList ; { C } } ) ... </stack> 
+       <stack> D:Data ~> #Lambda((pair _:AnnotationList T0 T1):Type, T2, { C } ) => #Lambda(T1, T2, { PUSH .AnnotationList T0 D ; PAIR .AnnotationList ; { C } } ) ... </stack>
 
   ////Stack operations
 
   rule <k> DROP A =>  #HandleAnnotations(A) ... </k>
        <stack> _:Data => . ... </stack>
 
-  rule <k> DROP A I => #HandleAnnotations(A) ~> DROP .AnnotationList ~> DROP .AnnotationList I -Int 1 ... </k> 
+  rule <k> DROP A I => #HandleAnnotations(A) ~> DROP .AnnotationList ~> DROP .AnnotationList I -Int 1 ... </k>
        requires I >Int 0
 
-  rule <k> DROP A 0 => #HandleAnnotations(A) ... </k> 
+  rule <k> DROP A 0 => #HandleAnnotations(A) ... </k>
 
 
   rule <k> DUP A => #HandleAnnotations(A) ... </k>
@@ -375,17 +375,17 @@ module MICHELSON
   syntax KItem ::= #DoDig(Int, K, OptionData)
 
   rule <k> DIG A I => #HandleAnnotations(A) ~> #DoDig(I, .K, None) ... </k>
-       <stack> S </stack> 
+       <stack> S </stack>
 
   rule <k> #DoDig(I, A, None) => #DoDig(I -Int 1, F ~> A, None) ... </k>
        <stack> F:Data => . ... </stack>
-       requires I >Int 0 
+       requires I >Int 0
 
   rule <k> #DoDig(0, A, None) => #DoDig(-1, A, Some F) ... </k>
-       <stack> F:Data => . ... </stack> 
+       <stack> F:Data => . ... </stack>
 
   rule <k> #DoDig(-1, F:Data ~> A, Some T) => #DoDig(-1, A, Some T) ... </k>
-       <stack> . => F ... </stack> 
+       <stack> . => F ... </stack>
 
   rule <k> #DoDig(-1, .K, Some T) => . ... </k>
        <stack> . => T ... </stack>
@@ -393,17 +393,17 @@ module MICHELSON
   syntax KItem ::= #DoDug(Int, K, Data)
 
   rule <k> DUG A I => #HandleAnnotations(A) ~> #DoDug(I, .K, T) ... </k>
-       <stack> T => .K ... </stack> 
+       <stack> T => .K ... </stack>
 
   rule <k> #DoDug(I, S, R) => #DoDug(I -Int 1, T ~> S, R) ... </k>
        <stack> T:Data => .K ... </stack>
-       requires I >Int 0 
+       requires I >Int 0
 
   rule <k> #DoDug(0, S, R) => #DoDug(-1, S, R) ... </k>
-       <stack> .K => R ... </stack> 
+       <stack> .K => R ... </stack>
 
   rule <k> #DoDug(-1, T:Data ~> S, R) => #DoDug(-1, S, R) ... </k>
-       <stack> .K => T ... </stack> 
+       <stack> .K => T ... </stack>
 
   rule <k> #DoDug(-1, .K, _) => .K ... </k>
 
@@ -450,7 +450,7 @@ module MICHELSON
   rule <k> NOT A => #HandleAnnotations(A) ... </k>
        <stack> B => notBool B ... </stack>
 
-  //// Operations on integers and natural numbers 
+  //// Operations on integers and natural numbers
   rule <k> NEG A => #HandleAnnotations(A) ... </k>
        <stack> I => 0 -Int I ... </stack>
 
@@ -459,11 +459,11 @@ module MICHELSON
 
   rule <k> ISNAT A => #HandleAnnotations(A) ... </k>
        <stack> I => Some I ... </stack>
-       requires I >=Int 0 
+       requires I >=Int 0
 
   rule <k> ISNAT A => #HandleAnnotations(A) ... </k>
        <stack> I => None ... </stack>
-       requires I <Int 0 
+       requires I <Int 0
 
   rule <k> INT A => #HandleAnnotations(A) ... </k>
        <stack> I:Int ... </stack>
@@ -550,7 +550,7 @@ module MICHELSON
        <stack> #List(ListItem(S:String) L, _) => #ConcatStrings(ListItem(S) L, "") ... </stack>
 
   rule <k> SIZE A => #HandleAnnotations(A) ... </k>
-       <stack> S => lengthString(S) ... </stack> 
+       <stack> S => lengthString(S) ... </stack>
 
   syntax OptionData ::= #SliceString(String, Int, Int) [function]
 
@@ -579,7 +579,7 @@ module MICHELSON
   rule <k> EMPTY_SET A _ => #HandleAnnotations(A) ... </k>
        <stack> . => .Set ... </stack>
 
-  rule <k> MEM A => #HandleAnnotations(A) ... </k> 
+  rule <k> MEM A => #HandleAnnotations(A) ... </k>
        <stack> X ~> S:Set => X in S ... </stack>
 
   // True to insert, False to remove.
@@ -646,7 +646,7 @@ module MICHELSON
   syntax Data ::= #MinimalKey(Map) [function]
   rule #MinimalKey(M) => #MinimalElement(keys_list(M))
 
-  rule <k> #PerformMap(M1, M2, B) => B ~> #PopNewVal(#MinimalKey(M1)) 
+  rule <k> #PerformMap(M1, M2, B) => B ~> #PopNewVal(#MinimalKey(M1))
         ~> #PerformMap(M1[#MinimalKey(M1) <- undef], M2, B) ... </k>
        <stack> . => Pair #MinimalKey(M1) {M1[#MinimalKey(M1)]}:>Data ... </stack>
        requires size(M1) >Int 0
@@ -707,8 +707,8 @@ module MICHELSON
   //// Operations on lists
   rule <k> CONS A => #HandleAnnotations(A)  ... </k>
        <stack> V ~> #List(L, T) => #List(ListItem(V) L, T) ... </stack>
-  
-  rule <k> NIL A T => #HandleAnnotations(A)  ... </k> 
+
+  rule <k> NIL A T => #HandleAnnotations(A)  ... </k>
        <stack> . => #List(.List, T) ... </stack>
 
   rule <k> IF_CONS A BT BF => #HandleAnnotations(A) ~> BT ... </k>
@@ -760,7 +760,7 @@ module MICHELSON
 
   rule #DoCompare(#Timestamp(I1), #Timestamp(I2)) => #DoCompare(I1, I2)
 
-  
+
   syntax Bool ::= #IsKeyHashOption(OptionData) [function]
   rule #IsKeyHashOption(Some K:KeyHash) => true
   rule #IsKeyHashOption(None) => true
@@ -794,7 +794,7 @@ module MICHELSON
        <stack> A => Some {M[A]}:>Data ... </stack>
        <knownaddrs> M </knownaddrs>
        requires A in_keys(M) andBool #TypeFromContractStruct({M[A]}:>Data) ==K T
-       
+
   rule <k> CONTRACT _ T => . ... </k>
        <stack> A:Address => None ... </stack>
        <knownaddrs> M </knownaddrs> [owise]
@@ -824,7 +824,7 @@ module MICHELSON
        <stack> . => C ... </stack>
        <mychainid> C </mychainid>
 
-  rule <k> NOW A => . ... </k> 
+  rule <k> NOW A => . ... </k>
        <stack> . => N ... </stack>
        <mynow> N </mynow>
 
@@ -850,16 +850,16 @@ module MICHELSON
        <stack> #List(ListItem(M:MBytesLiteral) L, _) => #ConcatBytes(ListItem(M) L, "0x") ... </stack>
 
   rule <k> SIZE A => #HandleAnnotations(A) ... </k>
-       <stack> B:MBytesLiteral => lengthString(#MBytesContent(B)) /Int 2 ... </stack> 
+       <stack> B:MBytesLiteral => lengthString(#MBytesContent(B)) /Int 2 ... </stack>
 
   syntax OptionData ::= #OptionBytesFromOptionContent(Data) [function]
   rule #OptionBytesFromOptionContent(None) => None
-  rule #OptionBytesFromOptionContent(Some S:String) => Some #StringToMBytes("0x" +String S) 
+  rule #OptionBytesFromOptionContent(Some S:String) => Some #StringToMBytes("0x" +String S)
 
   rule <k> SLICE A => #HandleAnnotations(A) ... </k>
        <stack> O:Int ~> L:Int ~> B:MBytesLiteral => #OptionBytesFromOptionContent(#SliceString(#MBytesContent(B), 2 *Int O, 2 *Int L))  ... </stack>
 
-  rule #DoCompare(B1:MBytesLiteral, B2:MBytesLiteral) => #DoCompare(#MBytesContent(B1), #MBytesContent(B2)) 
+  rule #DoCompare(B1:MBytesLiteral, B2:MBytesLiteral) => #DoCompare(#MBytesContent(B1), #MBytesContent(B2))
 
   //// Cryptographic primitives
 
@@ -867,11 +867,11 @@ module MICHELSON
   rule #Blake2BKeyHash(S) => S
 
   rule <k> HASH_KEY A => #HandleAnnotations(A) ... </k>
-       <stack> #Key(S) => #KeyHash(#Blake2BKeyHash(S)) ... </stack> 
-  
+       <stack> #Key(S) => #KeyHash(#Blake2BKeyHash(S)) ... </stack>
+
   rule <k> SHA256 A => #HandleAnnotations(A) ... </k>
        <stack> B:MBytes => #SHA256(B) ... </stack>
-       
+
   rule <k> SHA512 A => #HandleAnnotations(A) ... </k>
        <stack> B:MBytes => #SHA512(B) ... </stack>
 
@@ -895,11 +895,11 @@ module MICHELSON
 
   rule <k> #ValidateMutezAndPush(#Mutez(I), _, _) => . ... </k>
        <stack> . => #Mutez(I) ... </stack>
-       requires #IsLegalMutezValue(I) 
+       requires #IsLegalMutezValue(I)
 
   rule <k> #ValidateMutezAndPush(#Mutez(I), I1, I2) ~> Rk => Aborted("Mutez out of bounds", I, Rk, Rs) </k>
        <stack> Rs => #FailureFromMutezValue(#Mutez(I), I1, I2) </stack>
-       requires notBool #IsLegalMutezValue(I) 
+       requires notBool #IsLegalMutezValue(I)
 
   rule <k> ADD A => #ValidateMutezAndPush(#Mutez(I1 +Int I2), I1, I2) ~> #HandleAnnotations(A) ... </k>
        <stack> #Mutez(I1) ~> #Mutez(I2) => . ... </stack>
