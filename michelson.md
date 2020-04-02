@@ -868,7 +868,10 @@ module MICHELSON
 
   rule <k> HASH_KEY A => #HandleAnnotations(A) ... </k>
        <stack> #Key(S) => #KeyHash(#Blake2BKeyHash(S)) ... </stack> 
-  
+ 
+  rule <k> BLAKE2B A => #HandleAnnotations(A) ... </k>
+       <stack> B:MBytes => #Blake2B(B) ... </stack>
+
   rule <k> SHA256 A => #HandleAnnotations(A) ... </k>
        <stack> B:MBytes => #SHA256(B) ... </stack>
        
