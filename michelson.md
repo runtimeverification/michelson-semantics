@@ -541,7 +541,7 @@ module MICHELSON
 
   //// Operations on strings
   rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
-       <stack> S1 ~> S2 => S1 +String S2 ... </stack>
+       <stack> S1:String ~> S2:String => S1 +String S2 ... </stack>
 
   rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
        <stack> #List(L, string _) => #ConcatStrings(L, "") ... </stack>
