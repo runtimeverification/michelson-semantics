@@ -1,6 +1,6 @@
-This file contains the productions for the internal representation of certain types of Michelson  data in K.  These are shared among a number of different modules which should not depend on one another, and so is kept separate.  Furthermore, it contains a number of macro rules which standardize the representations of certain productions (e.g. by reordering them and adding/removing extra semicolons).
+This file contains the productions for the internal representation of certain types of Michelson data in K.  These are shared among a number of different modules which should not depend on one another, and so is kept separate.  Furthermore, it contains a number of macro rules which standardize the representations of certain productions (e.g. by reordering them and adding/removing extra semicolons).
 
-```k 
+```k
 requires "michelson-syntax.k"
 
 module MICHELSON-COMMON
@@ -25,7 +25,7 @@ These productions wrap the literal data of certain Michelson types, attaching a 
   syntax Mutez ::= #Mutez(Int)
   syntax KeyHash ::= #KeyHash(String)
   syntax ChainId ::= #ChainId(Int)
-  syntax Timestamp ::= #Timestamp(Int) 
+  syntax Timestamp ::= #Timestamp(Int)
   syntax Key ::= #Key(String)
   syntax Signature ::= #Signature(String)
   syntax OperationNonce ::= #Nonce(Int)
@@ -34,16 +34,18 @@ These productions wrap the literal data of certain Michelson types, attaching a 
 The K specification of the Michelson Bytes type is incomplete due to the lack a formal specification or even documentation of the `PACK` and `UNPACK` instructions.  Thus, the best we can do for now is wrap packed data with a production which allows us to axiomatize `PACK ; UNPACK _` as an identity operation.  We give the various cryptographic operations a similar treatment for now.
 
 ```k
-  syntax MBytes ::= MBytesLiteral 
+  syntax MBytes ::= MBytesLiteral
                   | #Packed(Data)
-                  | #SHA256(MBytes) 
+                  | #SHA256(MBytes)
                   | #SHA512(MBytes)
 ```
 
-We extend the Data sort with the internal K representations of any Michelson data that does not diectly map into K, such as those in the productions above.
+# It seems that Blake2B is missing in the list of cryptographic hash functions
+
+We extend the Data sort with the internal K representations of any Michelson data that does not directly map into K, such as those in the productions above.
 
 ```k
-  syntax Data ::= Timestamp 
+  syntax Data ::= Timestamp
   syntax Data ::= ChainId
   syntax Data ::= KeyHash
   syntax Data ::= Mutez
@@ -83,6 +85,8 @@ In order to specify that a group should be loaded last, we map it on to `#GroupO
 ```
 
 The .tzt format specifies that the top level sequence of groups may have an extra semicolon on the end.  We remove it here so we don't need to duplicate the initial loading rule.
+
+# It is also the case for regular Michelson files and in fact all Micheline sequences.
 
 ```k
   rule Gs:Groups ; => Gs [macro]

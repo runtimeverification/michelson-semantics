@@ -1,4 +1,8 @@
-The configuration of a K semantics captures all of the mutable state which rules may act upon.  In a Michelson contract, this includes the current (potentially modified) contract code, the current stack, and various pieces of state related to the blockchain.  Note that, while in general all cells of a `K` configuration are mutable, once contract execution has begun only the `k`, `stack`, `nonce` and `returncode` cells will actually mutate.  The other cells are set at most once and then remain the same throughout execution.
+The configuration of a K semantics captures all of the mutable state which rules may act upon.  In a Michelson contract, this includes the current (potentially modified)
+
+# Why "potentially modified"?
+
+contract code, the current stack, and various pieces of state related to the blockchain.  Note that, while in general all cells of a `K` configuration are mutable, once contract execution has begun only the `k`, `stack`, `nonce` and `returncode` cells will actually mutate.  The other cells are set at most once and then remain the same throughout execution.
 
 ```k
 requires "michelson-syntax.k"
@@ -10,14 +14,18 @@ module MICHELSON-CONFIG
   imports DOMAINS
 ```
 
-The `<k>` cell is the main cell of a K semantics, and initially includes the program passed to krun from the command line, parsed according to the grammar described in the MICHELSON-SYNTAX, and preprocessed by a number of macro rules (which are automatically applied on the parsed AST before any other rules can apply).  While initially the `<k>` cell will contain the entire contract, rule execution will modify its contents and, in case of a normal execution, eventually reduce it to `.K` - an empty cell.
+The `<k>` cell is the main cell of a K semantics, and initially includes the program passed to krun from the command line, parsed according to the grammar described in the MICHELSON-SYNTAX, and preprocessed by a number of macro rules (which are automatically applied on the parsed AST before any other rules can apply).  While initially the `<k>` cell will contain the entire contract,
+
+# I guess you mean "entire code of the contract"
+
+rule execution will modify its contents and, in case of a normal execution, eventually reduce it to `.K` - an empty cell.
 
 ```k
   configuration <michelsonTop>
                   <k> $PGM:Pgm </k>
 ```
 
-The `<stack>` cell contains the data on the stack of the current michelson program, and is initially empty.  The initial contract loader rules will populate it before handing over control to the contract execution rules by loading the code in the `contract` group (or `code`, in the event of a unit test).  Its initial value in the case of a full contract execution will be a pair of the parameter and storage values passed to the contract through the `parameter_value` and `storage_value` applications.
+The `<stack>` cell contains the data on the stack of the current Michelson program, and is initially empty.  The initial contract loader rules will populate it before handing over control to the contract execution rules by loading the code in the `contract` group (or `code`, in the event of a unit test).  Its initial value in the case of a full contract execution will be a pair of the parameter and storage values passed to the contract through the `parameter_value` and `storage_value` applications.
 
 ```k
                   <stack> .K </stack>
@@ -49,7 +57,7 @@ This cell contains the value of the storage of this contract.  It may be left un
                   <storagevalue> #NoData </storagevalue>
 ```
 
-This cell contains the mutez balance of the current instruction.  This value will be pushed to the stack on the execution of a `BALANCE` instruction.
+This cell contains the mutez balance of the current contract.  This value will be pushed to the stack on the execution of a `BALANCE` instruction.
 
 ```k
                   <mybalance> #Mutez(0) </mybalance>
@@ -67,13 +75,15 @@ This cell contains the timestamp of the ["block whose validation triggered this 
                   <mynow> #Timestamp(0) </mynow>
 ```
 
-This cell contains the address of the current contract.  When the `SELF` instruction is executed, this value will be combined with the `<paramtype>` cell to produce a `contract` value to push to the stack.  This value can be accessed by the snippit `SELF ; ADDRESS`.
+This cell contains the address of the current contract.  When the `SELF` instruction is executed, this value will be combined with the `<paramtype>` cell to produce a `contract` value to push to the stack.  This value can be accessed by the snippet `SELF ; ADDRESS`.
+
+# Note that next proposal will probably add a SELF_ADDRESS instruction for this: https://gitlab.com/cryptiumlabs/tezos/-/merge_requests/75
 
 ```k
                   <myaddr> #Address("InvalidMyAddr") </myaddr>
 ```
 
-This cell contains a mapping from addresses to contract data structures which represents the set of addresses "known" to this contract for the purposes of the `CONTRACT` instruction.  While in principle a Michelson contract may lookup any contract on the blockchain with that instruction, for the purposes of K-Michelson actually exposing all contracts on the chain would be infeasible.  Furthermore, a developer may wish to reason about interacting with a contract that has not actually been originated yet using K-Michelson.  As a consequence, we instead require that any contract to be looked up with the `CONTRACT` instruction is added to this map using the `other_contracts` group. 
+This cell contains a mapping from addresses to contract data structures which represents the set of addresses "known" to this contract for the purposes of the `CONTRACT` instruction.  While in principle a Michelson contract may lookup any contract on the blockchain with that instruction, for the purposes of K-Michelson actually exposing all contracts on the chain would be infeasible.  Furthermore, a developer may wish to reason about interacting with a contract that has not actually been originated yet using K-Michelson.  As a consequence, we instead require that any contract to be looked up with the `CONTRACT` instruction is added to this map using the `other_contracts` group.
 
 The values in `<myaddr>`, `<sourceaddr>`, and `<senderaddr>` are *not* required to be in this map. But, if they are not, then looking them up with the `CONTRACT` instruction will return `None`.
 
@@ -81,7 +91,7 @@ The values in `<myaddr>`, `<sourceaddr>`, and `<senderaddr>` are *not* required 
                   <knownaddrs> .Map </knownaddrs>
 ```
 
-This cell contains the address of the source contract (the one which initated the entire transaction, and paid its fees).  It will be pushed to the stack by the execution of the `SOURCE` instruction.
+This cell contains the address of the source contract (the one which initiated the entire transaction, and paid its fees).  It will be pushed to the stack by the execution of the `SOURCE` instruction.
 
 ```k
                   <sourceaddr> #Address("InvalidSourceAddr") </sourceaddr>
@@ -108,11 +118,13 @@ This cell contains a counter nonce which will be attached to any new BlockchainO
 
 This cell contains a mapping of any `big_map` structures attached to the current contract, represented by a map of Integers (the `big_map`'s id) to maps).  If a `big_map` is specified by index anywhere in the contract, that index must be set here.  Note that, since big\_maps are immutable in Michelson, this cell is **not** mutated during execution.  Hence, updates to a big\_map at a given index will not be reflected.
 
+# I find it a bit strange to say that big_map are immutable; the purpose of the UPDATE instruction is really to update the big_map; it is however true that the big_map is not updated during the execution but right after execution.
+
 ```k
                   <bigmaps> .Map </bigmaps>
 ```
 
-This cell indicates to krun whether or not the contract or unit test under execution has actually terminated properly as opposed to getting stuck due to a type or other well-formedness error, or a bug in the semantics.  The exit code of krun will match the final contents of this cell. 
+This cell indicates to krun whether or not the contract or unit test under execution has actually terminated properly as opposed to getting stuck due to a type or other well-formedness error, or a bug in the semantics.  The exit code of krun will match the final contents of this cell.
 
 ```k
                   <returncode exit=""> 1 </returncode>
