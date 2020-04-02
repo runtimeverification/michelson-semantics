@@ -29,6 +29,7 @@ To fully implement the .tzt format, we add four new groups to the loading group 
 - Code, specifying an instruction or block of Michelson code to execute (note that Blocks are also instructions) 
 - Input, the initial stack to pass to the Code block or instruction.
 - Output, the expectation for the final stack after the contents of Code have finished executing.
+
 ```k
   syntax InputGroup ::= "input" LiteralStack
   syntax CodeGroup ::= "code" Instruction
