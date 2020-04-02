@@ -2,6 +2,8 @@
 requires "michelson-syntax.k"
 requires "michelson-config.k"
 requires "michelson-internal-syntax.k"
+requires "hash.k"
+requires "secp256k1.k"
 
 module MICHELSON
   imports MICHELSON-SYNTAX
@@ -9,6 +11,9 @@ module MICHELSON
   imports MICHELSON-INTERNAL-SYNTAX
   imports DOMAINS
   imports COLLECTIONS
+  imports HASH
+  imports CRYPTOGRAPHY-SECP256K1-ELLIPTIC-CURVE
+  imports BYTES-HOOKED
 
   syntax String ::= #ToLowerCase(String) [function, functional, hook(STRING.tolowercase)]
 

@@ -17,6 +17,8 @@ michelson.md
 michelson-syntax.md 
 unit-test.md 
 unit-test-syntax.md
+ext/blockchain-k-plugin/plugin/hash.md
+ext/blockchain-k-plugin/plugin/secp256k1.md
 EOF
 )
 
