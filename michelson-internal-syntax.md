@@ -8,8 +8,14 @@ module MICHELSON-INTERNAL-SYNTAX
 
 This BlockchainOperation describes a contract origination operation.  Its arguments are:
 
-- Nonce (`int`): A cryptographic nonce attached to each new BlockchainOperation created.  No two operations created separately (i.e. by two different `CREATE_CONTRACT` executions) will never share the same nonce, but an operation duplicated with the `DUP` instruction will.  
+- Nonce (`int`): A cryptographic nonce attached to each new BlockchainOperation created.  No two operations created separately (i.e. by two different `CREATE_CONTRACT` executions) will never share the same nonce, but an operation duplicated with the `DUP` instruction will.
+
+# Strange double negation, I think you should remove the leading "No". (same comment obviously applies for the other operations)
+
 - Contract (`contract`): The source code of the contract to originate.  The type of this contract will determine the expected type of the initial storage.
+
+# A code together with parameter and storage types is usually called a "script"
+
 - Delegate (`option key_hash`): An optional delegate specified by key hash.
 - Initial Balance (`mutez`): An initial balance to transfer to the new contract.
 - Initial Storage (`T`): An initial storage value, expected to be the same type as specified in the originated contract.
@@ -20,8 +26,8 @@ This BlockchainOperation describes a contract origination operation.  Its argume
 
 This BlockchainOperation describes a balance transfer (and, consequentially, a contract invocation) operation.  Its arguments are:
 
-- Nonce (`int`): A cryptographic nonce attached to each new BlockchainOperation created.  No two operations created separately (i.e. by two different `CREATE_CONTRACT` executions) will never share the same nonce, but an operation duplicated with the `DUP` instruction will.  
-- Parameter (`T`): The parameter passed to the contract being invoked (or Unit, if the target contract is a simple account).
+- Nonce (`int`): A cryptographic nonce attached to each new BlockchainOperation created.  No two operations created separately (i.e. by two different `TRANSFER_TOKENS` executions) will never share the same nonce, but an operation duplicated with the `DUP` instruction will.
+- Parameter (`T`): The parameter passed to the contract being invoked (or Unit, if the target contract is an implicit account).
 - Amount (`mutez`): The quantity of mutez to transfer to the target contract.
 - Address (`address`): The address of the target contract.
 
@@ -29,9 +35,9 @@ This BlockchainOperation describes a balance transfer (and, consequentially, a c
   syntax BlockchainOperation ::= "Transfer_tokens" "(" Int "," Data "," Mutez "," Address ")"
 ```
 
-This BlockchainOperation describes a delegation operation.  Its arguments are: 
+This BlockchainOperation describes a delegation operation.  Its arguments are:
 
-- Nonce (`int`): A cryptographic nonce attached to each new BlockchainOperation created.  No two operations created separately (i.e. by two different `CREATE_CONTRACT` executions) will never share the same nonce, but an operation duplicated with the `DUP` instruction will.  
+- Nonce (`int`): A cryptographic nonce attached to each new BlockchainOperation created.  No two operations created separately (i.e. by two different `SET_DELEGATE` executions) will never share the same nonce, but an operation duplicated with the `DUP` instruction will.
 - Delegate (`option key_hash`): An optional new delegate specified by key hash.  If None, then this operation clears the current delegate of the contract.
 
 ```k
