@@ -28,7 +28,7 @@ This function implements a relaxed equality check between two data elements.  In
   rule #Matches(#List(L1, _), #List(L2, _)) => #Matches(L1, L2)
 
   rule #Matches(.List, .List) => true
-  rule #Matches(ListItem(L1) Ls1, ListItem(L2) Ls2) => #Matches(L1, L2) andBool #Matches(Ls1, Ls2)
+  rule #Matches(ListItem(L1) Ls1:List, ListItem(L2) Ls2:List) => #Matches(L1, L2) andBool #Matches(Ls1, Ls2)
 
   rule #Matches(.Set, .Set) => true
   rule #Matches(SetItem(S1) Ss1, SetItem(S2) Ss2) => #Matches(S1, S2) andBool #Matches(Ss1, Ss2)
@@ -67,20 +67,20 @@ The representation of #Any is the same in the semantics and the concrete syntax.
   rule #ConcreteArgToSemantics(#Any, _) => #Any
 ```
 
-This function transforms a LiteralStack (e.g. a sequence of `Stack_elt` productions) into a KSequence (the same format as the execution stack).  (See michelson.k for the definitions of #ListToKSeq and #ReverseList)
+This function transforms a LiteralStack (e.g. a sequence of `Stack_elt` productions) into a KSequence (the same format as the execution stack).
 
 ```k
   syntax K ::= #LiteralStackToSemantics(LiteralStack) [function]
   rule #LiteralStackToSemantics( { } ) => .
-  rule #LiteralStackToSemantics( { L } ) => #LiteralStackToSemanticsAux(L, .List)
+  rule #LiteralStackToSemantics( { L } ) => #LiteralStackToSemanticsAux(L)
 
-  syntax K ::= #LiteralStackToSemanticsAux(StackElementList, List) [function]
+  syntax K ::= #LiteralStackToSemanticsAux(StackElementList) [function]
 
-  rule #LiteralStackToSemanticsAux( Stack_elt T D ; Gs:StackElementList, L:List ) => 
-       #LiteralStackToSemanticsAux( Gs, ListItem(#ConcreteArgToSemantics(D, T)) L)
+  rule #LiteralStackToSemanticsAux( Stack_elt T D ; Gs:StackElementList) =>
+       #ConcreteArgToSemantics(D, T) ~> #LiteralStackToSemanticsAux(Gs)
 
-  rule #LiteralStackToSemanticsAux( Stack_elt T D, L) =>
-       #ListToKSeq(#ReverseList(ListItem(#ConcreteArgToSemantics(D, T)) L))
+  rule #LiteralStackToSemanticsAux(Stack_elt T D) =>
+       #ConcreteArgToSemantics(D, T)
 ```
 
 This function transforms an expected output stack to its internal representation (failed stacks are already in their internal representation, literals must be transformed as in the input group).

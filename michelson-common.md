@@ -70,19 +70,6 @@ The `#LoadGroups` production is used during contract loading.  See `michelson.k`
   syntax KItem ::= #LoadGroups(Groups)
 ```
 
-The `#GroupOrder` function maps groups onto integers to create a total order of groups.  Groups will be loaded ascending order according to the Int this function maps them to.
-
-```k
-  syntax Int ::= #GroupOrder(Group) [function]
-```
-
-In order to specify that a group should be loaded last, we map it on to `#GroupOrderMax` (subtracting an offset in the event we wish a group to be loaded second to last).  The actual value returned by this function is immaterial, so long as it is larger than the number of groups.
-
-```k
-  syntax Int ::= "#GroupOrderMax" [function]
-  rule #GroupOrderMax => 1000
-```
-
 The .tzt format specifies that the top level sequence of groups may have an extra semicolon on the end.  We remove it here so we don't need to duplicate the initial loading rule.
 
 # It is also the case for regular Michelson files and in fact all Micheline sequences.
