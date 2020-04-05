@@ -24,7 +24,7 @@ These productions wrap the literal data of certain Michelson types, attaching a 
   syntax ContractData ::= #Contract(Address, Type)
   syntax Mutez ::= #Mutez(Int)
   syntax KeyHash ::= #KeyHash(String)
-  syntax ChainId ::= #ChainId(Int)
+  syntax ChainId ::= #ChainId(MBytesLiteral)
   syntax Timestamp ::= #Timestamp(Int)
   syntax Key ::= #Key(String)
   syntax Signature ::= #Signature(String)

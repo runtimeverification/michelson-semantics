@@ -107,7 +107,7 @@ This cell contains the address of the sender contract (the one which transferred
 This cell contains the `chain_id` of the current contract.  It will be pushed to the stack by the execution of the `CHAIN_ID` instruction.
 
 ```k
-                  <mychainid> #ChainId(0) </mychainid>
+                  <mychainid> #ChainId(0x) </mychainid>
 ```
 
 This cell contains a counter nonce which will be attached to any new BlockchainOperations forged by this contract, and incremented each time such that no two BlockchainOperations created by different executions of an operation producing instruction (`TRANSFER_TOKENS`, `SET_DELEGATE` and `CREATE_CONTRACT`) will have the same nonce (this restriction does not apply to operations copied with `DUP`).

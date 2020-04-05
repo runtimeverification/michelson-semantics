@@ -86,7 +86,7 @@ module MICHELSON-UNPARSER
   rule #doUnparse(Unit, _) => "Unit"
 
   rule #doUnparse(#Timestamp(I), _) => #doUnparse(I, false)
-  rule #doUnparse(#ChainId(I), _) => "0x" +String Base2String(I, 16)
+  rule #doUnparse(#ChainId(I), _) => #doUnparse(I, false)
   rule #doUnparse(#KeyHash(S), _) => #doUnparse(S, false)
   rule #doUnparse(#Mutez(I), _) => #doUnparse(I, false)
   rule #doUnparse(#Address(S), _) => #doUnparse(S, false)
