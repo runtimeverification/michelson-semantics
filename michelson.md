@@ -868,14 +868,14 @@ module MICHELSON
 
   //// Cryptographic primitives
 
-  syntax String ::= #Blake2BKeyHash(String) [function] // TODO: Blake2B crypto hook.
-  rule #Blake2BKeyHash(S) => S
-
   rule <k> HASH_KEY A => #HandleAnnotations(A) ... </k>
        <stack> #Key(S) => #KeyHash(#Blake2BKeyHash(S)) ... </stack> 
 
   rule <k> BLAKE2B A => #HandleAnnotations(A) ... </k>
        <stack> B:MBytes => #Blake2B(B) ... </stack>
+
+  rule <k> BLAKE2B A => #HandleAnnotations(A) ... </k>
+       <stack> B:MBytesLiteral => #StringToMBytes("0x" +String Blake2B_32(Bytes2String(Int2Bytes(lengthString(#MBytesContent(B)) >>Int 1,#MBytesToInt(B),BE)))) ... </stack>
 
   rule <k> SHA256 A => #HandleAnnotations(A) ... </k>
        <stack> B:MBytes => #SHA256(B) ... </stack>
