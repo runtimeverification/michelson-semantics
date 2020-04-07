@@ -8,8 +8,6 @@ pipeline {
     }
     stage('Build and Test') {
       when { changeRequest() }
-      agent {
-      }
       stages {
         stage('Dependencies') { steps { sh './build-deps.sh' } }
         stage('Build')        { steps { sh './build.sh'      } }
