@@ -61,7 +61,7 @@ module MICHELSON-SYNTAX
 
   syntax SimpleData ::= Int
   syntax SimpleData ::= String 
-  syntax SimpleData ::= MichelsonBool
+  syntax Data ::= MichelsonBool [klabel(MichelsonBool), symbol, function, avoid]
   syntax SimpleData ::= MBytesLiteral
   syntax SimpleData ::= "Unit" 
   syntax SimpleData ::= Timestamp 

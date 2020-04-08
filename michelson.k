@@ -293,7 +293,7 @@ module MICHELSON
 
   rule <k> #LoadGroups(C:ContractGroup ; Cs) => #LoadGroups(C) </k>
 
-  rule <k> #LoadGroups(contract { code C ; storage _ ; parameter _ }) => C </k>
+  rule <k> #LoadGroups(contract { code C ; storage _ ; parameter _ ; }) => C </k>
        <stack> . => Pair P S </stack>
        <paramvalue> P </paramvalue>
        <storagevalue> S </storagevalue>
@@ -302,7 +302,7 @@ module MICHELSON
   rule I:Instruction ; Is:InstructionList => I ~> Is 
   rule {} => .K [structrual]
   rule { Is:InstructionList } => Is 
-  rule { Is:InstructionList ; } => { Is } [macro]
+  rule { Is:InstructionList ; } => { Is } [anywhere]
 
   syntax KItem ::= #HandleAnnotations(AnnotationList)
   rule #HandleAnnotations(_) => . 

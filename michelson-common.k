@@ -43,19 +43,19 @@ module MICHELSON-COMMON
   syntax Int ::= "#GroupOrderMax" [function]
   rule #GroupOrderMax => 1000
 
-  rule True => true [macro]
-  rule False => false [macro]
+  rule `MichelsonBool`(True) => true
+  rule `MichelsonBool`(False) => false
 
-  rule code B ; storage St ; parameter Pt => code B ; storage St ; parameter Pt ; [macro]
-  rule code B ; parameter Pt ; storage St => code B ; storage St ; parameter Pt ; [macro]
-  rule storage St ; code B ; parameter Pt => code B ; storage St ; parameter Pt ; [macro]
-  rule parameter Pt ; code B ; storage St => code B ; storage St ; parameter Pt ; [macro]
-  rule storage St ; parameter Pt ; code B => code B ; storage St ; parameter Pt ; [macro]
-  rule parameter Pt ; storage St ; code B => code B ; storage St ; parameter Pt ; [macro]
+  rule code B ; storage St ; parameter Pt => code B ; storage St ; parameter Pt ; [anywhere]
+  rule code B ; parameter Pt ; storage St => code B ; storage St ; parameter Pt ; [anywhere]
+  rule storage St ; code B ; parameter Pt => code B ; storage St ; parameter Pt ; [anywhere]
+  rule parameter Pt ; code B ; storage St => code B ; storage St ; parameter Pt ; [anywhere]
+  rule storage St ; parameter Pt ; code B => code B ; storage St ; parameter Pt ; [anywhere]
+  rule parameter Pt ; storage St ; code B => code B ; storage St ; parameter Pt ; [anywhere]
 
-  rule code B ; parameter Pt ; storage St ; => code B ; storage St ; parameter Pt ; [macro]
-  rule storage St ; code B ; parameter Pt ; => code B ; storage St ; parameter Pt ; [macro]
-  rule parameter Pt ; code B ; storage St ; => code B ; storage St ; parameter Pt ; [macro]
-  rule storage St ; parameter Pt ; code B ; => code B ; storage St ; parameter Pt ; [macro]
-  rule parameter Pt ; storage St ; code B ; => code B ; storage St ; parameter Pt ; [macro]
+  rule code B ; parameter Pt ; storage St ; => code B ; storage St ; parameter Pt ; [anywhere]
+  rule storage St ; code B ; parameter Pt ; => code B ; storage St ; parameter Pt ; [anywhere]
+  rule parameter Pt ; code B ; storage St ; => code B ; storage St ; parameter Pt ; [anywhere]
+  rule storage St ; parameter Pt ; code B ; => code B ; storage St ; parameter Pt ; [anywhere]
+  rule parameter Pt ; storage St ; code B ; => code B ; storage St ; parameter Pt ; [anywhere]
 endmodule
