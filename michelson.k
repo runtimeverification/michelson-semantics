@@ -191,6 +191,7 @@ module MICHELSON
 
   syntax Groups ::= #InsertionSort(Groups) [function] // Note that this is a *stable* insertion sort.
   rule #InsertionSort(G:Group) => G
+  rule #InsertionSort(G:Group;) => G
   rule #InsertionSort(G ; Gs) => #InsertInOrder(#InsertionSort(Gs), G)
 
   syntax Contract ::= #FindContract(Groups) [function]
@@ -207,6 +208,7 @@ module MICHELSON
   syntax Bool ::= #HasContract(Groups) [function]
   rule #HasContract(contract { C }) => true
   rule #HasContract(contract { C } ; _) => true
+  rule #HasContract(G ;) => #HasContract(G)
   rule #HasContract(_ ; Gs) => #HasContract(Gs) [owise]
   rule #HasContract(_:Group) => false [owise]
 
@@ -291,7 +293,7 @@ module MICHELSON
 
   rule <k> #LoadGroups(C:ContractGroup ; Cs) => #LoadGroups(C) </k>
 
-  rule <k> #LoadGroups(contract { code C ; storage _ ; parameter _ }) => C </k>
+  rule <k> #LoadGroups(contract { code C ; storage _ ; parameter _ ; }) => C </k>
        <stack> . => Pair P S </stack>
        <paramvalue> P </paramvalue>
        <storagevalue> S </storagevalue>
@@ -300,7 +302,7 @@ module MICHELSON
   rule I:Instruction ; Is:InstructionList => I ~> Is 
   rule {} => .K [structrual]
   rule { Is:InstructionList } => Is 
-  rule { Is:InstructionList ; } => { Is } [macro]
+  rule { Is:InstructionList ; } => { Is } [anywhere]
 
   syntax KItem ::= #HandleAnnotations(AnnotationList)
   rule #HandleAnnotations(_) => . 

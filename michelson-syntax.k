@@ -61,7 +61,7 @@ module MICHELSON-SYNTAX
 
   syntax SimpleData ::= Int
   syntax SimpleData ::= String 
-  syntax SimpleData ::= MichelsonBool
+  syntax Data ::= MichelsonBool [klabel(MichelsonBool), symbol, function, avoid]
   syntax SimpleData ::= MBytesLiteral
   syntax SimpleData ::= "Unit" 
   syntax SimpleData ::= Timestamp 
@@ -321,6 +321,6 @@ module MICHELSON-SYNTAX
                  | ContractsGroup
                  | BigMapGroup
 
-  syntax Groups ::= Group | Group ";" Groups
-  syntax Pgm ::= Groups | Groups ";"
+  syntax Groups ::= Group | Group ";" Groups | Group ";"
+  syntax Pgm ::= Groups
 endmodule
