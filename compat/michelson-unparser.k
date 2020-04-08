@@ -368,7 +368,7 @@ module MICHELSON-UNPARSER
     "; " +String 
     #doUnparse(Gs, false)
 
-  rule #doUnparse(Gs:Groups ;, _) => #doUnparse(Gs, false) +String ";"
+  rule #doUnparse(Gs:Group ;, _) => #doUnparse(Gs, false) +String ";"
 
   rule #doUnparse(Stack_elt T D, _) =>
     "Stack_elt " +String

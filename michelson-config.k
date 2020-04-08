@@ -6,7 +6,7 @@ module MICHELSON-CONFIG
   imports MICHELSON-COMMON
   imports DOMAINS
 
-  rule <k> Gs:Groups ; => Gs </k> [owise]
+  rule <k> Gs:Group ; => Gs </k> [owise]
 
   configuration <michelsonTop>
                   <k> $PGM:Pgm </k>

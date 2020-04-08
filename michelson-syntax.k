@@ -321,6 +321,6 @@ module MICHELSON-SYNTAX
                  | ContractsGroup
                  | BigMapGroup
 
-  syntax Groups ::= Group | Group ";" Groups
-  syntax Pgm ::= Groups | Groups ";"
+  syntax Groups ::= Group | Group ";" Groups | Group ";"
+  syntax Pgm ::= Groups
 endmodule

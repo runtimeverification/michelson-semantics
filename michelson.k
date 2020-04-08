@@ -191,6 +191,7 @@ module MICHELSON
 
   syntax Groups ::= #InsertionSort(Groups) [function] // Note that this is a *stable* insertion sort.
   rule #InsertionSort(G:Group) => G
+  rule #InsertionSort(G:Group;) => G
   rule #InsertionSort(G ; Gs) => #InsertInOrder(#InsertionSort(Gs), G)
 
   syntax Contract ::= #FindContract(Groups) [function]
@@ -207,6 +208,7 @@ module MICHELSON
   syntax Bool ::= #HasContract(Groups) [function]
   rule #HasContract(contract { C }) => true
   rule #HasContract(contract { C } ; _) => true
+  rule #HasContract(G ;) => #HasContract(G)
   rule #HasContract(_ ; Gs) => #HasContract(Gs) [owise]
   rule #HasContract(_:Group) => false [owise]
 
