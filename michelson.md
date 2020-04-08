@@ -13,6 +13,8 @@ module MICHELSON
   imports COLLECTIONS
 ```
 
+#Loading Semantics
+
 A simple hook for converting a string to lower case.
 
 ```k
@@ -296,8 +298,6 @@ It is permitted, but not recommended, for two groups to have the same order (unl
 
 In order to specify that a group should be loaded last, we map it on to `#GroupOrderMax` (subtracting an offset in the event we wish a group to be loaded second to last).  
 
-Groups with order above `#GroupOrderMax` are permitted, but will be loaded *after* the contract has finished executing.
-
 The actual value returned by this function is immaterial, so long as it is larger than the number of groups.
 
 ```k
@@ -339,31 +339,53 @@ As implied by the name, these rules implement an insertion sort of a loading gro
   rule #InsertionSort(G ; Gs) => #InsertInOrder(#InsertionSort(Gs), G)
 ```
 
+This function seeks out a contract loading group in a list of groups.  It should be used only if `#HasContract` has already returned true.
+
 ```k
   syntax Contract ::= #FindContract(Groups) [function]
   rule #FindContract(contract { C }) => C
   rule #FindContract(contract { C } ; _) => C
   rule #FindContract(_ ; Gs) => #FindContract(Gs) [owise]
+```
 
+These functions create Parameter and Storage loading groups respectively from the parameter and storage primitive applications in a contract.
+
+```k
   syntax Group ::= #MakeParameterGroup(Groups) [function]
   rule #MakeParameterGroup(G) => parameter #ParameterTypeFromContract(#FindContract(G))
 
   syntax Group ::= #MakeStorageGroup(Groups) [function]
   rule #MakeStorageGroup(G) => storage #StorageTypeFromContract(#FindContract(G))
+```
 
+This function determines whether or not a contract group exists in a loading group list.
+
+```k
   syntax Bool ::= #HasContract(Groups) [function]
   rule #HasContract(contract { C }) => true
   rule #HasContract(contract { C } ; _) => true
   rule #HasContract(_ ; Gs) => #HasContract(Gs) [owise]
   rule #HasContract(_:Group) => false [owise]
+```
 
+This function takes a loading group list and extends it with a Parameter and Storage group (determining the *type* of the contract's parameter and storage respectively) if a contract loading group exists.
+
+```k
   syntax Groups ::= #ExtendGroups(Groups) [function]
 
   rule #ExtendGroups(Gs) => #MakeParameterGroup(Gs) ; #MakeStorageGroup(Gs) ; Gs requires #HasContract(Gs)
   rule #ExtendGroups(Gs) => Gs [owise]
+```
 
+This group performs the loading initial loading step of passing the loading groups to the `#LoadGroups` production after sorting them and extending them as necessary.  This rule is marked with the owise attribute so that semantic extensions can override this behavior, and indeed many of the compatibility script extensions do so.
+
+```k
   rule <k> G:Groups => #LoadGroups(#InsertionSort(#ExtendGroups(G))) </k> [owise]
+```
 
+Loading a `now` group simply involves setting the contents of the now timestamp to the contained integer.  Similarly simple logic applies to sender, source, chain\_id and self.
+
+```k
   rule <k> #LoadGroups(now I ; Gs => Gs) </k>
        <mynow> #Timestamp(0 => I) </mynow>
 
@@ -378,7 +400,11 @@ As implied by the name, these rules implement an insertion sort of a loading gro
 
   rule <k> #LoadGroups(self A ; Gs => Gs) </k>
        <myaddr> #Address("InvalidMyAddr" => A) </myaddr>
+```
 
+Amount and balance require slightly more logic to verify that the value they're being set to is actually a legal mutez value, but are otherwise relatively simple.
+
+```k
   syntax Int ::= "#MutezOverflowLimit" [function]
   rule #MutezOverflowLimit => 2 ^Int 63 // Signed 64 bit integers.
 
@@ -392,7 +418,11 @@ As implied by the name, these rules implement an insertion sort of a loading gro
   rule <k> #LoadGroups(balance I ; Gs => Gs) </k>
        <mybalance> #Mutez(0 => I) </mybalance>
        requires #IsLegalMutezValue(I)
+```
 
+Loading the other contracts map involves transforming its map entry list style concrete representation to a K-Michelson map.
+
+```k
   syntax Map ::= #OtherContractsMapToKMap(OtherContractsMap) [function]
   syntax Map ::= #OtherContractsMapEntryListToKMap(OtherContractsMapEntryList) [function]
   rule #OtherContractsMapToKMap({ }) => .Map
@@ -402,13 +432,21 @@ As implied by the name, these rules implement an insertion sort of a loading gro
 
   rule <k> #LoadGroups(other_contracts M ; Gs => Gs) </k>
        <knownaddrs> .Map => #OtherContractsMapToKMap(M) </knownaddrs>
+```
 
+These two groups contain information from the contract itself, but they are promoted to loading groups due to data dependency orders.  Specifically, if we left these as part of the contract, we would need to load the parameter\_value and storage\_value groups after the contract so we know what types we're working with, but we need to load those groups before the contract so the contract can execute with the appropriate starting state.  Extracting these groups solves the cyclical ordering problem.
+
+```k
   rule <k> #LoadGroups(parameter T ; Gs => Gs) </k>
        <paramtype> #NotSet => T </paramtype>
 
   rule <k> #LoadGroups(storage T ; Gs => Gs) </k>
        <storagetype> #NotSet => T </storagetype>
+```
 
+Similar to the other\_contracts rule, we need to transform BigMaps into the appropriate K-Michelson type.
+
+```k
   syntax Map ::= #BigMapsToKMap(BigMapMap) [function]
   syntax Map ::= #BigMapsEntryListToKMap(BigMapEntryList) [function]
   syntax Map ::= #BigMapsEntryToKMap(BigMapEntry) [function]
@@ -427,7 +465,11 @@ As implied by the name, these rules implement an insertion sort of a loading gro
 
   rule <k> #LoadGroups(big_maps M ; Gs => Gs) </k>
        <bigmaps> .Map => #BigMapsToKMap(M) </bigmaps>
+```
 
+These groups contain the actual parameter and storage values passed to the contract, they must be loaded after their respective type is set so that the `#ConcreteArgToSemantics` function can determine what type it should be parsing.
+
+```k
   rule <k> #LoadGroups(parameter_value D ; Gs => Gs) </k>
        <paramtype> T </paramtype>
        <paramvalue> #NoData => #ConcreteArgToSemantics(D, T) </paramvalue>
@@ -435,23 +477,49 @@ As implied by the name, these rules implement an insertion sort of a loading gro
   rule <k> #LoadGroups(storage_value D ; Gs => Gs) </k>
        <storagetype> T </storagetype>
        <storagevalue> #NoData => #ConcreteArgToSemantics(D, T) </storagevalue>
+```
 
+This rule tolerates multiple contract groups in the same file by selecting one of them to execute.  Strictly speaking such a file would be malformed, but allowing the external parser to give us such malformed files allows us to avoid to parse the given script *three* times.
+
+```k
   rule <k> #LoadGroups(C:ContractGroup ; Cs) => #LoadGroups(C) </k>
+```
 
+The final loading group in this file is the contract group.  The storage and parameter values are combined and the stack is initialized, and then the code is extracted so that we can move on to the execution semantics.
+
+```k
   rule <k> #LoadGroups(contract { code C ; storage _ ; parameter _ }) => C </k>
        <stack> . => Pair P S </stack>
        <paramvalue> P </paramvalue>
        <storagevalue> S </storagevalue>
-       <returncode> _ => 0 </returncode>
+```
 
+#Execution Semantics
+
+These rules split apart blocks into KItems so that the main semantic rules can use idiomatic K.
+
+```k
   rule I:Instruction ; Is:InstructionList => I ~> Is
   rule {} => .K [structrual]
   rule { Is:InstructionList } => Is
   rule { Is:InstructionList ; } => { Is } [macro]
+```
 
+For now, annotations are simply ignored.
+
+```k
   syntax KItem ::= #HandleAnnotations(AnnotationList)
   rule #HandleAnnotations(_) => .
+```
 
+This production contains error information when a contract fails at runtime.  Its arguments are:
+
+1. An error message.
+2. The top element of the stack (the argument to `FAILWITH`)
+3. The remainder of the stack.
+4. The remainder of the K cell.
+
+```k
   syntax Error ::= Aborted(String, KItem, K, K)
 
   // Core Instructioons
@@ -459,7 +527,11 @@ As implied by the name, these rules implement an insertion sort of a loading gro
   rule <k> FAILWITH A ~> Rk => #HandleAnnotations(A) ~> Aborted("FAILWITH instruction reached", D, Rk, Rs) </k>
        <stack> D ~> Rs => ( Failed D ) </stack>
        <returncode> _ => 1 </returncode>
+```
 
+The control flow instruction's implementations in K should look extremely similar to their formal description in the [Michelson documentation](https://tezos.gitlab.io/whitedoc/michelson.html#control-structures).  Keeping this similarity, unless absolutely prevented for performance or K style reasons, was a major design goal of the semantics.
+
+```k
   rule <k> IF A BT BF => #HandleAnnotations(A) ~> BT ... </k>
        <stack> true => . ... </stack>
 
@@ -477,30 +549,58 @@ As implied by the name, these rules implement an insertion sort of a loading gro
 
   rule <k> LOOP_LEFT A B => #HandleAnnotations(A) ... </k>
        <stack> Right D => D ... </stack>
+```
 
+It is sometimes useful to create "pseudo-instructions" like this to schedule operations to happen in the future.
+
+```k
   syntax KItem ::= #Push(Data)
   rule <k> #Push(D) => . ... </k>
        <stack> . => D ... </stack>
+```
 
+The DIP instruction uses the `#Push` pseudo-instruction to replace the element it pops off for its block.
+
+```k
   rule <k> DIP A B => #HandleAnnotations(A) ~> B ~> #Push(D) ... </k>
        <stack> D:Data => . ... </stack>
+```
 
+The multiple DIP instruction is defined recursively
+
+```k
   rule <k> DIP A 0 B => #HandleAnnotations(A) ~> B ... </k>
 
   rule <k> DIP A I B => #HandleAnnotations(A) ~> DIP .AnnotationList { DIP .AnnotationList  I -Int 1 B } ... </k>
        requires I >Int 0
+```
 
+This pseudo-instruction implements the behavior of restoring the previous stack when a lambda completes execution.
+
+```k
   syntax KItem ::= #ReturnStack(K)
 
   rule <k> #ReturnStack(Ls) => . ... </k>
        <stack> R:Data => R ~> Ls </stack>
+```
 
+An EXEC instruction replaces the stack and schedules the restoration of the old stack after the completion of the lambda code.
+
+```k
   rule <k> EXEC B => #HandleAnnotations(B) ~> C ~> #ReturnStack(Rs) ... </k>
        <stack> A:Data ~> #Lambda(_, _, C):Data ~> Rs:K => A </stack>
+```
 
+APPLY demonstrates why lambdas have their type information preserved, as otherwise we would be unable to produce an appropriate `PUSH` instruction for the expanded lambda.
+
+```k
   rule <k> APPLY A => #HandleAnnotations(A) ... </k>
-       <stack> D:Data ~> #Lambda((pair _:AnnotationList T0 T1):Type, T2, { C } ) => #Lambda(T1, T2, { PUSH .AnnotationList T0 D ; PAIR .AnnotationList ; { C } } ) ... </stack>
+       <stack> D:Data ~> #Lambda(pair _:AnnotationList T0 T1, T2, { C } ) => #Lambda(T1, T2, { PUSH .AnnotationList T0 D ; PAIR .AnnotationList ; { C } } ) ... </stack>
+```
 
+`DROP n` is implemented in a recursive style, like in the Michelson documentation.
+
+```k
   ////Stack operations
 
   rule <k> DROP A =>  #HandleAnnotations(A) ... </k>
@@ -510,14 +610,21 @@ As implied by the name, these rules implement an insertion sort of a loading gro
        requires I >Int 0
 
   rule <k> DROP A 0 => #HandleAnnotations(A) ... </k>
+```
 
+DUP and SWAP are essentially lifted directly from the docs.
 
+```k
   rule <k> DUP A => #HandleAnnotations(A) ... </k>
        <stack> X:Data => X ~> X ... </stack>
 
   rule <k> SWAP A => #HandleAnnotations(A) ... </k>
        <stack> X:Data ~> Y:Data => Y ~> X ... </stack>
+```
 
+Dig is implemented in 2 phases, digging down and building back up.  This is implemented with the following production, which functions essentially like a FSM.  When I > 0, we push elements into the internal stack after popping them from the main stack.  When I = 0, we have found the element to move to the top and can save it.  When I = -1, we need to start unwinding the inner stack and restoring the elements under the selected one.
+
+```k
   syntax KItem ::= #DoDig(Int, K, OptionData)
 
   rule <k> DIG A I => #HandleAnnotations(A) ~> #DoDig(I, .K, None) ... </k>
@@ -535,7 +642,11 @@ As implied by the name, these rules implement an insertion sort of a loading gro
 
   rule <k> #DoDig(-1, .K, Some T) => . ... </k>
        <stack> . => T ... </stack>
+```
 
+Dug is implemented similar to Dig, except the element to move is saved immediately rather than waiting for I = 0.  Instead it is placed when I = 0.
+
+```k
   syntax KItem ::= #DoDug(Int, K, Data)
 
   rule <k> DUG A I => #HandleAnnotations(A) ~> #DoDug(I, .K, T) ... </k>
@@ -552,16 +663,28 @@ As implied by the name, these rules implement an insertion sort of a loading gro
        <stack> .K => T ... </stack>
 
   rule <k> #DoDug(-1, .K, _) => .K ... </k>
+```
 
+PUSH needs to convert its argument to semantics form, but otherwise matches the documentation directly.
+
+```k
   rule <k> PUSH A T X => #HandleAnnotations(A) ... </k>
        <stack> . => #ConcreteArgToSemantics(X, T) ... </stack>
+```
 
+UNIT and LAMBDA are implemented almost exactly as specified in the documentation.
+
+```k
   rule <k> UNIT A => #HandleAnnotations(A) ... </k>
        <stack> . => Unit ... </stack>
 
   rule <k> LAMBDA A T1 T2 C => #HandleAnnotations(A) ... </k>
        <stack> . => #Lambda(T1, T2, C) ... </stack>
+```
 
+Comparisons map directly onto K Int functions.
+
+```k
   //// Generic Comparisons
 
   rule <k> EQ A => #HandleAnnotations(A) ... </k>
@@ -581,7 +704,11 @@ As implied by the name, these rules implement an insertion sort of a loading gro
 
   rule <k> GE A => #HandleAnnotations(A) ... </k>
        <stack> I => I >=Int 0 ... </stack>
+```
 
+As do basic boolean functions.
+
+```k
   // Operations
   //// Operations on booleans
   rule <k> OR A => #HandleAnnotations(A) ... </k>
@@ -595,14 +722,22 @@ As implied by the name, these rules implement an insertion sort of a loading gro
 
   rule <k> NOT A => #HandleAnnotations(A) ... </k>
        <stack> B => notBool B ... </stack>
+```
 
+Negation and taking absolute value are similarly trivial.
+
+```k
   //// Operations on integers and natural numbers
   rule <k> NEG A => #HandleAnnotations(A) ... </k>
        <stack> I => 0 -Int I ... </stack>
 
   rule <k> ABS A => #HandleAnnotations(A) ... </k>
        <stack> I => absInt(I) ... </stack>
+```
 
+ISNAT could be implemented in a single rule with the `#if _ #then _ #else _ #fi` structure, but I think this is easier to read.
+
+```k
   rule <k> ISNAT A => #HandleAnnotations(A) ... </k>
        <stack> I => Some I ... </stack>
        requires I >=Int 0
@@ -610,10 +745,18 @@ As implied by the name, these rules implement an insertion sort of a loading gro
   rule <k> ISNAT A => #HandleAnnotations(A) ... </k>
        <stack> I => None ... </stack>
        requires I <Int 0
+```
 
+Since Ints and Nats are both represented by the Int sort in K, INT is a noop.
+
+```k
   rule <k> INT A => #HandleAnnotations(A) ... </k>
        <stack> I:Int ... </stack>
+```
 
+Basic arithmetic operations map directly.
+
+```k
   rule <k> ADD A => #HandleAnnotations(A) ... </k>
        <stack> I1 ~> I2 => I1 +Int I2 ... </stack>
 
@@ -622,7 +765,11 @@ As implied by the name, these rules implement an insertion sort of a loading gro
 
   rule <k> MUL A => #HandleAnnotations(A) ... </k>
        <stack> I1 ~> I2 => I1 *Int I2 ... </stack>
+```
 
+EDIV could, like ISNAT, probably be written in one rule, but this is probably easier to interpret.
+
+```k
   rule <k> EDIV A => #HandleAnnotations(A) ... </k>
        <stack> I1:Int ~> 0 => None ... </stack>
        // Could combine this rule with the Mutez one but probably a disadvantage in readability.
@@ -630,7 +777,11 @@ As implied by the name, these rules implement an insertion sort of a loading gro
   rule <k> EDIV A  => #HandleAnnotations(A) ... </k>
        <stack> I1 ~> I2 => Some (Pair (I1 /Int I2) (I1 %Int I2)) ... </stack>
        requires I2 =/=Int 0
+```
 
+Bitwise operations on ints map directly onto K functions over ints.
+
+```k
   rule <k> OR A => #HandleAnnotations(A)  ... </k>
        <stack> I1 ~> I2 => I1 |Int I2 ... </stack>
 
@@ -642,7 +793,11 @@ As implied by the name, these rules implement an insertion sort of a loading gro
 
   rule <k> NOT A => #HandleAnnotations(A) ... </k>
        <stack> I => ~Int I ... </stack>
+```
 
+These rules are interesting mainly for their failure cases, which rewrite the k cell to an Aborted production.
+
+```k
   rule <k> LSL A => #HandleAnnotations(A) ... </k>
        <stack> X ~> S => X <<Int S ... </stack>
        requires S <=Int 256
@@ -658,7 +813,11 @@ As implied by the name, these rules implement an insertion sort of a loading gro
   rule <k> LSR A ~> Rk => #HandleAnnotations(A) ~> Aborted("LSR out of range", S, Rk, Rs) </k>
        <stack> X ~> S ~> Rs => ( GeneralOverflow X S ) </stack>
        requires S >Int 256
+```
 
+We lift the COMPARE operation to a function over Data, allowing many different instantiations of the COMPARE operation to be implemented in fewer rules.
+
+```k
   syntax Int ::= #DoCompare(Data, Data) [function]
 
   rule #DoCompare(true, true) => 0
@@ -680,7 +839,11 @@ As implied by the name, these rules implement an insertion sort of a loading gro
 
   rule <k> COMPARE A => #HandleAnnotations(A) ... </k>
        <stack> V1 ~> V2 => #DoCompare(V1, V2) ... </stack>
+```
 
+CONCAT is complicated by the fact that it is defined differently over strings and bytes, and so we need type information to select the correct implementation.  This is no problem for non-empty lists, but CONCATing an empty list of strings should produce "", whereas CONCATing an empty list of bytes should produce 0x.  We use the type information stored in #List to try to determine this, but the case of lists produced with MAP cannot be solved without a full type system, which is currently out of scope.
+
+```k
   syntax String ::= #ConcatStrings(List, String) [function]
   rule #ConcatStrings(.List, A) => A
   rule #ConcatStrings(ListItem(S1) DL, A) => #ConcatStrings(DL, A +String S1)
@@ -697,7 +860,11 @@ As implied by the name, these rules implement an insertion sort of a loading gro
 
   rule <k> SIZE A => #HandleAnnotations(A) ... </k>
        <stack> S => lengthString(S) ... </stack>
+```
 
+The actual out of bounds conditions here are determined by experimentation.  Earlier versions of the semantics didn't check if O was in bounds, resulting in `Slice("", 0, 0) => Some ""` rather than the correct `#SliceString("", 0, 0) => None`
+
+```k
   syntax OptionData ::= #SliceString(String, Int, Int) [function]
 
   rule #SliceString(S, O, L) => Some substrString(S, O, O +Int L)
@@ -707,7 +874,11 @@ As implied by the name, these rules implement an insertion sort of a loading gro
 
   rule <k> SLICE A => #HandleAnnotations(A) ... </k>
        <stack> O ~> L ~> S => #SliceString(S, O, L)  ... </stack>
+```
 
+Pair operations lift directly from the documentation.
+
+```k
   //// Operations on pairs
   rule <k> PAIR A => #HandleAnnotations(A) ... </k>
        <stack> L ~> R => Pair L R ... </stack>
@@ -720,14 +891,22 @@ As implied by the name, these rules implement an insertion sort of a loading gro
 
   rule <k> CDR A => #HandleAnnotations(A) ... </k>
        <stack> Pair _ R => R ... </stack>
+```
 
+Sets in Michelson are implemented using the K hooked set implementation.  This allows many Michelson operation, like MEM, to lift directly to Set functions.
+
+```k
   //// Operations on sets
   rule <k> EMPTY_SET A _ => #HandleAnnotations(A) ... </k>
        <stack> . => .Set ... </stack>
 
   rule <k> MEM A => #HandleAnnotations(A) ... </k>
        <stack> X ~> S:Set => X in S ... </stack>
+```
 
+Built-in support for sets allows clean rules like the ones below for adding and removing elements from the set respectively.
+
+```k
   // True to insert, False to remove.
 
   rule <k> UPDATE A => #HandleAnnotations(A) ... </k>
@@ -739,7 +918,11 @@ As implied by the name, these rules implement an insertion sort of a loading gro
   rule <k> UPDATE A => #HandleAnnotations(A) ... </k>
        <stack> (D ~> false => .) ~> S:Set ... </stack>
        requires notBool(D in S)
+```
 
+Note that, according to the Michelson documentation, set iteration order is actually defined (the set is iterated over in ascending order)!  For simplicity we implement this by repeatedly selecting the minimal element. 
+
+```k
   syntax Data ::= #MinimalElement(List) [function]
   syntax Data ::= #MinimalElementAux(List, Data) [function]
 
@@ -754,10 +937,18 @@ As implied by the name, these rules implement an insertion sort of a loading gro
   rule <k> ITER A B => #HandleAnnotations(A) ~> B ~> #Push(S -Set SetItem(#MinimalElement(Set2List(S)))) ~> ITER .AnnotationList B ... </k>
        <stack> S => #MinimalElement(Set2List(S)) ... </stack>
        requires size(S) >Int 0
+```
 
+Set size is lifts directly into Michelson.
+
+```k
   rule <k> SIZE A => #HandleAnnotations(A) ... </k>
        <stack> S:Set => size(S) ... </stack>
+```
 
+Much like Sets, MAP operations lift reasonably easily into K.
+
+```k
   //// Operations on maps
   rule <k> EMPTY_MAP A _ _ => #HandleAnnotations(A) ... </k>
        <stack> . => .Map ... </stack>
@@ -778,7 +969,11 @@ As implied by the name, these rules implement an insertion sort of a loading gro
 
   rule <k> UPDATE A => #HandleAnnotations(A)  ... </k>
        <stack> K ~> None ~> M:Map => M[K <- undef] ... </stack>
+```
 
+The MAP operation, over maps, is somewhat more involved.  We need to set up a stack without the actual map to execute the block on, and we need to keep track of the updated map as we do.  We implement this by splitting the operation into multiple K items.  `#PerformMap` holds the old map, the new map, and the block to execute.  When it rewrites, it sets up the new stack and queues up a `#PopNewVal` which removes the value produced by the MAP block and adds it to the second map argument.  Like Sets, iteration order is actually defined, and we implement it by repeatedly selecting the minimal element in the list of keys in the map. 
+
+```k
   syntax KItem ::= #PerformMap(Map, Map, Block)
 
   rule <k> MAP A B => #HandleAnnotations(A) ~> #PerformMap(M, .Map, B) ... </k>
@@ -799,24 +994,40 @@ As implied by the name, these rules implement an insertion sort of a loading gro
 
   rule <k> #PerformMap(.Map, M, _) => . ... </k>
        <stack> . => M ... </stack>
+```
 
+Iter is relatively easy to implement using a straightforward recursive style, since it does not need to track the new map while keeping it off the stack.
+
+```k
   rule <k> ITER A B => #HandleAnnotations(A)  ... </k>
        <stack> .Map => . ... </stack>
 
   rule <k> ITER A B => #HandleAnnotations(A) ~> B ~> #Push(M[#MinimalKey(M) <- undef]) ~> ITER .AnnotationList B ... </k>
        <stack> M:Map => Pair #MinimalKey(M) {M[#MinimalKey(M)]}:>Data ... </stack>
        requires size(M) >Int 0
+```
 
+SIZE lifts direclty into K.
+
+```k
   rule <k> SIZE A => #HandleAnnotations(A)  ... </k>
        <stack> M:Map => size(M) ... </stack>
+```
 
+For the purposes of this semantics, big\_maps are represented in the same way as maps, so they can reuse the same execution rules.
+
+```k
   //// Operations on big maps
 
   rule <k> EMPTY_BIG_MAP A _ _ => #HandleAnnotations(A)  ... </k>
        <stack> . => .Map ... </stack>
 
   // Same as maps
+```
 
+Option operations are relatively straightforward translations of the Michelson documentation into rewrite rules.
+
+```k
   //// Operations on optional values
 
   rule <k> SOME A => #HandleAnnotations(A)  ... </k>
@@ -830,7 +1041,11 @@ As implied by the name, these rules implement an insertion sort of a loading gro
 
   rule <k> IF_NONE A BT BF => #HandleAnnotations(A) ~> BF ... </k>
        <stack> Some V => V ... </stack>
+```
 
+Sum types are similar to options.
+
+```k
   //// Operations on unions
   rule <k> LEFT A _ => #HandleAnnotations(A)  ... </k>
        <stack> X:Data => Left X ... </stack>
@@ -849,7 +1064,11 @@ As implied by the name, these rules implement an insertion sort of a loading gro
 
   rule <k> IF_RIGHT A BT BF => #HandleAnnotations(A) ~> BF ... </k>
        <stack> Left V => V ... </stack>
+```
 
+Lists are somewhat nontrivial in that we need to keep track of typing information and hence we have the `#List` nonterminal.  Aside from that, the rules are a direct translation of the documentation into K.
+
+```k
   //// Operations on lists
   rule <k> CONS A => #HandleAnnotations(A)  ... </k>
        <stack> V ~> #List(L, T) => #List(ListItem(V) L, T) ... </stack>
@@ -862,16 +1081,22 @@ As implied by the name, these rules implement an insertion sort of a loading gro
 
   rule <k> IF_CONS A BT BF => #HandleAnnotations(A) ~> BF ... </k>
        <stack> #List(.List, _) => . ... </stack>
+```
 
+Note that, like Maps, Lists must keep track of the updated list on the fly during a `MAP` operation.  We cannot currently determine the type of the result list as we do not have a static type system.
+
+```k
   syntax KItem ::= #PerformMapList(MichelsonList, MichelsonList, Block)
 
   syntax Type ::= "#UnknownType"
 
   rule <k> MAP A B => #HandleAnnotations(A) ~> #PerformMapList(#List(Ls, T), #List(.List, #UnknownType), B) ... </k>
        <stack> #List(Ls, T) => . ... </stack>
+```
 
-  syntax KItem ::= #AddToList(MichelsonList, MichelsonList, Block)
+The accumulator list in `#PerformMapList` is actually backwards, so we need to reverse it before placing it back onto the stack.
 
+```k
   syntax List ::= #ReverseList(List) [function]
   syntax List ::= #ReverseListAux(List, List) [function]
   rule #ReverseList(L) => #ReverseListAux(L, .List)
@@ -880,13 +1105,22 @@ As implied by the name, these rules implement an insertion sort of a loading gro
 
   rule <k> #PerformMapList(#List(.List, _), #List(Acc, T), B) => . ... </k>
        <stack> . => #List(#ReverseList(Acc), T) ... </stack>
+```
 
+As with maps, before we execute a `MAP` block we must add the first element in the input list to the stack and schedule an `#AddToList` to pop the result off the stack.
+
+```k
+  syntax KItem ::= #AddToList(MichelsonList, MichelsonList, Block)
   rule <k> #PerformMapList(#List(ListItem(L) Ls, T), #List(Acc, T1), B) => B ~> #AddToList(#List(Ls, T), #List(Acc, T1), B) ... </k>
        <stack> . => L ... </stack>
 
   rule <k> #AddToList(#List(Ls, T), #List(Acc, T1), B) => #PerformMapList(#List(Ls, T), #List(ListItem(L) Acc, T1), B) ... </k>
        <stack> L => . ... </stack>
+```
 
+Size and iter have relatively simple implementations.
+
+```k
   rule <k> SIZE A => #HandleAnnotations(A)  ... </k>
        <stack> #List(L, T) => size(L) ... </stack>
 
@@ -895,7 +1129,11 @@ As implied by the name, these rules implement an insertion sort of a loading gro
 
   rule <k> ITER A B => #HandleAnnotations(A) ~> B ~> #Push(#List(Ls, T)) ~> ITER .AnnotationList B ... </k>
        <stack> #List(ListItem(L) Ls, T) => L ... </stack>
+```
 
+Timestamps are simply wrapped ints in K-Michelson, so the implementation of simple arithmetic over them is straightforward.  The differing argument types however forces us to use two rules for each operation.
+
+```k
   // Domain Specific operations
   //// Operations on timestamps
   rule <k> ADD A => . ... </k>
@@ -911,13 +1149,20 @@ As implied by the name, these rules implement an insertion sort of a loading gro
        <stack> #Timestamp(I1) ~> #Timestamp(I2) => I1 -Int I2 ... </stack>
 
   rule #DoCompare(#Timestamp(I1), #Timestamp(I2)) => #DoCompare(I1, I2)
+```
 
+We do a basic type sanity check when constructing operations by verifying that a data element could be an option key\_hash as the actual instruction type requires.
 
+```k
   syntax Bool ::= #IsKeyHashOption(OptionData) [function]
   rule #IsKeyHashOption(Some K:KeyHash) => true
   rule #IsKeyHashOption(None) => true
   rule #IsKeyHashOption(Some _) => false [owise]
+```
 
+Operations instructions mostly simply sanity check their arguments and then package them into the appropriate operation structure from michelson-internal-syntax.md.  Of interest in the `CREATE_CONTRACT` instructon is the `!_:Int` syntax, which simply generates a fresh integer that has not been used by this rule during this execution.  This ensures that two different `CREATE_CONTRACT` executions will produce different addresses.
+
+```k
   rule <k> CREATE_CONTRACT A:AnnotationList { C } => . ... </k>
        <stack> Delegate:OptionData ~> Initial:Mutez ~> Stor:Data => Create_contract(O, C, Delegate, Initial, Stor) ~> #Address("@Address(" +String Int2String(!_:Int) +String ")") ... </stack>
        <nonce> #Nonce(O) => #NextNonce(#Nonce(O)) </nonce>
@@ -931,14 +1176,26 @@ As implied by the name, these rules implement an insertion sort of a loading gro
        <stack> D => Set_delegate(O, D) ... </stack>
        <nonce> #Nonce(O) => #NextNonce(#Nonce(O)) </nonce>
        requires #IsKeyHashOption(D)
+```
 
+The Balance instruction simply pushes the value stored in the mybalance cell.
+
+```k
   rule <k> BALANCE A => . ... </k>
        <stack> . => B ... </stack>
        <mybalance> B </mybalance>
+```
 
+The ADDRESS instruction simply takes the address field of the contract structure and discards the rest.
+
+```k
   rule <k> ADDRESS Ann => . ... </k>
        <stack> #Contract(A, _) => A ... </stack>
+```
 
+We need to perform a type check in order to correctly implement the CONTRACT instruction since it should return None if a contract with a different parameter type exists at the given address.  This requires us to extract the type from the stored contract.  This is possible without another rule through more advanced K syntax but using a simple helper function seems more readable.
+
+```k
   syntax Type ::= #TypeFromContractStruct(Data) [function]
   rule #TypeFromContractStruct(#Contract(_, T)) => T
 
@@ -950,7 +1207,11 @@ As implied by the name, these rules implement an insertion sort of a loading gro
   rule <k> CONTRACT _ T => . ... </k>
        <stack> A:Address => None ... </stack>
        <knownaddrs> M </knownaddrs> [owise]
+```
 
+Like Balance, these instructions simply push the contents of the corresponding cells.
+
+```k
   rule <k> SOURCE Ann => . ... </k>
        <stack> . => A ... </stack>
        <sourceaddr> A </sourceaddr>
@@ -967,7 +1228,11 @@ As implied by the name, these rules implement an insertion sort of a loading gro
   rule <k> AMOUNT Ann => . ... </k>
        <stack> . => M ... </stack>
        <myamount> M </myamount>
+```
 
+`IMPLICIT_ACCOUNT` adds the additional information that the type of any such account is unit.
+
+```k
   rule <k> IMPLICIT_ACCOUNT Ann => . ... </k>
        <stack> #KeyHash(A) => #Contract(#Address(A), unit .AnnotationList) ... </stack>
 
@@ -979,18 +1244,29 @@ As implied by the name, these rules implement an insertion sort of a loading gro
   rule <k> NOW A => . ... </k>
        <stack> . => N ... </stack>
        <mynow> N </mynow>
+```
 
+The bytes instructions have a stubbed implementation for the time being, since the actual serialization format is unspecified.
 
+```k
   //// Operations on MBytes, stubbed for now because of the lack of a documented bytes format.
   rule <k> PACK A => #HandleAnnotations(A) ... </k>
        <stack> T => #Packed(T) ... </stack>
 
   rule <k> UNPACK A _ => #HandleAnnotations(A) ... </k>
        <stack> #Packed(T) => T ... </stack>
+```
 
+The concat operation over two bytes is relatively straightforward since we already have helper functions to extract bytes content.
+
+```k
   rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
        <stack> B1:MBytesLiteral ~> B2:MBytesLiteral => #StringToMBytes("0x" +String #MBytesContent(B1) +String #MBytesContent(B2)) ... </stack>
+```
 
+Concatenating lists of bytes is somewhat more involved, since we need to distinguish this case from lists of strings.
+
+```k
   syntax MBytesLiteral ::= #ConcatBytes(List, String) [function]
   rule #ConcatBytes(.List, A) => #StringToMBytes(A)
   rule #ConcatBytes(ListItem(B1) DL, A) => #ConcatBytes(DL, A +String #MBytesContent(B1))
@@ -1000,10 +1276,18 @@ As implied by the name, these rules implement an insertion sort of a loading gro
 
   rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
        <stack> #List(ListItem(M:MBytesLiteral) L, _) => #ConcatBytes(ListItem(M) L, "0x") ... </stack>
+```
 
+Size is relatively simple, except that we must remember to divide by two, since bytes length is measured in terms of number of bytes, not characters in the hex string.
+
+```k
   rule <k> SIZE A => #HandleAnnotations(A) ... </k>
        <stack> B:MBytesLiteral => lengthString(#MBytesContent(B)) /Int 2 ... </stack>
+```
 
+The remaining operations are defined in terms of the same operations on strings, allowing for code reuse.
+
+```k
   syntax OptionData ::= #OptionBytesFromOptionContent(Data) [function]
   rule #OptionBytesFromOptionContent(None) => None
   rule #OptionBytesFromOptionContent(Some S:String) => Some #StringToMBytes("0x" +String S)
@@ -1012,7 +1296,11 @@ As implied by the name, these rules implement an insertion sort of a loading gro
        <stack> O:Int ~> L:Int ~> B:MBytesLiteral => #OptionBytesFromOptionContent(#SliceString(#MBytesContent(B), 2 *Int O, 2 *Int L))  ... </stack>
 
   rule #DoCompare(B1:MBytesLiteral, B2:MBytesLiteral) => #DoCompare(#MBytesContent(B1), #MBytesContent(B2))
+```
 
+The cryptographic operations are simply stubbed for now.
+
+```k
   //// Cryptographic primitives
 
   syntax String ::= #Blake2BKeyHash(String) [function] // TODO: Blake2B crypto hook.
@@ -1039,7 +1327,11 @@ As implied by the name, these rules implement an insertion sort of a loading gro
        <stack> #Key(_) ~> #Signature(_) ~> _:MBytes => false ... </stack> [owise] // TODO: Bug - The haskell backend does not support distinguishing these rules.*/
 
   rule #DoCompare(#KeyHash(S1), #KeyHash(S2)) => #DoCompare(S1, S2)
+```
 
+Mutez operations need to check their results since Mutez is not an unlimited precision type.  This KItem checks and produces the appropriate error case if the value is invalid.
+
+```k
   //// Operations on Mutez
   syntax KItem ::= #ValidateMutezAndPush(Mutez, Int, Int)
 
@@ -1055,7 +1347,11 @@ As implied by the name, these rules implement an insertion sort of a loading gro
   rule <k> #ValidateMutezAndPush(#Mutez(I), I1, I2) ~> Rk => Aborted("Mutez out of bounds", I, Rk, Rs) </k>
        <stack> Rs => #FailureFromMutezValue(#Mutez(I), I1, I2) </stack>
        requires notBool #IsLegalMutezValue(I)
+```
 
+Other than the mutez validation step, these arithmetic rules are essentially identical to those defined over integers.
+
+```k
   rule <k> ADD A => #ValidateMutezAndPush(#Mutez(I1 +Int I2), I1, I2) ~> #HandleAnnotations(A) ... </k>
        <stack> #Mutez(I1) ~> #Mutez(I2) => . ... </stack>
 
@@ -1083,12 +1379,22 @@ As implied by the name, these rules implement an insertion sort of a loading gro
        requires I2 >Int 0
 
   rule #DoCompare(#Mutez(I1), #Mutez(I2)) => #DoCompare(I1, I2)
+```
 
+A simple helper function for converting from the built in List sort to a ksequence.
+
+```k
   syntax K ::= #ListToKSeq(List) [function]
   syntax K ::= #ListToKSeqAux(List, K) [function]
 
   rule #ListToKSeq(L) => #ListToKSeqAux(#ReverseList(L), .K)
   rule #ListToKSeqAux(ListItem(O) L, S) => #ListToKSeqAux(L, O ~> S)
   rule #ListToKSeqAux(.List, S) => S
+```
+
+This rule simply clears the returncode if the k cell empties properly.
+
+```k
+  rule <k> . </k> <returncode> 1 => 0 </returncode>
 endmodule
 ```

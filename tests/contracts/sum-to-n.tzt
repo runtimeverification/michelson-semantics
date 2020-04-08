@@ -1,4 +1,4 @@
-parameter_value 300000 ;
+parameter_value 600000 ;
 storage_value 0 ;
 contract { 
   storage nat ; 
