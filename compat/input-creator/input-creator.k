@@ -38,8 +38,10 @@ module INPUT-CREATOR
 
   syntax Type ::= #FindParamType(Pgm) [function]
   rule #FindParamType(parameter T) => T
+  rule #FindParamType(parameter T;) => T
   rule #FindParamType(parameter T ; Rs) => T
   rule #FindParamType(_:Group) => unit .AnnotationList [owise]
+  rule #FindParamType(_:Group;) => unit .AnnotationList [owise]
   rule #FindParamType(_ ; Rs) => #FindParamType(Rs) [owise]
 
   rule <k> G:Pgm => . </k>

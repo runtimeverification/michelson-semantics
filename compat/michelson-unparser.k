@@ -159,6 +159,8 @@ module MICHELSON-UNPARSER
   rule #doUnparse(map AList T1 T2, true) => "(" +String #doUnparse(map AList T1 T2, false) +String ")"
   rule #doUnparse(big_map AList T1 T2, true) => "(" +String #doUnparse(big_map AList T1 T2, false) +String ")" 
 
+  rule #doUnparse(I:Instruction ;, _) => #doUnparse(I, false) +String ";"
+ 
   rule #doUnparse(DROP AList, _) => "DROP" +String #doUnparse(AList, false)
   rule #doUnparse(DROP AList I:Int, _) => "DROP" +String #doUnparse(AList, false) +String " " +String #doUnparse(I, true)
   rule #doUnparse(DIG AList I, _) => "DIG" +String #doUnparse(AList, false) +String " " +String #doUnparse(I, true)
@@ -443,5 +445,5 @@ module MICHELSON-UNPARSER
   rule #doUnparse(input C, _) => "input " +String #doUnparse(C, true)
   rule #doUnparse(output LS, _) => "output " +String #doUnparse(LS, true)
 
-  rule #doUnparse(#Any, _) => "_"
+  rule #doUnparse(#Any, _) => "#Any"
 endmodule
