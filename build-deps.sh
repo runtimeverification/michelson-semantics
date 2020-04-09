@@ -12,9 +12,9 @@ TEZOS_DIRECTORY="$SCRIPT_DIRECTORY/ext/tezos"
 
 git submodule update --init --recursive
 cd "$K_DIRECTORY"
-mvn package
+mvn package -DskipTests
 cd "$TEZOS_DIRECTORY"
-opam init --bare
+opam init --bare --no-setup
 make build-deps
 eval `opam env`
 make
