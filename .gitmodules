@@ -9,4 +9,4 @@
 	url = https://github.com/ehildenb/pandoc-tangle.git
 [submodule "ext/blockchain-k-plugin"]
 	path = ext/blockchain-k-plugin
-	url = https://github.com/sskeirik/blockchain-plugin
+	url = https://github.com/sskeirik/blockchain-k-plugin
