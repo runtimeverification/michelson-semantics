@@ -1,5 +1,11 @@
 FROM runtimeverificationinc/ubuntu:bionic
 
+# add opam repository
+RUN    apt-get update                                   \
+    && apt-get install --yes software-properties-common \
+    && add-apt-repository ppa:avsm/ppa
+
+# install dependencies
 RUN    apt-get update                \
     && apt-get upgrade --yes         \
     && apt-get install --yes         \
@@ -28,6 +34,7 @@ RUN    apt-get update                \
             make                     \
             maven                    \
             netcat-openbsd           \
+            opam                     \
             openjdk-11-jdk           \
             pandoc                   \
             pkg-config               \

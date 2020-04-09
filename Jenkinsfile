@@ -6,16 +6,14 @@ pipeline {
       when { changeRequest() }
       steps { script { currentBuild.displayName = "PR ${env.CHANGE_ID}: ${env.CHANGE_TITLE}" } }
     }
-    // stage('Build and Test') {
-    //   when { changeRequest() }
-    //   agent {
-    //   }
-    //   stages {
-    //     stage('Dependencies') { steps { sh 'make deps RELEASE=true' } }
-    //     stage('Build')        { steps { sh 'make build -j4'         } }
-    //     stage('Build')        { steps { sh 'make test -j4'          } }
-    //   }
-    // }
+    stage('Build and Test') {
+      when { changeRequest() }
+      stages {
+        stage('Dependencies') { steps { sh './build-deps.sh' } }
+        stage('Build')        { steps { sh './build.sh'      } }
+        // stage('Build')        { steps { sh 'make test -j4'          } }
+      }
+    }
     // stage('Deploy') {
     //   when { branch 'master' }
     //     stage('GitHub Pages') {
