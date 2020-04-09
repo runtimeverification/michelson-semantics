@@ -109,7 +109,7 @@ Here we define the simple data literals.
 ```k
   syntax SimpleData ::= Int
   syntax SimpleData ::= String
-  syntax SimpleData ::= MichelsonBool
+  syntax Data ::= MichelsonBool [klabel(MichelsonBool), symbol, function, avoid]
   syntax SimpleData ::= MBytesLiteral
   syntax SimpleData ::= "Unit"
   syntax SimpleData ::= Timestamp
@@ -421,7 +421,7 @@ Programs consist of sequences of these groups, potentially with an extra semicol
                  | ContractsGroup
                  | BigMapGroup
 
-  syntax Groups ::= Group | Group ";" Groups
-  syntax Pgm ::= Groups | Groups ";"
+  syntax Groups ::= Group | Group ";" Groups | Group ";"
+  syntax Pgm ::= Groups
 endmodule
 ```

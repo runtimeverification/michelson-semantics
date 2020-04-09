@@ -24,4 +24,4 @@ for f in $MAIN_DEF_FILES ; do
     pandoc --from markdown --to "$TANGLER" --metadata=code:.k "$SCRIPT_DIRECTORY/$f" > "$BUILD_DIRECTORY/$(basename $f .md).k"
 done
 
-kompile --directory "$SCRIPT_DIRECTORY" $KOMPILE_OPTS $* "$BUILD_DIRECTORY/unit-test.k" && "$SCRIPT_DIRECTORY/compat/kompile-all.sh"
+kompile --directory "$SCRIPT_DIRECTORY" --gen-bison-parser $KOMPILE_OPTS $* "$BUILD_DIRECTORY/unit-test.k" && "$SCRIPT_DIRECTORY/compat/kompile-all.sh"

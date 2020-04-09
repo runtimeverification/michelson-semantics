@@ -336,6 +336,7 @@ As implied by the name, these rules implement an insertion sort of a loading gro
 
   syntax Groups ::= #InsertionSort(Groups) [function] // Note that this is a *stable* insertion sort.
   rule #InsertionSort(G:Group) => G
+  rule #InsertionSort(G:Group;) => G
   rule #InsertionSort(G ; Gs) => #InsertInOrder(#InsertionSort(Gs), G)
 ```
 
@@ -364,6 +365,7 @@ This function determines whether or not a contract group exists in a loading gro
   syntax Bool ::= #HasContract(Groups) [function]
   rule #HasContract(contract { C }) => true
   rule #HasContract(contract { C } ; _) => true
+  rule #HasContract(G ;) => #HasContract(G)
   rule #HasContract(_ ; Gs) => #HasContract(Gs) [owise]
   rule #HasContract(_:Group) => false [owise]
 ```
@@ -488,7 +490,7 @@ This rule tolerates multiple contract groups in the same file by selecting one o
 The final loading group in this file is the contract group.  The storage and parameter values are combined and the stack is initialized, and then the code is extracted so that we can move on to the execution semantics.
 
 ```k
-  rule <k> #LoadGroups(contract { code C ; storage _ ; parameter _ }) => C </k>
+  rule <k> #LoadGroups(contract { code C ; storage _ ; parameter _ ; }) => C </k>
        <stack> . => Pair P S </stack>
        <paramvalue> P </paramvalue>
        <storagevalue> S </storagevalue>
@@ -502,9 +504,8 @@ These rules split apart blocks into KItems so that the main semantic rules can u
   rule I:Instruction ; Is:InstructionList => I ~> Is
   rule {} => .K [structrual]
   rule { Is:InstructionList } => Is
-  rule { Is:InstructionList ; } => { Is } [macro]
+  rule { Is:InstructionList ; } => Is
 ```
-
 For now, annotations are simply ignored.
 
 ```k

@@ -70,35 +70,29 @@ The `#LoadGroups` production is used during contract loading.  See `michelson.k`
   syntax KItem ::= #LoadGroups(Groups)
 ```
 
-The .tzt format specifies that the top level sequence of groups may have an extra semicolon on the end.  We remove it here so we don't need to duplicate the initial loading rule.
-
-# It is also the case for regular Michelson files and in fact all Micheline sequences.
-
-```k
-  rule Gs:Groups ; => Gs [macro]
-```
-
 Michelson bools are of the form (True/False), but K bools are of the form (true/false).  We convert them here so we can define rewrite rules over the K bool sort.
 
 ```k
-  rule True => true [macro]
-  rule False => false [macro]
+  rule `MichelsonBool`(True) => true
+  rule `MichelsonBool`(False) => false
 ```
 
-A Michelson contract consists of three [primitive applications](https://tezos.gitlab.io/whitedoc/michelson.html#primitive-applications) `code`, `storage` and `parameter` in any order, separated by semicolons and with or without an extra semicolon at the end.  We standardize this format with these eleven macro rules here.
+A Michelson contract consists of three [primitive applications](https://tezos.gitlab.io/whitedoc/michelson.html#primitive-applications) `code`, `storage` and `parameter` in any order, separated by semicolons and with or without an extra semicolon at the end.  We standardize this format with these eleven 'anywhere' rules here.
 
 ```k
-  rule code B ; storage St ; parameter Pt => code B ; storage St ; parameter Pt ; [macro]
-  rule code B ; parameter Pt ; storage St => code B ; storage St ; parameter Pt ; [macro]
-  rule storage St ; code B ; parameter Pt => code B ; storage St ; parameter Pt ; [macro]
-  rule parameter Pt ; code B ; storage St => code B ; storage St ; parameter Pt ; [macro]
-  rule storage St ; parameter Pt ; code B => code B ; storage St ; parameter Pt ; [macro]
-  rule parameter Pt ; storage St ; code B => code B ; storage St ; parameter Pt ; [macro]
+  rule code B ; storage St ; parameter Pt => code B ; storage St ; parameter Pt ; [anywhere]
+  rule code B ; parameter Pt ; storage St => code B ; storage St ; parameter Pt ; [anywhere]
+  rule storage St ; code B ; parameter Pt => code B ; storage St ; parameter Pt ; [anywhere]
+  rule parameter Pt ; code B ; storage St => code B ; storage St ; parameter Pt ; [anywhere]
+  rule storage St ; parameter Pt ; code B => code B ; storage St ; parameter Pt ; [anywhere]
+  rule parameter Pt ; storage St ; code B => code B ; storage St ; parameter Pt ; [anywhere]
 
-  rule code B ; parameter Pt ; storage St ; => code B ; storage St ; parameter Pt ; [macro]
-  rule storage St ; code B ; parameter Pt ; => code B ; storage St ; parameter Pt ; [macro]
-  rule parameter Pt ; code B ; storage St ; => code B ; storage St ; parameter Pt ; [macro]
-  rule storage St ; parameter Pt ; code B ; => code B ; storage St ; parameter Pt ; [macro]
-  rule parameter Pt ; storage St ; code B ; => code B ; storage St ; parameter Pt ; [macro]
+  rule code B ; parameter Pt ; storage St ; => code B ; storage St ; parameter Pt ; [anywhere]
+  rule storage St ; code B ; parameter Pt ; => code B ; storage St ; parameter Pt ; [anywhere]
+  rule parameter Pt ; code B ; storage St ; => code B ; storage St ; parameter Pt ; [anywhere]
+  rule storage St ; parameter Pt ; code B ; => code B ; storage St ; parameter Pt ; [anywhere]
+  rule parameter Pt ; storage St ; code B ; => code B ; storage St ; parameter Pt ; [anywhere]
+
+  rule G:Group ; => G
 endmodule
 ```
