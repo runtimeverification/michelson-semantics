@@ -505,7 +505,7 @@ These rules split apart blocks into KItems so that the main semantic rules can u
   rule I:Instruction ; Is:InstructionList => I ~> Is
   rule {} => .K [structrual]
   rule { Is:InstructionList } => Is
-  rule I:Instruction ; => I
+  rule I:Instruction ; => I [anywhere]
 ```
 
 For now, annotations are simply ignored.
