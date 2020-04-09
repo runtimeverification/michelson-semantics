@@ -92,7 +92,5 @@ A Michelson contract consists of three [primitive applications](https://tezos.gi
   rule parameter Pt ; code B ; storage St ; => code B ; storage St ; parameter Pt ; [anywhere]
   rule storage St ; parameter Pt ; code B ; => code B ; storage St ; parameter Pt ; [anywhere]
   rule parameter Pt ; storage St ; code B ; => code B ; storage St ; parameter Pt ; [anywhere]
-
-  rule G:Group ; => G
 endmodule
 ```

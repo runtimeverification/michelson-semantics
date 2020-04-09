@@ -38,7 +38,7 @@ Here we define the three sequence sorts in Michelson.  Note that these sorts cov
 ```k
   syntax DataList ::= Data | Data ";" DataList
   syntax MapEntryList ::= MapEntry | MapEntry ";" MapEntryList
-  syntax InstructionList ::= Instruction | Instruction ";" InstructionList
+  syntax InstructionList ::= Instruction | Instruction ";" InstructionList | Instruction ";"
 ```
 
 # What about sets?
@@ -97,7 +97,6 @@ Here we specify the various forms of sequence literals in Michelson, including M
   syntax EmptyBlock ::= "{" "}"
 
   syntax Block ::= "{" InstructionList "}"
-                 | "{" InstructionList ";" "}"
                  | EmptyBlock
 
   syntax SequenceData ::= MapLiteral | ListLiteral | Block

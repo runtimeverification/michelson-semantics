@@ -345,6 +345,7 @@ This function seeks out a contract loading group in a list of groups.  It should
 ```k
   syntax Contract ::= #FindContract(Groups) [function]
   rule #FindContract(contract { C }) => C
+  rule #FindContract(contract { C } ;) => C
   rule #FindContract(contract { C } ; _) => C
   rule #FindContract(_ ; Gs) => #FindContract(Gs) [owise]
 ```
@@ -504,8 +505,9 @@ These rules split apart blocks into KItems so that the main semantic rules can u
   rule I:Instruction ; Is:InstructionList => I ~> Is
   rule {} => .K [structrual]
   rule { Is:InstructionList } => Is
-  rule { Is:InstructionList ; } => Is
+  rule I:Instruction ; => I
 ```
+
 For now, annotations are simply ignored.
 
 ```k
@@ -1380,17 +1382,6 @@ Other than the mutez validation step, these arithmetic rules are essentially ide
        requires I2 >Int 0
 
   rule #DoCompare(#Mutez(I1), #Mutez(I2)) => #DoCompare(I1, I2)
-```
-
-A simple helper function for converting from the built in List sort to a ksequence.
-
-```k
-  syntax K ::= #ListToKSeq(List) [function]
-  syntax K ::= #ListToKSeqAux(List, K) [function]
-
-  rule #ListToKSeq(L) => #ListToKSeqAux(#ReverseList(L), .K)
-  rule #ListToKSeqAux(ListItem(O) L, S) => #ListToKSeqAux(L, O ~> S)
-  rule #ListToKSeqAux(.List, S) => S
 ```
 
 This rule simply clears the returncode if the k cell empties properly.
