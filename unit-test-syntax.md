@@ -32,7 +32,7 @@ To fully implement the .tzt format, we add four new groups to the loading group 
 
 ```k
   syntax InputGroup ::= "input" LiteralStack
-  syntax CodeGroup ::= "code" Instruction
+  syntax CodeGroup ::= CodeDecl
   syntax OutputGroup ::= "output" OutputStack
 
   syntax Group ::= InputGroup | CodeGroup | OutputGroup | ParameterDecl

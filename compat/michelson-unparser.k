@@ -80,6 +80,9 @@ module MICHELSON-UNPARSER
 
   rule #doUnparse(M, _) => #unparseMBytesLiteral(M)
 
+  rule #doUnparse(true, _) => "True"
+  rule #doUnparse(false, _) => "False"
+
   rule #doUnparse(True, _) => "True"
   rule #doUnparse(False, _) => "False"
 
@@ -286,14 +289,14 @@ module MICHELSON-UNPARSER
   rule #doUnparse(storage T, _) => "storage " +String #doUnparse(T, true)
   rule #doUnparse(parameter T, _) => "parameter " +String #doUnparse(T, true)
 
-  rule #doUnparse(C:CodeDecl ; S:StorageDecl ; P:ParameterDecl, _) => 
+  rule #doUnparse((C:CodeDecl ; S:StorageDecl ; P:ParameterDecl):Contract, _) => 
     #doUnparse(C, false) +String 
     "; " +String
     #doUnparse(S, false) +String
     "; " +String
     #doUnparse(P, false)
 
-  rule #doUnparse(C:CodeDecl ; S:StorageDecl ; P:ParameterDecl ;, _) => 
+  rule #doUnparse((C:CodeDecl ; S:StorageDecl ; P:ParameterDecl ;):Contract, _) => 
     #doUnparse(C, false) +String 
     "; " +String
     #doUnparse(S, false) +String
