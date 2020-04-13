@@ -141,7 +141,7 @@ Mutez is simply a specially tagged int - we also sanity check the int to ensure 
   rule #ConcreteArgToSemantics(I:Int, mutez _) => #Mutez(I) requires #IsLegalMutezValue(I) 
 ```
 
-K's macro expansion step has already handled converting Michelsons "True/False" booleans into "true/false" K bools, so we don't need to do anything special with them here.
+K's function expansion step has already handled converting Michelsons "True/False" booleans into "true/false" K bools, so we don't need to do anything special with them here.
 
 ```k
   rule #ConcreteArgToSemantics(B:Bool, bool _) => B
