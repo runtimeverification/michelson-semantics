@@ -11,7 +11,7 @@ pipeline {
       stages {
         stage('Dependencies') { steps { sh './build-deps.sh' } }
         stage('Build')        { steps { sh './build.sh'      } }
-        // stage('Build')        { steps { sh 'make test -j4'          } }
+        stage('Test')         { steps { sh './run-tests.sh'  } }
       }
     }
     // stage('Deploy') {
