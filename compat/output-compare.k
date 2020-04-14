@@ -5,17 +5,14 @@ module OUTPUT-COMPARE-SYNTAX
   imports UNIT-TEST-SYNTAX
   syntax RealOutputGroup ::= "real_output" OutputStack
   syntax Group ::= RealOutputGroup
-  syntax Pgm ::= Data
 endmodule
 
 module OUTPUT-COMPARE
   imports OUTPUT-COMPARE-SYNTAX
   imports COMPAT-COMMON
   imports K-REFLECTION
-  imports MICHELSON
 
   syntax String ::= #decodeBinaryRepresentation(String) [function, hook(MICHELSON.decode)]
-
   syntax BlockchainOperation ::= #parseOperation(String) [function]
   rule #parseOperation(S) => #parseKORE(S)
 
@@ -34,15 +31,13 @@ module OUTPUT-COMPARE
        requires #Matches(#ConcreteArgToSemantics(ED, ET), #ConcreteArgToSemantics(AD, AT))
 
   rule <k> #CheckOutput( { Stack_elt ET ED } , { Stack_elt AT AD } )  </k>
-       <stack> . => #Mismatch(#ConcreteArgToSemantics(ED, ET), #ConcreteArgToSemantics(AD, AT)) </stack> [owise]
+       <out> ... .List => ListItem("Mismatch - Expected: " +String #unparse(#ConcreteArgToSemantics(ED, ET)) +String " Actual: " +String #unparse(#ConcreteArgToSemantics(AD, AT))) </out> [owise]
 
   rule <k> #CheckOutput( { Stack_elt ET ED ; Es } , { Stack_elt AT AD ; As } ) => #CheckOutput( { Es } , { As } ) </k>
        requires #Matches(#ConcreteArgToSemantics(ED, ET), #ConcreteArgToSemantics(AD, AT))
 
-  syntax KItem ::= #Mismatch(Data, Data)
-
   rule <k> #CheckOutput( { Stack_elt ET ED ; Es } , { Stack_elt AT AD ; As } )  </k>
-       <stack> . => #Mismatch(#ConcreteArgToSemantics(ED, ET), #ConcreteArgToSemantics(AD, AT)) </stack> [owise]
+       <out> ... .List => ListItem("Mismatch - Expected: " +String #unparse(#ConcreteArgToSemantics(ED, ET)) +String " Actual: " +String #unparse(#ConcreteArgToSemantics(AD, AT))) </out> [owise]
 
   rule <k> other_contracts M ; Gs => Gs </k>
        <knownaddrs> _ => #OtherContractsMapToKMap(M) </knownaddrs>

@@ -82,7 +82,7 @@ void spawnSourceProcess(const TempFile& in_file, const TempFile& out_file) {
 }
 
 void spawnKastProcess(const TempFile& in_file, const TempFile& out_file) {
-    const std::string cmd = "kast --expand-macros -o kore --directory " + getExeDirectory() + "/.. " + std::string(in_file.name) + " > " + std::string(out_file.name);
+    const std::string cmd = "kast -s Data --expand-macros -o kore --directory " + getExeDirectory() + "/.. " + std::string(in_file.name) + " > " + std::string(out_file.name);
     if (system(cmd.c_str())) {
         throw std::invalid_argument("Failed to run kast");
     }
