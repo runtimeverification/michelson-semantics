@@ -10,6 +10,8 @@ with open(sys.argv[1], 'r') as f:
     if len(sys.argv) == 5 and val.strip() == "":
         val = sys.argv[4]
     if skip_key:
+        if val.startswith('"') and val.endswith('"'):
+            val = val[1:-1]
         print(val)
     else:
         print("{0} {1} ;".format(sys.argv[2], val))

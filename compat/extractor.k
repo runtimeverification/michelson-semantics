@@ -24,11 +24,13 @@ module EXTRACTOR
   rule #KeyFromGroup(G:CodeGroup) => "code"
   rule #KeyFromGroup(G:InputGroup) => "input"
   rule #KeyFromGroup(G:OutputGroup) => "output"
+  rule #KeyFromGroup(G:ParameterDecl) => "parameter"
 
   syntax K ::= #GroupContent(Group) [function]
   rule #GroupContent(contract { C }) => C
   rule #GroupContent(now C) => C
   rule #GroupContent(sender C) => C
+  rule #GroupContent(source C) => C
   rule #GroupContent(chain_id C) => C
   rule #GroupContent(self C) => C
   rule #GroupContent(amount C) => C
@@ -37,6 +39,7 @@ module EXTRACTOR
   rule #GroupContent(code C) => C
   rule #GroupContent(input C) => C
   rule #GroupContent(output C) => C
+  rule #GroupContent(parameter C) => C
 
   syntax JSON ::= #GroupsToJson(Groups) [function]
   syntax JSONs ::= #GroupsToJsonAux(Groups) [function]
@@ -46,6 +49,8 @@ module EXTRACTOR
 
   rule #GroupsToJsonAux(G ; Gs) => #GroupToJson(G) , #GroupsToJsonAux(Gs)
   rule #GroupsToJsonAux(G) => #GroupToJson(G)
+  rule #GroupsToJsonAux(G ;) => #GroupToJson(G)
+
 
   rule #GroupToJson(G) => #KeyFromGroup(G) : #unparse(#GroupContent(G))
 
