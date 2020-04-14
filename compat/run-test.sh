@@ -45,34 +45,27 @@ EXPECTED_OUTPUT_FILE="$TEMP_DIR/expected"
 OUTPUT_FILE="$TEMP_DIR/actual-and-expected"
 COMPARE_FILE="$TEMP_DIR/comparison"
 
+function extract {
+    python3 "$SCRIPT_DIR/extract-group.py" "$EXTRACTED_JSON" "$1" "$2" "$3"
+}
 
 grep -o '@Address([^)"]*)' "$UT" | sort | uniq > "$FOUND_ADDRESSES"
 
-"$SCRIPT_DIR/run-semantics.sh" "extractor" "$UT"
+"$SCRIPT_DIR/run.sh" "extractor" "$UT" > "$EXTRACTED_JSON"
 
+extract other_contracts true | tr -d '{}' | tr ';' '\n' | sed -E 's/^\s*//;s/\s*$//;s/Elt\s*"([^"]*)"\s*(.*)/\1#\2/;/^\s*$/d' > "$REAL_ADDRESSES_UNSORTED"
 
-
-OTHER_EXTRACTOR_CMD=$(cat <<EOF
-'$SCRIPT_DIR/extractor/run.sh' '$UT' other_contracts true |  
-    tr -d '{}' | 
-    tr ';' '\n' | 
-    sed -E 's/^\s*//;s/\s*$//;s/Elt\s*"([^"]*)"\s*(.*)/\1#\2/;/^\s*$/d' > '$REAL_ADDRESSES_UNSORTED'
-EOF
-)
-
-output_if_failing "$OTHER_EXTRACTOR_CMD" "Failed to extract dependencies on other contracts."
-
-FAKE_SENDER="$("$SCRIPT_DIR/extractor/run.sh" "$UT" 'sender' 'true')"
+FAKE_SENDER="$(extract sender true)"
 if [ ! -z $FAKE_SENDER ] && ! ( grep "$FAKE_SENDER" "$REAL_ADDRESSES_UNSORTED" ); then
     echo "$FAKE_SENDER#unit" >> "$REAL_ADDRESSES_UNSORTED"
 fi
 
-FAKE_SOURCE="$("$SCRIPT_DIR/extractor/run.sh" "$UT" 'source' 'true')"
+FAKE_SOURCE="$(extract source true)"
 if [ ! -z $FAKE_SOURCE ] && ! ( grep "$FAKE_SOURCE" "$REAL_ADDRESSES_UNSORTED" ); then
     echo "$FAKE_SOURCE#unit" >> "$REAL_ADDRESSES_UNSORTED"
 fi
 
-FAKE_SELF="$("$SCRIPT_DIR/extractor/run.sh" "$UT" 'self' 'true' | sed 's/"\([^"]*\)"/\1/')"
+FAKE_SELF="$(extract self true)"
 REAL_SELF="$(tezos-client run script "parameter unit ; storage (option address) ; code { DROP ; SELF ; ADDRESS ; CONTRACT unit ; IF_SOME { ADDRESS ; SOME ; NIL operation ; PAIR } {FAIL} }" on storage None and input Unit 2>&1 | grep "Some" | sed -E 's/\s*\(Some "([^"]*)"\)\s*/\1/')"
 
 sort "$REAL_ADDRESSES_UNSORTED" | uniq > "$REAL_ADDRESSES"
@@ -97,7 +90,7 @@ paste -d '/' <(cut -d'#' -f1 "$REAL_ADDRESSES") <(grep -Po '(?<=New contract )[a
 cat "$FAKE_ADDRESS_SUBS" "$ORIGINATION_SUBS" > "$ALL_SUBS"
 sed -f "$ALL_SUBS" "$UT" > "$FIXED_ADDRESS_CONTRACT"
 
-output_if_failing "'$SCRIPT_DIR/contract-expander/run.sh' '$FIXED_ADDRESS_CONTRACT' > '$EXPANDED_FILE'" "Contract did not expand properly"
+output_if_failing "'$SCRIPT_DIR/run.sh' contract-expander '$FIXED_ADDRESS_CONTRACT' > '$EXPANDED_FILE'" "Contract did not expand properly"
 output_if_failing "tezos-client typecheck script '$(cat "$EXPANDED_FILE")' --details  >$TYPECHECK_OUTPUT 2>&1" "Contract did not typecheck"
 
 pcregrep -oM '(?<=\[)\s*@exitToken[^]]*' "$TYPECHECK_OUTPUT" > "$RAW_TYPES"
@@ -105,7 +98,7 @@ FOUND_TYPES="$?"
 
 sed -E 's/ : /\n/g;s/@%|@%%|%@|[@:%][_a-zA-Z][_0-9a-zA-Z\.%@]*//g' "$RAW_TYPES" > "$TYPES_FILE"
 
-AMOUNT="$('$SCRIPT_DIR/extractor/run.sh' '$UT' 'amount' 'true')"
+AMOUNT="$(extract 'amount' 'true')"
 
 REAL_SOURCE="$(grep "$FAKE_SOURCE" $ORIGINATION_SUBS | sed -E 's|s/[^/]*/([^/]*)/|\1|')"
 if [ ! -z "$REAL_SOURCE" ] ; then
@@ -118,7 +111,7 @@ if [ ! -z "$REAL_SENDER" ] ; then
     SENDER_CLI="--source $REAL_SENDER"
 fi
 
-output_if_failing "'$SCRIPT_DIR/input-creator/run.sh' '$UT' > '$INPUT_FILE'" "Could not generate input"
+output_if_failing "'$SCRIPT_DIR/run.sh' input-creator '$UT' > '$INPUT_FILE'" "Could not generate input"
 
 tezos-client run script "$(cat $EXPANDED_FILE)" on storage Unit and input $(cat "$INPUT_FILE") --amount "$AMOUNT" --trace-stack $SENDER_CLI $SOURCE_CLI > "$EXECUTION" 2>&1
 # For some reason, the cli argument for "SENDER" is "--source" and "SOURCE" is "--payer"
@@ -127,8 +120,8 @@ pcregrep -oM '(?<=\[)\s*Unit\s*@exitToken[^]]*' "$EXECUTION" > "$RAW_DATA"
 FOUND="$?"
 
 sed -E "s/@%|@%%|%@|[@:%][_a-zA-Z][_0-9a-zA-Z\.%@]*//g" "$RAW_DATA" > "$DATA_FILE" ;
-"$SCRIPT_DIR/extractor/run.sh" "$UT" 'other_contracts' 'false' | sed -f "$ALL_SUBS" > "$FIXED_ADDRS_OUTPUT" ;
-"$SCRIPT_DIR/extractor/run.sh" "$1" 'output' 'false' | sed -f "$ALL_SUBS" > "$EXPECTED_OUTPUT_FILE" ;
+extract 'other_contracts' 'false' '{}' | sed -f "$ALL_SUBS" > "$FIXED_ADDRS_OUTPUT" ;
+extract 'output' 'false' '{}' | sed -f "$ALL_SUBS" > "$EXPECTED_OUTPUT_FILE" ;
 
 if [ "$FOUND" -eq "0" ]; then
     if [ "$FOUND_TYPES" -ne "0" ]; then
@@ -151,6 +144,6 @@ fi
 
 echo | cat "$FIXED_ADDRS_OUTPUT" "$REAL_OUTPUT_FILE" "$EXPECTED_OUTPUT_FILE" - > "$OUTPUT_FILE" ;
 
-output_if_failing "'$SCRIPT_DIR/output-compare/run.sh' '$OUTPUT_FILE' > '$COMPARE_FILE'" "Output did not compare correctly"
+output_if_failing "'$SCRIPT_DIR/run.sh' output-compare '$OUTPUT_FILE' > '$COMPARE_FILE'" "Output did not compare correctly"
 
 echo "$1 Passed"
