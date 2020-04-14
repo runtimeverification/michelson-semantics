@@ -1,4 +1,0 @@
-query code_or_contract true ;
-code { ABS } ; 
-input { Stack_elt int -5 } ;
-output { Stack_elt nat 5 }

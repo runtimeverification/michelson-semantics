@@ -1,4 +1,4 @@
-requires "../common.k"
+requires "common.k"
 
 module UNIT-TEST-EXPANDER
   imports COMPAT-COMMON
@@ -35,18 +35,22 @@ module UNIT-TEST-EXPANDER
 
   syntax LiteralStack ::= #FindInputGroup(Groups) [function]
   rule #FindInputGroup(input T) => T
+  rule #FindInputGroup(input T;) => T
   rule #FindInputGroup(input T ; _) => T
   rule #FindInputGroup(_ ; G) => #FindInputGroup(G) [owise]
 
   syntax Block ::= #FindCodeGroup(Groups) [function]
   rule #FindCodeGroup(code T) => { T }
+  rule #FindCodeGroup(code T;) => { T }
   rule #FindCodeGroup(code T ; _) => { T } 
   rule #FindCodeGroup(_ ; G) => #FindCodeGroup(G) [owise]
 
   syntax Type ::= #FindParamType(Groups) [function]
   rule #FindParamType(parameter T) => T
+  rule #FindParamType(parameter T;) => T
   rule #FindParamType(parameter T ; Rs) => T
   rule #FindParamType(_:Group) => unit .AnnotationList [owise]
+  rule #FindParamType(_:Group ;) => unit .AnnotationList [owise]
   rule #FindParamType(_ ; Rs) => #FindParamType(Rs) [owise]
 
   rule <k> G:Groups => . </k>

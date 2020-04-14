@@ -1,6 +1,6 @@
-requires "../../unit-test-syntax.k"
-requires "../../michelson-config.k"
-requires "../common.k"
+requires "unit-test-syntax.k"
+requires "michelson-config.k"
+requires "common.k"
 
 module EXTRACTOR-SYNTAX
   imports UNIT-TEST-SYNTAX
@@ -37,8 +37,10 @@ module EXTRACTOR
   syntax Groups ::= #ReverseGroups(Groups) [function]
   syntax Groups ::= #ReverseGroupsAux(Groups, Groups) [function]
   rule #ReverseGroups(G:Group) => G
+  rule #ReverseGroups(G:Group;) => G
   rule #ReverseGroups(G ; Gs) => #ReverseGroupsAux(Gs, G)
   rule #ReverseGroupsAux(G:Group, Gs) => G ; Gs
+  rule #ReverseGroupsAux(G:Group;, Gs) => G ; Gs
   rule #ReverseGroupsAux(G ; Gs, Gs2) => #ReverseGroupsAux(Gs, G ; Gs2)
 
   syntax Group ::= #FindGroup(Groups, GroupId) [function]

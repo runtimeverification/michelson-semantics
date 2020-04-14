@@ -1,2 +1,2 @@
 #!/bin/bash
-krun --directory "$(dirname "$(readlink -f "$BASH_SOURCE")")" "$1"
+krun --directory "$(dirname "$(readlink -f "$BASH_SOURCE")")" $*

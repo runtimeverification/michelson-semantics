@@ -9,3 +9,4 @@ diff_file.txt
 /.build
 **/.krun*
 **/.kprove*
+**/.kompile*

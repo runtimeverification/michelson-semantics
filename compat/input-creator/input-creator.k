@@ -1,6 +1,11 @@
-requires "../common.k"
+requires "common.k"
+
+module INPUT-CREATOR-SYNTAX
+  imports UNIT-TEST-SYNTAX
+endmodule
 
 module INPUT-CREATOR
+  imports INPUT-CREATOR-SYNTAX
   imports COMPAT-COMMON
 
   syntax Data ::= #DataForType(Type) [function]
@@ -33,10 +38,11 @@ module INPUT-CREATOR
 
   syntax Type ::= #FindParamType(Pgm) [function]
   rule #FindParamType(parameter T) => T
+  rule #FindParamType(parameter T;) => T
   rule #FindParamType(parameter T ; Rs) => T
   rule #FindParamType(_:Group) => unit .AnnotationList [owise]
+  rule #FindParamType(_:Group;) => unit .AnnotationList [owise]
   rule #FindParamType(_ ; Rs) => #FindParamType(Rs) [owise]
-  rule #FindParamType(Gs ;) => #FindParamType(Gs) [owise]
 
   rule <k> G:Pgm => . </k>
        <out> ... .List => ListItem(#unparse(#DataForType(#FindParamType(G)))) </out>

@@ -1,3 +1,5 @@
 SCRIPT_DIR="$(dirname "$(readlink -f "$BASH_SOURCE")")"
 export PATH="$SCRIPT_DIR/ext/k/k-distribution/bin:$PATH"
-export KOMPILE_OPTS="--backend llvm -ccopt $SCRIPT_DIR/time.cpp -ccopt $SCRIPT_DIR/tolowercase.cpp -ccopt -std=c++14 --hook-namespaces TIME --debug"
+export KOMPILE_OPTS="--backend llvm --gen-bison-parser -ccopt $SCRIPT_DIR/time.cpp -ccopt $SCRIPT_DIR/tolowercase.cpp -ccopt -std=c++14 --hook-namespaces TIME --debug -I $SCRIPT_DIR/.build -I $SCRIPT_DIR/compat"
+export LUA_PATH="$SCRIPT_DIR/ext/pandoc-tangle/?.lua;;"
+export TANGLER="$SCRIPT_DIR/ext/pandoc-tangle/tangle.lua"

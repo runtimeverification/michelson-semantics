@@ -1,23 +1,27 @@
-requires "../../michelson.k"
+requires "../../.build/michelson.k"
 
 module SUM-TO-N
   imports MICHELSON
 
-  rule <k> LEFT nat => . ... </k>
+  rule <k> LEFT .AnnotationList nat => .K </k>
        <stack> Pair A:Int B:Int => Left Pair A B </stack>
        <paramtype> nat </paramtype>
+       <paramvalue> A </paramvalue>
        <storagetype> nat </storagetype>
-       <balance> #Mutez(0) </balance>
-       <amount> #Mutez(0) </amount>
-       <now> #Timestamp(0) </now>
+       <storagevalue> B </storagevalue>
+       <mybalance> #Mutez(0) </mybalance>
+       <myamount> #Mutez(0) </myamount>
+       <mynow> #Timestamp(0) </mynow>
        <myaddr> #Address(0) </myaddr>
        <knownaddrs> .Map </knownaddrs>
        <sourceaddr> #Address(0) </sourceaddr>
        <senderaddr> #Address(0) </senderaddr>
-       <chainid> #ChainId(0) </chainid>
+       <mychainid> #ChainId(0) </mychainid>
+       <nonce> #Nonce(0) </nonce>
+       <returncode> 0 </returncode>
        requires A >=Int 0 andBool B >=Int 0
 
-  rule <k>
+/*  rule <k>
        LOOP_LEFT { DUP ;
                    DIP { CDR } ;
                    CAR ;
@@ -53,5 +57,5 @@ module SUM-TO-N
        <sourceaddr> #Address(0) </sourceaddr>
        <senderaddr> #Address(0) </senderaddr>
        <chainid> #ChainId(0) </chainid>
-       requires A >=Int 0 andBool B >=Int 0
+       requires A >=Int 0 andBool B >=Int 0*/
 endmodule

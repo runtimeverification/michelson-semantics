@@ -1,7 +1,7 @@
-requires "../michelson-syntax.k"
-requires "../michelson-internal-syntax.k"
-requires "../michelson-common.k"
-requires "../unit-test-syntax.k"
+requires "michelson-syntax.k"
+requires "michelson-internal-syntax.k"
+requires "michelson-common.k"
+requires "unit-test-syntax.k"
 
 module MICHELSON-UNPARSER
   imports MICHELSON-SYNTAX
@@ -80,13 +80,16 @@ module MICHELSON-UNPARSER
 
   rule #doUnparse(M, _) => #unparseMBytesLiteral(M)
 
+  rule #doUnparse(true, _) => "True"
+  rule #doUnparse(false, _) => "False"
+
   rule #doUnparse(True, _) => "True"
   rule #doUnparse(False, _) => "False"
 
   rule #doUnparse(Unit, _) => "Unit"
 
   rule #doUnparse(#Timestamp(I), _) => #doUnparse(I, false)
-  rule #doUnparse(#ChainId(I), _) => "0x" +String Base2String(I, 16)
+  rule #doUnparse(#ChainId(I), _) => #doUnparse(I, false)
   rule #doUnparse(#KeyHash(S), _) => #doUnparse(S, false)
   rule #doUnparse(#Mutez(I), _) => #doUnparse(I, false)
   rule #doUnparse(#Address(S), _) => #doUnparse(S, false)
@@ -156,6 +159,8 @@ module MICHELSON-UNPARSER
   rule #doUnparse(map AList T1 T2, true) => "(" +String #doUnparse(map AList T1 T2, false) +String ")"
   rule #doUnparse(big_map AList T1 T2, true) => "(" +String #doUnparse(big_map AList T1 T2, false) +String ")" 
 
+  rule #doUnparse(I:Instruction ;, _) => #doUnparse(I, false) +String ";"
+ 
   rule #doUnparse(DROP AList, _) => "DROP" +String #doUnparse(AList, false)
   rule #doUnparse(DROP AList I:Int, _) => "DROP" +String #doUnparse(AList, false) +String " " +String #doUnparse(I, true)
   rule #doUnparse(DIG AList I, _) => "DIG" +String #doUnparse(AList, false) +String " " +String #doUnparse(I, true)
@@ -281,29 +286,25 @@ module MICHELSON-UNPARSER
   rule #doUnparse(IF_SOME AList B1 B2, _) => "IF_SOME" +String #doUnparse(AList, false) +String " " +String #doUnparse(B1, true) +String " " +String #doUnparse(B2, true)
   rule #doUnparse(SET_CAR AList, _) => "SET_CAR" +String #doUnparse(AList, false)
   rule #doUnparse(SET_CDR AList, _) => "SET_CDR" +String #doUnparse(AList, false)
-  rule #doUnparse(CREATE_CONTRACT AList CBlock, _) => "CREATE_CONTRACT" +String #doUnparse(AList, false) +String " " +String #doUnparse(CBlock, true)
+  rule #doUnparse(CREATE_CONTRACT AList { C }, _) => "CREATE_CONTRACT" +String #doUnparse(AList, false) +String " {" +String #doUnparse(C, true) +String "}"
 
   rule #doUnparse(storage T, _) => "storage " +String #doUnparse(T, true)
   rule #doUnparse(parameter T, _) => "parameter " +String #doUnparse(T, true)
 
-  rule #doUnparse(C:CodeDecl ; S:StorageDecl ; P:ParameterDecl, _) => 
+  rule #doUnparse((C:CodeDecl ; S:StorageDecl ; P:ParameterDecl):Contract, _) => 
     #doUnparse(C, false) +String 
     "; " +String
     #doUnparse(S, false) +String
     "; " +String
     #doUnparse(P, false)
 
-  rule #doUnparse(C:CodeDecl ; S:StorageDecl ; P:ParameterDecl ;, _) => 
+  rule #doUnparse((C:CodeDecl ; S:StorageDecl ; P:ParameterDecl ;):Contract, _) => 
     #doUnparse(C, false) +String 
     "; " +String
     #doUnparse(S, false) +String
     "; " +String
     #doUnparse(P, false) +String
     ";"
-
-
-
-  rule #doUnparse({ C:Contract }, _) => "{" +String #doUnparse(C, false) +String "}"
 
   rule #doUnparse(Elt S:String T:Type, _) => 
     "Elt " +String
@@ -440,10 +441,9 @@ module MICHELSON-UNPARSER
     #doUnparse(I2, true) +String
     ")"
 
-  rule #doUnparse((code C:Block):CodeDecl, _) => "code " +String #doUnparse(C, true)
-  rule #doUnparse((code I:TestCode):CodeGroup, _) => "code " +String #doUnparse(I, true)
+  rule #doUnparse(code I, _) => "code " +String #doUnparse(I, true)
   rule #doUnparse(input C, _) => "input " +String #doUnparse(C, true)
   rule #doUnparse(output LS, _) => "output " +String #doUnparse(LS, true)
 
-  rule #doUnparse(#Any, _) => "_"
+  rule #doUnparse(#Any, _) => "#Any"
 endmodule
