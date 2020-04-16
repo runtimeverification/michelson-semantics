@@ -1257,7 +1257,7 @@ The bytes instructions have a stubbed implementation for the time being, since t
        <stack> T => #Packed(T) ... </stack>
 
   rule <k> UNPACK A _ => #HandleAnnotations(A) ... </k>
-       <stack> #Packed(T) => T ... </stack>
+       <stack> #Packed(T) => Some T ... </stack>
 ```
 
 The concat operation over two bytes is relatively straightforward since we already have helper functions to extract bytes content.
