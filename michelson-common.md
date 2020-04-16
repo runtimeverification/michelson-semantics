@@ -6,6 +6,7 @@ requires "michelson-syntax.k"
 module MICHELSON-COMMON
   imports MICHELSON-SYNTAX
   imports DOMAINS-SYNTAX
+  imports BYTES
 ```
 
 These are general "Unset" values for Data and Type productions, used when there should be information in a cell or production, but there isn't.  For example, `<parametertype>` is set to `#NotSet` until the `parameter` group is loaded.
@@ -24,7 +25,7 @@ These productions wrap the literal data of certain Michelson types, attaching a 
   syntax ContractData ::= #Contract(Address, Type)
   syntax Mutez ::= #Mutez(Int)
   syntax KeyHash ::= #KeyHash(String)
-  syntax ChainId ::= #ChainId(MBytesLiteral)
+  syntax ChainId ::= #ChainId(MBytes)
   syntax Timestamp ::= #Timestamp(Int)
   syntax Key ::= #Key(String)
   syntax Signature ::= #Signature(String)
@@ -75,6 +76,13 @@ Michelson bools are of the form (True/False), but K bools are of the form (true/
 ```k
   rule `MichelsonBool`(True) => true
   rule `MichelsonBool`(False) => false
+```
+
+```k
+  syntax MBytes ::= Bytes
+
+  syntax Bytes ::= #MBytesLiteralToBytes(MBytesLiteral) [function, hook(BYTES.hexstring2bytes)]
+  rule `MBytesLiteral`(M) => #MBytesLiteralToBytes(M)
 ```
 
 A Michelson contract consists of three [primitive applications](https://tezos.gitlab.io/whitedoc/michelson.html#primitive-applications) `code`, `storage` and `parameter` in any order, separated by semicolons and with or without an extra semicolon at the end.  We standardize this format with these eleven 'anywhere' rules here.

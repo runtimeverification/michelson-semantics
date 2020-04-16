@@ -12,15 +12,13 @@ module OUTPUT-COMPARE
   imports COMPAT-COMMON
   imports K-REFLECTION
 
-  syntax String ::= #decodeBinaryRepresentation(String) [function, hook(MICHELSON.decode)]
+  syntax String ::= #decodeBinaryRepresentation(Bytes) [function, hook(MICHELSON.decode)]
   syntax BlockchainOperation ::= #parseOperation(String) [function]
   rule #parseOperation(S) => #parseKORE(S)
 
   syntax KItem ::= #CheckOutput(OutputStack, OutputStack) // Expected, Actual
 
-  syntax KItem ::= "#Failed"
-
-  rule #ConcreteArgToSemantics(B:MBytesLiteral, operation _) => #ConcreteArgToSemantics(#parseOperation(#decodeBinaryRepresentation(#MBytesToString(B))), operation .AnnotationList)
+  rule #ConcreteArgToSemantics(B:MBytes, operation _) => #ConcreteArgToSemantics(#parseOperation(#decodeBinaryRepresentation(B)), operation .AnnotationList)
 
   rule <k> #CheckOutput( X:FailedStack , X:FailedStack ) => . </k>
        <returncode> _ => 0 </returncode>

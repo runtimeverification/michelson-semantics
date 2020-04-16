@@ -104,10 +104,12 @@ Here we specify the various forms of sequence literals in Michelson, including M
 Here we define the simple data literals.
 
 ```k
+  syntax MBytes ::= MBytesLiteral [klabel(MBytesLiteral), symbol, function, avoid]
+
   syntax SimpleData ::= Int
   syntax SimpleData ::= String
   syntax Data ::= MichelsonBool [klabel(MichelsonBool), symbol, function, avoid]
-  syntax SimpleData ::= MBytesLiteral
+  syntax SimpleData ::= MBytes
   syntax SimpleData ::= "Unit"
   syntax SimpleData ::= Timestamp
   syntax SimpleData ::= ChainId
@@ -396,7 +398,7 @@ Programs consist of sequences of these groups, potentially with an extra semicol
   syntax NowGroup ::= "now" Int
   syntax SenderGroup ::= "sender" String
   syntax SourceGroup ::= "source" String
-  syntax ChainGroup ::= "chain_id" MBytesLiteral
+  syntax ChainGroup ::= "chain_id" MBytes
   syntax SelfGroup ::= "self" String
   syntax AmountGroup ::= "amount" Int
   syntax BalanceGroup ::= "balance" Int
