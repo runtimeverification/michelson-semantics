@@ -4,6 +4,8 @@ source "$SCRIPT_DIRECTORY/common.sh"
 
 OUT_DIRECTORY="$(mktemp -d)"
 
+export NO_PARSER="YES"
+
 trap "rm -rf $OUT_DIRECTORY" EXIT 
 
 find "$SCRIPT_DIRECTORY/tests/coverage" -name "*.tzt" -print0 | 

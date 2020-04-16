@@ -1,18 +1,19 @@
 #!/bin/bash
 SCRIPT_DIR="$(dirname "$(readlink -f "$BASH_SOURCE")")"
-EXTRACTOR_DIR="$SCRIPT_DIR/compat/extractor/"
+COMPAT_DIR="$SCRIPT_DIR/compat/"
 
-if which tezos-client>/dev/null 2>&1; then
-    set -e ; 
-    TEMP_DIR="$(mktemp -d)" ;
-    trap "rm -rf $TEMP_DIR" EXIT ;
-    GROUP_FILE="$TEMP_DIR/group" ; 
-    EXPANDED_FILE="$TEMP_DIR/expanded" ;
-    "$EXTRACTOR_DIR/run.sh" "$1" 'code_or_contract' 'false' > "$GROUP_FILE" ;
-    GROUP="$(grep -Eo '^\s*(code|contract)' "$GROUP_FILE")" ;
-    tezos-client 'expand' 'macros' 'in' "$(sed -E 's/^\s*(code|contract)\s*(.*);/\2/' "$GROUP_FILE")" | tr -d '\n' | sed -E "s/(.*)/$GROUP {\\1} ;/;s/{{/{/g;s/}}/}/g" | cat - "$1" > "$EXPANDED_FILE" ;
-    "$SCRIPT_DIR/unit-test-kompiled/parser_PGM" "$EXPANDED_FILE"
+if [[ -z "$NO_PARSER" ]] && which tezos-client>/dev/null 2>&1; then
+    JSON_FILE="$(mktemp)" 
+    trap "rm $JSON_FILE" EXIT 
+
+    "$COMPAT_DIR/run.sh" extractor "$1" > "$JSON_FILE" 
+    CODE="$(python3 "$COMPAT_DIR/extract-group.py" "$JSON_FILE" code true)" 
+    CONTRACT="$(python3 "$COMPAT_DIR/extract-group.py" "$JSON_FILE" contract true)" 
+
+    GROUP="$([[ ! -z "$CODE" ]] && echo code || echo contract)" 
+    CONTENTS="$CODE $CONTRACT" 
+
+    echo "$GROUP $(tezos-client expand macros in "$CONTENTS" 2>/dev/null) ;" | cat - "$1" | "$SCRIPT_DIR/unit-test-kompiled/parser_PGM" 
 else
-    echo 'tezos-client not found, using normal parsing' >/dev/stderr ;
     "$SCRIPT_DIR/unit-test-kompiled/parser_PGM" "$1"
 fi

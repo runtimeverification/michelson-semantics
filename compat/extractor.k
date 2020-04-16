@@ -20,11 +20,14 @@ module EXTRACTOR
   rule #KeyFromGroup(G:SelfGroup) => "self"
   rule #KeyFromGroup(G:AmountGroup) => "amount"
   rule #KeyFromGroup(G:BalanceGroup) => "balance"
+  rule #KeyFromGroup(G:BigMapGroup) => "big_maps"
   rule #KeyFromGroup(G:ContractsGroup) => "other_contracts"
   rule #KeyFromGroup(G:CodeGroup) => "code"
   rule #KeyFromGroup(G:InputGroup) => "input"
   rule #KeyFromGroup(G:OutputGroup) => "output"
   rule #KeyFromGroup(G:ParameterDecl) => "parameter"
+  rule #KeyFromGroup(G:ParameterValueGroup) => "parameter_value"
+  rule #KeyFromGroup(G:StorageValueGroup) => "storage_value"
 
   syntax K ::= #GroupContent(Group) [function]
   rule #GroupContent(contract { C }) => C
@@ -40,6 +43,9 @@ module EXTRACTOR
   rule #GroupContent(input C) => C
   rule #GroupContent(output C) => C
   rule #GroupContent(parameter C) => C
+  rule #GroupContent(big_maps C) => C
+  rule #GroupContent(parameter_value C) => C
+  rule #GroupContent(storage_value C) => C
 
   syntax JSON ::= #GroupsToJson(Groups) [function]
   syntax JSONs ::= #GroupsToJsonAux(Groups) [function]
