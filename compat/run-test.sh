@@ -140,7 +140,7 @@ else
     elif grep -o "Underflowing subtraction of [0-9.]* tez and [0-9.]* tez" "$EXECUTION" >"$ERROR_FILE" 2>/dev/null; then
         sed -E 's/Underflowing subtraction of ([0-9.]*) tez and ([0-9.]*) tez/real_output ( MutezUnderflow \1 \2 ) ;/' "$ERROR_FILE" | tr -d '.' > "$REAL_OUTPUT_FILE" ;
     elif grep -q "unexpected arithmetic overflow" "$EXECUTION" >/dev/null 2>&1; then
-        cat .failure/execution | tr '\n' ' ' | grep -o "\[[^]]*\]" | tail -n 1 | tr -d '[]' | sed -E 's/(.*)/real_output ( GeneralOverflow \1 ) ;/' > "$REAL_OUTPUT_FILE"
+        cat "$EXECUTION" | tr '\n' ' ' | grep -o "\[[^]]*\]" | tail -n 1 | tr -d '[]' | sed -E 's/(.*)/real_output ( GeneralOverflow \1 ) ;/' > "$REAL_OUTPUT_FILE"
     fi ;
 fi
 
