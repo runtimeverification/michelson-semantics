@@ -1,6 +1,11 @@
 requires "common.k"
 
-module UNIT-TEST-EXPANDER
+module CONTRACT-EXPANDER-SYNTAX
+  imports UNIT-TEST-SYNTAX
+endmodule
+
+module CONTRACT-EXPANDER
+  imports CONTRACT-EXPANDER-SYNTAX
   imports COMPAT-COMMON
 
   syntax Block ::= #StackEltToPush(StackElement) [function]

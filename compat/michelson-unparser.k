@@ -239,9 +239,9 @@ module MICHELSON-UNPARSER
   rule #doUnparse(AMOUNT AList, _) => "AMOUNT" +String #doUnparse(AList, false)
   rule #doUnparse(BALANCE AList, _) => "BALANCE" +String #doUnparse(AList, false)
   rule #doUnparse(CHECK_SIGNATURE AList, _) => "CHECK_SIGNATURE" +String #doUnparse(AList, false)
-  rule #doUnparse(BLAKE2B AList, _) => "BLAKE" +String #doUnparse(AList, false)
-  rule #doUnparse(SHA256 AList, _) => "SHA" +String #doUnparse(AList, false)
-  rule #doUnparse(SHA512 AList, _) => "SHA" +String #doUnparse(AList, false)
+  rule #doUnparse(BLAKE2B AList, _) => "BLAKE2B" +String #doUnparse(AList, false)
+  rule #doUnparse(SHA256 AList, _) => "SHA256" +String #doUnparse(AList, false)
+  rule #doUnparse(SHA512 AList, _) => "SHA512" +String #doUnparse(AList, false)
   rule #doUnparse(HASH_KEY AList, _) => "HASH_KEY" +String #doUnparse(AList, false)
   rule #doUnparse(STEPS_TO_QUOTA AList, _) => "STEPS_TO_QUOTA" +String #doUnparse(AList, false)
   rule #doUnparse(SOURCE AList, _) => "SOURCE" +String #doUnparse(AList, false)
@@ -287,6 +287,39 @@ module MICHELSON-UNPARSER
   rule #doUnparse(SET_CAR AList, _) => "SET_CAR" +String #doUnparse(AList, false)
   rule #doUnparse(SET_CDR AList, _) => "SET_CDR" +String #doUnparse(AList, false)
   rule #doUnparse(CREATE_CONTRACT AList { C }, _) => "CREATE_CONTRACT" +String #doUnparse(AList, false) +String " {" +String #doUnparse(C, true) +String "}"
+
+  syntax String ::= #DIPMacroToString(DIPMacro) [function, hook(STRING.token2string)]
+  syntax String ::= #DUPMacroToString(DUPMacro) [function, hook(STRING.token2string)]
+  syntax String ::= #PairMacroToString(PairMacro) [function, hook(STRING.token2string)]
+  syntax String ::= #UnpairMacroToString(UnpairMacro) [function, hook(STRING.token2string)]
+  syntax String ::= #CDARMacroToString(CDARMacro) [function, hook(STRING.token2string)]
+  syntax String ::= #SetCDARMacroToString(SetCDARMacro) [function, hook(STRING.token2string)]
+
+  rule #doUnparse(D:DIPMacro A B, _) => #DIPMacroToString(D) +String 
+                                        " " +String
+                                        #doUnparse(A, false) +String
+                                        " " +String
+                                        #doUnparse(B, false)
+
+  rule #doUnparse(D:DUPMacro A, _) => #DUPMacroToString(D) +String
+                                      " " +String
+                                      #doUnparse(A, false)
+
+  rule #doUnparse(P:PairMacro A, _) => #PairMacroToString(P) +String
+                                       " " +String
+                                       #doUnparse(A, false)
+
+  rule #doUnparse(U:UnpairMacro A, _) => #UnpairMacroToString(U) +String
+                                         " " +String
+                                         #doUnparse(A, false)
+
+  rule #doUnparse(C:CDARMacro A, _) => #CDARMacroToString(C) +String
+                                       " " +String
+                                       #doUnparse(A, false)
+
+  rule #doUnparse(C:SetCDARMacro A, _) => #SetCDARMacroToString(C) +String
+                                          " " +String
+                                          #doUnparse(A, false)
 
   rule #doUnparse(storage T, _) => "storage " +String #doUnparse(T, true)
   rule #doUnparse(parameter T, _) => "parameter " +String #doUnparse(T, true)

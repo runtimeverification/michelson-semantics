@@ -2,26 +2,24 @@
 
 UT="$1"
 SCRIPT_DIR="$(dirname "$(readlink -f "$BASH_SOURCE")")"
-FAIL_DIR="$SCRIPT_DIR/.failure"
-
 
 function output_if_failing {
     bash -c "$1"
     local r="$?"
     if [ $r -ne 0 ] ; then
         echo "$UT: (exit code $r) $2" ;
-        rm -rf "$FAIL_DIR" ;
-        cp -r "$TEMP_DIR" "$FAIL_DIR" ;
         exit 1
     fi
 }
 
-TEMP_DIR="$(mktemp -d '.tezos-ut.XXXXX' -p "$SCRIPT_DIR")"
+TEMP_DIR="$SCRIPT_DIR/.failure"
 
-trap "rm -rf $TEMP_DIR" EXIT
+rm -rf "$TEMP_DIR"
+mkdir -p "$TEMP_DIR"
 
 KNOWN_FAKES="$SCRIPT_DIR/addresses.txt"
 
+EXTRACTED_JSON="$TEMP_DIR/json"
 FOUND_ADDRESSES="$TEMP_DIR/addresses"
 REAL_ADDRESSES_UNSORTED="$TEMP_DIR/contracts_unsorted"
 REAL_ADDRESSES="$TEMP_DIR/contracts"
@@ -47,30 +45,27 @@ EXPECTED_OUTPUT_FILE="$TEMP_DIR/expected"
 OUTPUT_FILE="$TEMP_DIR/actual-and-expected"
 COMPARE_FILE="$TEMP_DIR/comparison"
 
+function extract {
+    python3 "$SCRIPT_DIR/extract-group.py" "$EXTRACTED_JSON" "$1" "$2" "$3"
+}
 
 grep -o '@Address([^)"]*)' "$UT" | sort | uniq > "$FOUND_ADDRESSES"
 
-OTHER_EXTRACTOR_CMD=$(cat <<EOF
-'$SCRIPT_DIR/extractor/run.sh' '$UT' other_contracts true |  
-    tr -d '{}' | 
-    tr ';' '\n' | 
-    sed -E '/#NoGroup/d;s/^\s*//;s/\s*$//;s/Elt\s*"([^"]*)"\s*(.*)/\1#\2/;/^\s*$/d' > '$REAL_ADDRESSES_UNSORTED'
-EOF
-)
+"$SCRIPT_DIR/run.sh" "extractor" "$UT" > "$EXTRACTED_JSON"
 
-output_if_failing "$OTHER_EXTRACTOR_CMD" "Failed to extract dependencies on other contracts."
+extract other_contracts true | tr -d '{}' | tr ';' '\n' | sed -E 's/^\s*//;s/\s*$//;s/Elt\s*"([^"]*)"\s*(.*)/\1#\2/;/^\s*$/d' > "$REAL_ADDRESSES_UNSORTED"
 
-FAKE_SENDER="$("$SCRIPT_DIR/extractor/run.sh" "$UT" 'sender' 'true' | sed '/#NoGroup/d;s/"\([^"]*\)"/\1/')"
+FAKE_SENDER=$(extract sender true)
 if [ ! -z $FAKE_SENDER ] && ! ( grep "$FAKE_SENDER" "$REAL_ADDRESSES_UNSORTED" ); then
     echo "$FAKE_SENDER#unit" >> "$REAL_ADDRESSES_UNSORTED"
 fi
 
-FAKE_SOURCE="$("$SCRIPT_DIR/extractor/run.sh" "$UT" 'source' 'true' | sed '/#NoGroup/d;s/"\([^"]*\)"/\1/')"
+FAKE_SOURCE=$(extract source true)
 if [ ! -z $FAKE_SOURCE ] && ! ( grep "$FAKE_SOURCE" "$REAL_ADDRESSES_UNSORTED" ); then
     echo "$FAKE_SOURCE#unit" >> "$REAL_ADDRESSES_UNSORTED"
 fi
 
-FAKE_SELF="$("$SCRIPT_DIR/extractor/run.sh" "$UT" 'self' 'true' | sed '/#NoGroup/d;s/"\([^"]*\)"/\1/')"
+FAKE_SELF=$(extract self true)
 REAL_SELF="$(tezos-client run script "parameter unit ; storage (option address) ; code { DROP ; SELF ; ADDRESS ; CONTRACT unit ; IF_SOME { ADDRESS ; SOME ; NIL operation ; PAIR } {FAIL} }" on storage None and input Unit 2>&1 | grep "Some" | sed -E 's/\s*\(Some "([^"]*)"\)\s*/\1/')"
 
 sort "$REAL_ADDRESSES_UNSORTED" | uniq > "$REAL_ADDRESSES"
@@ -91,13 +86,11 @@ output_if_failing "python3 '$SCRIPT_DIR/originate.py' '$REAL_ADDRESSES' > '$ORIG
 paste -d '/' <(cut -d'#' -f1 "$REAL_ADDRESSES") <(grep -Po '(?<=New contract )[a-zA-Z0-9_]*' "$ORIGINATION_OUTPUTS") | sed -E 's|(.*)|s/\1/|;s|s///||' > "$ORIGINATION_SUBS"
 
 
-REAL_SENDER="$(grep "$FAKE_SENDER" $ORIGINATION_SUBS | sed -E 's|s/[^/]*/([^/]*)/|\1|')"
-REAL_SOURCE="$(grep "$FAKE_SOURCE" $ORIGINATION_SUBS | sed -E 's|s/[^/]*/([^/]*)/|\1|')"
 
 cat "$FAKE_ADDRESS_SUBS" "$ORIGINATION_SUBS" > "$ALL_SUBS"
 sed -f "$ALL_SUBS" "$UT" > "$FIXED_ADDRESS_CONTRACT"
 
-output_if_failing "'$SCRIPT_DIR/contract-expander/run.sh' '$FIXED_ADDRESS_CONTRACT' > '$EXPANDED_FILE'" "Contract did not expand properly"
+output_if_failing "'$SCRIPT_DIR/run.sh' contract-expander '$FIXED_ADDRESS_CONTRACT' > '$EXPANDED_FILE'" "Contract did not expand properly"
 output_if_failing "tezos-client typecheck script '$(cat "$EXPANDED_FILE")' --details  >$TYPECHECK_OUTPUT 2>&1" "Contract did not typecheck"
 
 pcregrep -oM '(?<=\[)\s*@exitToken[^]]*' "$TYPECHECK_OUTPUT" > "$RAW_TYPES"
@@ -105,29 +98,33 @@ FOUND_TYPES="$?"
 
 sed -E 's/ : /\n/g;s/@%|@%%|%@|[@:%][_a-zA-Z][_0-9a-zA-Z\.%@]*//g' "$RAW_TYPES" > "$TYPES_FILE"
 
+AMOUNT="$(python -c 'import sys ; print("0" if len(sys.argv) < 2 or sys.argv[1].strip() == "" else "%f" % (float(sys.argv[1]) / 1000000.0))' "$(extract amount true)")"
 
-AMOUNT="$(output_if_failing "'$SCRIPT_DIR/extractor/run.sh' '$UT' amount true" "Failed to extract amount")"
-AMOUNT="$(python -c "import sys ; print('' if len(sys.argv) <= 1 or sys.argv[1] == '#NoGroup' else '%f' % (float(sys.argv[1]) / 1000000.0))" $AMOUNT)"
-
-if [ ! -z "$REAL_SOURCE" ] ; then
-    SOURCE_CLI="--payer $REAL_SOURCE"
+if [ ! -z "$FAKE_SOURCE" ] ; then 
+    REAL_SOURCE="$(grep "$FAKE_SOURCE" $ORIGINATION_SUBS | sed -E 's|s/[^/]*/([^/]*)/|\1|')" ;
+    if [ ! -z "$REAL_SOURCE" ] ; then
+        SOURCE_CLI="--payer $REAL_SOURCE" ;
+    fi ;
 fi
 
-if [ ! -z "$REAL_SENDER" ] ; then
-    SENDER_CLI="--source $REAL_SENDER"
+if [ ! -z "$FAKE_SENDER" ] ; then 
+    REAL_SENDER="$(grep "$FAKE_SENDER" $ORIGINATION_SUBS | sed -E 's|s/[^/]*/([^/]*)/|\1|')" ;
+    if [ ! -z "$REAL_SENDER" ] ; then
+        SENDER_CLI="--source $REAL_SENDER" ;
+    fi ;
 fi
 
-output_if_failing "'$SCRIPT_DIR/input-creator/run.sh' '$UT' > '$INPUT_FILE'" "Could not generate input"
+output_if_failing "'$SCRIPT_DIR/run.sh' input-creator '$UT' > '$INPUT_FILE'" "Could not generate input"
 
-tezos-client run script "$(cat $EXPANDED_FILE)" on storage Unit and input $(cat "$INPUT_FILE") --amount "$AMOUNT" --trace-stack $SENDER_CLI $SOURCE_CLI > "$EXECUTION" 2>&1
+tezos-client run script "$(cat $EXPANDED_FILE)" on storage Unit and input "$(cat "$INPUT_FILE")" --amount "$AMOUNT" --trace-stack $SENDER_CLI $SOURCE_CLI > "$EXECUTION" 2>&1
 # For some reason, the cli argument for "SENDER" is "--source" and "SOURCE" is "--payer"
 
 pcregrep -oM '(?<=\[)\s*Unit\s*@exitToken[^]]*' "$EXECUTION" > "$RAW_DATA"
 FOUND="$?"
 
 sed -E "s/@%|@%%|%@|[@:%][_a-zA-Z][_0-9a-zA-Z\.%@]*//g" "$RAW_DATA" > "$DATA_FILE" ;
-"$SCRIPT_DIR/extractor/run.sh" "$UT" 'other_contracts' 'false' 2>/dev/null | sed -f "$ALL_SUBS" | sed '/#NoGroup/d' > "$FIXED_ADDRS_OUTPUT" ;
-"$SCRIPT_DIR/extractor/run.sh" "$1" 'output' 'false' | sed -f "$ALL_SUBS" > "$EXPECTED_OUTPUT_FILE" ;
+extract 'other_contracts' 'false' '{}' | sed -f "$ALL_SUBS" > "$FIXED_ADDRS_OUTPUT" ;
+extract 'output' 'false' '{}' | sed -f "$ALL_SUBS" > "$EXPECTED_OUTPUT_FILE" ;
 
 if [ "$FOUND" -eq "0" ]; then
     if [ "$FOUND_TYPES" -ne "0" ]; then
@@ -136,9 +133,6 @@ if [ "$FOUND" -eq "0" ]; then
     fi ;
     python "$SCRIPT_DIR/combine.py" $TYPES_FILE $DATA_FILE > $REAL_OUTPUT_FILE ;
 else 
-    rm -rf "$FAIL_DIR" ; #TODO delete me
-    cp -r "$TEMP_DIR" "$FAIL_DIR" ; #TODO delete me
- 
     if grep -q "script reached FAILWITH instruction" "$EXECUTION" >/dev/null 2>&1; then
         grep -oP "(?<=^with ).*$" "$EXECUTION" | sed -E 's/(.*)/real_output ( Failed \1 ) ;/' > "$REAL_OUTPUT_FILE" ;
     elif grep -o "Overflowing addition of [0-9.]* tez and [0-9.]* tez" "$EXECUTION" >"$ERROR_FILE" 2>/dev/null; then
@@ -146,13 +140,13 @@ else
     elif grep -o "Underflowing subtraction of [0-9.]* tez and [0-9.]* tez" "$EXECUTION" >"$ERROR_FILE" 2>/dev/null; then
         sed -E 's/Underflowing subtraction of ([0-9.]*) tez and ([0-9.]*) tez/real_output ( MutezUnderflow \1 \2 ) ;/' "$ERROR_FILE" | tr -d '.' > "$REAL_OUTPUT_FILE" ;
     elif grep -q "unexpected arithmetic overflow" "$EXECUTION" >/dev/null 2>&1; then
-        cat .failure/execution | tr '\n' ' ' | grep -o "\[[^]]*\]" | tail -n 1 | tr -d '[]' | sed -E 's/(.*)/real_output ( GeneralOverflow \1 ) ;/' > "$REAL_OUTPUT_FILE"
+        cat "$EXECUTION" | tr '\n' ' ' | grep -o "\[[^]]*\]" | tail -n 1 | tr -d '[]' | sed -E 's/(.*)/real_output ( GeneralOverflow \1 ) ;/' > "$REAL_OUTPUT_FILE"
     fi ;
 fi
 
 
 echo | cat "$FIXED_ADDRS_OUTPUT" "$REAL_OUTPUT_FILE" "$EXPECTED_OUTPUT_FILE" - > "$OUTPUT_FILE" ;
 
-output_if_failing "'$SCRIPT_DIR/output-compare/run.sh' '$OUTPUT_FILE' > '$COMPARE_FILE'" "Output did not compare correctly"
+output_if_failing "'$SCRIPT_DIR/run.sh' output-compare '$OUTPUT_FILE' > '$COMPARE_FILE'" "Output did not compare correctly"
 
 echo "$1 Passed"

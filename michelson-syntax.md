@@ -281,12 +281,12 @@ We list Macros separately, although in practice macros should not exist by this 
   syntax CDARMacro ::= r"C[A,D]{2,}R" [token]
   syntax SetCDARMacro ::= r"SET_C[AD]+R" [token]
 
-  syntax Macro ::= DIPMacro
-  syntax Macro ::= DUPMacro
-  syntax Macro ::= PairMacro
-  syntax Macro ::= UnpairMacro
-  syntax Macro ::= CDARMacro
-  syntax Macro ::= SetCDARMacro
+  syntax Macro ::= DIPMacro AnnotationList Block
+  syntax Macro ::= DUPMacro AnnotationList
+  syntax Macro ::= PairMacro AnnotationList
+  syntax Macro ::= UnpairMacro AnnotationList
+  syntax Macro ::= CDARMacro AnnotationList
+  syntax Macro ::= SetCDARMacro AnnotationList
 
   syntax Macro ::= "CMPEQ" AnnotationList
   syntax Macro ::= "CMPNEQ" AnnotationList
