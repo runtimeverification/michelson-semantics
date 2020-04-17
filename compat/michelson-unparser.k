@@ -15,7 +15,6 @@ module MICHELSON-UNPARSER
 
   rule #unparse(O) => #doUnparse(O, false)
 
-
   // Unparse Data.
   rule #doUnparse(Elt D1:Data D2:Data, false) => 
     "Elt " +String 
@@ -76,9 +75,9 @@ module MICHELSON-UNPARSER
   rule #doUnparse(I:Int, _) => Int2String(I)
   rule #doUnparse(S:String, _) => "\"" +String S +String "\""
 
-  syntax String ::= #unparseMBytesLiteral(MBytesLiteral) [function, functional, hook(STRING.token2string)]
+  syntax String ::= #unparseBytes(Bytes) [function, functional, hook(MICHELSON.tohexstring)]
 
-  rule #doUnparse(M, _) => #unparseMBytesLiteral(M)
+  rule #doUnparse(M, _) => #unparseBytes(M)
 
   rule #doUnparse(true, _) => "True"
   rule #doUnparse(false, _) => "False"

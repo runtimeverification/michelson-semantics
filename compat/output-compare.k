@@ -18,7 +18,9 @@ module OUTPUT-COMPARE
 
   syntax KItem ::= #CheckOutput(OutputStack, OutputStack) // Expected, Actual
 
-  rule #ConcreteArgToSemantics(B:MBytes, operation _) => #ConcreteArgToSemantics(#parseOperation(#decodeBinaryRepresentation(B)), operation .AnnotationList)
+  rule #ConcreteArgToSemantics(B:Bytes, operation _) => #ConcreteArgToSemantics(#parseOperation(#decodeBinaryRepresentation(B)), operation .AnnotationList)
+
+  syntax KItem ::= "#Failed"
 
   rule <k> #CheckOutput( X:FailedStack , X:FailedStack ) => . </k>
        <returncode> _ => 0 </returncode>
