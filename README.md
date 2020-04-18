@@ -61,17 +61,23 @@ Note that the unit test format allows the user to specify an entire input and ou
 
 ## Project Structure
 
-`michelson-syntax.k` - This file contains the specification for the syntax of a Michelson contract and the other input data.
+### Michelson Semantics Definition
 
-`michelson-config.k` - This file describes the template state of a michelson contract.
+[michelson-syntax.md](./michelson-syntax.md) contains the specification for the syntax of a Michelson contract and the other input data.
 
-`michelson-common.k` - This file creates most of the K-Michelson internal datatypes.
+[michelson-config.md](./michelson-config.md) describes the template state of a michelson contract.
 
-`michelson.k` - This file specifies the semantics of the Michelson language as rewrite rules over the syntax, configuration and datatypes defined in the previous files.
+[michelson-common.md](./michelson-common.md) specifies most of the K-Michelson internal datatypes.
 
-`unit-test.k` and `unit-test-syntax.k` extend the semantics and syntax of the Michelson language to include unit testing facilities, such as the ability to specify an initial and final stack, and to check that the final stack matches the expected result.
+[michelson.md](./michelson.md) specifies the semantics of the Michelson language as rewrite rules over the syntax, configuration and datatypes defined in the previous files.
 
-`time.cpp` - This file implements a hook on the LLVM backend to perform translation from an ISO-8601 timestamp human readable timestamp to a unix timestamp, used by the K semantics internally.
+[unit-test.md](./unit-test.md) and [unit-test-syntax.md](./unit-test-syntax.md) extend the semantics and syntax of the Michelson language to include unit testing facilities, such as the ability to specify an initial and final stack, and to check that the final stack matches the expected result.
+
+`time.cpp` and `hex.cpp` implement backend hooks to perform timestamp translation (i.e. from an ISO-8601 human readable timestamp to a unix timestamp) and print binary blobs as hexadecimal strings. They are used by the K semantics internally.
+
+### Michelson Tests
+
+All tests are located under in the `tests` directory in the following folders:
 
 `tests/unit` contains the unit testing suite used to verify the correctnes of the semantics.
 
@@ -79,4 +85,4 @@ Note that the unit test format allows the user to specify an entire input and ou
 
 `tests/obsolete` contains contracts in obsolete formats no longer accepted by the current semantics that have not yet been translated.
 
-`tests/proofs` contains verification specs - TODO: These have not been updated for the new configuration yet.
+`tests/proofs` contains full formal verification tests.
