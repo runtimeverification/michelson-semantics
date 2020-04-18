@@ -8,13 +8,11 @@ module MICHELSON-INTERNAL-SYNTAX
 
 This BlockchainOperation describes a contract origination operation.  Its arguments are:
 
-- Nonce (`int`): A cryptographic nonce attached to each new BlockchainOperation created.  No two operations created separately (i.e. by two different `CREATE_CONTRACT` executions) will never share the same nonce, but an operation duplicated with the `DUP` instruction will.
-
-# Strange double negation, I think you should remove the leading "No". (same comment obviously applies for the other operations)
+- Nonce (`int`): A cryptographic nonce attached to each new BlockchainOperation created.  No two operations created separately (i.e. by two different `CREATE_CONTRACT` executions) will ever share the same nonce, but an operation duplicated with the `DUP` instruction will.
 
 - Contract (`contract`): The source code of the contract to originate.  The type of this contract will determine the expected type of the initial storage.
 
-# A code together with parameter and storage types is usually called a "script"
+[//]: # (A code together with parameter and storage types is usually called a "script")
 
 - Delegate (`option key_hash`): An optional delegate specified by key hash.
 - Initial Balance (`mutez`): An initial balance to transfer to the new contract.
