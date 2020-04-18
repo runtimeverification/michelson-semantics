@@ -25,14 +25,27 @@ struct TempFile {
     TempFile& operator=(const TempFile&) = delete;
 };
 
-std::string getBinaryFromInput(string * input) {
-    const std::string binary_with_prefix(input->data, len(input));
-    if (binary_with_prefix.size() <= 2 || 
-        binary_with_prefix[0] != '0' || 
-        binary_with_prefix[1] != 'x') {
-        throw std::invalid_argument("Input string invalid (too short or no prefix)");
+char getHexValue(const char num) {
+    if (0 <= num && num <= 9) {
+        return num + '0';
+    } else if (10 <= num && num <= 15) {
+        return (num - 10) + 'a';
+    } else {
+        throw std::invalid_argument("Invalid num");
     }
-    return std::string(binary_with_prefix, 2);
+}
+
+std::string getHexFromInput(string * input) {
+    const size_t length = len(input);
+    std::string ret(2 * length, 0);
+    for (size_t i = 0; i < length; ++i) {
+        const char byte = input->data[i];
+        const char upper = (byte >> 4) & 0x0F;
+        const char lower = byte & 0x0F;
+        ret[2 * i] = getHexValue(upper);
+        ret[(2 * i) + 1] = getHexValue(lower);
+    }
+    return ret;
 }
 
 pid_t spawnCodecProcess(const TempFile& file, const std::string& binary) {
@@ -130,12 +143,25 @@ extern "C" {
     string * hook_MICHELSON_decode(string * input) {
         try {
             const TempFile jsonFile, sourceFile, koreFile;
-            waitForChild(spawnCodecProcess(jsonFile, getBinaryFromInput(input)));
+            waitForChild(spawnCodecProcess(jsonFile, getHexFromInput(input)));
             spawnSourceProcess(jsonFile, sourceFile);
             spawnKastProcess(sourceFile, koreFile);
             return stdStringToKString(readAll(koreFile.fd));
         } catch (const std::invalid_argument e) {
             throw e;
         }
+    }
+
+    string * hook_MICHELSON_tohexstring(string * input) {
+        const std::string hex = getHexFromInput(input);
+        const size_t new_len = hex.size() + 2;
+        string * ret = static_cast<string*>(koreAllocToken(sizeof(string) + new_len));
+        set_len(ret, new_len);
+        ret->data[0] = '0';
+        ret->data[1] = 'x';
+        for (size_t i = 0; i < new_len; ++i) {
+            ret->data[2 + i] = hex[i];
+        }
+        return ret;
     }
 }

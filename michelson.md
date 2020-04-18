@@ -11,15 +11,10 @@ module MICHELSON
   imports MICHELSON-INTERNAL-SYNTAX
   imports DOMAINS
   imports COLLECTIONS
+  imports BYTES
 ```
 
 #Loading Semantics
-
-A simple hook for converting a string to lower case.
-
-```k
-  syntax String ::= #ToLowerCase(String) [function, functional, hook(STRING.tolowercase)]
-```
 
 Due to an issue with the `CONCAT` instruction, it is necessary to retain type information about the contents of Michelson lists.  Hence, a Michelson list's internal K representation is a tuple of a K List and a Michelson Type.
 
@@ -91,29 +86,10 @@ Similar to key\_hashes, these functions will validate their arguments in the fut
   rule #ParseSignature(S) => #Signature(S)
 ```
 
-MByteLiterals are parsed as tokens, which cannot easily be manipulated in K.  Instead, we convert them to strings and use string manipulation functions before converting the altered string back to a token.
+A ChainId is simply a specially tagged MBytes.
 
 ```k
-  syntax String ::= #MBytesToString(MBytesLiteral) [function, functional, hook(STRING.token2string)]
-```
-
-For example, extracting the content of an MBytesLiteral (excluding the '0x' prefix) involves converting it to a string and taking the substring which excludes the first two letters.
-
-```k
-  syntax String ::= #MBytesContent(MBytesLiteral) [function, functional]
-  rule #MBytesContent(H) => substrString(#MBytesToString(H), 2, lengthString(#MBytesToString(H)))
-```
-
-After performing whatever manipulations were necessary with the MBytes as a string, we convert them back to a token to keep them differentiated from actual strings at runtime.
-
-```k
-  syntax MBytesLiteral ::= #StringToMBytes(String) [function, hook(STRING.string2token)]
-```
-
-A ChainId is simply a specially tagged MBytesLiteral.
-
-```k
-  rule #ConcreteArgToSemantics(H:MBytesLiteral, chain_id _) => #ChainId(H)
+  rule #ConcreteArgToSemantics(H:MBytes, chain_id _) => #ChainId(H)
 ```
 
 An int can simply be represented directly as a K int.  Nats get an additional sanity check to avoid negative nats.
@@ -129,10 +105,10 @@ Strings, like ints, represent themselves.
   rule #ConcreteArgToSemantics(S:String, string _) => S
 ```
 
-MBytesLiterals usually represent themselves, but Michelson tolerates mixed case hex strings, which frustrates implementing instructions like CONCAT, so we standardize case here.
+MBytes conversion is done by the function rule.
 
 ```k
-  rule #ConcreteArgToSemantics(B:MBytesLiteral, bytes _) => #StringToMBytes(#ToLowerCase(#MBytesToString(B)))
+  rule #ConcreteArgToSemantics(B:MBytes, bytes _) => B
 ```
 
 Mutez is simply a specially tagged int - we also sanity check the int to ensure that it is in bounds.
@@ -399,7 +375,7 @@ Loading a `now` group simply involves setting the contents of the now timestamp 
        <sourceaddr> #Address("InvalidSourceAddr" => A) </sourceaddr>
 
   rule <k> #LoadGroups(chain_id M ; Gs => Gs) </k>
-       <mychainid> #ChainId(0x => M) </mychainid>
+       <mychainid> #ChainId(_ => M) </mychainid>
 
   rule <k> #LoadGroups(self A ; Gs => Gs) </k>
        <myaddr> #Address("InvalidMyAddr" => A) </myaddr>
@@ -1264,41 +1240,44 @@ The concat operation over two bytes is relatively straightforward since we alrea
 
 ```k
   rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
-       <stack> B1:MBytesLiteral ~> B2:MBytesLiteral => #StringToMBytes("0x" +String #MBytesContent(B1) +String #MBytesContent(B2)) ... </stack>
+       <stack> B1:Bytes ~> B2:Bytes => B1 +Bytes B2 ... </stack>
 ```
 
 Concatenating lists of bytes is somewhat more involved, since we need to distinguish this case from lists of strings.
 
 ```k
-  syntax MBytesLiteral ::= #ConcatBytes(List, String) [function]
-  rule #ConcatBytes(.List, A) => #StringToMBytes(A)
-  rule #ConcatBytes(ListItem(B1) DL, A) => #ConcatBytes(DL, A +String #MBytesContent(B1))
+  syntax Bytes ::= #ConcatBytes(List, Bytes) [function]
+  rule #ConcatBytes(.List, A) => A
+  rule #ConcatBytes(ListItem(B) DL, A) => #ConcatBytes(DL, A +Bytes B)
 
   rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
-       <stack> #List(L, bytes _) => #ConcatBytes(L, "0x") ... </stack>
+       <stack> #List(L, bytes _) => #ConcatBytes(L, .Bytes) ... </stack>
 
   rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
-       <stack> #List(ListItem(M:MBytesLiteral) L, _) => #ConcatBytes(ListItem(M) L, "0x") ... </stack>
+       <stack> #List(ListItem(M:Bytes) L, _) => #ConcatBytes(ListItem(M) L, .Bytes) ... </stack>
 ```
 
 Size is relatively simple, except that we must remember to divide by two, since bytes length is measured in terms of number of bytes, not characters in the hex string.
 
 ```k
   rule <k> SIZE A => #HandleAnnotations(A) ... </k>
-       <stack> B:MBytesLiteral => lengthString(#MBytesContent(B)) /Int 2 ... </stack>
+       <stack> B => lengthBytes(B) ... </stack>
 ```
 
 The remaining operations are defined in terms of the same operations on strings, allowing for code reuse.
 
 ```k
-  syntax OptionData ::= #OptionBytesFromOptionContent(Data) [function]
-  rule #OptionBytesFromOptionContent(None) => None
-  rule #OptionBytesFromOptionContent(Some S:String) => Some #StringToMBytes("0x" +String S)
+  syntax OptionData ::= #SliceBytes(Bytes, Int, Int) [function]
+
+  rule #SliceBytes(S, O, L) => Some substrBytes(S, O, O +Int L)
+  requires O >=Int 0 andBool L >=Int 0 andBool O <Int lengthBytes(S) andBool (O +Int L) <=Int lengthBytes(S)
+
+  rule #SliceBytes(S, O, L) => None [owise]
 
   rule <k> SLICE A => #HandleAnnotations(A) ... </k>
-       <stack> O:Int ~> L:Int ~> B:MBytesLiteral => #OptionBytesFromOptionContent(#SliceString(#MBytesContent(B), 2 *Int O, 2 *Int L))  ... </stack>
+       <stack> O:Int ~> L:Int ~> B:Bytes => #SliceBytes(B, O, L)  ... </stack>
 
-  rule #DoCompare(B1:MBytesLiteral, B2:MBytesLiteral) => #DoCompare(#MBytesContent(B1), #MBytesContent(B2))
+  rule #DoCompare(B1:Bytes, B2:Bytes) => #DoCompare(Bytes2Int(B1, BE, Unsigned), Bytes2Int(B2, BE, Unsigned)) 
 ```
 
 The cryptographic operations are simply stubbed for now.
