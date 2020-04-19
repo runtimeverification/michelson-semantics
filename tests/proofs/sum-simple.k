@@ -1,24 +1,56 @@
-requires "michelson.k"
+requires "../../.build/michelson.k"
+requires "lemmas.k"
 
 module SUM-SIMPLE
   imports MICHELSON
+  imports LEMMAS
 
-  rule <k>
-       {  DUP ;
-          DIP { CDR } ;
-          CAR ;
-          ADD ;
-          NIL operation ; PAIR } => . </k>
-        <stack> Pair A:Int B:Int => Pair .List (A +Int B)  </stack>
-        <paramtype> nat </paramtype>
-        <storagetype> nat </storagetype>
-        <balance> #Mutez(0) </balance>
-        <amount> #Mutez(0) </amount>
-        <now> #Timestamp(0) </now>
-        <myaddr> #Address(0) </myaddr>
+  rule <k> { PUSH .AnnotationList (int .AnnotationList) 2 ; 
+             PUSH .AnnotationList (int .AnnotationList) I1:Int ; 
+             EDIV .AnnotationList ; 
+             IF_NONE .AnnotationList { UNIT .AnnotationList ; 
+                                       FAILWITH .AnnotationList } 
+                                     { CDR .AnnotationList ; 
+                                       PUSH .AnnotationList (nat .AnnotationList) 1 ; 
+                                       COMPARE .AnnotationList ; 
+                                       EQ .AnnotationList } } ; 
+            #AssumeTrue ;
+           { PUSH .AnnotationList (int .AnnotationList) 2 ; 
+             PUSH .AnnotationList (int .AnnotationList) I2:Int ; 
+             EDIV .AnnotationList ; 
+             IF_NONE .AnnotationList { UNIT .AnnotationList ; 
+                                       FAILWITH .AnnotationList } 
+                                     { CDR .AnnotationList ; 
+                                       PUSH .AnnotationList (nat .AnnotationList) 0 ; 
+                                       COMPARE .AnnotationList ; 
+                                       EQ .AnnotationList } } ;
+             #AssumeTrue ; 
+           { PUSH .AnnotationList (int .AnnotationList) 2 ;
+             PUSH .AnnotationList (int .AnnotationList) I1:Int ;
+             PUSH .AnnotationList (int .AnnotationList) I2:Int ;
+             ADD .AnnotationList ;
+             EDIV .AnnotationList ;
+             IF_NONE .AnnotationList { UNIT .AnnotationList ; 
+                                       FAILWITH .AnnotationList } 
+                                     { CDR .AnnotationList ; 
+                                       PUSH .AnnotationList (nat .AnnotationList) 1 ; 
+                                       COMPARE .AnnotationList ; 
+                                       EQ .AnnotationList } } ; 
+              #AssertTrue => . </k>
+        <stack> . </stack>
+        <paramtype> #NotSet  </paramtype>
+        <paramvalue> #NoData </paramvalue>
+        <storagetype> #NotSet </storagetype>
+        <storagevalue> #NoData </storagevalue>
+        <mybalance> #Mutez(0) </mybalance>
+        <myamount> #Mutez(0) </myamount>
+        <mynow> #Timestamp(0) </mynow>
+        <myaddr> #Address("") </myaddr>
         <knownaddrs> .Map </knownaddrs>
-        <sourceaddr> #Address(0) </sourceaddr>
-        <senderaddr> #Address(0) </senderaddr>
-        <chainid> #ChainId(0) </chainid>
-        requires A >=Int 0 andBool B >=Int 0
+        <sourceaddr> #Address("") </sourceaddr>
+        <senderaddr> #Address("") </senderaddr>
+        <mychainid> #ChainId(0x) </mychainid>
+        <nonce> #Nonce(0) </nonce>
+        <bigmaps> .Map </bigmaps>
+        <returncode> 0 </returncode>
 endmodule
