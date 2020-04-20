@@ -82,3 +82,9 @@ RUN    cd /home/user/.tmp-maven \
 
 ENV LD_LIBRARY_PATH=/usr/local/lib
 ENV PATH=/home/user/.local/bin:$PATH
+
+RUN mkdir -p /home/user/.ssh
+ADD --chown=user:user ssh/config /home/user/.ssh/
+RUN    chmod go-rwx -R /home/user/.ssh                                \
+    && git config --global user.email "admin@runtimeverification.com" \
+    && git config --global user.name  "RV Jenkins"
