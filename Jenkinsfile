@@ -22,7 +22,7 @@ pipeline {
               dir("kevm-${env.VERSION}-jello-paper") {
                 sh '''
                   git clone 'ssh://github.com/runtimeverification/michelson-semantics.git'
-                  cd evm-semantics
+                  cd michelson-semantics
                   git checkout -B gh-pages origin/master
                   rm -rf build-coverage.sh build-deps.sh build.sh common.sh compat coverage.xml Dockerfile ext hex.cpp Jenkinsfile LICENSE media parser.sh run-coverage.sh run.sh run-tests.sh shutdown.sh start.sh tests time.cpp unit-test-kompiled
                   git add ./
