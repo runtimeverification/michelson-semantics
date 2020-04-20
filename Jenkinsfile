@@ -20,7 +20,7 @@ pipeline {
         stage('GitHub Pages') {
           steps {
             sshagent(['2b3d8d6b-0855-4b59-864a-6b3ddf9c9d1a']) {
-              dir("project-site") {
+              dir('project-site') {
                 sh '''
                   git clone 'ssh://github.com/runtimeverification/michelson-semantics.git'
                   cd michelson-semantics
