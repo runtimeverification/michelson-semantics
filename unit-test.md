@@ -141,11 +141,12 @@ The final step when all elements of the KSequences have been exhausted is to set
 In the case of an expected failure, we cannot guarantee that the contents of the K cell will be empty when the main semantics abort.  However, we know that the #VerifyOutput will still be in the k cell.  Hence, if the main semantics abort (by placing the Aborted production on the top of the k cell), we should find the #VerifyOutput production in the K cell and pull it out. 
 
 ```k
-  syntax KItem ::= #FindVerifyOutput(K) [function]
+  syntax KItem ::= #FindVerifyOutput(K, KItem)
+  syntax KItem ::= #NoVerifyOutput(KItem)
 
-  rule #FindVerifyOutput(#VerifyOutput(O) ~> _) => #VerifyOutput(O)
-  rule #FindVerifyOutput(_:KItem ~> Rs) => #FindVerifyOutput(Rs) [owise]
+  rule <k> #FindVerifyOutput(#VerifyOutput(O) ~> _, _) => #VerifyOutput(O) ... </k>
+  rule <k> #FindVerifyOutput(_:KItem ~> Rs => Rs, _) ... </k> [owise]
 
-  rule <k> Aborted(_, _, Rk, _) => #FindVerifyOutput(Rk) ... </k>
+  rule <k> Aborted(_, _, Rk, _) #as V => #FindVerifyOutput(Rk, V) ... </k>
 endmodule
 ```
