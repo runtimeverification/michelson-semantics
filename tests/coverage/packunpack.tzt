@@ -1,3 +1,0 @@
-code { PACK ; UNPACK int } ;
-input { Stack_elt int 5 } ;
-output { Stack_elt int 5 }

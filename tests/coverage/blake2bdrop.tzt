@@ -1,3 +1,0 @@
-code { BLAKE2B ; DROP } ;
-input { Stack_elt bytes 0x } ;
-output { }
