@@ -19,6 +19,8 @@ michelson.md
 michelson-syntax.md
 unit-test.md
 unit-test-syntax.md
+ext/blockchain-k-plugin/plugin/hash.md
+ext/blockchain-k-plugin/plugin/secp256k1.md
 EOF
 )
 
@@ -26,4 +28,4 @@ for f in $MAIN_DEF_FILES ; do
     pandoc --from markdown --to "$TANGLER" --metadata=code:.k "$SCRIPT_DIRECTORY/$f" > "$BUILD_DIRECTORY/$(basename $f .md).k"
 done
 
-kompile --directory "$SCRIPT_DIRECTORY" $KOMPILE_OPTS $* "$BUILD_DIRECTORY/unit-test.k" && "$SCRIPT_DIRECTORY/compat/kompile.sh"
+kompile --directory "$SCRIPT_DIRECTORY" "${KOMPILE_OPTS[@]}" $* "$BUILD_DIRECTORY/unit-test.k" && "$SCRIPT_DIRECTORY/compat/kompile.sh"
