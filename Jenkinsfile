@@ -15,6 +15,7 @@ pipeline {
       }
     }
     stage('Deploy') {
+      when { branch 'master' }
       stages {
         stage('GitHub Pages') {
           steps {
