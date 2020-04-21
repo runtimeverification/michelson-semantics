@@ -7,3 +7,6 @@
 [submodule "ext/pandoc-tangle"]
 	path = ext/pandoc-tangle
 	url = https://github.com/ehildenb/pandoc-tangle.git
+[submodule "ext/blockchain-k-plugin"]
+	path = ext/blockchain-k-plugin
+	url = https://github.com/runtimeverification/blockchain-k-plugin
