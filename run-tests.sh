@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 SCRIPT_DIRECTORY="$(dirname "$(readlink -f "$BASH_SOURCE")")"
 source "$SCRIPT_DIRECTORY/common.sh"
 

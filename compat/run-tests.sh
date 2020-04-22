@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # either validates that all expected tests pass or marks which tests fail
 # when the first argument is "record", then do mark failing tests
