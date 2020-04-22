@@ -1,3 +1,0 @@
-code { } ;
-input { Stack_elt signature "@Signature(1)" } ;
-output { Stack_elt signature "@Signature(1)" } 
