@@ -1294,6 +1294,7 @@ The cryptographic operations are simply stubbed for now.
 
   rule #DoHash(blake2b,B:Bytes)  => Blake2B_256(B)
   rule #DoHash(sha256, B:Bytes)  => Sha2_256(B)
+  rule #DoHash(sha512, B:Bytes)  => Sha2_512(B)
   rule #DoHash(blake2b,M:MBytes) => #Blake2B(M) [owise]
   rule #DoHash(sha256, M:MBytes) => #SHA256(M)  [owise]
   rule #DoHash(sha512, M:MBytes) => #SHA512(M)  [owise]
