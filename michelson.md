@@ -1292,6 +1292,7 @@ The cryptographic operations are simply stubbed for now.
   syntax MBytes ::= #DoHash(HashFuncName,MBytes) [function]
   syntax HashFuncName ::= "blake2b" | "sha256" | "sha512"
 
+  rule #DoHash(blake2b,B:Bytes)  => Blake2B_256(B)
   rule #DoHash(blake2b,M:MBytes) => #Blake2B(M) [owise]
   rule #DoHash(sha256, M:MBytes) => #SHA256(M)  [owise]
   rule #DoHash(sha512, M:MBytes) => #SHA512(M)  [owise]
