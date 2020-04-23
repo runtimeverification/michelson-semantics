@@ -4,6 +4,8 @@ This is the main execution semantics file for Michelson.  It contains the rewrit
 requires "michelson-syntax.k"
 requires "michelson-config.k"
 requires "michelson-internal-syntax.k"
+requires "hash.k"
+requires "secp256k1.k"
 
 module MICHELSON
   imports MICHELSON-SYNTAX
@@ -12,6 +14,8 @@ module MICHELSON
   imports DOMAINS
   imports COLLECTIONS
   imports BYTES
+  imports HASH
+  imports CRYPTOGRAPHY-SECP256K1-ELLIPTIC-CURVE
 ```
 
 #Loading Semantics
@@ -1285,20 +1289,27 @@ The cryptographic operations are simply stubbed for now.
 ```k
   //// Cryptographic primitives
 
-  syntax String ::= #Blake2BKeyHash(String) [function] // TODO: Blake2B crypto hook.
+  syntax MBytes ::= #DoHash(HashFuncName,MBytes) [function]
+  syntax HashFuncName ::= "blake2b" | "sha256" | "sha512"
+
+  rule #DoHash(blake2b,M:MBytes) => #Blake2B(M) [owise]
+  rule #DoHash(sha256, M:MBytes) => #SHA256(M)  [owise]
+  rule #DoHash(sha512, M:MBytes) => #SHA512(M)  [owise]
+
+  syntax String ::= #Blake2BKeyHash(String) [function] // TODO: keyhashing
   rule #Blake2BKeyHash(S) => S
 
   rule <k> HASH_KEY A => #HandleAnnotations(A) ... </k>
        <stack> #Key(S) => #KeyHash(#Blake2BKeyHash(S)) ... </stack>
 
-  rule <k> BLAKE2B A => #HandleAnnotations(A) ... </k>
-       <stack> B:MBytes => #Blake2B(B) ... </stack>
+   rule <k> BLAKE2B A => #HandleAnnotations(A) ... </k>
+        <stack> B:MBytes => #DoHash(blake2b,B) ... </stack>
 
   rule <k> SHA256 A => #HandleAnnotations(A) ... </k>
-       <stack> B:MBytes => #SHA256(B) ... </stack>
+       <stack> B:MBytes => #DoHash(sha256,B) ... </stack>
 
   rule <k> SHA512 A => #HandleAnnotations(A) ... </k>
-       <stack> B:MBytes => #SHA512(B) ... </stack>
+       <stack> B:MBytes => #DoHash(sha512,B) ... </stack>
 
   syntax MBytes ::= #SignedMBytes(Key, Signature, MBytes)
 
