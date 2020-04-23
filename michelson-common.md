@@ -78,6 +78,9 @@ Michelson bools are of the form (True/False), but K bools are of the form (true/
   rule `MichelsonBool`(False) => false
 ```
 
+Michelson byte literals are given by their hexadecimal representation with the prefix "Ox".
+Since the K byte literal has a different representation, we convert here from one to the other.
+
 ```k
   syntax MBytes ::= Bytes
 
