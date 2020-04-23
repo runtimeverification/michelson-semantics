@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 UT="$1"
 SCRIPT_DIR="$(dirname "$(readlink -f "$BASH_SOURCE")")"

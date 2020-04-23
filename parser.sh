@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 SCRIPT_DIR="$(dirname "$(readlink -f "$BASH_SOURCE")")"
 COMPAT_DIR="$SCRIPT_DIR/compat/"
 
