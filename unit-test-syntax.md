@@ -10,7 +10,7 @@ module UNIT-TEST-SYNTAX
 
 ```
 
-Here we describe the format of a stack literal. These are used both to set up an input stack for a Michelson code snippit, and to describe the expected output stack.  
+Here we describe the format of a stack literal. These are used both to set up an input stack for a Michelson code snippit, and to describe the expected output stack.
 
 ```k
   syntax StackElement ::= "Stack_elt" Type Data
@@ -26,7 +26,7 @@ While the input stack must be a full literal, the output stack may be either a l
 
 To fully implement the .tzt format, we add four new groups to the loading group set.  These specify:
 
-- Code, specifying an instruction or block of Michelson code to execute (note that Blocks are also instructions) 
+- Code, specifying an instruction or block of Michelson code to execute (note that Blocks are also instructions)
 - Input, the initial stack to pass to the Code block or instruction.
 - Output, the expectation for the final stack after the contents of Code have finished executing.
 
@@ -43,5 +43,5 @@ Finally, we declare the #Any wildcard as described in the .tzt format proposal. 
 ```k
   syntax Data ::= "#Any"
 
-endmodule 
+endmodule
 ```

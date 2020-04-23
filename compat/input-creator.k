@@ -19,11 +19,11 @@ module INPUT-CREATOR
   rule #DataForType(timestamp _) => 0
   rule #DataForType(address _) => "tz1TGu6TN5GSez2ndXXeDX6LgUDvLzPLqgYV"
 
-//  rule #DataForType(key _) 
+//  rule #DataForType(key _)
   rule #DataForType(unit _) => Unit
-//  rule #DataForType(signature _) 
-//  rule #DataForType(operation _) 
-//  rule #DataForType(chain_id _) 
+//  rule #DataForType(signature _)
+//  rule #DataForType(operation _)
+//  rule #DataForType(chain_id _)
 
   rule #DataForType(pair _ T1:Type T2:Type) => Pair #DataForType(T1) #DataForType(T2)
 

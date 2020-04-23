@@ -38,7 +38,7 @@ The K specification of the Michelson Bytes type is incomplete due to the lack a 
   syntax MBytes ::= MBytesLiteral
                   | #Packed(Data)
                   | #Blake2B(MBytes)
-                  | #SHA256(MBytes) 
+                  | #SHA256(MBytes)
                   | #SHA512(MBytes)
 ```
 
