@@ -59,7 +59,7 @@ pid_t spawnCodecProcess(const TempFile& file, const std::string& binary) {
         char decode[] = "decode";
         char type[] = "005-PsBabyM1.operation.internal";
         char from[] = "from";
-        char * arg = strdup(binary.c_str()); 
+        char * arg = strdup(binary.c_str());
         // execv, for some reason, takes char * const * rather than const char * const *, so we need to dup
 
         char * args[] = { command, decode, type, from, arg, nullptr };
@@ -73,7 +73,7 @@ pid_t spawnCodecProcess(const TempFile& file, const std::string& binary) {
         std::cerr << "Unable to exec: " << std::string(buffer) << std::endl;
 
         free(arg);
-        
+
         exit(EXIT_FAILURE);
     }
     return pid;

@@ -6,7 +6,7 @@
 
 extern "C" {
     const mpz_ptr hook_TIME_ISO2Epoch(string *iso) {
-        std::tm time; // https://en.cppreference.com/w/cpp/io/manip/get_time 
+        std::tm time; // https://en.cppreference.com/w/cpp/io/manip/get_time
         std::istringstream ss(iso->data);
         ss >> std::get_time(&time, "%Y-%m-%dT%H:%M:%SZ");
         if (ss.fail()) {

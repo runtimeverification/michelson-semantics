@@ -100,14 +100,14 @@ sed -E 's/ : /\n/g;s/@%|@%%|%@|[@:%][_a-zA-Z][_0-9a-zA-Z\.%@]*//g' "$RAW_TYPES" 
 
 AMOUNT="$(python -c 'import sys ; print("0" if len(sys.argv) < 2 or sys.argv[1].strip() == "" else "%f" % (float(sys.argv[1]) / 1000000.0))' "$(extract amount true)")"
 
-if [ ! -z "$FAKE_SOURCE" ] ; then 
+if [ ! -z "$FAKE_SOURCE" ] ; then
     REAL_SOURCE="$(grep "$FAKE_SOURCE" $ORIGINATION_SUBS | sed -E 's|s/[^/]*/([^/]*)/|\1|')" ;
     if [ ! -z "$REAL_SOURCE" ] ; then
         SOURCE_CLI="--payer $REAL_SOURCE" ;
     fi ;
 fi
 
-if [ ! -z "$FAKE_SENDER" ] ; then 
+if [ ! -z "$FAKE_SENDER" ] ; then
     REAL_SENDER="$(grep "$FAKE_SENDER" $ORIGINATION_SUBS | sed -E 's|s/[^/]*/([^/]*)/|\1|')" ;
     if [ ! -z "$REAL_SENDER" ] ; then
         SENDER_CLI="--source $REAL_SENDER" ;
@@ -132,11 +132,11 @@ if [ "$FOUND" -eq "0" ]; then
         exit 1 ;
     fi ;
     python "$SCRIPT_DIR/combine.py" $TYPES_FILE $DATA_FILE > $REAL_OUTPUT_FILE ;
-else 
+else
     if grep -q "script reached FAILWITH instruction" "$EXECUTION" >/dev/null 2>&1; then
         grep -oP "(?<=^with ).*$" "$EXECUTION" | sed -E 's/(.*)/real_output ( Failed \1 ) ;/' > "$REAL_OUTPUT_FILE" ;
     elif grep -o "Overflowing addition of [0-9.]* tez and [0-9.]* tez" "$EXECUTION" >"$ERROR_FILE" 2>/dev/null; then
-        sed -E 's/Overflowing addition of ([0-9.]*) tez and ([0-9.]*) tez/real_output ( MutezOverflow \1 \2 ) ;/' "$ERROR_FILE" | tr -d '.' > "$REAL_OUTPUT_FILE" ; 
+        sed -E 's/Overflowing addition of ([0-9.]*) tez and ([0-9.]*) tez/real_output ( MutezOverflow \1 \2 ) ;/' "$ERROR_FILE" | tr -d '.' > "$REAL_OUTPUT_FILE" ;
     elif grep -o "Underflowing subtraction of [0-9.]* tez and [0-9.]* tez" "$EXECUTION" >"$ERROR_FILE" 2>/dev/null; then
         sed -E 's/Underflowing subtraction of ([0-9.]*) tez and ([0-9.]*) tez/real_output ( MutezUnderflow \1 \2 ) ;/' "$ERROR_FILE" | tr -d '.' > "$REAL_OUTPUT_FILE" ;
     elif grep -q "unexpected arithmetic overflow" "$EXECUTION" >/dev/null 2>&1; then

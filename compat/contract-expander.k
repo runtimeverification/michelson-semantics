@@ -9,10 +9,10 @@ module CONTRACT-EXPANDER
   imports COMPAT-COMMON
 
   syntax Block ::= #StackEltToPush(StackElement) [function]
-  rule #StackEltToPush(Stack_elt (contract _:AnnotationList T:Type) D:Data) => { PUSH .AnnotationList address .AnnotationList D ; 
-                                                                                 CONTRACT .AnnotationList T ; 
+  rule #StackEltToPush(Stack_elt (contract _:AnnotationList T:Type) D:Data) => { PUSH .AnnotationList address .AnnotationList D ;
+                                                                                 CONTRACT .AnnotationList T ;
                                                                                  IF_SOME .AnnotationList { } { UNIT .AnnotationList ; FAILWITH .AnnotationList } }
-  rule #StackEltToPush(Stack_elt T D) => { PUSH .AnnotationList T D } [owise] 
+  rule #StackEltToPush(Stack_elt T D) => { PUSH .AnnotationList T D } [owise]
 
   syntax Block ::= #StackToPush(LiteralStack) [function]
   rule #StackToPush( { } ) => { }
@@ -23,11 +23,11 @@ module CONTRACT-EXPANDER
   rule #StackToPushAux(Se, { I:InstructionList })  => { #StackEltToPush(Se) ; I }
 
   syntax Contract ::= #FillTemplateContract(Block, Block, Type) [function]
- 
+
   syntax Bool ::= #CodeBlockEndsWithFail(Block) [function]
   rule #CodeBlockEndsWithFail( { } ) => false
   rule #CodeBlockEndsWithFail( { { Is } } ) => #CodeBlockEndsWithFail( { Is } )
-  rule #CodeBlockEndsWithFail( { I:Instruction } ) => ((FAILWITH _) :=K I) [owise] 
+  rule #CodeBlockEndsWithFail( { I:Instruction } ) => ((FAILWITH _) :=K I) [owise]
   rule #CodeBlockEndsWithFail( { _:Instruction ; Is } ) => #CodeBlockEndsWithFail( { Is } )
 
   rule #FillTemplateContract(PushBlock, CodeBlock, ParamType) =>
@@ -47,7 +47,7 @@ module CONTRACT-EXPANDER
   syntax Block ::= #FindCodeGroup(Groups) [function]
   rule #FindCodeGroup(code T) => { T }
   rule #FindCodeGroup(code T;) => { T }
-  rule #FindCodeGroup(code T ; _) => { T } 
+  rule #FindCodeGroup(code T ; _) => { T }
   rule #FindCodeGroup(_ ; G) => #FindCodeGroup(G) [owise]
 
   syntax Type ::= #FindParamType(Groups) [function]

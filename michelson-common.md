@@ -38,7 +38,7 @@ The K specification of the Michelson Bytes type is incomplete due to the lack a 
   syntax MBytes ::= MBytesLiteral
                   | #Packed(Data)
                   | #Blake2B(MBytes)
-                  | #SHA256(MBytes) 
+                  | #SHA256(MBytes)
                   | #SHA512(MBytes)
 ```
 
@@ -77,6 +77,9 @@ Michelson bools are of the form (True/False), but K bools are of the form (true/
   rule `MichelsonBool`(True) => true
   rule `MichelsonBool`(False) => false
 ```
+
+Michelson byte literals are given by their hexadecimal representation with the prefix "Ox".
+Since the K byte literal has a different representation, we convert here from one to the other.
 
 ```k
   syntax MBytes ::= Bytes
