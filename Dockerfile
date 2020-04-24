@@ -1,11 +1,5 @@
 FROM runtimeverificationinc/ubuntu:bionic
 
-# add opam repository
-RUN    apt-get update                                   \
-    && apt-get install --yes software-properties-common \
-    && add-apt-repository ppa:avsm/ppa
-
-# install dependencies
 RUN    apt-get update                \
     && apt-get upgrade --yes         \
     && apt-get install --yes         \
@@ -34,7 +28,6 @@ RUN    apt-get update                \
             make                     \
             maven                    \
             netcat-openbsd           \
-            opam                     \
             openjdk-11-jdk           \
             pandoc                   \
             pkg-config               \
@@ -58,6 +51,19 @@ RUN    git clone 'https://github.com/z3prover/z3' --branch=z3-4.6.0 \
     && make install                                                 \
     && cd ../..                                                     \
     && rm -rf z3
+
+# add opam repository and install opam
+RUN    apt-get update                                   \
+    && apt-get install --yes software-properties-common \
+    && add-apt-repository ppa:avsm/ppa                  \
+    && apt-get update                                   \
+    && apt-get install --yes opam
+
+# install more recent cryptopp version
+RUN    curl "http://http.us.debian.org/debian/pool/main/libc/libcrypto++/libcrypto++8_8.2.0-2_amd64.deb"    > libcpp.deb    \
+    && curl "http://http.us.debian.org/debian/pool/main/libc/libcrypto++/libcrypto++-dev_8.2.0-2_amd64.deb" > libcppdev.deb \
+    && dpkg -i libcpp.deb libcppdev.deb                                                                                     \
+    && rm libcpp.deb libcppdev.deb
 
 USER user:user
 
