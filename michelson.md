@@ -114,7 +114,7 @@ MBytes conversion is done by the function rule.
 Mutez is simply a specially tagged int - we also sanity check the int to ensure that it is in bounds.
 
 ```k
-  rule #ConcreteArgToSemantics(I:Int, mutez _) => #Mutez(I) requires #IsLegalMutezValue(I) 
+  rule #ConcreteArgToSemantics(I:Int, mutez _) => #Mutez(I) requires #IsLegalMutezValue(I)
 ```
 
 K's function expansion step has already handled converting Michelsons "True/False" booleans into "true/false" K bools, so we don't need to do anything special with them here.
@@ -197,7 +197,7 @@ Maps and big\_maps do not have the same parsing ambiguity, so we do not need to 
   rule #ConcreteArgToSemantics(Elt K V ; ML, map _:AnnotationList KT VT) =>
        ({#ConcreteArgToSemantics(ML, map .AnnotationList KT VT)}:>Map)[#ConcreteArgToSemantics(K, KT) <- #ConcreteArgToSemantics(V, VT)]
 
-  rule #ConcreteArgToSemantics(Elt K V, map _:AnnotationList KT VT) => 
+  rule #ConcreteArgToSemantics(Elt K V, map _:AnnotationList KT VT) =>
        #ConcreteArgToSemantics(K, KT) |-> #ConcreteArgToSemantics(V, VT)
 
   rule #ConcreteArgToSemantics({ }, big_map _:AnnotationList K V) => .Map
@@ -272,7 +272,7 @@ It is permitted, but not recommended, for two groups to have the same order (unl
   syntax Int ::= #GroupOrder(Group) [function]
 ```
 
-In order to specify that a group should be loaded last, we map it on to `#GroupOrderMax` (subtracting an offset in the event we wish a group to be loaded second to last).  
+In order to specify that a group should be loaded last, we map it on to `#GroupOrderMax` (subtracting an offset in the event we wish a group to be loaded second to last).
 
 The actual value returned by this function is immaterial, so long as it is larger than the number of groups.
 
@@ -281,7 +281,7 @@ The actual value returned by this function is immaterial, so long as it is large
   rule #GroupOrderMax => 1000
 ```
 
-These are the default group orders.  If a new extension semantics adds a new group, it should also define an order for that group with a rule like these.  
+These are the default group orders.  If a new extension semantics adds a new group, it should also define an order for that group with a rule like these.
 
 ```k
   rule #GroupOrder(_:ContractGroup) => #GroupOrderMax
@@ -899,7 +899,7 @@ Built-in support for sets allows clean rules like the ones below for adding and 
        requires notBool(D in S)
 ```
 
-Note that, according to the Michelson documentation, set iteration order is actually defined (the set is iterated over in ascending order)!  For simplicity we implement this by repeatedly selecting the minimal element. 
+Note that, according to the Michelson documentation, set iteration order is actually defined (the set is iterated over in ascending order)!  For simplicity we implement this by repeatedly selecting the minimal element.
 
 ```k
   syntax Data ::= #MinimalElement(List) [function]
@@ -950,7 +950,7 @@ Much like Sets, MAP operations lift reasonably easily into K.
        <stack> K ~> None ~> M:Map => M[K <- undef] ... </stack>
 ```
 
-The MAP operation, over maps, is somewhat more involved.  We need to set up a stack without the actual map to execute the block on, and we need to keep track of the updated map as we do.  We implement this by splitting the operation into multiple K items.  `#PerformMap` holds the old map, the new map, and the block to execute.  When it rewrites, it sets up the new stack and queues up a `#PopNewVal` which removes the value produced by the MAP block and adds it to the second map argument.  Like Sets, iteration order is actually defined, and we implement it by repeatedly selecting the minimal element in the list of keys in the map. 
+The MAP operation, over maps, is somewhat more involved.  We need to set up a stack without the actual map to execute the block on, and we need to keep track of the updated map as we do.  We implement this by splitting the operation into multiple K items.  `#PerformMap` holds the old map, the new map, and the block to execute.  When it rewrites, it sets up the new stack and queues up a `#PopNewVal` which removes the value produced by the MAP block and adds it to the second map argument.  Like Sets, iteration order is actually defined, and we implement it by repeatedly selecting the minimal element in the list of keys in the map.
 
 ```k
   syntax KItem ::= #PerformMap(Map, Map, Block)
@@ -1277,7 +1277,7 @@ The remaining operations are defined in terms of the same operations on strings,
   rule <k> SLICE A => #HandleAnnotations(A) ... </k>
        <stack> O:Int ~> L:Int ~> B:Bytes => #SliceBytes(B, O, L)  ... </stack>
 
-  rule #DoCompare(B1:Bytes, B2:Bytes) => #DoCompare(Bytes2Int(B1, BE, Unsigned), Bytes2Int(B2, BE, Unsigned)) 
+  rule #DoCompare(B1:Bytes, B2:Bytes) => #DoCompare(Bytes2Int(B1, BE, Unsigned), Bytes2Int(B2, BE, Unsigned))
 ```
 
 The cryptographic operations are simply stubbed for now.
@@ -1289,7 +1289,7 @@ The cryptographic operations are simply stubbed for now.
   rule #Blake2BKeyHash(S) => S
 
   rule <k> HASH_KEY A => #HandleAnnotations(A) ... </k>
-       <stack> #Key(S) => #KeyHash(#Blake2BKeyHash(S)) ... </stack> 
+       <stack> #Key(S) => #KeyHash(#Blake2BKeyHash(S)) ... </stack>
 
   rule <k> BLAKE2B A => #HandleAnnotations(A) ... </k>
        <stack> B:MBytes => #Blake2B(B) ... </stack>

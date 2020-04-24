@@ -16,47 +16,47 @@ module MICHELSON-UNPARSER
   rule #unparse(O) => #doUnparse(O, false)
 
   // Unparse Data.
-  rule #doUnparse(Elt D1:Data D2:Data, false) => 
-    "Elt " +String 
-    #doUnparse(D1, true) 
-    +String " " +String 
-    #doUnparse(D2, true) 
+  rule #doUnparse(Elt D1:Data D2:Data, false) =>
+    "Elt " +String
+    #doUnparse(D1, true)
+    +String " " +String
+    #doUnparse(D2, true)
 
-  rule #doUnparse(D1:Data ; DL:DataList, _) => 
-    #doUnparse(D1, false) +String 
-    " ; " +String 
+  rule #doUnparse(D1:Data ; DL:DataList, _) =>
+    #doUnparse(D1, false) +String
+    " ; " +String
     #doUnparse(DL, false)
 
-  rule #doUnparse(M1:MapEntry ; ML:MapEntryList, _) => 
-    #doUnparse(M1, false) +String 
-    " ; " +String 
+  rule #doUnparse(M1:MapEntry ; ML:MapEntryList, _) =>
+    #doUnparse(M1, false) +String
+    " ; " +String
     #doUnparse(ML, false)
 
-  rule #doUnparse(I1:Instruction ; IL:InstructionList, _) => 
-    #doUnparse(I1, false) +String 
-    " ; " +String 
+  rule #doUnparse(I1:Instruction ; IL:InstructionList, _) =>
+    #doUnparse(I1, false) +String
+    " ; " +String
     #doUnparse(IL, false)
-  
+
   syntax String ::= #unparseTypeAnnotation(TypeAnnotation) [function, functional, hook(STRING.token2string)]
   syntax String ::= #unparseVariableAnnotation(VariableAnnotation) [function, functional, hook(STRING.token2string)]
   syntax String ::= #unparseFieldAnnotation(FieldAnnotation) [function, functional, hook(STRING.token2string)]
-  
-  rule #doUnparse(A, _) => #unparseTypeAnnotation(A) 
+
+  rule #doUnparse(A, _) => #unparseTypeAnnotation(A)
   rule #doUnparse(A, _) => #unparseVariableAnnotation(A)
   rule #doUnparse(A, _) => #unparseFieldAnnotation(A)
 
   rule #doUnparse(.AnnotationList, _) => ""
 
-  rule #doUnparse(A:Annotation AL:AnnotationList, _) => 
-    #doUnparse(A, false) +String 
-    " " +String 
+  rule #doUnparse(A:Annotation AL:AnnotationList, _) =>
+    #doUnparse(A, false) +String
+    " " +String
     #doUnparse(AL, false)
 
 
-  rule #doUnparse(Pair D1 D2, false) => 
-    "Pair " +String 
-    #doUnparse(D1, true) +String 
-    " " +String 
+  rule #doUnparse(Pair D1 D2, false) =>
+    "Pair " +String
+    #doUnparse(D1, true) +String
+    " " +String
     #doUnparse(D2, true)
 
   rule #doUnparse(Left D, false) => "Left " +String #doUnparse(D, true)
@@ -97,7 +97,7 @@ module MICHELSON-UNPARSER
   rule #doUnparse(#Signature(S), _) => #doUnparse(S, false)
 
   // Unparse types.
-  
+
   rule #doUnparse(int, _) => "int"
   rule #doUnparse(nat, _) => "nat"
   rule #doUnparse(string, _) => "string"
@@ -113,13 +113,13 @@ module MICHELSON-UNPARSER
   rule #doUnparse(operation, _) => "operation"
   rule #doUnparse(chain_id, _) => "chain_id"
 
-  rule #doUnparse(T:UnannotatedSimpleType (A AL):AnnotationList, false) => 
-    #doUnparse(T, false) +String 
+  rule #doUnparse(T:UnannotatedSimpleType (A AL):AnnotationList, false) =>
+    #doUnparse(T, false) +String
     " " +String
     #doUnparse(A AL, false)
 
-  rule #doUnparse(T:UnannotatedSimpleType (A AL):AnnotationList, true) => 
-    "(" +String #doUnparse(T (A AL), false) +String ")" 
+  rule #doUnparse(T:UnannotatedSimpleType (A AL):AnnotationList, true) =>
+    "(" +String #doUnparse(T (A AL), false) +String ")"
 
   rule #doUnparse(T:UnannotatedSimpleType .AnnotationList, _) => #doUnparse(T, false)
 
@@ -131,10 +131,10 @@ module MICHELSON-UNPARSER
     " " +String
     #doUnparse(T2, true)
 
-  rule #doUnparse(pair AL T1 T2, true) => 
+  rule #doUnparse(pair AL T1 T2, true) =>
     "(" +String #doUnparse(pair AL T1 T2, false) +String ")"
 
-  rule #doUnparse(option AL T, false) => 
+  rule #doUnparse(option AL T, false) =>
     "option " +String
     #doUnparse(AL, false) +String
     " " +String
@@ -156,10 +156,10 @@ module MICHELSON-UNPARSER
   rule #doUnparse(or AList T1 T2, true) => "(" +String #doUnparse(or AList T1 T2, false) +String ")"
   rule #doUnparse(lambda AList T1 T2, true) => "(" +String #doUnparse(lambda AList T1 T2, false) +String ")"
   rule #doUnparse(map AList T1 T2, true) => "(" +String #doUnparse(map AList T1 T2, false) +String ")"
-  rule #doUnparse(big_map AList T1 T2, true) => "(" +String #doUnparse(big_map AList T1 T2, false) +String ")" 
+  rule #doUnparse(big_map AList T1 T2, true) => "(" +String #doUnparse(big_map AList T1 T2, false) +String ")"
 
   rule #doUnparse(I:Instruction ;, _) => #doUnparse(I, false) +String ";"
- 
+
   rule #doUnparse(DROP AList, _) => "DROP" +String #doUnparse(AList, false)
   rule #doUnparse(DROP AList I:Int, _) => "DROP" +String #doUnparse(AList, false) +String " " +String #doUnparse(I, true)
   rule #doUnparse(DIG AList I, _) => "DIG" +String #doUnparse(AList, false) +String " " +String #doUnparse(I, true)
@@ -294,7 +294,7 @@ module MICHELSON-UNPARSER
   syntax String ::= #CDARMacroToString(CDARMacro) [function, hook(STRING.token2string)]
   syntax String ::= #SetCDARMacroToString(SetCDARMacro) [function, hook(STRING.token2string)]
 
-  rule #doUnparse(D:DIPMacro A B, _) => #DIPMacroToString(D) +String 
+  rule #doUnparse(D:DIPMacro A B, _) => #DIPMacroToString(D) +String
                                         " " +String
                                         #doUnparse(A, false) +String
                                         " " +String
@@ -323,22 +323,22 @@ module MICHELSON-UNPARSER
   rule #doUnparse(storage T, _) => "storage " +String #doUnparse(T, true)
   rule #doUnparse(parameter T, _) => "parameter " +String #doUnparse(T, true)
 
-  rule #doUnparse((C:CodeDecl ; S:StorageDecl ; P:ParameterDecl):Contract, _) => 
-    #doUnparse(C, false) +String 
+  rule #doUnparse((C:CodeDecl ; S:StorageDecl ; P:ParameterDecl):Contract, _) =>
+    #doUnparse(C, false) +String
     "; " +String
     #doUnparse(S, false) +String
     "; " +String
     #doUnparse(P, false)
 
-  rule #doUnparse((C:CodeDecl ; S:StorageDecl ; P:ParameterDecl ;):Contract, _) => 
-    #doUnparse(C, false) +String 
+  rule #doUnparse((C:CodeDecl ; S:StorageDecl ; P:ParameterDecl ;):Contract, _) =>
+    #doUnparse(C, false) +String
     "; " +String
     #doUnparse(S, false) +String
     "; " +String
     #doUnparse(P, false) +String
     ";"
 
-  rule #doUnparse(Elt S:String T:Type, _) => 
+  rule #doUnparse(Elt S:String T:Type, _) =>
     "Elt " +String
     #doUnparse(S, false) +String
     " " +String
@@ -349,12 +349,12 @@ module MICHELSON-UNPARSER
     "; " +String
     #doUnparse(Os, false)
 
-  rule #doUnparse({ Os:OtherContractsMapEntryList }, _) => 
-    "{" +String 
-    #doUnparse(Os, false) +String 
+  rule #doUnparse({ Os:OtherContractsMapEntryList }, _) =>
+    "{" +String
+    #doUnparse(Os, false) +String
     "}"
 
-  rule #doUnparse(Big_map I T1 T2 { }, _) => 
+  rule #doUnparse(Big_map I T1 T2 { }, _) =>
     "Big_map" +String
     #doUnparse(I, false) +String
     " " +String
@@ -363,7 +363,7 @@ module MICHELSON-UNPARSER
     #doUnparse(T2, true) +String
     " { }"
 
-  rule #doUnparse(Big_map I T1 T2 ML:MapLiteral, _) => 
+  rule #doUnparse(Big_map I T1 T2 ML:MapLiteral, _) =>
     "Big_map" +String
     #doUnparse(I, false) +String
     " " +String
@@ -378,10 +378,10 @@ module MICHELSON-UNPARSER
     "; " +String
     #doUnparse(Os, false)
 
-  rule #doUnparse({ Os:BigMapEntryList }, _) => 
-    "{" +String 
-    #doUnparse(Os, false) +String 
-    "}"  
+  rule #doUnparse({ Os:BigMapEntryList }, _) =>
+    "{" +String
+    #doUnparse(Os, false) +String
+    "}"
 
   rule #doUnparse(contract { C }, _) => "contract { " +String #doUnparse(C, false) +String "}"
   rule #doUnparse(now I, _) => "now " +String #doUnparse(I, false)
@@ -396,9 +396,9 @@ module MICHELSON-UNPARSER
   rule #doUnparse(storage_value S, _) => "storage_value " +String #doUnparse(S, false)
   rule #doUnparse(big_maps S, _) => "big_maps " +String #doUnparse(S, false)
 
-  rule #doUnparse(G:Group ; Gs:Groups, _) => 
-    #doUnparse(G, false) +String 
-    "; " +String 
+  rule #doUnparse(G:Group ; Gs:Groups, _) =>
+    #doUnparse(G, false) +String
+    "; " +String
     #doUnparse(Gs, false)
 
   rule #doUnparse(Gs:Group ;, _) => #doUnparse(Gs, false) +String ";"
@@ -414,12 +414,12 @@ module MICHELSON-UNPARSER
     "; " +String
     #doUnparse(Ss, false)
 
-  rule #doUnparse({ S:StackElementList }, _) => 
+  rule #doUnparse({ S:StackElementList }, _) =>
     "{" +String
     #doUnparse(S, false) +String
     "}"
 
-  rule #doUnparse(Create_contract(I, C, O, M, D), _) => 
+  rule #doUnparse(Create_contract(I, C, O, M, D), _) =>
     "Create_contract (" +String
     #doUnparse(I, true) +String
     ", " +String
@@ -452,23 +452,23 @@ module MICHELSON-UNPARSER
 
   rule #doUnparse(( Failed D ), _) => "( Failed " +String #doUnparse(D, true) +String ")"
 
-  rule #doUnparse(( MutezOverflow I1 I2 ), _) => 
-    "( MutezOverflow " +String 
-    #doUnparse(I1, true) +String 
+  rule #doUnparse(( MutezOverflow I1 I2 ), _) =>
+    "( MutezOverflow " +String
+    #doUnparse(I1, true) +String
     " " +String
     #doUnparse(I2, true) +String
     ")"
 
-  rule #doUnparse(( MutezUnderflow I1 I2 ), _) => 
-    "( MutezUnderflow " +String 
-    #doUnparse(I1, true) +String 
+  rule #doUnparse(( MutezUnderflow I1 I2 ), _) =>
+    "( MutezUnderflow " +String
+    #doUnparse(I1, true) +String
     " " +String
     #doUnparse(I2, true) +String
     ")"
 
-  rule #doUnparse(( GeneralOverflow I1 I2 ), _) => 
-    "( GeneralOverflow " +String 
-    #doUnparse(I1, true) +String 
+  rule #doUnparse(( GeneralOverflow I1 I2 ), _) =>
+    "( GeneralOverflow " +String
+    #doUnparse(I1, true) +String
     " " +String
     #doUnparse(I2, true) +String
     ")"

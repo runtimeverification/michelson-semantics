@@ -60,11 +60,12 @@ The bytes literal is expressed here.  We accept mixed type bytes of the form `0x
   syntax MBytesLiteral ::= r"0x([0-9a-fA-F]{2})*" [token]
 ```
 
-K boolean values use all lowercase `true` and `false` - hence we need to add tokens for Michelson bools.  As the comment indicates, these are simply converted to K bools immediately after parsing by function rules.
+K boolean values use all lowercase `true` and `false` - hence we need to add tokens for Michelson bools.
+They are converted to K booleans immediately after parsing by function rules.
 
 ```k
   syntax MichelsonBool ::= "True" [token]
-                         | "False" [token] // These just get macro'd to the proper K types.
+                         | "False" [token]
 ```
 
 Here we specify the various complex types offered by Michelson, making the best possible use of K sorts.

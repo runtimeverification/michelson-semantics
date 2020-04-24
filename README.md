@@ -8,11 +8,11 @@ First, initialize the submodules using
 
 This will check out a copy of k in the `ext/k` subdirectory.  As a first time setup step, cd into this directory and execute `mvn package` to build k.  Then, `source common.sh` in the main directory to add the copy of k to the PATH variable.
 
-Afterwards, simply executing 
+Afterwards, simply executing
 
-    ./build.sh 
+    ./build.sh
 
-This script can be found in the top level repository directory, and will build the semantics for the llvm backend of K.  
+This script can be found in the top level repository directory, and will build the semantics for the llvm backend of K.
 
 After building, executing `./run-tests.sh` will run the unit test suite.  Presently, only building for the llvm backend is automated through this script, however building for the haskell backend is also possible through the command
 
@@ -23,7 +23,7 @@ However, this will disable certain llvm-specific hooks, such as timestamp parsin
 The OCaml and Java backends are not presently officially supported.
 
 After building, one can use the `./run.sh` script to pass an appropriate file to the semantics for execution.
-    
+
 
 ## Using the semantics
 
@@ -33,17 +33,17 @@ As an example, here is a contract input file implementing a sum-to-n program:
 
     parameter_value 300000 ;
     storage_value 0 ;
-    contract { 
-      storage nat ; 
-      parameter nat ; 
-      code { LEFT nat ; 
+    contract {
+      storage nat ;
+      parameter nat ;
+      code { LEFT nat ;
              LOOP_LEFT { DUP ;
                          DIP { CDR } ;
                          CAR ;
                          DUP ;
                          DIP { ADD } ;
                          PUSH nat 1 ;
-                         SWAP ; 
+                         SWAP ;
                          SUB ;
                          ISNAT ;
                          IF_NONE { RIGHT (pair nat nat) } { PAIR ; LEFT nat } } ; NIL operation; PAIR } }
@@ -53,7 +53,7 @@ This contract computes the sum of 1 to its parameter value, plus its storage val
 As an example of a unit test format file, here is a test for the `DIG` instruction:
 
 
-    code { DIG 1 } ; 
+    code { DIG 1 } ;
     input { Stack_elt int 1 ; Stack_elt int 2 ; Stack_elt int 3 ; Stack_elt int 4 ; Stack_elt int 5 ; Stack_elt int 6 } ;
     output { Stack_elt int 2 ; Stack_elt int 1 ; Stack_elt int 3 ; Stack_elt int 4 ; Stack_elt int 5 ; Stack_elt int 6 }
 
