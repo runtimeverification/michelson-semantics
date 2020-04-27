@@ -37,6 +37,7 @@ RUN    apt-get update                \
             opam                     \
             openjdk-11-jdk           \
             pandoc                   \
+            pcregrep                 \
             pkg-config               \
             protobuf-compiler        \
             python3                  \
