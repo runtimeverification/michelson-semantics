@@ -5,7 +5,7 @@
 # when there are no arguments, then validate all expected tests pass
 
 SCRIPT_DIRECTORY="$(dirname "$(readlink -f "$BASH_SOURCE")")"
-RECORD_FILE="$SCRIPT_DIRECTORY/failed_tests.txt"
+RECORD_FILE="$SCRIPT_DIRECTORY/expected_failed_tests.txt"
 TEST_DIR="$SCRIPT_DIRECTORY/../tests/unit"
 
 failed=0
