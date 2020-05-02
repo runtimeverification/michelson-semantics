@@ -27,8 +27,7 @@ RUN    sudo apt-get update              \
 RUN sudo userdel --remove user
 ARG USER_ID=1000
 ARG GROUP_ID=1000
-RUN    echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers    \
-    && groupadd -g $GROUP_ID user                             \
+RUN    groupadd -g $GROUP_ID user                             \
     && useradd -m -u $USER_ID -s /bin/sh -g user -G sudo user
 
 USER user:user
