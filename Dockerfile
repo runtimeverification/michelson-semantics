@@ -24,6 +24,16 @@ RUN    sudo apt-get update              \
                     python-recommonmark \
                     python-sphinx
 
+RUN sudo userdel --remove user
+ARG USER_ID=1000
+ARG GROUP_ID=1000
+RUN    echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers    \
+    && groupadd -g $GROUP_ID user                             \
+    && useradd -m -u $USER_ID -s /bin/sh -g user -G sudo user
+
+USER user:user
+WORKDIR /home/user
+
 RUN mkdir -p /home/user/.ssh
 ADD --chown=user:user ssh/config /home/user/.ssh/
 RUN    chmod go-rwx -R /home/user/.ssh                                \
