@@ -14,7 +14,7 @@ pipeline {
     stage('Build and Test') {
       when { changeRequest() }
       stages {
-        stage('Dependencies')          { steps { sh './build-deps.sh'          } }
+        stage('Dependencies')          { steps { sh './build-deps-tezos.sh'    } }
         stage('Build')                 { steps { sh './build.sh'               } }
         stage('Test')                  { steps { sh './run-tests.sh'           } }
         stage('Cross-Validation Test') { steps { sh './compat/run-tests-ci.sh' } }
