@@ -6,23 +6,25 @@ RUN    apt-get update                                   \
     && apt-get install --yes software-properties-common \
     && add-apt-repository ppa:avsm/ppa
 
-RUN    apt-get update              \
-    && apt-get upgrade --yes       \
-    && apt-get install --yes       \
-               cmake               \
-               jq                  \
-               libcrypto++-dev     \
-               libprocps-dev       \
-               libsecp256k1-dev    \
-               libssl-dev          \
-               opam                \
-               pandoc              \
-               pcregrep            \
-               pkg-config          \
-               python3             \
-               python-pygments     \
-               python-recommonmark \
-               python-sphinx
+RUN    apt-get update               \
+    && apt-get upgrade --yes        \
+    && apt-get install --yes        \
+                cmake               \
+                jq                  \
+                libcrypto++-dev     \
+                libev-dev           \
+                libhidapi-dev       \
+                libprocps-dev       \
+                libsecp256k1-dev    \
+                libssl-dev          \
+                opam                \
+                pandoc              \
+                pcregrep            \
+                pkg-config          \
+                python3             \
+                python-pygments     \
+                python-recommonmark \
+                python-sphinx
 
 ARG USER_ID=1000
 ARG GROUP_ID=1000
