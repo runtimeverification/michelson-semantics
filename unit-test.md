@@ -117,8 +117,7 @@ Loading the expected output group is unusual because an output group will not do
 As in the case of the contract group, loading the code group is trivial - simply extract the block and let the main semantics handle the rest.
 
 ```k
-  rule <k> #LoadGroups(code C ; _ => code C) ... </k>
-
+  rule <k> #LoadGroups(code C ; Gs) => C ~> #LoadGroups(Gs) ... </k>
   rule <k> #LoadGroups(code C) => C ... </k>
 ```
 
