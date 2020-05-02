@@ -1,5 +1,10 @@
 pipeline {
-  agent { dockerfile { label 'docker' } }
+  agent {
+    dockerfile {
+      label 'docker'
+      additionalBuildArgs '--build-arg K_COMMIT=$(cd ext/k && git rev-parse --short=7 HEAD)'
+    }
+  }
   options { ansiColor('xterm') }
   stages {
     stage("Init title") {
