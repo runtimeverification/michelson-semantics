@@ -7,7 +7,7 @@ pipeline {
   }
   options { ansiColor('xterm') }
   stages {
-    stage("Init title") {
+    stage('Init title') {
       when { changeRequest() }
       steps { script { currentBuild.displayName = "PR ${env.CHANGE_ID}: ${env.CHANGE_TITLE}" } }
     }
