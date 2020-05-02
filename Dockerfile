@@ -27,5 +27,5 @@ RUN    sudo apt-get update              \
 RUN mkdir -p /home/user/.ssh
 ADD --chown=user:user ssh/config /home/user/.ssh/
 RUN    chmod go-rwx -R /home/user/.ssh                                \
-    && git config --global user.email "admin@runtimeverification.com" \
-    && git config --global user.name  "RV Jenkins"
+    && git config --global user.email 'admin@runtimeverification.com' \
+    && git config --global user.name  'RV Jenkins'
