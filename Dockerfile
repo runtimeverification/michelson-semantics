@@ -1,6 +1,11 @@
 ARG K_COMMIT
 FROM runtimeverificationinc/kframework-k:ubuntu-bionic-${K_COMMIT}
 
+RUN    sudo apt-get update                                   \
+    && sudo apt-get upgrade --yes                            \
+    && sudo apt-get install --yes software-properties-common \
+    && sudo add-apt-repository ppa:avsm/ppa
+
 RUN    sudo apt-get update              \
     && sudo apt-get upgrade --yes       \
     && sudo apt-get install --yes       \
@@ -10,6 +15,7 @@ RUN    sudo apt-get update              \
                     libprocps-dev       \
                     libsecp256k1-dev    \
                     libssl-dev          \
+                    opam                \
                     pandoc              \
                     pcregrep            \
                     pkg-config          \
