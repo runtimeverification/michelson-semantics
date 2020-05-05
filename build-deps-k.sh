@@ -9,5 +9,9 @@ CURRENT_DIRECTORY="$(pwd)"
 
 trap "cd '$CURRENT_DIRECTORY'" EXIT
 
-./build-deps-k.sh
-./build-deps-tezos.sh
+K_DIRECTORY="$SCRIPT_DIRECTORY/ext/k"
+
+git submodule update --init --recursive
+
+cd "$K_DIRECTORY"
+mvn package -DskipTests
