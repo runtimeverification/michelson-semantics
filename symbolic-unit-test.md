@@ -17,7 +17,7 @@ module SYMBOLIC-UNIT-TEST
   syntax Set ::= #FindSymbolsIn(Data, Type) [function, functional]
   syntax Set ::= #FindSymbols(KItem) [function, functional]
 
-  rule #FindSymbols(G:Group ; Gs:Groups) => #FindSymbols(G) USet #FindSymbols(Gs)
+  rule #FindSymbols(G:Group ; Gs:Groups) => #FindSymbols(G) |Set #FindSymbols(Gs)
 
   rule #FindSymbols(input S) => #FindSymbols(S)
   rule #FindSymbols(output S) => #FindSymbols(S)
@@ -31,14 +31,14 @@ module SYMBOLIC-UNIT-TEST
 
   rule #FindSymbols({ }) => .Set
   rule #FindSymbols( { I:Instruction }) => #FindSymbols(I)
-  rule #FindSymbols({ I:Instruction ; Is:InstructionList }) => #FindSymbols(I) USet #FindSymbols(Is)
+  rule #FindSymbols({ I:Instruction ; Is:InstructionList }) => #FindSymbols(I) |Set #FindSymbols(Is)
   
   rule #FindSymbols(PUSH _ T D) => #FindSymbolsIn(D, T)
 
   rule #FindSymbols( ( Failed S:SymbolicData ) ) => SetItem(#SymbolicElement(S, #UnknownType))
 
   rule #FindSymbols( { S:StackElementList } ) => #FindSymbols(S)
-  rule #FindSymbols( S:StackElement ; Ss:StackElementList) => #FindSymbols(S) USet #FindSymbols(Ss)
+  rule #FindSymbols( S:StackElement ; Ss:StackElementList) => #FindSymbols(S) |Set #FindSymbols(Ss)
 
   rule #FindSymbols( Stack_elt T D ) => #FindSymbolsIn(D, T)
 
@@ -46,7 +46,7 @@ module SYMBOLIC-UNIT-TEST
 
   rule #FindSymbolsIn(S:SymbolicData, T) => SetItem(#SymbolicElement(S, T)) // ???
 
-  rule #FindSymbolsIn(Pair V1 V2, pair _ T1 T2) => #FindSymbolsIn(V1, T1) USet #FindSymbolsIn(V2, T2)
+  rule #FindSymbolsIn(Pair V1 V2, pair _ T1 T2) => #FindSymbolsIn(V1, T1) |Set #FindSymbolsIn(V2, T2)
   rule #FindSymbolsIn(Some V, option _ T) => #FindSymbolsIn(V, T)
   rule #FindSymbolsIn(Left V, or _ T _) => #FindSymbolsIn(V, T)
   rule #FindSymbolsIn(Right V, or _ _ T) => #FindSymbolsIn(V, T)
@@ -55,16 +55,16 @@ module SYMBOLIC-UNIT-TEST
   
   rule #FindSymbolsIn({ }, list _ _) => .Set
   rule #FindSymbolsIn({ D:Data }, list _ T) => #FindSymbolsIn(D, T)
-  rule #FindSymbolsIn({ D:Data ; DL }, list _ T) => #FindSymbolsIn(D, T) USet #FindSymbolsIn({ DL }, T)
+  rule #FindSymbolsIn({ D:Data ; DL }, list _ T) => #FindSymbolsIn(D, T) |Set #FindSymbolsIn({ DL }, T)
 
   rule #FindSymbolsIn({ }, set _ _) => .Set
   rule #FindSymbolsIn({ D:Data }, set _ T) => #FindSymbolsIn(D, T)
-  rule #FindSymbolsIn({ D:Data ; DL }, set _ T) => #FindSymbolsIn(D, T) USet #FindSymbolsIn({ DL }, T)
+  rule #FindSymbolsIn({ D:Data ; DL }, set _ T) => #FindSymbolsIn(D, T) |Set #FindSymbolsIn({ DL }, T)
 
   rule #FindSymbolsIn({ }, map _ _ _) => .Set
-  rule #FindSymbolsIn({ Elt K V }, map _ KT VT) => #FindSymbolsIn(K, KT) USet #FindSymbolsIn(V, VT)
+  rule #FindSymbolsIn({ Elt K V }, map _ KT VT) => #FindSymbolsIn(K, KT) |Set #FindSymbolsIn(V, VT)
   rule #FindSymbolsIn({ M:MapEntry ; ML:MapEntryList }, (map _ K V) #as MT) => 
-       #FindSymbolsIn({ M }, MT) USet #FindSymbolsIn({ ML }, MT)
+       #FindSymbolsIn({ M }, MT) |Set #FindSymbolsIn({ ML }, MT)
 
   rule #FindSymbolsIn(M:MapLiteral, big_map A KT VT) => #FindSymbolsIn(M, map A KT VT)
   
