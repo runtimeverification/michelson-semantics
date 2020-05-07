@@ -126,12 +126,5 @@ Note that the unit test format allows the user to specify an entire input and ou
 
 ### Michelson Tests
 
-All tests are located under in the `tests` directory in the following folders:
-
-`tests/unit` contains the unit testing suite used to verify the correctnes of the semantics.
-
-`tests/contracts` contains complete contracts used for miscellaneous purposes, such as performance testing.
-
-`tests/obsolete` contains contracts in obsolete formats no longer accepted by the current semantics that have not yet been translated.
-
-`tests/proofs` contains full formal verification tests.
+All tests are located under in the `tests` directory.
+See the [README](./tests/README.md) for more details.

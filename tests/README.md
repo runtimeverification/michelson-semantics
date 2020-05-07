@@ -7,6 +7,8 @@ grouped together into separate directories. In particular, we currently have
 the following test categories:
 
 - contracts - tests containing Tezos contracts; not just Michelson expressions
+- coverage - tests that are otherwise uninteresting except for code coverage purposes
+- known_issues - tests that demonstrate knonwn issues in our test harness
 - macros - tests that perform macro expansion
 - obsolete - tests that are deprecated and subject to removal
 - proofs - tests that perform symbolic reasoning over the Michelson semantics
