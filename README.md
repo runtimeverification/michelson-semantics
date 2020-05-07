@@ -1,29 +1,78 @@
 # K-Michelson Semantics
 
-## Building
+## Building and Installation
 
-First, initialize the submodules using
+To build K-Michelson, please follow the instructions below. Note that:
 
-    git submodule update --init --recursive
+- all commands should be executed in the K-Michelson software archive root
+- only Linux is officially supported; other systems may have limited support
 
-This will check out a copy of k in the `ext/k` subdirectory.  As a first time setup step, cd into this directory and execute `mvn package` to build k.  Then, `source common.sh` in the main directory to add the copy of k to the PATH variable.
+K-Michelson has two direct dependencies:
 
-Afterwards, simply executing
+1. [K framework](https://github.com/kframework/k) - for building the K-Michelson
+  interpreter and executing Michelson code using the K-Michelson interpreter
+2. [Tezos client](http://tezos.gitlab.io/index.html) for cross-validation of
+  K-Michelson test execution against test execution on the reference Michelson
+  interpreter.
 
-    ./build.sh
+To simplify installation, we package pinned versions of (1-2) under the `/ext`
+directory. As part of the installation process, we must first build these
+dependencies.
 
-This script can be found in the top level repository directory, and will build the semantics for the llvm backend of K.
+### Installing the Prerequisites
 
-After building, executing `./run-tests.sh` will run the unit test suite.  Presently, only building for the llvm backend is automated through this script, however building for the haskell backend is also possible through the command
+The K framework and Tezos client each have a number of their own dependencies
+that must be installed before they can be built. On an Ubuntu system, do the
+following to install all needed dependencies:
 
-    kompile --backend haskell unit-test.k
+```
+sudo apt-get install rsync git m4 build-essential patch unzip bubblewrap wget  \
+pkg-config libgmp-dev libev-dev libhidapi-dev libmpfr-dev flex bison z3        \
+libz3-dev maven python3 cmake gcc zlib1g-dev libboost-test-dev libyaml-dev     \
+libjemalloc-dev openjdk-8-jdk clang-8 lld-8 llvm-8-tools 
+```
+
+For other Linux distributions, you may need to modify the package names as well
+as the package installation command. Consult your distribution documentation
+for details.
+
+Note that in the above command, the JDK and Clang packges typically can be
+substituted with more recent versions without any issues.
+
+### Building K-Michelson
+
+Afterwards, do the following to build K-Michelson and its dependencies:
+
+```
+./build-deps && ./build.sh
+```
+
+Presently, K-Michelson is only automatically built with the LLVM backend of the
+K framework. However, K-Michelson may also be built with the Haskell backend. To
+do so, first build the dependencies and then run:
+
+```
+source common.sh
+kompile --backend haskell unit-test.k
+```
 
 However, this will disable certain llvm-specific hooks, such as timestamp parsing.
 
 The OCaml and Java backends are not presently officially supported.
 
-After building, one can use the `./run.sh` script to pass an appropriate file to the semantics for execution.
+## Running Tests
 
+After building, the test suite may be run by the following command:
+
+```
+./run-tests.sh
+```
+
+Individual tests may be run by doing the following:
+
+```
+./run.sh <testname>
+```
 
 ## Using the semantics
 
