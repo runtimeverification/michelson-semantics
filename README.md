@@ -36,7 +36,7 @@ For other Linux distributions, you may need to modify the package names as well
 as the package installation command. Consult your distribution documentation
 for details.
 
-Note that in the above command, the JDK and Clang packges typically can be
+Note that in the above command, the JDK and Clang packages typically can be
 substituted with more recent versions without any issues.
 
 ### Building K-Michelson
@@ -80,33 +80,37 @@ The semantics accept Michelson contracts or unit tests in a variant of the forma
 
 As an example, here is a contract input file implementing a sum-to-n program:
 
-    parameter_value 300000 ;
-    storage_value 0 ;
-    contract {
-      storage nat ;
-      parameter nat ;
-      code { LEFT nat ;
-             LOOP_LEFT { DUP ;
-                         DIP { CDR } ;
-                         CAR ;
-                         DUP ;
-                         DIP { ADD } ;
-                         PUSH nat 1 ;
-                         SWAP ;
-                         SUB ;
-                         ISNAT ;
-                         IF_NONE { RIGHT (pair nat nat) } { PAIR ; LEFT nat } } ; NIL operation; PAIR } }
+```
+parameter_value 300000 ;
+storage_value 0 ;
+contract {
+  storage nat ;
+  parameter nat ;
+  code { LEFT nat ;
+         LOOP_LEFT { DUP ;
+                     DIP { CDR } ;
+                     CAR ;
+                     DUP ;
+                     DIP { ADD } ;
+                     PUSH nat 1 ;
+                     SWAP ;
+                     SUB ;
+                     ISNAT ;
+                     IF_NONE { RIGHT (pair nat nat) } { PAIR ; LEFT nat } } ; NIL operation; PAIR } }
+```
 
 This contract computes the sum of 1 to its parameter value, plus its storage value, and places the result in its storage.
 
 As an example of a unit test format file, here is a test for the `DIG` instruction:
 
 
-    code { DIG 1 } ;
-    input { Stack_elt int 1 ; Stack_elt int 2 ; Stack_elt int 3 ; Stack_elt int 4 ; Stack_elt int 5 ; Stack_elt int 6 } ;
-    output { Stack_elt int 2 ; Stack_elt int 1 ; Stack_elt int 3 ; Stack_elt int 4 ; Stack_elt int 5 ; Stack_elt int 6 }
+```
+code { DIG 1 } ;
+input { Stack_elt int 1 ; Stack_elt int 2 ; Stack_elt int 3 ; Stack_elt int 4 ; Stack_elt int 5 ; Stack_elt int 6 } ;
+output { Stack_elt int 2 ; Stack_elt int 1 ; Stack_elt int 3 ; Stack_elt int 4 ; Stack_elt int 5 ; Stack_elt int 6 }
+```
 
-Note that the unit test format allows the user to specify an entire input and output stack, rather than using the normal michelson parameter/storage system.
+Note that the unit test format allows the user to specify an entire input and output stack, rather than using the normal Michelson parameter/storage system.
 
 ## Project Structure
 
@@ -114,7 +118,7 @@ Note that the unit test format allows the user to specify an entire input and ou
 
 [michelson-syntax.md](./michelson-syntax.md) contains the specification for the syntax of a Michelson contract and the other input data.
 
-[michelson-config.md](./michelson-config.md) describes the template state of a michelson contract.
+[michelson-config.md](./michelson-config.md) describes the template state of a Michelson contract.
 
 [michelson-common.md](./michelson-common.md) specifies most of the K-Michelson internal datatypes.
 
@@ -122,7 +126,7 @@ Note that the unit test format allows the user to specify an entire input and ou
 
 [unit-test.md](./unit-test.md) and [unit-test-syntax.md](./unit-test-syntax.md) extend the semantics and syntax of the Michelson language to include unit testing facilities, such as the ability to specify an initial and final stack, and to check that the final stack matches the expected result.
 
-`time.cpp` and `hex.cpp` implement backend hooks to perform timestamp translation (i.e. from an ISO-8601 human readable timestamp to a unix timestamp) and print binary blobs as hexadecimal strings. They are used by the K semantics internally.
+`time.cpp` and `hex.cpp` implement backend hooks to perform timestamp translation (i.e. from an ISO-8601 human readable timestamp to a Unix timestamp) and print binary blobs as hexadecimal strings. They are used by the K semantics internally.
 
 ### Michelson Tests
 
