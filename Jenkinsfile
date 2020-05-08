@@ -31,7 +31,10 @@ pipeline {
                   git clone 'ssh://github.com/runtimeverification/michelson-semantics.git'
                   cd michelson-semantics
                   git checkout -B gh-pages origin/master
-                  rm -rf build-coverage.sh build-deps.sh build.sh common.sh compat coverage.xml Dockerfile ext hex.cpp Jenkinsfile LICENSE media parser.sh run-coverage.sh run.sh run-tests.sh shutdown.sh start.sh tests time.cpp unit-test-kompiled
+                  # delete media directory which we don't care about
+                  rm -rf media
+                  # delete all non-markdown files
+                  rm $(git ls-files | grep -v '.md$')
                   git add ./
                   git commit -m 'gh-pages: remove unrelated content'
                   git fetch origin gh-pages
