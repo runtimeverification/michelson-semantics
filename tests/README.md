@@ -4,16 +4,16 @@
 
 The K-Michelson test suite is structured so that different kinds of tests are
 grouped together into separate directories. In particular, we currently have
-the following test categories:
+the following test categories with corresponding subfolders:
 
-- contracts - tests containing Tezos contracts; not just Michelson expressions
-- coverage - tests that are otherwise uninteresting except for code coverage purposes
-- known_issues - tests that demonstrate knonwn issues in our test harness
-- macros - tests that perform macro expansion
-- obsolete - tests that are deprecated and subject to removal
-- proofs - tests that perform symbolic reasoning over the Michelson semantics
+- `contracts` - tests containing Tezos contracts; not just Michelson expressions
+- `coverage` - tests that are otherwise uninteresting except for code coverage purposes
+- `known_issues` - tests that demonstrate knonwn issues in our test harness
+- `macros` - tests that perform macro expansion
+- `obsolete` - tests that are deprecated and subject to removal
+- `proofs` - tests that perform symbolic reasoning over the Michelson semantics
   using K that cover (possibly infinite) classes of concrete test cases
-- unit - tests containing Michelson expressions that cover each Michelson
+- `unit` - tests containing Michelson expressions that cover each Michelson
   feature independently to the extent possible
 
 ## Unit Test Name Structure
