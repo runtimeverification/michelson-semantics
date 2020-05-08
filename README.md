@@ -128,3 +128,5 @@ Note that the unit test format allows the user to specify an entire input and ou
 
 All tests are located under in the `tests` directory.
 See the [README](./tests/README.md) for more details.
+For information on running the cross-validation testing
+harness, consult this [README](./compat/README.md).
