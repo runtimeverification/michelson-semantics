@@ -78,6 +78,16 @@ Michelson bools are of the form (True/False), but K bools are of the form (true/
   rule `MichelsonBool`(False) => false
 ```
 
+These rules define what constitutes a legal mutez value, allowing us to represent mutez overflow.
+
+```k
+  syntax Int ::= "#MutezOverflowLimit" [function]
+  rule #MutezOverflowLimit => 2 ^Int 63 // Signed 64 bit integers.
+
+  syntax Bool ::= #IsLegalMutezValue(Int) [function]
+  rule #IsLegalMutezValue(I) => I >=Int 0 andBool I <Int #MutezOverflowLimit
+```
+
 ```k
   syntax MBytes ::= Bytes
 

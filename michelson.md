@@ -384,12 +384,6 @@ Loading a `now` group simply involves setting the contents of the now timestamp 
 Amount and balance require slightly more logic to verify that the value they're being set to is actually a legal mutez value, but are otherwise relatively simple.
 
 ```k
-  syntax Int ::= "#MutezOverflowLimit" [function]
-  rule #MutezOverflowLimit => 2 ^Int 63 // Signed 64 bit integers.
-
-  syntax Bool ::= #IsLegalMutezValue(Int) [function]
-  rule #IsLegalMutezValue(I) => I >=Int 0 andBool I <Int #MutezOverflowLimit
-
   rule <k> #LoadGroups(amount I ; Gs => Gs) </k>
        <myamount> #Mutez(0 => I) </myamount>
        requires #IsLegalMutezValue(I)

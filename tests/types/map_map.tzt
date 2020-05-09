@@ -1,0 +1,1 @@
+contract { code { DROP ; EMPTY_MAP nat string ; MAP { DROP ; EMPTY_SET nat } } ; storage nat ; parameter nat ; }

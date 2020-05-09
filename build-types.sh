@@ -18,6 +18,7 @@ michelson-syntax.md
 unit-test.md 
 unit-test-syntax.md
 michelson-types.md
+michelson-types-test.md
 symbolic-unit-test.md 
 symbolic-unit-test-syntax.md
 EOF
@@ -27,4 +28,4 @@ for f in $MAIN_DEF_FILES ; do
     pandoc --from markdown --to "$TANGLER" --metadata=code:.k "$SCRIPT_DIRECTORY/$f" > "$BUILD_DIRECTORY/$(basename $f .md).k"
 done
 
-kompile --backend haskell --directory "$SCRIPT_DIRECTORY" "$BUILD_DIRECTORY/symbolic-unit-test.k"
+kompile --backend haskell --directory "$SCRIPT_DIRECTORY" "$BUILD_DIRECTORY/michelson-types-test.k"

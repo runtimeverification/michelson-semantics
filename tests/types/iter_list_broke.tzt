@@ -1,0 +1,1 @@
+contract { code { CAR ; NIL nat ; ITER { DROP ; EMPTY_SET nat } } ; storage nat ; parameter nat ; }

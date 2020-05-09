@@ -1,10 +1,15 @@
 ```k
 requires "unit-test.k"
+requires "michelson-types.k"
 requires "symbolic-unit-test-syntax.k"
 
 module SYMBOLIC-UNIT-TEST
   imports SYMBOLIC-UNIT-TEST-SYNTAX
+  imports MICHELSON-TYPES
   imports UNIT-TEST
+
+  syntax Set ::= Set "|Set" Set [function, functional]
+  rule S1 |Set S2 => S1 (S2 -Set S1)
 
   rule #GroupOrder(_:PreconditionGroup) => -1
   rule #GroupOrder(_:PostconditionGroup) => #GroupOrderMax +Int 2
@@ -141,7 +146,7 @@ module SYMBOLIC-UNIT-TEST
   syntax KItem ::= Groups
 
   rule <michelsonTop> 
-         <k> Gs:Groups => #CreateSymbols(#UnifyTypes(#FindSymbols(Gs))) ~> #ReplaceOutputWithBinder(Gs) </k> // ( #CreateSymbols(#UnifyTypes(#FindSymbols(Gs)))  ~> #ReplaceOutputWithBinder(Gs)) 
+         <k> Gs:Groups => #CreateSymbols(#UnifyTypes(#FindSymbols(Gs))) ~> #ReplaceOutputWithBinder(Gs) </k> 
          ... 
        </michelsonTop>
        <symbolsLoaded> false => true </symbolsLoaded>

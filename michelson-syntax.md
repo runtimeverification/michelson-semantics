@@ -199,7 +199,6 @@ We now specify the MICHELSON instruction set.
   syntax Instruction ::= "LEFT" AnnotationList Type
   syntax Instruction ::= "RIGHT" AnnotationList Type
   syntax Instruction ::= "IF_LEFT" AnnotationList Block Block
-  syntax Instruction ::= "IF_RIGHT" AnnotationList Block Block
   syntax Instruction ::= "NIL" AnnotationList Type
   syntax Instruction ::= "CONS" AnnotationList
   syntax Instruction ::= "IF_CONS" AnnotationList Block Block
@@ -327,6 +326,7 @@ We list Macros separately, although in practice macros should not exist by this 
   syntax Macro ::= "ASSERT_LEFT" AnnotationList
   syntax Macro ::= "ASSERT_RIGHT" AnnotationList
   syntax Macro ::= "IF_SOME" AnnotationList Block Block
+  syntax Macro ::= "IF_RIGHT" AnnotationList Block Block
   syntax Macro ::= "SET_CAR" AnnotationList
   syntax Macro ::= "SET_CDR" AnnotationList
 ```
