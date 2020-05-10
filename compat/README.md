@@ -5,7 +5,8 @@ This test harness is designed to test that K-Michelson and the official
 Tezos Michelson implementation agree on all unit tests.
 
 Note: all commands shown below are assuemd to executed in the root directory of
-the source distribution.
+the source distribution. We test our scripts using the `bash` shell; for best
+results, try using `bash`.
 
 ## Build Instructions
 
