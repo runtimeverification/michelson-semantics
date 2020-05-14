@@ -33,7 +33,7 @@ pipeline {
                   git checkout -B gh-pages origin/master
                   # delete all non-markdown files EXCEPT the _config.yml file which defines the website theme
                   # note: since we are in a groovy string, we need to escape each backslash
-                  rm $(git ls-files | grep -v -E '\\.md$|^_config\\.yml$')
+                  rm -r $(git ls-files | grep -v -E '\\.md$|^_config\\.yml$')
                   # delete media directory which we don't care about
                   rm -rf media
                   git add ./
