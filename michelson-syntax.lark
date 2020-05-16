@@ -1,0 +1,301 @@
+TYPEANNOTATION : /:([_a-zA-Z][_0-9a-zA-Z\\.]*)?/
+VARIABLEANNOTATION : /@(%|%%|[_a-zA-Z][_0-9a-zA-Z\\.]*)?/
+FIELDANNOTATION : /%(@|[_a-zA-Z][_0-9a-zA-Z\\.]*)?/
+MBYTESLITERAL : /0x([0-9a-fA-F]{2})*/
+MICHELSONBOOL : "True"
+              | "False"
+
+DIPMACRO : /DII+P/
+DUPMACRO : /DUU+P/
+CDARMACRO : /C[A,D]{2,}R/
+SETCDARMACRO : /SET_C[AD]+R/
+
+pairmacro      : innerpairmacro "R"
+innerpairmacro : "P" leftpairmacro rightpairmacro
+leftpairmacro  : "A" | innerpairmacro
+rightpairmacro : "I" | innerpairmacro
+
+unpairmacro : "UN" pairmacro
+
+MapEntry : "Elt" Data Data
+
+DataList : Data | Data ";" DataList
+MapEntryList : MapEntry | MapEntry ";" MapEntryList
+InstructionList : Instruction | Instruction ";" InstructionList | Instruction ";"
+
+Annotation : TypeAnnotation | VariableAnnotation | FieldAnnotation
+
+AnnotationList : Annotation AnnotationList | Annotation
+
+Pair : "Pair" Data Data
+
+LeftData : "Left" Data
+RightData : "Right" Data
+
+OrData : LeftData | RightData
+
+OptionData : "Some" Data
+           | "None"
+
+ApplicationData : Pair | OrData | OptionData
+Data : ApplicationData
+
+MapLiteral : "{" MapEntryList "}"
+ListLiteral : "{" DataList "}"
+
+EmptyBlock : "{" "}"
+
+Block : "{" InstructionList "}"
+      | EmptyBlock
+
+SequenceData : MapLiteral | ListLiteral | Block
+Data : SequenceData
+
+MBytes : MBytesLiteral
+
+SimpleData : Int
+SimpleData : String
+Data : MichelsonBool
+SimpleData : MBytes
+SimpleData : "Unit"
+SimpleData : Timestamp
+SimpleData : ChainId
+SimpleData : KeyHash
+SimpleData : Mutez
+SimpleData : Address
+SimpleData : ContractData
+SimpleData : Key
+SimpleData : Signature
+
+Data : SimpleData
+
+Mutez : Int
+Address : String
+
+OptionData : "(" OptionData ")"
+Data : "(" Data ")"
+Type : "(" Type ")"
+
+UnannotatedSimpleType : "int"
+                      | "nat"
+                      | "string"
+                      | "bytes"
+                      | "mutez"
+                      | "bool"
+                      | "key_hash"
+                      | "timestamp"
+                      | "address"
+                      | "key"
+                      | "unit"
+                      | "signature"
+                      | "operation"
+                      | "chain_id"
+
+SimpleType : UnannotatedSimpleType AnnotationList
+
+Type : SimpleType
+     | "pair" AnnotationList Type Type
+     | "option" AnnotationList Type
+     | "list" AnnotationList Type
+     | "set" AnnotationList Type
+     | "contract" AnnotationList Type
+     | "or" AnnotationList Type Type
+     | "lambda" AnnotationList Type Type
+     | "map" AnnotationList Type Type
+     | "big_map" AnnotationList Type Type
+
+Instruction : Block
+
+Instruction : "DROP" AnnotationList
+Instruction : "DROP" AnnotationList Int
+Instruction : "DIG" AnnotationList Int
+Instruction : "DUG" AnnotationList Int
+Instruction : "DUP" AnnotationList
+Instruction : "SWAP" AnnotationList
+Instruction : "PUSH" AnnotationList Type Data
+Instruction : "SOME" AnnotationList
+Instruction : "NONE" AnnotationList Type
+Instruction : "UNIT" AnnotationList
+Instruction : "IF_NONE" AnnotationList Block Block
+Instruction : "PAIR" AnnotationList
+Instruction : "UNPAIR" AnnotationList
+Instruction : "CAR" AnnotationList
+Instruction : "CDR" AnnotationList
+Instruction : "LEFT" AnnotationList Type
+Instruction : "RIGHT" AnnotationList Type
+Instruction : "IF_LEFT" AnnotationList Block Block
+Instruction : "IF_RIGHT" AnnotationList Block Block
+Instruction : "NIL" AnnotationList Type
+Instruction : "CONS" AnnotationList
+Instruction : "IF_CONS" AnnotationList Block Block
+Instruction : "SIZE" AnnotationList
+Instruction : "EMPTY_SET" AnnotationList Type
+Instruction : "EMPTY_MAP" AnnotationList Type Type
+Instruction : "EMPTY_BIG_MAP" AnnotationList Type Type
+Instruction : "MAP" AnnotationList Block
+Instruction : "ITER" AnnotationList Block
+Instruction : "MEM" AnnotationList
+Instruction : "GET" AnnotationList
+Instruction : "UPDATE" AnnotationList
+Instruction : "IF" AnnotationList Block Block
+Instruction : "LOOP" AnnotationList Block
+Instruction : "LOOP_LEFT" AnnotationList Block
+Instruction : "LAMBDA" AnnotationList Type Type Block
+Instruction : "EXEC" AnnotationList
+Instruction : "APPLY" AnnotationList
+Instruction : "DIP" AnnotationList Block
+Instruction : "DIP" AnnotationList Int Block
+Instruction : "FAILWITH" AnnotationList
+Instruction : "CAST" AnnotationList
+Instruction : "RENAME" AnnotationList
+Instruction : "CONCAT" AnnotationList
+Instruction : "SLICE" AnnotationList
+Instruction : "PACK" AnnotationList
+Instruction : "UNPACK" AnnotationList Type
+Instruction : "ADD" AnnotationList
+Instruction : "SUB" AnnotationList
+Instruction : "MUL" AnnotationList
+Instruction : "EDIV" AnnotationList
+Instruction : "ABS" AnnotationList
+Instruction : "ISNAT" AnnotationList
+Instruction : "INT" AnnotationList
+Instruction : "NEG" AnnotationList
+Instruction : "LSL" AnnotationList
+Instruction : "LSR" AnnotationList
+Instruction : "OR" AnnotationList
+Instruction : "AND" AnnotationList
+Instruction : "XOR" AnnotationList
+Instruction : "NOT" AnnotationList
+Instruction : "COMPARE" AnnotationList
+Instruction : "EQ" AnnotationList
+Instruction : "NEQ" AnnotationList
+Instruction : "LT" AnnotationList
+Instruction : "GT" AnnotationList
+Instruction : "LE" AnnotationList
+Instruction : "GE" AnnotationList
+Instruction : "SELF" AnnotationList
+Instruction : "CONTRACT" AnnotationList Type
+Instruction : "TRANSFER_TOKENS" AnnotationList
+Instruction : "SET_DELEGATE" AnnotationList
+Instruction : "CREATE_ACCOUNT" AnnotationList
+Instruction : "IMPLICIT_ACCOUNT" AnnotationList
+Instruction : "NOW" AnnotationList
+Instruction : "CHAIN_ID" AnnotationList
+Instruction : "AMOUNT" AnnotationList
+Instruction : "BALANCE" AnnotationList
+Instruction : "CHECK_SIGNATURE" AnnotationList
+Instruction : "BLAKE2B" AnnotationList
+Instruction : "SHA256" AnnotationList
+Instruction : "SHA512" AnnotationList
+Instruction : "HASH_KEY" AnnotationList
+Instruction : "STEPS_TO_QUOTA" AnnotationList
+Instruction : "SOURCE" AnnotationList
+Instruction : "SENDER" AnnotationList
+Instruction : "ADDRESS" AnnotationList
+Instruction : "CREATE_CONTRACT" AnnotationList "{" Contract "}"
+
+Instruction : Macro
+
+
+Macro : DIPMacro AnnotationList Block
+Macro : DUPMacro AnnotationList
+Macro : PairMacro AnnotationList
+Macro : UnpairMacro AnnotationList
+Macro : CDARMacro AnnotationList
+Macro : SetCDARMacro AnnotationList
+
+Macro : "CMPEQ" AnnotationList
+Macro : "CMPNEQ" AnnotationList
+Macro : "CMPLT" AnnotationList
+Macro : "CMPGT" AnnotationList
+Macro : "CMPLE" AnnotationList
+Macro : "CMPGE" AnnotationList
+Macro : "IFEQ" AnnotationList Block Block
+Macro : "IFNEQ" AnnotationList Block Block
+Macro : "IFLT" AnnotationList Block Block
+Macro : "IFGT" AnnotationList Block Block
+Macro : "IFLE" AnnotationList Block Block
+Macro : "IFGE" AnnotationList Block Block
+Macro : "IFCMPEQ" AnnotationList Block Block
+Macro : "IFCMPNEQ" AnnotationList Block Block
+Macro : "IFCMPLT" AnnotationList Block Block
+Macro : "IFCMPGT" AnnotationList Block Block
+Macro : "IFCMPLE" AnnotationList Block Block
+Macro : "IFCMPGE" AnnotationList Block Block
+Macro : "FAIL" AnnotationList
+Macro : "ASSERT" AnnotationList
+Macro : "ASSERT_EQ" AnnotationList
+Macro : "ASSERT_NEQ" AnnotationList
+Macro : "ASSERT_LT" AnnotationList
+Macro : "ASSERT_LE" AnnotationList
+Macro : "ASSERT_GT" AnnotationList
+Macro : "ASSERT_GE" AnnotationList
+Macro : "ASSERT_CMPEQ" AnnotationList
+Macro : "ASSERT_CMPNEQ" AnnotationList
+Macro : "ASSERT_CMPLT" AnnotationList
+Macro : "ASSERT_CMPLE" AnnotationList
+Macro : "ASSERT_CMPGT" AnnotationList
+Macro : "ASSERT_CMPGE" AnnotationList
+Macro : "ASSERT_NONE" AnnotationList
+Macro : "ASSERT_SOME" AnnotationList
+Macro : "ASSERT_LEFT" AnnotationList
+Macro : "ASSERT_RIGHT" AnnotationList
+Macro : "IF_SOME" AnnotationList Block Block
+Macro : "SET_CAR" AnnotationList
+Macro : "SET_CDR" AnnotationList
+
+CodeDecl : "code" Block
+StorageDecl : "storage" Type
+ParameterDecl : "parameter" Type
+
+Contract : CodeDecl ";" StorageDecl ";" ParameterDecl ";"
+         | CodeDecl ";" ParameterDecl ";" StorageDecl ";"
+         | StorageDecl ";" CodeDecl ";" ParameterDecl ";"
+         | ParameterDecl ";" CodeDecl ";" StorageDecl ";"
+         | StorageDecl ";" ParameterDecl ";" CodeDecl ";"
+         | ParameterDecl ";" StorageDecl ";" CodeDecl ";"
+
+Contract : CodeDecl ";" StorageDecl ";" ParameterDecl
+         | CodeDecl ";" ParameterDecl ";" StorageDecl
+         | StorageDecl ";" CodeDecl ";" ParameterDecl
+         | ParameterDecl ";" CodeDecl ";" StorageDecl
+         | StorageDecl ";" ParameterDecl ";" CodeDecl
+         | ParameterDecl ";" StorageDecl ";" CodeDecl
+
+OtherContractsMapEntry : "Elt" String Type
+OtherContractsMapEntryList : OtherContractsMapEntry | OtherContractsMapEntry ";" OtherContractsMapEntryList
+OtherContractsMap : EmptyBlock | "{" OtherContractsMapEntryList "}"
+
+BigMapEntry : "Big_map" Int Type Type MapLiteral
+            | "Big_map" Int Type Type EmptyBlock
+BigMapEntryList : BigMapEntry | BigMapEntry ";" BigMapEntryList
+BigMapMap : EmptyBlock | "{" BigMapEntryList "}"
+
+ContractGroup : "contract" "{" Contract "}"
+NowGroup : "now" Int
+SenderGroup : "sender" String
+SourceGroup : "source" String
+ChainGroup : "chain_id" MBytes
+SelfGroup : "self" String
+AmountGroup : "amount" Int
+BalanceGroup : "balance" Int
+ContractsGroup : "other_contracts" OtherContractsMap
+ParameterValueGroup : "parameter_value" Data
+StorageValueGroup : "storage_value" Data
+BigMapGroup : "big_maps" BigMapMap
+
+Group : ContractGroup
+      | ParameterValueGroup
+      | StorageValueGroup
+      | NowGroup
+      | SenderGroup
+      | SourceGroup
+      | ChainGroup
+      | SelfGroup
+      | AmountGroup
+      | BalanceGroup
+      | ContractsGroup
+      | BigMapGroup
+
+Groups : Group | Group ";" Groups | Group ";"
+Pgm : Groups
