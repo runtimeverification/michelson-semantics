@@ -4,6 +4,7 @@ This is the main execution semantics file for Michelson.  It contains the rewrit
 requires "michelson-syntax.k"
 requires "michelson-config.k"
 requires "michelson-internal-syntax.k"
+requires "michelson-types.k"
 
 module MICHELSON
   imports MICHELSON-SYNTAX
@@ -210,6 +211,8 @@ We construct a contract datatype from its string address and type.  Note that, f
 
 ```k
   rule #ConcreteArgToSemantics(S:String, contract _ T) => #Contract(#ParseAddress(S), T)
+
+  rule #ConcreteArgToSemantics(#Typed(D, T), T) => #ConcreteArgToSemantics(D, T)
 ```
 
 These two helper functions extract type information from a Contract.  Note that by using more complex K syntax their existence could be avoided, but we feel this is more readable.
@@ -472,6 +475,13 @@ The final loading group in this file is the contract group.  The storage and par
 These rules split apart blocks into KItems so that the main semantic rules can use idiomatic K.
 
 ```k
+  rule #Exec(Is) => Is
+
+  rule TI:TypedInstruction ; TIS => TI ~> TIS
+
+  rule <k> #TI(I, T1 -> T2) => I ... </k>
+       <stacktypes> _ => T1 </stacktypes> 
+
   rule I:Instruction ; Is:InstructionList => I ~> Is
   rule {} => .K [structrual]
   rule { Is:InstructionList } => Is

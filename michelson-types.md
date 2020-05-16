@@ -10,6 +10,14 @@ module MICHELSON-TYPES
   syntax TypeSeq ::= List{Type, ";"}
   syntax TypeTransition ::= TypeSeq "->" TypeInput
 
+
+  syntax FailureType ::= "#ContractFailed"
+
+  syntax TypeError ::= "#InternalError"
+
+  syntax TypeInput ::= TypeSeq | TypeError
+  syntax TypeResult ::= TypeTransition | TypeError | FailureType
+
   syntax TypedInstruction ::= #TypeInstruction(TypeContext, Instruction, TypeSeq) [function, functional] 
   syntax TypedInstructions ::= #TypeInstructions(TypeContext, InstructionList, TypeInput) [function, functional]
 
@@ -19,17 +27,10 @@ module MICHELSON-TYPES
   syntax TypedInstructionList ::= TypedInstruction ";" TypedInstructionList | TypedInstruction 
                                 | #Remaining(InstructionList)
 
-  syntax FailureType ::= "#ContractFailed"
-
-  syntax TypeInput ::= TypeSeq | TypeError
-  syntax TypeResult ::= TypeTransition | TypeError | FailureType
-
-
   syntax TypeError ::= #InvalidTypeForInstruction(Instruction, TypeSeq)
                      | #IncompatibleTypesForBranch(Instruction, TypeInput, TypeInput)
                      | #UnexpectedMacro(Macro, TypeSeq)
-                     | "#UnexpectedFailureType"
-                     | "#InternalError"
+                     | "#UnexpectedFailureType" 
 
   syntax TypeInput ::= #EndType(TypeResult) [function, functional]
 
@@ -44,6 +45,15 @@ module MICHELSON-TYPES
 
   syntax MaybeData ::= #TypeData(TypeContext, Data, Type) [function, functional]
   syntax MaybeData ::= #CheckInnerData(Data, Type, List) [function, functional]
+
+  syntax TypeError ::= #MistypedData(Data, Type)
+  rule #TypeData(C, D, T) => #MistypedData(D, T) [owise]
+
+  syntax TypedData ::= #Typed(Data, Type)
+
+  syntax MaybeData ::= TypedData | TypeError
+
+  syntax Data ::= TypedData
 
   rule #TypeData(_, (_:MBytes) #as D, (chain_id _) #as T) => #Typed(D, T)
   rule #TypeData(_, (_:Int) #as D, (int _) #as T) => #Typed(D, T)
@@ -68,15 +78,6 @@ module MICHELSON-TYPES
   rule #TypeData(C, (Left V) #as D, (or _ TI _) #as T) => #CheckInnerData(D, T, ListItem(#TypeData(C, V, TI)))
   rule #TypeData(C, (Right V) #as D, (or _ _ TI) #as T) => #CheckInnerData(D, T, ListItem(#TypeData(C, V, TI)))
 
-
-  syntax MaybeData ::= #TypeLambdaAux(TypedInstruction, Type, Type) [function, functional]
-  syntax TypeError ::= #IllTypedLambda(TypedInstruction, Type, Type)
-
-  rule #TypeData(C, #Lambda(T1, T2, B), lambda _ T1 T2) => #TypeLambdaAux(#TypeInstruction(C, B, T1), T1, T2)
-
-  rule #TypeLambdaAux((#TI(_, T1 -> T2) #as B), T1, T2) => #Typed({ #Exec(B) }, lambda .AnnotationList T1 T2)
-  rule #TypeLambdaAux(T, T1, T2) => #IllTypedLambda(T, T1, T2) [owise]
-
   syntax Bool ::= #AllWellTyped(List) [function, functional]
   rule #AllWellTyped(ListItem(#Typed(_, _)) L) => #AllWellTyped(L)
   rule #AllWellTyped(ListItem(_) L) => false [owise]
@@ -87,15 +88,25 @@ module MICHELSON-TYPES
   rule #CheckInnerData(D, T, L) => #Typed(D, T) requires #AllWellTyped(L)
   rule #CheckInnerData(_, _, L) => #MistypedInnerData(L) [owise]
 
+  syntax MaybeData ::= #TypeLambdaAux(TypedInstruction, Type, Type) [function, functional]
+  syntax TypeError ::= #IllTypedLambda(TypedInstruction, Type, Type)
+
+  rule #TypeData(C, #Lambda(T1, T2, B), lambda _ T1 T2) => #TypeLambdaAux(#TypeInstruction(C, B, T1), T1, T2)
+
+  rule #TypeLambdaAux((#TI(_, T1 ; .TypeSeq -> T2 ; .TypeSeq) #as B), T1, T2) => #Typed({ #Exec(B) }, lambda .AnnotationList T1 T2)
+  rule #TypeLambdaAux(T, T1, T2) => #IllTypedLambda(T, T1, T2) [owise]
+
+  syntax InstructionList ::= #Exec(TypedInstructionList)
+
   rule #TypeData(C, { } #as D, (list _ _) #as T) => #Typed(D, T)
   rule #TypeData(C, { } #as D, (set _ _) #as T) => #Typed(D, T)
   rule #TypeData(C, { } #as D, (map _ _ _) #as T) => #Typed(D, T)
   rule #TypeData(C, { } #as D, (big_map _ _ _) #as T) => #Typed(D, T)
 
-
   syntax List ::= #TypeCheckListElements(TypeContext, DataList, Type) [function, functional]
+
   rule #TypeCheckListElements(C, D:Data, T) => ListItem(#TypeData(C, D, T))
-  rule #TypeCheckListElements(C, D:Data ; DL, T) => ListItem(#TypeData(C, D, T)) #TypeCheckListElements(C, DL, T)
+  rule #TypeCheckListElements(C, D ; DL, T) => ListItem(#TypeData(C, D, T)) #TypeCheckListElements(C, DL, T)
 
   rule #TypeData(C, { DL } #as D, (list _ TI) #as T) => #CheckInnerData(D, T, #TypeCheckListElements(C, DL, TI))
   rule #TypeData(C, { DL } #as D, (set _ TI) #as T) => #CheckInnerData(D, T, #TypeCheckListElements(C, DL, TI))
@@ -107,21 +118,16 @@ module MICHELSON-TYPES
   rule #TypeData(C, { DL } #as D, (map _ KT VT) #as T) => #CheckInnerData(D, T, #TypeCheckMapElements(C, DL, KT, VT))
   rule #TypeData(C, { DL } #as D, (big_map _ KT VT) #as T) => #CheckInnerData(D, T, #TypeCheckMapElements(C, DL, KT, VT))
 
-  syntax TypeError ::= #MistypedData(Data, Type)
-  rule #TypeData(C, D, T) => #MistypedData(D, T) [owise]
-
-  syntax TypedData ::= #Typed(Data, Type)
-
-  syntax MaybeData ::= TypedData | TypeError
-
-  syntax Data ::= TypedData
-
-  syntax InstructionList ::= #Exec(TypedInstructionList)
-
   rule #TypeInstruction(C, { }, TS) => #TI({ }, TS -> TS)
   rule #TypeInstruction(C, { Is:InstructionList }, TS) => #fun(#TIs(Is2, TR) => #TI({ #Exec(Is2) }, TR))(#TypeInstructions(C, Is, TS))
 
   rule #TypeInstructions(C, Is, TE:TypeError) => #TIs(#Remaining(Is), TE)
+
+  syntax TypeError ::= #SequenceError(TypeInput)
+
+  rule #TypeInstructions(_, Is, TR) => #TIs(#Remaining(Is), #SequenceError(TR)) [owise]
+
+
 
   rule #TypeInstructions(C, I1 ; Is, Input:TypeSeq) => #fun(#TI(_, TR1) #as T => #fun(#TIs(Ts2, TR2) => #TIs(T ; Ts2, #MergeResults(Input, TR2)))(#TypeInstructions(C, Is, #EndType(TR1))))(#TypeInstruction(C, I1, Input))
 
@@ -163,7 +169,14 @@ module MICHELSON-TYPES
   rule #RemoveN(T1 ; Ts, I) => T1 ; #RemoveN(Ts, I -Int 1) requires I >Int 0
   rule #RemoveN(Ts, I) => Ts [owise] // This rule is unreachable.
 
-  rule #TypeInstruction(C, (DUG _ N) #as I, T1) => #TI(I, T1 -> #DugType(T1, N)) 
+  syntax TypeSeq ::= #RemoveFirstN(TypeSeq, Int) [function, functional]
+  rule #RemoveFirstN(Ts, 0) => Ts
+  rule #RemoveFirstN(T1 ; Ts, I) => #RemoveFirstN(Ts, I -Int 1) requires I >Int 0
+  rule #RemoveFirstN(Ts, I) => Ts [owise] // This rule is unreachable.
+
+
+
+  rule #TypeInstruction(C, (DUG _ N) #as I, T1) => #TI(I, T1 -> #DoDug(T1, N)) 
 
   syntax Int ::= #LengthTypeSeq(TypeSeq) [function, functional]
   rule #LengthTypeSeq(.TypeSeq) => 0
@@ -171,16 +184,16 @@ module MICHELSON-TYPES
 
   syntax TypeError ::= #InvalidDugCount(TypeSeq, Int)
 
-  syntax TypeInput ::= #DugType(TypeSeq, Int) [function, functional]
-  rule #DugType(TS, I) => #InvalidDugCount(TS, I) requires #LengthTypeSeq(TS) <=Int I orBool 
+  syntax TypeInput ::= #DoDug(TypeSeq, Int) [function, functional]
+  rule #DoDug(TS, I) => #InvalidDugCount(TS, I) requires #LengthTypeSeq(TS) <=Int I orBool 
                                                            I <Int 0
-  rule #DugType(TS, 0) => TS
-  rule #DugType(T1 ; TS, I) => #DugTypeAux(T1 ; TS, I, T1)
+  rule #DoDug(TS, 0) => TS
+  rule #DoDug(T1 ; TS, I) => #DoDugAux(TS, I, T1)
 
-  syntax TypeSeq ::= #DugTypeAux(TypeSeq, Int, Type) [function, functional]
-//  rule #DugTypeAux(_, I, T) requires I <Int 0 // This pattern is unreachable.
-  rule #DugTypeAux(TS, 0, T) => T ; TS
-  rule #DugTypeAux(T1 ; TS, I, T) => T1 ; #DugTypeAux(TS, I -Int 1, T)
+  syntax TypeSeq ::= #DoDugAux(TypeSeq, Int, Type) [function, functional]
+  rule #DoDugAux(_, I, T) => .TypeSeq requires I <Int 0 // This pattern is unreachable.
+  rule #DoDugAux(TS, 0, T) => T ; TS
+  rule #DoDugAux(T1 ; TS, I, T) => T1 ; #DoDugAux(TS, I -Int 1, T)
 
   rule #TypeInstruction(C, (DUP _) #as I, T1 ; Ts) => #TI(I, T1 ; Ts -> T1 ; T1 ; Ts)
   rule #TypeInstruction(C, (SWAP _) #as I, T1 ; T2 ; Ts) => #TI(I, T1 ; T2 ; Ts -> T2 ; T1 ; Ts)
@@ -188,6 +201,7 @@ module MICHELSON-TYPES
   syntax TypedInstruction ::= #PushAux(Instruction, MaybeData, TypeSeq) [function, functional]  
   syntax TypeError ::= #InvalidPush(Instruction, TypeError) 
 
+  rule #PushAux(I, _, _) => #TI(I, #InternalError) [owise] 
   rule #PushAux(I, TE:TypeError, _) => #TI(I, #InvalidPush(I, TE))
   rule #PushAux(PUSH _ T _, TD:TypedData, Ts) => #TI(PUSH .AnnotationList T TD, Ts -> T ; Ts)
 
@@ -207,10 +221,11 @@ module MICHELSON-TYPES
 
   syntax Instruction ::= #SubTypedBranches(Instruction, Block, Block) [function, functional]
   syntax Instruction ::= #InvalidBranchInstruction(Instruction)
-  rule #SubTypedBranches(IF_NONE _ _ _, B1, B2) => IF_NONE .AnnotationList B1 B2
-  rule #SubTypedBranches(IF_LEFT _ _ _, B1, B2) => IF_LEFT .AnnotationList B1 B2
-  rule #SubTypedBranches(IF_CONS _ _ _, B1, B2) => IF_CONS .AnnotationList B1 B2
-  rule #SubTypedBranches(IF      _ _ _, B1, B2) => IF      .AnnotationList B1 B2
+  rule #SubTypedBranches(IF_NONE _ _ _, B1, B2)  => IF_NONE  .AnnotationList B1 B2
+  rule #SubTypedBranches(IF_LEFT _ _ _, B1, B2)  => IF_LEFT  .AnnotationList B1 B2
+  rule #SubTypedBranches(IF_RIGHT _ _ _, B1, B2) => IF_RIGHT .AnnotationList B1 B2
+  rule #SubTypedBranches(IF_CONS _ _ _, B1, B2)  => IF_CONS  .AnnotationList B1 B2
+  rule #SubTypedBranches(IF      _ _ _, B1, B2)  => IF       .AnnotationList B1 B2
   rule #SubTypedBranches(I, _, _) => #InvalidBranchInstruction(I) [owise]
 
   syntax TypeError ::= #IllegalBranchInstruction(Instruction) // Internal error.
@@ -248,6 +263,8 @@ module MICHELSON-TYPES
   rule #TypeInstruction(C, (RIGHT _ TL) #as I, (TR ; Ts) #as OS) => #TI(I, OS -> (or .AnnotationList TL TR) ; Ts)
 
   rule #TypeInstruction(C, (IF_LEFT _ BL BR) #as I, ((or _ TL TR) ; Ts) #as OS) => #UnifyBranches(I, #TypeInstruction(C, BL, TL ; Ts), #TypeInstruction(C, BR, TR ; Ts), OS)
+  rule #TypeInstruction(C, (IF_RIGHT _ BL BR) #as I, ((or _ TR TL) ; Ts) #as OS) => #UnifyBranches(I, #TypeInstruction(C, BL, TL ; Ts), #TypeInstruction(C, BR, TR ; Ts), OS)
+
 
   rule #TypeInstruction(C, (NIL _ T) #as I, Ts) => #TI(I, Ts -> (list .AnnotationList T) ; Ts)
   rule #TypeInstruction(C, (CONS _) #as I, (T ; list _ T ; Ts) #as OS) => #TI(I, OS -> list .AnnotationList T ; Ts)
@@ -285,11 +302,12 @@ module MICHELSON-TYPES
   rule #IterAux(ITER _ _, (#TI(_, _ -> Ts) #as B), (_ ; Ts) #as OS) => #TI(ITER .AnnotationList { #Exec(B) }, OS -> Ts)
 
   rule #IterAux(I, (#TI(_, _ -> Ts1) #as B), (_ ; Ts2) #as OS) => #TI(I, #InvalidPostIterationStack(I, OS, Ts1)) requires Ts1 =/=K Ts2
-  rule #IterAux(I, #TI(_, #ContractFailed),  _) => #TI(I, #UnexpectedFailureType)
+  rule #IterAux(ITER _ _, #TI(_, #ContractFailed) #as B,  (_ ; Ts) #as OS) => #TI(ITER .AnnotationList { #Exec(B) }, OS -> Ts)
   rule #IterAux(I, #TI(_, TE:TypeError),  _) => #TI(I, TE)
   rule #IterAux(I, _, _) => #TI(I, #InternalError) [owise] // Unreachable
 
   rule #TypeInstruction(C, (ITER _ B) #as I, (list _ T ; Ts) #as OS) => #IterAux(I, #TypeInstruction(C, B, T ; Ts), OS) 
+  rule #TypeInstruction(C, (ITER _ B) #as I, (set _ T ; Ts) #as OS) => #IterAux(I, #TypeInstruction(C, B, T ; Ts), OS) 
   rule #TypeInstruction(C, (ITER _ B) #as I, (map _ KT VT ; Ts) #as OS) => #IterAux(I, #TypeInstruction(C, B, (pair .AnnotationList KT VT) ; Ts), OS) 
 
   rule #TypeInstruction(C, (MEM _) #as I, (KT ; map _ KT VT ; Ts) #as OS) => #TI(I, OS -> bool .AnnotationList ; Ts) 
@@ -310,7 +328,7 @@ module MICHELSON-TYPES
 
   rule #LoopAux(LOOP _ _, #TI(_, Ts -> (bool _) ; Ts) #as B, ((bool _) ; Ts) #as OS) => #TI((LOOP .AnnotationList { #Exec(B) }), OS -> Ts)
   rule #LoopAux(I, #TI(_, _ -> Ts1), Ts2) => #TI(I, #InvalidPostIterationStack(I, Ts1, Ts2)) requires Ts1 =/=K Ts2
-  rule #LoopAux(I, #TI(_, #ContractFailed),  _) => #TI(I, #UnexpectedFailureType)
+  rule #LoopAux(I, #TI(_, #ContractFailed) #as B, ((bool _) ; Ts) #as OS) => #TI((LOOP .AnnotationList { #Exec(B) }), OS -> Ts)
   rule #LoopAux(I, #TI(_, TE:TypeError),  _) => #TI(I, TE)
   rule #LoopAux(I, _, _) => #TI(I, #InternalError) [owise] // Unreachable
 
@@ -320,16 +338,23 @@ module MICHELSON-TYPES
 
   rule #LoopLeftAux(LOOP_LEFT _ _, #TI(_, TL ; Ts -> (or _ TL TR) ; Ts) #as B, ((or _ TL TR) ; Ts) #as OS) => #TI((LOOP_LEFT .AnnotationList { #Exec(B) }), OS -> TR ; Ts)
   rule #LoopLeftAux(I, #TI(_, _ -> Ts1), Ts2) => #TI(I, #InvalidPostIterationStack(I, Ts1, Ts2)) requires Ts1 =/=K Ts2
-  rule #LoopLeftAux(I, #TI(_, #ContractFailed),  _) => #TI(I, #UnexpectedFailureType)
+  rule #LoopLeftAux(I, #TI(_, #ContractFailed) #as B,  ((or _ TL TR) ; Ts) #as OS) => #TI((LOOP_LEFT .AnnotationList { #Exec(B) }), OS -> TR ; Ts)
   rule #LoopLeftAux(I, #TI(_, TE:TypeError),  _) => #TI(I, TE)
+  rule #LoopLeftAux(I, _, _) => #TI(I, #InternalError) [owise]
 
-  rule #TypeInstruction(C, (LEFT_LOOP _ B) #as I, (or _ TL _ ; Ts) #as OS) => #LoopLeftAux(I, #TypeInstruction(C, B, TL ; Ts), OS)
+  rule #TypeInstruction(C, (LOOP_LEFT _ B) #as I, (or _ TL _ ; Ts) #as OS) => #LoopLeftAux(I, #TypeInstruction(C, B, TL ; Ts), OS)
 
   syntax TypedInstruction ::= #LambdaAux(Instruction, TypedInstruction, TypeSeq) [function, functional]
 
-  rule #LambdaAux(LAMBDA _ T1:Type T2:Type _, #TI(_, T1:Type -> T2:Type) #as B, OS) => #TI(LAMBDA .AnnotationList T1 T2 { #Exec(B) }, OS -> lambda .AnnotationList T1 T2 ; OS)
-  rule #LambdaAux(LAMBDA _ T1 T2 _ #as I, #TI(_, T3 -> T4) #as B, _) => #TI(I, #IllTypedLambda(B, T1, T2)) requires T1 =/=K T3 andBool T2 =/=K T4
-  rule #LambdaAux(I, _, _) => #TI(I, #InternalError) [owise]
+  syntax TypeError ::= #IllTypedLambdaInst(TypedInstruction, Type, Type, Bool, Bool)
+
+  rule #LambdaAux(LAMBDA _ T1:Type T2:Type _, #TI(_, T1:Type ; .TypeSeq -> T2:Type ; .TypeSeq) #as B, OS) => #TI(LAMBDA .AnnotationList T1 T2 { #Exec(B) }, OS -> lambda .AnnotationList T1 T2 ; OS)
+  rule #LambdaAux(LAMBDA _ T1 T2 _ #as I, #TI(_, T3 -> T4) #as B, _) => #TI(I, #IllTypedLambdaInst(B, T1, T2, (T1 ; .TypeSeq) ==K T3, (T2 ; .TypeSeq) ==K T4)) 
+  requires (T1 ; .TypeSeq) =/=K T3 orBool (T2 ; .TypeSeq) =/=K T4
+
+  syntax TypeError ::= #LambdaError(Instruction, TypedInstruction, TypeSeq)
+
+  rule #LambdaAux(I, T, Ts) => #TI(I, #LambdaError(I, T, Ts)) [owise]
 
   rule #TypeInstruction(C, (LAMBDA _ T1 T2 B) #as I, Os) => #LambdaAux(I, #TypeInstruction(C, B, T1), Os)
 
@@ -372,16 +397,22 @@ module MICHELSON-TYPES
 
 
   syntax TypeSeq ::= #Concat(TypeSeq, TypeSeq) [function, functional]
-  rule #Concat(TS:TypeSeq, .TypeSeq) => #ReverseTypeSeq(TS)
-  rule #Concat(TS1:TypeSeq, T1 ; TS2) => #Concat(T1 ; TS1, TS2)
+  rule #Concat(TS1, TS2) => #ConcatAux(#ReverseTypeSeq(TS1), TS2)
+
+
+  syntax TypeSeq ::= #ConcatAux(TypeSeq, TypeSeq) [function, functional]
+  rule #ConcatAux(.TypeSeq, TS) => TS
+  rule #ConcatAux(T ; TS1, TS2) => #ConcatAux(TS1, T ; TS2)
 
   syntax TypedInstruction ::= #DIPAux(Instruction, TypedInstruction, TypeSeq) [function, functional]
 
-  rule #DIPAux(DIP _ N _, #TI(_, Ts1 -> Ts2) #as B, OS) => #TI(DIP .AnnotationList N { #Exec(B) }, #MakeTransition(OS, #MakeConcat(#FirstN(OS, N), Ts2)))
-  requires #RemoveN(OS, N) ==K Ts1
-  rule #DIPAux(I, _, _) => #TI(I, #InternalError) [owise] // TODO: Better error messages.
+  syntax TypeError ::= #DIPError(TypedInstruction, TypeSeq)
 
-  rule #TypeInstruction(C, (DIP _ N B) #as I, OS) => #DIPAux(I, #TypeInstruction(C, B, #RemoveN(OS, N)), OS)
+  rule #DIPAux(DIP _ N _, #TI(_, Ts1 -> Ts2) #as B, OS) => #TI(DIP .AnnotationList N { #Exec(B) }, #MakeTransition(OS, #MakeConcat(#FirstN(OS, N), Ts2)))
+  requires #RemoveFirstN(OS, N) ==K Ts1
+  rule #DIPAux(I, TI, OS) => #TI(I, #DIPError(TI, OS)) [owise] // TODO: Better error messages.
+
+  rule #TypeInstruction(C, (DIP _ N B) #as I, OS) => #DIPAux(I, #TypeInstruction(C, B, #RemoveFirstN(OS, N)), OS)
 
   rule #TypeInstruction(C, (FAILWITH _) #as I, _) => #TI(I, #ContractFailed)
   rule #TypeInstruction(C, (CAST _) #as I, Ts) => #TI(I, Ts -> Ts)
@@ -390,12 +421,16 @@ module MICHELSON-TYPES
   rule #TypeInstruction(C, (CONCAT _) #as I, (string _ ; string _ ; Ts) #as OS) => #TI(I, OS -> (string .AnnotationList ; Ts))
   rule #TypeInstruction(C, (CONCAT _) #as I, (bytes _ ; bytes _ ; Ts) #as OS) => #TI(I, OS -> (bytes .AnnotationList ; Ts))
 
+  rule #TypeInstruction(C, (CONCAT _) #as I, (list _ string _ ; Ts) #as OS) => #TI(I, OS -> (string .AnnotationList ; Ts))
+  rule #TypeInstruction(C, (CONCAT _) #as I,  (list _ bytes _ ; Ts) #as OS) => #TI(I, OS -> (bytes .AnnotationList ; Ts))
+
+
 
   rule #TypeInstruction(C, (SLICE _) #as I, (nat _ ; nat _ ; string _ ; Ts) #as OS) => #TI(I, OS -> (option .AnnotationList string .AnnotationList ; Ts))
   rule #TypeInstruction(C, (SLICE _) #as I, (nat _ ; nat _ ; bytes _ ; Ts) #as OS) => #TI(I, OS -> (option .AnnotationList bytes .AnnotationList ; Ts))
 
   rule #TypeInstruction(C, (PACK _) #as I, (T ; Ts) #as OS) => #TI(I, OS -> bytes .AnnotationList ; Ts)
-  rule #TypeInstruction(C, (UNPACK _ T) #as I, (bytes _ ; Ts) #as OS) => #TI(I, OS -> T ; Ts)
+  rule #TypeInstruction(C, (UNPACK _ T) #as I, (bytes _ ; Ts) #as OS) => #TI(I, OS -> (option .AnnotationList T) ; Ts)
 
   rule #TypeInstruction(C, (ADD _) #as I, (nat _ ; nat _ ; Ts) #as OS) => #TI(I, OS -> nat .AnnotationList ; Ts)
   rule #TypeInstruction(C, (ADD _) #as I, (nat _ ; int _ ; Ts) #as OS) => #TI(I, OS -> int .AnnotationList ; Ts)
@@ -433,8 +468,8 @@ module MICHELSON-TYPES
   rule #TypeInstruction(C, (NEG _) #as I, (int _ ; Ts) #as OS) => #TI(I, OS -> (int .AnnotationList ; Ts))
   rule #TypeInstruction(C, (NEG _) #as I, (nat _ ; Ts) #as OS) => #TI(I, OS -> (int .AnnotationList ; Ts))
 
-  rule #TypeInstruction(C, (LSL _) #as I, (nat _ ; Ts) #as OS) => #TI(I, OS -> (nat .AnnotationList ; Ts))
-  rule #TypeInstruction(C, (LSR _) #as I, (nat _ ; Ts) #as OS) => #TI(I, OS -> (nat .AnnotationList ; Ts))
+  rule #TypeInstruction(C, (LSL _) #as I, (nat _ ; nat _ ; Ts) #as OS) => #TI(I, OS -> (nat .AnnotationList ; Ts))
+  rule #TypeInstruction(C, (LSR _) #as I, (nat _ ; nat _ ; Ts) #as OS) => #TI(I, OS -> (nat .AnnotationList ; Ts))
 
   rule #TypeInstruction(C, (OR _) #as I, (nat _ ; nat _ ; Ts) #as OS) => #TI(I, OS -> (nat .AnnotationList ; Ts))
   rule #TypeInstruction(C, (OR _) #as I, (bool _ ; bool _ ; Ts) #as OS) => #TI(I, OS -> (bool .AnnotationList ; Ts))
@@ -451,6 +486,7 @@ module MICHELSON-TYPES
   rule #TypeInstruction(C, (NOT _) #as I, (bool _ ; Ts) #as OS) => #TI(I, OS -> (bool .AnnotationList ; Ts))
 
   rule #TypeInstruction(C, (COMPARE _) #as I, (nat _ ; nat _ ; Ts) #as OS) => #TI(I, OS -> (int .AnnotationList ; Ts))
+  rule #TypeInstruction(C, (COMPARE _) #as I, (bool _ ; bool _ ; Ts) #as OS) => #TI(I, OS -> (int .AnnotationList ; Ts))
   rule #TypeInstruction(C, (COMPARE _) #as I, (int _ ; int _ ; Ts) #as OS) => #TI(I, OS -> (int .AnnotationList ; Ts))
   rule #TypeInstruction(C, (COMPARE _) #as I, (string _ ; string _ ; Ts) #as OS) => #TI(I, OS -> (int .AnnotationList ; Ts))
   rule #TypeInstruction(C, (COMPARE _) #as I, (pair _ A B ; pair _ A B ; Ts) #as OS) => #TI(I, OS -> (int .AnnotationList ; Ts))
@@ -468,10 +504,10 @@ module MICHELSON-TYPES
 
   rule #TypeInstruction(C, (SELF _) #as I, OS) => #TI(I, OS -> (contract .AnnotationList C) ; OS)
 
-  rule #TypeInstruction(C, (CONTRACT _ T) #as I, OS) => #TI(I, OS -> (contract .AnnotationList T) ; OS)
+  rule #TypeInstruction(C, (CONTRACT _ T) #as I, ((address _) ; Ts) #as OS) => #TI(I, OS -> (option .AnnotationList contract .AnnotationList T) ; Ts)
 
-  rule #TypeInstruction(C, (TRANSFER_TOKENS _) #as I, OS) => #TI(I, OS -> (operation .AnnotationList) ; OS)
-  rule #TypeInstruction(C, (SET_DELEGATE _) #as I, OS) => #TI(I, OS -> (operation .AnnotationList) ; OS)
+  rule #TypeInstruction(C, (TRANSFER_TOKENS _) #as I, (T ; mutez _ ; contract _ T ; Ts) #as OS) => #TI(I, OS -> (operation .AnnotationList) ; Ts)
+  rule #TypeInstruction(C, (SET_DELEGATE _) #as I, (option _ key_hash _ ; Ts) #as OS) => #TI(I, OS -> (operation .AnnotationList) ; Ts)
 
   rule #TypeInstruction(C, (NOW _) #as I, OS) => #TI(I, OS -> (timestamp .AnnotationList) ; OS)
   rule #TypeInstruction(C, (CHAIN_ID _) #as I, OS) => #TI(I, OS -> (chain_id .AnnotationList) ; OS)
@@ -491,10 +527,15 @@ module MICHELSON-TYPES
 
   syntax TypedInstruction ::= #CreateContractAux(Instruction, TypedInstruction, TypeSeq) [function, functional]
 
-  rule #CreateContractAux((CREATE_CONTRACT _ { code _ ; storage St ; parameter Pt ; }) , #TI(_, (pair _ Pt St) -> (pair _ (operation _) St)) #as B, OS) => 
-       #TI(CREATE_CONTRACT .AnnotationList { code { #Exec(B) } ; storage St ; parameter Pt ; }, OS -> operation .AnnotationList ; OS)
-  rule #CreateContractAux(I, _, _) => #TI(I, #InternalError) [owise]
+  syntax TypeError ::= #CreateContractError(TypedInstruction, TypeSeq)
 
-  rule #TypeInstruction(C, (CREATE_CONTRACT _ { code B ; storage St ; parameter Pt ; }) #as I, OS) => #CreateContractAux(I, #TypeInstruction(St, B, pair .AnnotationList Pt St), OS)
+  rule #CreateContractAux((CREATE_CONTRACT _ { code B ; storage St ; parameter Pt ; }) , 
+                          #TI(_, (pair _ Pt St) ; .TypeSeq -> (pair _ (list _ operation _) St) ; .TypeSeq ), (option _ key_hash _ ; mutez _ ; St ; Ts) #as OS) => 
+       #TI(CREATE_CONTRACT .AnnotationList { code B ; storage St ; parameter Pt ; }, OS -> operation .AnnotationList ; address .AnnotationList ; Ts)
+  rule #CreateContractAux(I, TI, TS) => #TI(I, #CreateContractError(TI, TS)) [owise]
+
+  rule #TypeInstruction(C, (CREATE_CONTRACT _ { code B ; storage St ; parameter Pt ; }) #as I, OS) => #CreateContractAux(I, #TypeInstruction(Pt, B, pair .AnnotationList Pt St), OS)
+
+  rule #TypeInstruction(C, (IMPLICIT_ACCOUNT _) #as I, (key_hash _ ; Ts) #as OS) => #TI(I, OS -> (contract .AnnotationList unit .AnnotationList ; Ts))
 endmodule
 ```

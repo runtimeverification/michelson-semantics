@@ -3,10 +3,12 @@ This file implements the unit test section of the .tzt format described by the T
 ```k
 requires "unit-test-syntax.k"
 requires "michelson.k"
+requires "michelson-types.k"
 
 module UNIT-TEST
   imports UNIT-TEST-SYNTAX
   imports MICHELSON
+  imports MICHELSON-TYPES
 ```
 
 During the final output comparison step we discard the type information retained in lists.  This allows us to compare lists which result from the 'MAP' instruction correctly, since we do not presently determine a type for those lists.
@@ -81,6 +83,18 @@ This function transforms a LiteralStack (e.g. a sequence of `Stack_elt` producti
 
   rule #LiteralStackToSemanticsAux(Stack_elt T D) =>
        #ConcreteArgToSemantics(D, T)
+
+  syntax TypeSeq ::= #LiteralStackToTypes(LiteralStack) [function]
+
+  rule #LiteralStackToTypes( { } ) => .TypeSeq
+  rule #LiteralStackToTypes( { L } ) => #LiteralStackToTypesAux(L)
+
+  syntax TypeSeq ::= #LiteralStackToTypesAux(StackElementList) [function]
+
+  rule #LiteralStackToTypesAux( Stack_elt T D ; Gs:StackElementList) =>
+       T ; #LiteralStackToTypesAux(Gs)
+
+  rule #LiteralStackToTypesAux(Stack_elt T D) => T
 ```
 
 This function transforms an expected output stack to its internal representation (failed stacks are already in their internal representation, literals must be transformed as in the input group).
@@ -104,14 +118,32 @@ Loading the input stack involves simply converting it to a KSeq whose elements a
 ```k 
   rule <k> #LoadGroups(input LS ; Gs => Gs) </k>
        <stack> . => #LiteralStackToSemantics(LS) </stack>
+       <stacktypes> .TypeSeq => #LiteralStackToTypes(LS) </stacktypes> 
 ```
 
 Loading the expected output group is unusual because an output group will not do anything when loaded.  Instead it simply schedules the output for verification later on, and then passes directly to the next group. 
 
 ```k
+  syntax KItem ::= #CheckTypes(OutputStack, Block)
+
   syntax KItem ::= #VerifyOutput(K)
 
-  rule <k> #LoadGroups(output Os ; Gs) => #LoadGroups(Gs) ~> #VerifyOutput(#OutputStackToSemantics(Os)) </k>
+  rule <k> #LoadGroups(output Os ; (code B #as Gs)) => #CheckTypes(Os, B) ~> #LoadGroups(Gs) ~> #VerifyOutput(#OutputStackToSemantics(Os)) ... </k>
+  rule <k> #LoadGroups(output Os ; ((code B ; _) #as Gs)) => #CheckTypes(Os, B) ~> #LoadGroups(Gs) ~> #VerifyOutput(#OutputStackToSemantics(Os)) ... </k>
+
+  syntax KItem ::= #CheckTypesResult(TypeSeq, TypedInstruction)
+
+  rule <k> #CheckTypes(LS:LiteralStack, B) => #CheckTypesResult(#LiteralStackToTypes(LS), #TypeInstruction(P, B, TS)) ... </k>
+       <paramtype> P </paramtype>
+       <stacktypes> TS </stacktypes>
+
+  rule <k> #CheckTypes(_, _) => . ... </k> [owise]
+
+  rule <k> #CheckTypesResult(Os, #TI(_, Is -> Os) #as B) ~> #LoadGroups(code _) => #LoadGroups(code { #Exec(B) }) ... </k>
+       <stacktypes> Is </stacktypes>
+
+  rule <k> #CheckTypesResult(Os, #TI(_, Is -> Os) #as B) ~> #LoadGroups(code _ ; Gs) => #LoadGroups(code { #Exec(B) } ; Gs) ... </k>
+       <stacktypes> Is </stacktypes>
 ```
 
 As in the case of the contract group, loading the code group is trivial - simply extract the block and let the main semantics handle the rest.
