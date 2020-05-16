@@ -27,8 +27,6 @@ This function implements a relaxed equality check between two data elements.  In
   rule #Matches(D1, D2) => D1 ==K D2 [owise]
   // This also covers any structurally different data. (e.g. (Left 1) vs (Right 1))
 
-  rule #Matches(#List(L1, _), #List(L2, _)) => #Matches(L1, L2)
-
   rule #Matches(.List, .List) => true
   rule #Matches(ListItem(L1) Ls1:List, ListItem(L2) Ls2:List) => #Matches(L1, L2) andBool #Matches(Ls1, Ls2)
 
