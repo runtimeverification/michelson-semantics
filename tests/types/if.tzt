@@ -1,1 +1,0 @@
-contract { code { CAR ; IF { EMPTY_SET nat } { EMPTY_SET nat } } ; storage bool ; parameter bool ; }

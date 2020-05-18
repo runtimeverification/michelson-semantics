@@ -1,1 +1,0 @@
-contract { code { DROP ; NIL nat ; IF_LEFT { DROP } { DROP } } ; storage nat ; parameter nat ; }

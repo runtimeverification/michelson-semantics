@@ -89,8 +89,10 @@ This function transforms a LiteralStack (e.g. a sequence of `Stack_elt` producti
 
   syntax TypeSeq ::= #LiteralStackToTypesAux(StackElementList) [function]
 
-  rule #LiteralStackToTypesAux( Stack_elt T D ; Gs:StackElementList) =>
-       T ; #LiteralStackToTypesAux(Gs)
+  rule [[ #LiteralStackToTypesAux( Stack_elt T D ; Gs:StackElementList) =>
+       T ; #LiteralStackToTypesAux(Gs)  ]]
+       <paramtype> P </paramtype>
+       requires #Typed(D, T) :=K #TypeData(P, D, T)
 
   rule #LiteralStackToTypesAux(Stack_elt T D) => T
 ```

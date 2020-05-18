@@ -14,10 +14,12 @@ module SYMBOLIC-UNIT-TEST
   rule #GroupOrder(_:PreconditionGroup) => -1
   rule #GroupOrder(_:PostconditionGroup) => #GroupOrderMax +Int 2
 
-  syntax SymbolicElement ::= #SymbolicElement(SymbolicData, Type)
-  syntax SymbolicElement ::= "#DummyElement"
+  syntax Type ::= "#UnknownType"
 
   syntax KItem ::= SymbolicElement
+
+  syntax SymbolicElement ::= #SymbolicElement(SymbolicData, Type)
+  syntax SymbolicElement ::= "#DummyElement"
 
   syntax Set ::= #FindSymbolsIn(Data, Type) [function, functional]
   syntax Set ::= #FindSymbols(KItem) [function, functional]
@@ -39,6 +41,7 @@ module SYMBOLIC-UNIT-TEST
   rule #FindSymbols({ I:Instruction ; Is:InstructionList }) => #FindSymbols(I) |Set #FindSymbols(Is)
   
   rule #FindSymbols(PUSH _ T D) => #FindSymbolsIn(D, T)
+
 
   rule #FindSymbols( ( Failed S:SymbolicData ) ) => SetItem(#SymbolicElement(S, #UnknownType))
 

@@ -1,10 +1,10 @@
 This file contains the productions for the internal representation of certain types of Michelson data in K.  These are shared among a number of different modules which should not depend on one another, and so is kept separate.  Furthermore, it contains a number of macro rules which standardize the representations of certain productions (e.g. by reordering them and adding/removing extra semicolons).
 
 ```k
-requires "michelson-syntax.k"
+requires "michelson-internal-syntax.k"
 
 module MICHELSON-COMMON
-  imports MICHELSON-SYNTAX
+  imports MICHELSON-INTERNAL-SYNTAX
   imports DOMAINS-SYNTAX
   imports BYTES
 ```

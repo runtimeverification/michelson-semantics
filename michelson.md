@@ -1119,22 +1119,12 @@ Timestamps are simply wrapped ints in K-Michelson, so the implementation of simp
   rule #DoCompare(#Timestamp(I1), #Timestamp(I2)) => #DoCompare(I1, I2)
 ```
 
-We do a basic type sanity check when constructing operations by verifying that a data element could be an option key\_hash as the actual instruction type requires.
-
-```k
-  syntax Bool ::= #IsKeyHashOption(OptionData) [function]
-  rule #IsKeyHashOption(Some K:KeyHash) => true
-  rule #IsKeyHashOption(None) => true
-  rule #IsKeyHashOption(Some _) => false [owise]
-```
-
 Operations instructions mostly simply sanity check their arguments and then package them into the appropriate operation structure from michelson-internal-syntax.md.  Of interest in the `CREATE_CONTRACT` instructon is the `!_:Int` syntax, which simply generates a fresh integer that has not been used by this rule during this execution.  This ensures that two different `CREATE_CONTRACT` executions will produce different addresses.
 
 ```k
   rule <k> CREATE_CONTRACT A:AnnotationList { C } => . ... </k>
        <stack> Delegate:OptionData ~> Initial:Mutez ~> Stor:Data => Create_contract(O, C, Delegate, Initial, Stor) ~> #Address("@Address(" +String Int2String(!_:Int) +String ")") ... </stack>
        <nonce> #Nonce(O) => #NextNonce(#Nonce(O)) </nonce>
-       requires #IsKeyHashOption(Delegate)
 
   rule <k> TRANSFER_TOKENS _ => . ... </k>
        <stack> D ~> M ~> #Contract(A, _) => Transfer_tokens(O, D, M, A) ... </stack>
@@ -1143,7 +1133,6 @@ Operations instructions mostly simply sanity check their arguments and then pack
   rule <k> SET_DELEGATE A => . ... </k>
        <stack> D => Set_delegate(O, D) ... </stack>
        <nonce> #Nonce(O) => #NextNonce(#Nonce(O)) </nonce>
-       requires #IsKeyHashOption(D)
 ```
 
 The Balance instruction simply pushes the value stored in the mybalance cell.

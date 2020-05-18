@@ -55,6 +55,8 @@ module MICHELSON-TYPES
 
   syntax Data ::= TypedData
 
+  rule #TypeData(_, Unit, unit _) => #Typed(Unit, unit .AnnotationList)
+
   rule #TypeData(_, (_:MBytes) #as D, (chain_id _) #as T) => #Typed(D, T)
   rule #TypeData(_, (_:Int) #as D, (int _) #as T) => #Typed(D, T)
   rule #TypeData(_, (I:Int) #as D, (nat _) #as T) => #Typed(D, T) requires I >=Int 0
@@ -117,6 +119,12 @@ module MICHELSON-TYPES
 
   rule #TypeData(C, { DL } #as D, (map _ KT VT) #as T) => #CheckInnerData(D, T, #TypeCheckMapElements(C, DL, KT, VT))
   rule #TypeData(C, { DL } #as D, (big_map _ KT VT) #as T) => #CheckInnerData(D, T, #TypeCheckMapElements(C, DL, KT, VT))
+
+  rule #TypeData(C, I:Int, (big_map _ KT VT) #as T) => #Typed(I, T)
+
+  rule #TypeData(C, (Create_contract(_, _, _, _, _) #as D), (operation _) #as T) => #Typed(D, T)
+  rule #TypeData(C, (Transfer_tokens(_, _, _, _) #as D), (operation _) #as T) => #Typed(D, T)
+  rule #TypeData(C, (Set_delegate(_, _) #as D), (operation _) #as T) => #Typed(D, T)
 
   rule #TypeInstruction(C, { }, TS) => #TI({ }, TS -> TS)
   rule #TypeInstruction(C, { Is:InstructionList }, TS) => #fun(#TIs(Is2, TR) => #TI({ #Exec(Is2) }, TR))(#TypeInstructions(C, Is, TS))
@@ -415,8 +423,8 @@ module MICHELSON-TYPES
   rule #TypeInstruction(C, (DIP _ N B) #as I, OS) => #DIPAux(I, #TypeInstruction(C, B, #RemoveFirstN(OS, N)), OS)
 
   rule #TypeInstruction(C, (FAILWITH _) #as I, _) => #TI(I, #ContractFailed)
-  rule #TypeInstruction(C, (CAST _) #as I, Ts) => #TI(I, Ts -> Ts)
-  rule #TypeInstruction(C, (RENAME _) #as I, Ts) => #TI(I, Ts -> Ts)
+//  rule #TypeInstruction(C, (CAST _) #as I, Ts) => #TI(I, Ts -> Ts)
+//  rule #TypeInstruction(C, (RENAME _) #as I, Ts) => #TI(I, Ts -> Ts)
 
   rule #TypeInstruction(C, (CONCAT _) #as I, (string _ ; string _ ; Ts) #as OS) => #TI(I, OS -> (string .AnnotationList ; Ts))
   rule #TypeInstruction(C, (CONCAT _) #as I, (bytes _ ; bytes _ ; Ts) #as OS) => #TI(I, OS -> (bytes .AnnotationList ; Ts))
