@@ -38,7 +38,7 @@ The K specification of the Michelson Bytes type is incomplete due to the lack a 
   syntax MBytes ::= MBytesLiteral
                   | #Packed(Data)
                   | #Blake2B(MBytes)
-                  | #SHA256(MBytes) 
+                  | #SHA256(MBytes)
                   | #SHA512(MBytes)
 ```
 
@@ -87,6 +87,9 @@ These rules define what constitutes a legal mutez value, allowing us to represen
   syntax Bool ::= #IsLegalMutezValue(Int) [function]
   rule #IsLegalMutezValue(I) => I >=Int 0 andBool I <Int #MutezOverflowLimit
 ```
+
+Michelson byte literals are given by their hexadecimal representation with the prefix "Ox".
+Since the K byte literal has a different representation, we convert here from one to the other.
 
 ```k
   syntax MBytes ::= Bytes

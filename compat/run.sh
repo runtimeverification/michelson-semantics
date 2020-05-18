@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 DEFN_DIR="$(dirname "$(readlink -f "$BASH_SOURCE")")/.$1/$1-kompiled/"
 TEMP_DIR="$(mktemp -d)"
 trap "rm -rf $TEMP_DIR" EXIT

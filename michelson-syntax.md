@@ -41,7 +41,7 @@ Here we define the three sequence sorts in Michelson.  Note that these sorts cov
   syntax InstructionList ::= Instruction | Instruction ";" InstructionList | Instruction ";"
 ```
 
-# What about sets?
+[//]: # (What about sets?)
 
 Here we define annotations.  Michelson actually has more stringent requirements for annotation lists to be well formed, but we do not yet enforce these requirements as annotations do very little in an execution semantics.  It is possible to fully specify the real requirements in the K grammar, and indeed an older version of the semantics did so.  However, the number of productions and rules necessary came at an unacceptable performance penalty when compared to the minimal benefit gained by rejecting such contracts.
 
@@ -60,11 +60,12 @@ The bytes literal is expressed here.  We accept mixed type bytes of the form `0x
   syntax MBytesLiteral ::= r"0x([0-9a-fA-F]{2})*" [token]
 ```
 
-K boolean values use all lowercase `true` and `false` - hence we need to add tokens for Michelson bools.  As the comment indicates, these are simply converted to K bools immediately after parsing by function rules.
+K boolean values use all lowercase `true` and `false` - hence we need to add tokens for Michelson bools.
+They are converted to K booleans immediately after parsing by function rules.
 
 ```k
   syntax MichelsonBool ::= "True" [token]
-                         | "False" [token] // These just get macro'd to the proper K types.
+                         | "False" [token]
 ```
 
 Here we specify the various complex types offered by Michelson, making the best possible use of K sorts.
@@ -84,7 +85,7 @@ Here we specify the various complex types offered by Michelson, making the best 
   syntax Data ::= ApplicationData
 ```
 
-# What is the role of `ApplicationData`? grepping it does not return much result
+[//]: # (What is the role of `ApplicationData`? grepping it does not return much result)
 
 Here we specify the various forms of sequence literals in Michelson, including Map and List literals, and blocks.  The former two are converted to K's hooked sorts during load time.
 
@@ -138,7 +139,7 @@ K offers the bracket attribute for productions that should not actually be retai
   syntax Type ::= "(" Type ")" [bracket] // Technically incorrect due to rule about primitive app right inside a sequence.  Need to split out Wrapped/Unwrapped sort.
 ```
 
-# If you want to forbid { (prim arg) }, you should probably have a complete intermediate representation corresponding to Micheline.
+[//]: # (If you want to forbid { (prim arg) }, you should probably have a complete intermediate representation corresponding to Micheline.)
 
 In Michelson a simple type can be any of the following list, followed by an optional AnnotationList.
 
@@ -333,8 +334,6 @@ We list Macros separately, although in practice macros should not exist by this 
 
 Here we specify the different formats a Michelson Contract may take.  These will be converted to the first format (`Code ; Storage ; Parameter ;`) by macros immediately after parsing.
 
-# Here again you could say that the macros are defined in MICHELSON-COMMON.
-
 ```k
   syntax CodeDecl ::= "code" Block
   syntax StorageDecl ::= "storage" Type
@@ -355,7 +354,7 @@ Here we specify the different formats a Michelson Contract may take.  These will
                     | ParameterDecl ";" StorageDecl ";" CodeDecl
 ```
 
-# I suggest to rename "Contract" into "Script"; in Tezos, "contract" usually means everything that is stored at a given address: this includes the script but also the storage and the balance.
+[//]: # (I suggest to rename "Contract" into "Script"; in Tezos, "contract" usually means everything that is stored at a given address: this includes the script but also the storage and the balance.)
 
 These sorts construct a mapping from Addresses to Types which will specify which contracts are available for this contract to access with the `CONTRACT T` instruction. In principle, any contract on the blockchain should be so accessible, but in practice this would be infeasible and needlessly overcomplicate using the semantics.
 
@@ -391,7 +390,7 @@ These sorts define the *Loading Groups* for the contract.  Loading groups specif
 
 Programs consist of sequences of these groups, potentially with an extra semicolon on the end.  Contract, ParameterValue and StorageValue are required, and all other groups are optional.  Accordingly, no empty sequence of groups exists in the parser, since at least three groups must be present for an execution to work.
 
-# Are ParameterValue and StorageValue ever used?
+[//]: # (Are ParameterValue and StorageValue ever used?)
 
 ```k
   syntax ContractGroup ::= "contract" "{" Contract "}"

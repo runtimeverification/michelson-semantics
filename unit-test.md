@@ -1,4 +1,4 @@
-This file implements the unit test section of the .tzt format described by the Tezos foundation [here](https://gitlab.com/tezos/tezos/-/merge_requests/1487/diffs).  This file implements the behavior of the 'code,' 'input,' and 'output' applications discussed in that document. 
+This file implements the unit test section of the .tzt format described by the Tezos foundation [here](https://gitlab.com/tezos/tezos/-/merge_requests/1487/diffs).  This file implements the behavior of the 'code,' 'input,' and 'output' applications discussed in that document.
 
 ```k
 requires "unit-test-syntax.k"
@@ -38,19 +38,19 @@ This function implements a relaxed equality check between two data elements.  In
 
   syntax Data ::= FailedStack
 
-  rule #Matches(Create_contract(I1, C, O1, M1, D1), Create_contract(I2, C, O2, M2, D2)) => 
+  rule #Matches(Create_contract(I1, C, O1, M1, D1), Create_contract(I2, C, O2, M2, D2)) =>
     #Matches(I1, I2) andBool
     #Matches(O1, O2) andBool
     #Matches(M1, M2) andBool
     #Matches(D1, D2)
 
-  rule #Matches(Transfer_tokens(I1, D1, M1, A1), Transfer_tokens(I2, D2, M2, A2)) => 
+  rule #Matches(Transfer_tokens(I1, D1, M1, A1), Transfer_tokens(I2, D2, M2, A2)) =>
     #Matches(I1, I2) andBool
     #Matches(D1, D2) andBool
     #Matches(M1, M2) andBool
     #Matches(A1, A2)
 
-  rule #Matches(Set_delegate(I1, O1), Set_delegate(I2, O2)) => 
+  rule #Matches(Set_delegate(I1, O1), Set_delegate(I2, O2)) =>
     #Matches(I1, I2) andBool #Matches(O1, O2)
 
   rule #Matches(Pair L1 R1, Pair L2 R2) => #Matches(L1, L2) andBool #Matches(R1, R2)
@@ -115,13 +115,13 @@ All groups are required to have a #GroupOrder.  Input, code and output should be
 
 Loading the input stack involves simply converting it to a KSeq whose elements are Data in their internal representations, and then placing that KSeq in the main execution stack configuration cell.
 
-```k 
+```k
   rule <k> #LoadGroups(input LS ; Gs => Gs) </k>
        <stack> . => #LiteralStackToSemantics(LS) </stack>
        <stacktypes> .TypeSeq => #LiteralStackToTypes(LS) </stacktypes> 
 ```
 
-Loading the expected output group is unusual because an output group will not do anything when loaded.  Instead it simply schedules the output for verification later on, and then passes directly to the next group. 
+Loading the expected output group is unusual because an output group will not do anything when loaded.  Instead it simply schedules the output for verification later on, and then passes directly to the next group.
 
 ```k
   syntax KItem ::= #CheckTypes(OutputStack, Block)
@@ -166,10 +166,10 @@ The final step when all elements of the KSequences have been exhausted is to set
 ```k
   rule <k> #VerifyOutput(.) => . </k>
        <stack> . </stack>
-       <returncode> _ => 0 </returncode> 
+       <returncode> _ => 0 </returncode>
 ```
 
-In the case of an expected failure, we cannot guarantee that the contents of the K cell will be empty when the main semantics abort.  However, we know that the #VerifyOutput will still be in the k cell.  Hence, if the main semantics abort (by placing the Aborted production on the top of the k cell), we should find the #VerifyOutput production in the K cell and pull it out. 
+In the case of an expected failure, we cannot guarantee that the contents of the K cell will be empty when the main semantics abort.  However, we know that the #VerifyOutput will still be in the k cell.  Hence, if the main semantics abort (by placing the Aborted production on the top of the k cell), we should find the #VerifyOutput production in the K cell and pull it out.
 
 ```k
   syntax KItem ::= #FindVerifyOutput(K, KItem)
