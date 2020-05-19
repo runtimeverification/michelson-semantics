@@ -1,3 +1,0 @@
-contract { storage unit ; parameter unit ; code { CAR ; NIL operation ; PAIR ; } } ;
-storage_value Unit ;
-parameter_value Unit 
