@@ -1,11 +1,16 @@
 ```k
 requires "unit-test.k"
+requires "symbolic-configuration.k"
 requires "michelson-types.k"
 requires "symbolic-unit-test-syntax.k"
+requires "michelson-claims.k"
+
 
 module SYMBOLIC-UNIT-TEST
   imports SYMBOLIC-UNIT-TEST-SYNTAX
   imports MICHELSON-TYPES
+  imports SYMBOLIC-CONFIGURATION
+  imports MICHELSON-CLAIMS
   imports UNIT-TEST
 
   syntax Set ::= Set "|Set" Set [function, functional]
@@ -200,14 +205,21 @@ module SYMBOLIC-UNIT-TEST
   rule <k> #LoadGroups(postcondition { }) => . ... </k>
   rule <k> #LoadGroups(postcondition { B }) => #DoPostConditions(B)  ... </k>
 
+  syntax KItem ::= #LoadInvariants(Invariants) | #LoadInvariant(Invariant)
+
+  rule #LoadGroups(invariants Invs ; Gs) => #LoadInvariants(Invs) ~> #LoadGroups(Gs)
+
+  rule #LoadInvariants({ }) => .
+  rule #LoadInvariants({ I }) => #LoadInvariant(I)
+  rule #LoadInvariants({ I1 ; Is }) => #LoadInvariant(I1) ~> #LoadInvariants({ Is })
+
+  rule <k> #LoadInvariant(V Bs) => . ... </k>
+       <invariants> M => M[V <- Bs] </invariants>
+
   rule #Ceil(#DoCompare(@A:Int, @B:Int)) => #Ceil(@A) #And #Ceil(@B)  [anywhere, simplification]
 
   rule #DoCompare(I1:Int, I2:Int) <Int 0 => I1 <Int I2 [simplification]
   rule #DoCompare(I1:Int, I2:Int) ==Int 0 => I1 ==Int I2 [simplification]
   rule #DoCompare(I1:Int, I2:Int) >Int 0 => I1 >Int I2 [simplification]
-
-  configuration <michelsonTop/>
-                <symbolsLoaded> false </symbolsLoaded>
-                <symbols> .Map </symbols>
 endmodule
 ```

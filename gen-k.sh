@@ -17,7 +17,9 @@ michelson-syntax.md
 unit-test.md 
 unit-test-syntax.md
 michelson-types.md
-symbolic-unit-test.md 
+michelson-claims.md
+symbolic-unit-test.md
+symbolic-configuration.md
 symbolic-unit-test-syntax.md
 EOF
 )
