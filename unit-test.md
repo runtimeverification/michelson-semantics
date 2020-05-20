@@ -118,7 +118,7 @@ Loading the input stack involves simply converting it to a KSeq whose elements a
 ```k
   rule <k> #LoadGroups(input LS ; Gs => Gs) </k>
        <stack> . => #LiteralStackToSemantics(LS) </stack>
-       <stacktypes> .TypeSeq => #LiteralStackToTypes(LS) </stacktypes> 
+       <stacktypes> .TypeSeq => #LiteralStackToTypes(LS) </stacktypes>
 ```
 
 Loading the expected output group is unusual because an output group will not do anything when loaded.  Instead it simply schedules the output for verification later on, and then passes directly to the next group.

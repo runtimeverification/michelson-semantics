@@ -39,7 +39,7 @@ module SYMBOLIC-UNIT-TEST
   rule #FindSymbols({ }) => .Set
   rule #FindSymbols( { I:Instruction }) => #FindSymbols(I)
   rule #FindSymbols({ I:Instruction ; Is:InstructionList }) => #FindSymbols(I) |Set #FindSymbols(Is)
-  
+
   rule #FindSymbols(PUSH _ T D) => #FindSymbolsIn(D, T)
 
 
@@ -60,7 +60,7 @@ module SYMBOLIC-UNIT-TEST
   rule #FindSymbolsIn(Right V, or _ _ T) => #FindSymbolsIn(V, T)
 
   rule #FindSymbolsIn(B:Block, lambda _ _ _) => #FindSymbols(B)
-  
+
   rule #FindSymbolsIn({ }, list _ _) => .Set
   rule #FindSymbolsIn({ D:Data }, list _ T) => #FindSymbolsIn(D, T)
   rule #FindSymbolsIn({ D:Data ; DL }, list _ T) => #FindSymbolsIn(D, T) |Set #FindSymbolsIn({ DL }, T)
@@ -71,11 +71,11 @@ module SYMBOLIC-UNIT-TEST
 
   rule #FindSymbolsIn({ }, map _ _ _) => .Set
   rule #FindSymbolsIn({ Elt K V }, map _ KT VT) => #FindSymbolsIn(K, KT) |Set #FindSymbolsIn(V, VT)
-  rule #FindSymbolsIn({ M:MapEntry ; ML:MapEntryList }, (map _ K V) #as MT) => 
+  rule #FindSymbolsIn({ M:MapEntry ; ML:MapEntryList }, (map _ K V) #as MT) =>
        #FindSymbolsIn({ M }, MT) |Set #FindSymbolsIn({ ML }, MT)
 
   rule #FindSymbolsIn(M:MapLiteral, big_map A KT VT) => #FindSymbolsIn(M, map A KT VT)
-  
+
   rule #FindSymbolsIn(_, _) => .Set [owise]
 
   rule [[ #ConcreteArgToSemantics(S:SymbolicData, T) => D ]]
@@ -148,9 +148,9 @@ module SYMBOLIC-UNIT-TEST
 
   syntax KItem ::= Groups
 
-  rule <michelsonTop> 
-         <k> Gs:Groups => #CreateSymbols(#UnifyTypes(#FindSymbols(Gs))) ~> #ReplaceOutputWithBinder(Gs) </k> 
-         ... 
+  rule <michelsonTop>
+         <k> Gs:Groups => #CreateSymbols(#UnifyTypes(#FindSymbols(Gs))) ~> #ReplaceOutputWithBinder(Gs) </k>
+         ...
        </michelsonTop>
        <symbolsLoaded> false => true </symbolsLoaded>
 
@@ -164,7 +164,7 @@ module SYMBOLIC-UNIT-TEST
 
   rule <k> #LoadGroups(precondition { } ; Gs) => #LoadGroups(Gs) ... </k>
   rule <k> #LoadGroups(precondition { B:Block } ; Gs) => B ~> #AssumeTrue ~> #LoadGroups(Gs) ... </k>
-  rule <k> #LoadGroups(precondition { B:Block ; Bs } ; Gs) => 
+  rule <k> #LoadGroups(precondition { B:Block ; Bs } ; Gs) =>
        B ~> #AssumeTrue ~> #LoadGroups(precondition { Bs } ; Gs) ... </k>
 
   syntax KItem ::= #Bind(LiteralStack)

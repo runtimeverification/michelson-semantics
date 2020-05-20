@@ -10,15 +10,15 @@ mkdir -p "$BUILD_DIRECTORY"
 
 
 MAIN_DEF_FILES=$(cat <<EOF
-michelson-common.md 
-michelson-config.md 
-michelson-internal-syntax.md 
-michelson.md 
-michelson-syntax.md 
-unit-test.md 
+michelson-common.md
+michelson-config.md
+michelson-internal-syntax.md
+michelson.md
+michelson-syntax.md
+unit-test.md
 unit-test-syntax.md
 michelson-types.md
-symbolic-unit-test.md 
+symbolic-unit-test.md
 symbolic-unit-test-syntax.md
 EOF
 )

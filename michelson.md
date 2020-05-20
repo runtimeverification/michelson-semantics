@@ -187,7 +187,7 @@ Maps and big\_maps do not have the same parsing ambiguity, so we do not need to 
   rule #ConcreteArgToSemantics(Elt K V ; ML, map _:AnnotationList KT VT) =>
        ({#ConcreteArgToSemantics(ML, map .AnnotationList KT VT)}:>Map)[#ConcreteArgToSemantics(K, KT) <- #ConcreteArgToSemantics(V, VT)] [concrete]
 
-  rule #ConcreteArgToSemantics(Elt K V, map _:AnnotationList KT VT) => 
+  rule #ConcreteArgToSemantics(Elt K V, map _:AnnotationList KT VT) =>
        #ConcreteArgToSemantics(K, KT) |-> #ConcreteArgToSemantics(V, VT) [concrete]
 
   rule #ConcreteArgToSemantics({ }, big_map _:AnnotationList K V) => .Map
@@ -469,7 +469,7 @@ These rules split apart blocks into KItems so that the main semantic rules can u
   rule TI:TypedInstruction ; TIS => TI ~> TIS
 
   rule <k> #TI(I, T1 -> T2) => I ... </k>
-       <stacktypes> _ => T1 </stacktypes> 
+       <stacktypes> _ => T1 </stacktypes>
 
   rule I:Instruction ; Is:InstructionList => I ~> Is
   rule {} => .K [structrual]
@@ -1253,7 +1253,7 @@ The remaining operations are defined in terms of the same operations on strings,
   rule <k> SLICE A => #HandleAnnotations(A) ... </k>
        <stack> O:Int ~> L:Int ~> B:Bytes => #SliceBytes(B, O, L)  ... </stack>
 
-  rule #DoCompare(B1:Bytes, B2:Bytes) => #DoCompare(Bytes2Int(B1, BE, Unsigned), Bytes2Int(B2, BE, Unsigned)) 
+  rule #DoCompare(B1:Bytes, B2:Bytes) => #DoCompare(Bytes2Int(B1, BE, Unsigned), Bytes2Int(B2, BE, Unsigned))
 ```
 
 The cryptographic operations are simply stubbed for now.
