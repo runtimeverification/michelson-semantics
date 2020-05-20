@@ -1,3 +1,0 @@
-code { FAILWITH ; PUSH int 2 } ; 
-input { Stack_elt int 0 } ;
-output (Failed 0)
