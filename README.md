@@ -29,7 +29,7 @@ following to install all needed dependencies:
 sudo apt-get install rsync git m4 build-essential patch unzip bubblewrap wget  \
 pkg-config libgmp-dev libev-dev libhidapi-dev libmpfr-dev flex bison z3        \
 libz3-dev maven python3 cmake gcc zlib1g-dev libboost-test-dev libyaml-dev     \
-libjemalloc-dev openjdk-8-jdk clang-8 lld-8 llvm-8-tools 
+libjemalloc-dev openjdk-8-jdk clang-8 lld-8 llvm-8-tools
 ```
 
 For other Linux distributions, you may need to modify the package names as well

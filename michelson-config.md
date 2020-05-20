@@ -3,10 +3,12 @@ The configuration of a K semantics captures all of the mutable state which rules
 ```k
 requires "michelson-syntax.k"
 requires "michelson-common.k"
+requires "michelson-types.k"
 
 module MICHELSON-CONFIG
   imports MICHELSON-SYNTAX
   imports MICHELSON-COMMON
+  imports MICHELSON-TYPES
   imports DOMAINS
 ```
 
@@ -25,6 +27,7 @@ The `<stack>` cell contains the data on the stack of the current Michelson progr
 
 ```k
                   <stack> .K </stack>
+                  <stacktypes> .TypeSeq </stacktypes>
 ```
 
 This cell contains the type of the parameter of this contract.  It may be left unset during the execution of a unit test.

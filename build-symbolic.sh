@@ -1,7 +1,5 @@
-#!/usr/bin/env bash
-
-set -xeuo pipefail
-
+#!/bin/bash
+set -e
 SCRIPT_DIRECTORY="$(dirname "$(readlink -f "$BASH_SOURCE")")"
 source "$SCRIPT_DIRECTORY/common.sh"
 
@@ -17,9 +15,11 @@ michelson-config.md
 michelson-internal-syntax.md
 michelson.md
 michelson-syntax.md
-michelson-types.md
 unit-test.md
 unit-test-syntax.md
+michelson-types.md
+symbolic-unit-test.md
+symbolic-unit-test-syntax.md
 EOF
 )
 
@@ -27,4 +27,4 @@ for f in $MAIN_DEF_FILES ; do
     pandoc --from markdown --to "$TANGLER" --metadata=code:.k "$SCRIPT_DIRECTORY/$f" > "$BUILD_DIRECTORY/$(basename $f .md).k"
 done
 
-kompile --directory "$SCRIPT_DIRECTORY" $KOMPILE_OPTS $* "$BUILD_DIRECTORY/unit-test.k" && "$SCRIPT_DIRECTORY/compat/build.sh"
+kompile --backend haskell --directory "$SCRIPT_DIRECTORY" "$BUILD_DIRECTORY/symbolic-unit-test.k"

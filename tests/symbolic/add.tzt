@@ -1,0 +1,6 @@
+code { ADD } ; 
+input { Stack_elt nat $I1 ; Stack_elt nat $I2 } ;
+output { Stack_elt nat $I3 } ;
+precondition { { PUSH nat $I1 ; PUSH nat 2 ; EDIV ; IF_NONE { PUSH bool False } { CDR ; PUSH nat 1 ; COMPARE ; EQ } } ;
+               { PUSH nat $I2 ; PUSH nat 2 ; EDIV ; IF_NONE { PUSH bool False } { CDR ; PUSH nat 0 ; COMPARE ; EQ } } } ;
+postcondition { { PUSH nat $I3 ; PUSH nat 2 ; EDIV ; IF_NONE { PUSH bool False } { CDR ; PUSH nat 1 ; COMPARE ; EQ } } } 

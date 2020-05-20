@@ -3,10 +3,12 @@ This file implements the unit test section of the .tzt format described by the T
 ```k
 requires "unit-test-syntax.k"
 requires "michelson.k"
+requires "michelson-types.k"
 
 module UNIT-TEST
   imports UNIT-TEST-SYNTAX
   imports MICHELSON
+  imports MICHELSON-TYPES
 ```
 
 During the final output comparison step we discard the type information retained in lists.  This allows us to compare lists which result from the 'MAP' instruction correctly, since we do not presently determine a type for those lists.
@@ -24,8 +26,6 @@ This function implements a relaxed equality check between two data elements.  In
 
   rule #Matches(D1, D2) => D1 ==K D2 [owise]
   // This also covers any structurally different data. (e.g. (Left 1) vs (Right 1))
-
-  rule #Matches(#List(L1, _), #List(L2, _)) => #Matches(L1, L2)
 
   rule #Matches(.List, .List) => true
   rule #Matches(ListItem(L1) Ls1:List, ListItem(L2) Ls2:List) => #Matches(L1, L2) andBool #Matches(Ls1, Ls2)
@@ -81,6 +81,20 @@ This function transforms a LiteralStack (e.g. a sequence of `Stack_elt` producti
 
   rule #LiteralStackToSemanticsAux(Stack_elt T D) =>
        #ConcreteArgToSemantics(D, T)
+
+  syntax TypeSeq ::= #LiteralStackToTypes(LiteralStack) [function]
+
+  rule #LiteralStackToTypes( { } ) => .TypeSeq
+  rule #LiteralStackToTypes( { L } ) => #LiteralStackToTypesAux(L)
+
+  syntax TypeSeq ::= #LiteralStackToTypesAux(StackElementList) [function]
+
+  rule [[ #LiteralStackToTypesAux( Stack_elt T D ; Gs:StackElementList) =>
+       T ; #LiteralStackToTypesAux(Gs)  ]]
+       <paramtype> P </paramtype>
+       requires #Typed(D, T) :=K #TypeData(P, D, T)
+
+  rule #LiteralStackToTypesAux(Stack_elt T D) => T
 ```
 
 This function transforms an expected output stack to its internal representation (failed stacks are already in their internal representation, literals must be transformed as in the input group).
@@ -104,21 +118,38 @@ Loading the input stack involves simply converting it to a KSeq whose elements a
 ```k
   rule <k> #LoadGroups(input LS ; Gs => Gs) </k>
        <stack> . => #LiteralStackToSemantics(LS) </stack>
+       <stacktypes> .TypeSeq => #LiteralStackToTypes(LS) </stacktypes>
 ```
 
 Loading the expected output group is unusual because an output group will not do anything when loaded.  Instead it simply schedules the output for verification later on, and then passes directly to the next group.
 
 ```k
+  syntax KItem ::= #CheckTypes(OutputStack, Block)
+
   syntax KItem ::= #VerifyOutput(K)
 
-  rule <k> #LoadGroups(output Os ; Gs) => #LoadGroups(Gs) ~> #VerifyOutput(#OutputStackToSemantics(Os)) </k>
+  rule <k> #LoadGroups(output Os ; (code B #as Gs)) => #CheckTypes(Os, B) ~> #LoadGroups(Gs) ~> #VerifyOutput(#OutputStackToSemantics(Os)) ... </k>
+  rule <k> #LoadGroups(output Os ; ((code B ; _) #as Gs)) => #CheckTypes(Os, B) ~> #LoadGroups(Gs) ~> #VerifyOutput(#OutputStackToSemantics(Os)) ... </k>
+
+  syntax KItem ::= #CheckTypesResult(TypeSeq, TypedInstruction)
+
+  rule <k> #CheckTypes(LS:LiteralStack, B) => #CheckTypesResult(#LiteralStackToTypes(LS), #TypeInstruction(P, B, TS)) ... </k>
+       <paramtype> P </paramtype>
+       <stacktypes> TS </stacktypes>
+
+  rule <k> #CheckTypes(_, _) => . ... </k> [owise]
+
+  rule <k> #CheckTypesResult(Os, #TI(_, Is -> Os) #as B) ~> #LoadGroups(code _) => #LoadGroups(code { #Exec(B) }) ... </k>
+       <stacktypes> Is </stacktypes>
+
+  rule <k> #CheckTypesResult(Os, #TI(_, Is -> Os) #as B) ~> #LoadGroups(code _ ; Gs) => #LoadGroups(code { #Exec(B) } ; Gs) ... </k>
+       <stacktypes> Is </stacktypes>
 ```
 
 As in the case of the contract group, loading the code group is trivial - simply extract the block and let the main semantics handle the rest.
 
 ```k
-  rule <k> #LoadGroups(code C ; _ => code C) ... </k>
-
+  rule <k> #LoadGroups(code C ; Gs) => C ~> #LoadGroups(Gs) ... </k>
   rule <k> #LoadGroups(code C) => C ... </k>
 ```
 
@@ -141,11 +172,12 @@ The final step when all elements of the KSequences have been exhausted is to set
 In the case of an expected failure, we cannot guarantee that the contents of the K cell will be empty when the main semantics abort.  However, we know that the #VerifyOutput will still be in the k cell.  Hence, if the main semantics abort (by placing the Aborted production on the top of the k cell), we should find the #VerifyOutput production in the K cell and pull it out.
 
 ```k
-  syntax KItem ::= #FindVerifyOutput(K) [function]
+  syntax KItem ::= #FindVerifyOutput(K, KItem)
+  syntax KItem ::= #NoVerifyOutput(KItem)
 
-  rule #FindVerifyOutput(#VerifyOutput(O) ~> _) => #VerifyOutput(O)
-  rule #FindVerifyOutput(_:KItem ~> Rs) => #FindVerifyOutput(Rs) [owise]
+  rule <k> #FindVerifyOutput(#VerifyOutput(O) ~> _, _) => #VerifyOutput(O) ... </k>
+  rule <k> #FindVerifyOutput(_:KItem ~> Rs => Rs, _) ... </k> [owise]
 
-  rule <k> Aborted(_, _, Rk, _) => #FindVerifyOutput(Rk) ... </k>
+  rule <k> Aborted(_, _, Rk, _) #as V => #FindVerifyOutput(Rk, V) ... </k>
 endmodule
 ```
