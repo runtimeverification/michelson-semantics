@@ -19,13 +19,13 @@ module MICHELSON-TYPES
   syntax TypeResult ::= TypeTransition | TypeError | FailureType
 
   syntax TypedInstruction ::= #TypeInstruction(TypeContext, Instruction, TypeSeq) [function, functional] 
-  syntax TypedInstructions ::= #TypeInstructions(TypeContext, InstructionList, TypeInput) [function, functional]
+  syntax TypedInstructions ::= #TypeInstructions(TypeContext, DataList, TypeInput) [function, functional]
 
   syntax TypedInstruction ::= #TI(Instruction, TypeResult)
   syntax TypedInstructions ::= #TIs(TypedInstructionList, TypeResult)
 
   syntax TypedInstructionList ::= TypedInstruction ";" TypedInstructionList | TypedInstruction 
-                                | #Remaining(InstructionList)
+                                | #Remaining(DataList)
 
   syntax TypeError ::= #InvalidTypeForInstruction(Instruction, TypeSeq)
                      | #IncompatibleTypesForBranch(Instruction, TypeInput, TypeInput)
@@ -98,7 +98,7 @@ module MICHELSON-TYPES
   rule #TypeLambdaAux((#TI(_, T1 ; .TypeSeq -> T2 ; .TypeSeq) #as B), T1, T2) => #Typed({ #Exec(B) }, lambda .AnnotationList T1 T2)
   rule #TypeLambdaAux(T, T1, T2) => #IllTypedLambda(T, T1, T2) [owise]
 
-  syntax InstructionList ::= #Exec(TypedInstructionList)
+  syntax DataList ::= #Exec(TypedInstructionList)
 
   rule #TypeData(C, { } #as D, (list _ _) #as T) => #Typed(D, T)
   rule #TypeData(C, { } #as D, (set _ _) #as T) => #Typed(D, T)
@@ -127,7 +127,7 @@ module MICHELSON-TYPES
   rule #TypeData(C, (Set_delegate(_, _) #as D), (operation _) #as T) => #Typed(D, T)
 
   rule #TypeInstruction(C, { }, TS) => #TI({ }, TS -> TS)
-  rule #TypeInstruction(C, { Is:InstructionList }, TS) => #fun(#TIs(Is2, TR) => #TI({ #Exec(Is2) }, TR))(#TypeInstructions(C, Is, TS))
+  rule #TypeInstruction(C, { Is:DataList }, TS) => #fun(#TIs(Is2, TR) => #TI({ #Exec(Is2) }, TR))(#TypeInstructions(C, Is, TS))
 
   rule #TypeInstructions(C, Is, TE:TypeError) => #TIs(#Remaining(Is), TE)
 
@@ -140,7 +140,7 @@ module MICHELSON-TYPES
   rule #TypeInstructions(C, I1 ; Is, Input:TypeSeq) => #fun(#TI(_, TR1) #as T => #fun(#TIs(Ts2, TR2) => #TIs(T ; Ts2, #MergeResults(Input, TR2)))(#TypeInstructions(C, Is, #EndType(TR1))))(#TypeInstruction(C, I1, Input))
 
   rule #TypeInstructions(C, I:Instruction, TS:TypeSeq) => #fun(#TI(I2, TR) => #TIs(#TI(I2, TR), TR))(#TypeInstruction(C, I, TS))
-  rule #TypeInstructions(C, I:Instruction;, TS:TypeSeq) => #TypeInstructions(C, I, TS) 
+//  rule #TypeInstructions(C, I:Instruction;, TS:TypeSeq) => #TypeInstructions(C, I, TS) 
 
 
   rule #TypeInstruction(C, (DROP _) #as I, (_ ; Rs) #as T1) => #TI(I, T1 -> Rs)

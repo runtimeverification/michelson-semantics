@@ -3,18 +3,17 @@ requires "unit-test.k"
 requires "symbolic-configuration.k"
 requires "michelson-types.k"
 requires "symbolic-unit-test-syntax.k"
-requires "michelson-claims.k"
 
 
 module SYMBOLIC-UNIT-TEST
   imports SYMBOLIC-UNIT-TEST-SYNTAX
   imports MICHELSON-TYPES
   imports SYMBOLIC-CONFIGURATION
-  imports MICHELSON-CLAIMS
+  imports COLLECTIONS
   imports UNIT-TEST
 
-  syntax Set ::= Set "|Set" Set [function, functional]
-  rule S1 |Set S2 => S1 (S2 -Set S1)
+//  syntax Set ::= Set "|Set" Set [function, functional]
+//  rule S1 |Set S2 => S1 (S2 -Set S1)
 
   rule #GroupOrder(_:PreconditionGroup) => -1
   rule #GroupOrder(_:PostconditionGroup) => #GroupOrderMax +Int 2
@@ -43,7 +42,7 @@ module SYMBOLIC-UNIT-TEST
 
   rule #FindSymbols({ }) => .Set
   rule #FindSymbols( { I:Instruction }) => #FindSymbols(I)
-  rule #FindSymbols({ I:Instruction ; Is:InstructionList }) => #FindSymbols(I) |Set #FindSymbols(Is)
+  rule #FindSymbols({ I:Instruction ; Is:DataList }) => #FindSymbols(I) |Set #FindSymbols(Is)
   
   rule #FindSymbols(PUSH _ T D) => #FindSymbolsIn(D, T)
 
@@ -92,8 +91,9 @@ module SYMBOLIC-UNIT-TEST
   rule #AllTypesKnown(SetItem(#SymbolicElement(_, #UnknownType)) _) => false
   rule #AllTypesKnown(_) => true [owise]
 
-  syntax UnifiedSet ::= Set | "#UnificationFailure"
+  syntax UnificationFailure ::= "#UnificationFailure"
 
+  syntax UnifiedSet ::= Set | UnificationFailure
   syntax UnifiedSet ::= #UnifyTypes(Set) [function, functional]
 
   rule #UnifyTypes(SetItem(#SymbolicElement(S, #UnknownType)) SetItem(#SymbolicElement(S, T)) Ss) => #UnifyTypes(SetItem(#SymbolicElement(S, T)) Ss)
@@ -104,12 +104,18 @@ module SYMBOLIC-UNIT-TEST
   rule #UnifyTypes(S) => S requires #AllTypesKnown(S) [owise]
   rule #UnifyTypes(S) => #UnificationFailure requires notBool(#AllTypesKnown(S)) [owise]
 
-  syntax KItem ::= #CreateSymbols(UnifiedSet)
+  syntax UnifiedList ::= List | UnificationFailure
+  syntax UnifiedList ::= #UnifiedSetToList(UnifiedSet) [function, functional]
+
+  rule #UnifiedSetToList(S:Set) => Set2List(S)
+  rule #UnifiedSetToList(#UnificationFailure) => #UnificationFailure
+
+  syntax KItem ::= #CreateSymbols(UnifiedList)
 
   syntax KItem ::= #CreateSymbol(SymbolicData, Type)
 
-  rule <k> #CreateSymbols(.Set) => . ... </k>
-  rule <k> #CreateSymbols(SetItem(#SymbolicElement(D, T)) S) => #CreateSymbol(D, T) ~> #CreateSymbols(S) ... </k>
+  rule <k> #CreateSymbols(.List) => . ... </k>
+  rule <k> #CreateSymbols(ListItem(#SymbolicElement(D, T)) S) => #CreateSymbol(D, T) ~> #CreateSymbols(S) ... </k>
 
   syntax TypedSymbol ::= #TypedSymbol(Type, Data)
 
@@ -154,7 +160,7 @@ module SYMBOLIC-UNIT-TEST
   syntax KItem ::= Groups
 
   rule <michelsonTop> 
-         <k> Gs:Groups => #CreateSymbols(#UnifyTypes(#FindSymbols(Gs))) ~> #ReplaceOutputWithBinder(Gs) </k> 
+         <k> Gs:Groups => #CreateSymbols(#UnifiedSetToList(#UnifyTypes(#FindSymbols(Gs)))) ~> #ReplaceOutputWithBinder(Gs) </k> 
          ... 
        </michelsonTop>
        <symbolsLoaded> false => true </symbolsLoaded>
