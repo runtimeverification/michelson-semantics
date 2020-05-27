@@ -1,4 +1,4 @@
-code { CONTRACT unit } ; 
+code { CONTRACT unit } ;
 input { Stack_elt address "@Address(12345)" } ;
 output { Stack_elt (option (contract unit)) None } ;
 other_contracts { Elt "@Address(1234)" unit }
