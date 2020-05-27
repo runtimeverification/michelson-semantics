@@ -797,9 +797,9 @@ We lift the COMPARE operation to a function over Data, allowing many different i
   rule #DoCompare(false, true) => -1
   rule #DoCompare(true, false) => 1
 
-  rule #DoCompare(I1:Int, I2:Int) => -1 requires I1 <Int I2
-  rule #DoCompare(I1:Int, I2:Int) => 0 requires I1 ==Int I2
-  rule #DoCompare(I1:Int, I2:Int) => 1 requires I1 >Int I2
+  rule #DoCompare(I1:Int, I2:Int) => -1 requires I1 <Int I2 [concrete]
+  rule #DoCompare(I1:Int, I2:Int) => 0 requires I1 ==Int I2 [concrete]
+  rule #DoCompare(I1:Int, I2:Int) => 1 requires I1 >Int I2  [concrete]
 
   rule #DoCompare(S1:String, S2:String) => -1 requires S1 <String S2
   rule #DoCompare(S1:String, S2:String) => 0 requires S1 ==String S2

@@ -80,6 +80,8 @@ module MICHELSON-TYPES
   rule #TypeData(C, (Left V) #as D, (or _ TI _) #as T) => #CheckInnerData(D, T, ListItem(#TypeData(C, V, TI)))
   rule #TypeData(C, (Right V) #as D, (or _ _ TI) #as T) => #CheckInnerData(D, T, ListItem(#TypeData(C, V, TI)))
 
+  rule #TypeData(C, D:String, (contract _ _) #as T) => #Typed(D, T)
+
   syntax Bool ::= #AllWellTyped(List) [function, functional]
   rule #AllWellTyped(ListItem(#Typed(_, _)) L) => #AllWellTyped(L)
   rule #AllWellTyped(ListItem(_) L) => false [owise]
@@ -93,9 +95,11 @@ module MICHELSON-TYPES
   syntax MaybeData ::= #TypeLambdaAux(TypedInstruction, Type, Type) [function, functional]
   syntax TypeError ::= #IllTypedLambda(TypedInstruction, Type, Type)
 
+  rule #TypeData(C, B:Block, lambda _ T1 T2) => #TypeLambdaAux(#TypeInstruction(C, B, T1), T1, T2)
+
   rule #TypeData(C, #Lambda(T1, T2, B), lambda _ T1 T2) => #TypeLambdaAux(#TypeInstruction(C, B, T1), T1, T2)
 
-  rule #TypeLambdaAux((#TI(_, T1 ; .TypeSeq -> T2 ; .TypeSeq) #as B), T1, T2) => #Typed({ #Exec(B) }, lambda .AnnotationList T1 T2)
+  rule #TypeLambdaAux((#TI(_, T1:Type ; .TypeSeq -> T2:Type ; .TypeSeq) #as B), T1:Type, T2:Type) => #Typed({ #Exec(B) }, lambda .AnnotationList T1 T2)
   rule #TypeLambdaAux(T, T1, T2) => #IllTypedLambda(T, T1, T2) [owise]
 
   syntax InstructionList ::= #Exec(TypedInstructionList)

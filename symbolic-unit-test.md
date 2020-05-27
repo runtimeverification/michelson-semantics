@@ -7,9 +7,10 @@ module SYMBOLIC-UNIT-TEST
   imports SYMBOLIC-UNIT-TEST-SYNTAX
   imports MICHELSON-TYPES
   imports UNIT-TEST
+  imports COLLECTIONS
 
   syntax Set ::= Set "|Set" Set [function, functional]
-  rule S1 |Set S2 => S1 (S2 -Set S1)
+  rule S1 |Set S2 => S1 (S2 -Set S1) 
 
   rule #GroupOrder(_:PreconditionGroup) => -1
   rule #GroupOrder(_:PostconditionGroup) => #GroupOrderMax +Int 2
@@ -27,10 +28,10 @@ module SYMBOLIC-UNIT-TEST
   rule #FindSymbols(G:Group ; Gs:Groups) => #FindSymbols(G) |Set #FindSymbols(Gs)
 
   rule #FindSymbols(input S) => #FindSymbols(S)
-  rule #FindSymbols(output S) => #FindSymbols(S)
+  rule #FindSymbols(output S) => .Set // #FindSymbols(S)
   rule #FindSymbols(code B) => #FindSymbols(B)
   rule #FindSymbols(precondition B) => #FindSymbols(B)
-  rule #FindSymbols(postcondition B) => #FindSymbols(B)
+  rule #FindSymbols(postcondition B) => .Set // #FindSymbols(B)
 
   rule #FindSymbols({ B:BlockList }) => #FindSymbols(B)
 
@@ -87,8 +88,9 @@ module SYMBOLIC-UNIT-TEST
   rule #AllTypesKnown(SetItem(#SymbolicElement(_, #UnknownType)) _) => false
   rule #AllTypesKnown(_) => true [owise]
 
-  syntax UnifiedSet ::= Set | "#UnificationFailure"
+  syntax UnificationFailure ::= "#UnificationFailure"
 
+  syntax UnifiedSet ::= Set | UnificationFailure
   syntax UnifiedSet ::= #UnifyTypes(Set) [function, functional]
 
   rule #UnifyTypes(SetItem(#SymbolicElement(S, #UnknownType)) SetItem(#SymbolicElement(S, T)) Ss) => #UnifyTypes(SetItem(#SymbolicElement(S, T)) Ss)
@@ -99,12 +101,18 @@ module SYMBOLIC-UNIT-TEST
   rule #UnifyTypes(S) => S requires #AllTypesKnown(S) [owise]
   rule #UnifyTypes(S) => #UnificationFailure requires notBool(#AllTypesKnown(S)) [owise]
 
-  syntax KItem ::= #CreateSymbols(UnifiedSet)
+  syntax UnifiedList ::= List | UnificationFailure
+  syntax UnifiedList ::= #UnifiedSetToList(UnifiedSet) [function, functional]
+
+  rule #UnifiedSetToList(S:Set) => Set2List(S)
+  rule #UnifiedSetToList(#UnificationFailure) => #UnificationFailure
+
+  syntax KItem ::= #CreateSymbols(UnifiedList)
 
   syntax KItem ::= #CreateSymbol(SymbolicData, Type)
 
-  rule <k> #CreateSymbols(.Set) => . ... </k>
-  rule <k> #CreateSymbols(SetItem(#SymbolicElement(D, T)) S) => #CreateSymbol(D, T) ~> #CreateSymbols(S) ... </k>
+  rule <k> #CreateSymbols(.List) => . ... </k>
+  rule <k> #CreateSymbols(ListItem(#SymbolicElement(D, T)) S) => #CreateSymbol(D, T) ~> #CreateSymbols(S) ... </k>
 
   syntax TypedSymbol ::= #TypedSymbol(Type, Data)
 
@@ -126,6 +134,9 @@ module SYMBOLIC-UNIT-TEST
          ...
        </michelsonTop>
        <symbols> M => M[N <- #TypedSymbol(T, ?V:String)] </symbols>
+
+  rule [[ #TypeData(_, S:SymbolicData, T) => #Typed(S, T) ]]
+       <symbols> ... S |-> #TypedSymbol(T, _) ... </symbols>
 
    // Complex types..._
 
@@ -149,7 +160,7 @@ module SYMBOLIC-UNIT-TEST
   syntax KItem ::= Groups
 
   rule <michelsonTop>
-         <k> Gs:Groups => #CreateSymbols(#UnifyTypes(#FindSymbols(Gs))) ~> #ReplaceOutputWithBinder(Gs) </k>
+         <k> Gs:Groups => #CreateSymbols(#UnifiedSetToList(#UnifyTypes(#FindSymbols(Gs)))) ~> #ReplaceOutputWithBinder(Gs) </k>
          ...
        </michelsonTop>
        <symbolsLoaded> false => true </symbolsLoaded>
@@ -157,10 +168,11 @@ module SYMBOLIC-UNIT-TEST
   syntax KItem ::= "#AssumeTrue" | "#AssertTrue"
 
   rule <k> #AssumeTrue => . ... </k>
-       <stack> true => . </stack>
-
+       <stack> true => . </stack> [transition]
+ 
   rule <k> #AssumeTrue ~> _:K => . </k>
        <stack> false => . </stack>
+       <assumeFailed> _ => true </assumeFailed> [transition]
 
   rule <k> #LoadGroups(precondition { } ; Gs) => #LoadGroups(Gs) ... </k>
   rule <k> #LoadGroups(precondition { B:Block } ; Gs) => B ~> #AssumeTrue ~> #LoadGroups(Gs) ... </k>
@@ -171,7 +183,7 @@ module SYMBOLIC-UNIT-TEST
 
   syntax KItem ::= #BindSingle(StackElement)
 
-  rule <k> #LoadGroups(Binder LS ; Gs) => #LoadGroups(Gs) ... </k>
+  rule <k> #LoadGroups(Binder LS ; Gs) => #Bind(LS) ~> #LoadGroups(Gs) ... </k>
 
   rule <k> #Bind({ }) => . ... </k>
        <stack> . </stack>
@@ -197,17 +209,25 @@ module SYMBOLIC-UNIT-TEST
   rule <k> #AssertTrue => . ... </k>
        <stack> true => . </stack>
 
+  syntax KItem ::= "#AssertFailed"
+
+  rule <k> #AssertTrue => #AssertFailed ... </k>
+       <stack> false => . </stack>
+
   rule <k> #LoadGroups(postcondition { }) => . ... </k>
   rule <k> #LoadGroups(postcondition { B }) => #DoPostConditions(B)  ... </k>
 
   rule #Ceil(#DoCompare(@A:Int, @B:Int)) => #Ceil(@A) #And #Ceil(@B)  [anywhere, simplification]
 
   rule #DoCompare(I1:Int, I2:Int) <Int 0 => I1 <Int I2 [simplification]
+  rule #DoCompare(I1:Int, I2:Int) <=Int 0 => I1 <=Int I2 [simplification]
   rule #DoCompare(I1:Int, I2:Int) ==Int 0 => I1 ==Int I2 [simplification]
+  rule #DoCompare(I1:Int, I2:Int) >=Int 0 => I1 >=Int I2 [simplification]
   rule #DoCompare(I1:Int, I2:Int) >Int 0 => I1 >Int I2 [simplification]
 
   configuration <michelsonTop/>
                 <symbolsLoaded> false </symbolsLoaded>
+                <assumeFailed> false </assumeFailed>
                 <symbols> .Map </symbols>
 endmodule
 ```

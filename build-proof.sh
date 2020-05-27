@@ -15,6 +15,7 @@ michelson-config.md
 michelson-internal-syntax.md
 michelson.md
 michelson-syntax.md
+michelson-types.md
 unit-test.md
 unit-test-syntax.md
 EOF

@@ -22,6 +22,8 @@ This function implements a relaxed equality check between two data elements.  In
 ```k
   syntax Bool ::= #Matches(Data, Data) [function] // Expected, Actual
 
+  rule #TypeData(_, #Any, T) => #Typed(#Any, T)
+
   rule #Matches(#Any, _) => true
 
   rule #Matches(D1, D2) => D1 ==K D2 [owise]
@@ -82,19 +84,18 @@ This function transforms a LiteralStack (e.g. a sequence of `Stack_elt` producti
   rule #LiteralStackToSemanticsAux(Stack_elt T D) =>
        #ConcreteArgToSemantics(D, T)
 
-  syntax TypeSeq ::= #LiteralStackToTypes(LiteralStack) [function]
+  syntax TypeSeq ::= #LiteralStackToTypes(LiteralStack, Type) [function]
 
-  rule #LiteralStackToTypes( { } ) => .TypeSeq
-  rule #LiteralStackToTypes( { L } ) => #LiteralStackToTypesAux(L)
+  rule #LiteralStackToTypes( { } , _) => .TypeSeq
+  rule #LiteralStackToTypes( { L } , T ) => #LiteralStackToTypesAux(L, T)
 
-  syntax TypeSeq ::= #LiteralStackToTypesAux(StackElementList) [function]
+  syntax TypeSeq ::= #LiteralStackToTypesAux(StackElementList, Type) [function]
 
-  rule [[ #LiteralStackToTypesAux( Stack_elt T D ; Gs:StackElementList) =>
-       T ; #LiteralStackToTypesAux(Gs)  ]]
-       <paramtype> P </paramtype>
-       requires #Typed(D, T) :=K #TypeData(P, D, T)
+  rule #LiteralStackToTypesAux( Stack_elt T D ; Gs:StackElementList, PT) => T ; #LiteralStackToTypesAux(Gs, PT)
+       requires #Typed(D, T) :=K #TypeData(PT, D, T)
 
-  rule #LiteralStackToTypesAux(Stack_elt T D) => T
+  rule #LiteralStackToTypesAux(Stack_elt T D, PT) => T
+       requires #Typed(D, T) :=K #TypeData(PT, D, T)
 ```
 
 This function transforms an expected output stack to its internal representation (failed stacks are already in their internal representation, literals must be transformed as in the input group).
@@ -118,7 +119,8 @@ Loading the input stack involves simply converting it to a KSeq whose elements a
 ```k
   rule <k> #LoadGroups(input LS ; Gs => Gs) </k>
        <stack> . => #LiteralStackToSemantics(LS) </stack>
-       <stacktypes> .TypeSeq => #LiteralStackToTypes(LS) </stacktypes>
+       <paramtype> PT </paramtype>
+       <stacktypes> .TypeSeq => #LiteralStackToTypes(LS, PT) </stacktypes>
 ```
 
 Loading the expected output group is unusual because an output group will not do anything when loaded.  Instead it simply schedules the output for verification later on, and then passes directly to the next group.
@@ -133,7 +135,7 @@ Loading the expected output group is unusual because an output group will not do
 
   syntax KItem ::= #CheckTypesResult(TypeSeq, TypedInstruction)
 
-  rule <k> #CheckTypes(LS:LiteralStack, B) => #CheckTypesResult(#LiteralStackToTypes(LS), #TypeInstruction(P, B, TS)) ... </k>
+  rule <k> #CheckTypes(LS:LiteralStack, B) => #CheckTypesResult(#LiteralStackToTypes(LS, P), #TypeInstruction(P, B, TS)) ... </k>
        <paramtype> P </paramtype>
        <stacktypes> TS </stacktypes>
 
