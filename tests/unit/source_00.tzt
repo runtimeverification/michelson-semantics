@@ -1,4 +1,4 @@
-code { SOURCE } ; 
-input { } ; 
+code { SOURCE } ;
+input { } ;
 output { Stack_elt address "@Address(SourceAddr)" } ;
-source "@Address(SourceAddr)" 
+source "@Address(SourceAddr)"

@@ -1,5 +1,5 @@
-code { SELF } ; 
+code { SELF } ;
 input { } ;
 parameter int ;
 self "@Address(12345)" ;
-output { Stack_elt (contract int) "@Address(12345)" } 
+output { Stack_elt (contract int) "@Address(12345)" }
