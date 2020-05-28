@@ -19,8 +19,8 @@ module CONTRACT-EXPANDER
 
   syntax Block ::= #StackToPushAux(StackElementList, Block) [function]
   rule #StackToPush( { Se } ) => #StackToPushAux(Se, { DROP .AnnotationList 0 })
-  rule #StackToPushAux(Se ; Ls, { I:InstructionList })  => #StackToPushAux(Ls, { #StackEltToPush(Se) ; I })
-  rule #StackToPushAux(Se, { I:InstructionList })  => { #StackEltToPush(Se) ; I }
+  rule #StackToPushAux(Se ; Ls, { I:DataList })  => #StackToPushAux(Ls, { #StackEltToPush(Se) ; I })
+  rule #StackToPushAux(Se, { I:DataList })  => { #StackEltToPush(Se) ; I }
 
   syntax Contract ::= #FillTemplateContract(Block, Block, Type) [function]
 

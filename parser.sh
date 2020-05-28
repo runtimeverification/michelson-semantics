@@ -13,7 +13,9 @@ if [[ -z "$NO_PARSER" ]] && which tezos-client>/dev/null 2>&1; then
     GROUP="$([[ ! -z "$CODE" ]] && echo code || echo contract)"
     CONTENTS="$CODE $CONTRACT"
 
-    echo "$GROUP $(tezos-client expand macros in "$CONTENTS" 2>/dev/null) ;" | cat - "$1" | "$SCRIPT_DIR/unit-test-kompiled/parser_PGM"
+
+
+    echo "$GROUP $(tezos-client expand macros in "$CONTENTS" 2>/dev/null) ;" | cat - "$1" | sed 's/;\s*}/}/' | "$SCRIPT_DIR/unit-test-kompiled/parser_PGM"
 else
-    "$SCRIPT_DIR/unit-test-kompiled/parser_PGM" "$1"
+    sed 's/;\s*}/}/' "$1" | "$SCRIPT_DIR/unit-test-kompiled/parser_PGM"
 fi

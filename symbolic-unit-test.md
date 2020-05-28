@@ -1,11 +1,15 @@
 ```k
 requires "unit-test.k"
+requires "symbolic-configuration.k"
 requires "michelson-types.k"
 requires "symbolic-unit-test-syntax.k"
+
 
 module SYMBOLIC-UNIT-TEST
   imports SYMBOLIC-UNIT-TEST-SYNTAX
   imports MICHELSON-TYPES
+  imports SYMBOLIC-CONFIGURATION
+  imports COLLECTIONS
   imports UNIT-TEST
   imports COLLECTIONS
 
@@ -39,8 +43,7 @@ module SYMBOLIC-UNIT-TEST
 
   rule #FindSymbols({ }) => .Set
   rule #FindSymbols( { I:Instruction }) => #FindSymbols(I)
-  rule #FindSymbols({ I:Instruction ; Is:InstructionList }) => #FindSymbols(I) |Set #FindSymbols(Is)
-
+  rule #FindSymbols({ I:Instruction ; Is:DataList }) => #FindSymbols(I) |Set #FindSymbols(Is)
   rule #FindSymbols(PUSH _ T D) => #FindSymbolsIn(D, T)
 
 
@@ -159,9 +162,9 @@ module SYMBOLIC-UNIT-TEST
 
   syntax KItem ::= Groups
 
-  rule <michelsonTop>
-         <k> Gs:Groups => #CreateSymbols(#UnifiedSetToList(#UnifyTypes(#FindSymbols(Gs)))) ~> #ReplaceOutputWithBinder(Gs) </k>
-         ...
+  rule <michelsonTop> 
+         <k> Gs:Groups => #CreateSymbols(#UnifiedSetToList(#UnifyTypes(#FindSymbols(Gs)))) ~> #ReplaceOutputWithBinder(Gs) </k> 
+         ... 
        </michelsonTop>
        <symbolsLoaded> false => true </symbolsLoaded>
 
@@ -184,6 +187,7 @@ module SYMBOLIC-UNIT-TEST
   syntax KItem ::= #BindSingle(StackElement)
 
   rule <k> #LoadGroups(Binder LS ; Gs) => #Bind(LS) ~> #LoadGroups(Gs) ... </k>
+  rule <k> #LoadGroups(Binder LS) => #Bind(LS) ... </k>
 
   rule <k> #Bind({ }) => . ... </k>
        <stack> . </stack>
@@ -217,6 +221,17 @@ module SYMBOLIC-UNIT-TEST
   rule <k> #LoadGroups(postcondition { }) => . ... </k>
   rule <k> #LoadGroups(postcondition { B }) => #DoPostConditions(B)  ... </k>
 
+  syntax KItem ::= #LoadInvariants(Invariants) | #LoadInvariant(Invariant)
+
+  rule #LoadGroups(invariants Invs ; Gs) => #LoadInvariants(Invs) ~> #LoadGroups(Gs)
+
+  rule #LoadInvariants({ }) => .
+  rule #LoadInvariants({ I }) => #LoadInvariant(I)
+  rule #LoadInvariants({ I1 ; Is }) => #LoadInvariant(I1) ~> #LoadInvariants({ Is })
+
+  rule <k> #LoadInvariant(V Bs) => . ... </k>
+       <invariants> M => M[V <- Bs] </invariants>
+
   rule #Ceil(#DoCompare(@A:Int, @B:Int)) => #Ceil(@A) #And #Ceil(@B)  [anywhere, simplification]
 
   rule #DoCompare(I1:Int, I2:Int) <Int 0 => I1 <Int I2 [simplification]
@@ -224,10 +239,5 @@ module SYMBOLIC-UNIT-TEST
   rule #DoCompare(I1:Int, I2:Int) ==Int 0 => I1 ==Int I2 [simplification]
   rule #DoCompare(I1:Int, I2:Int) >=Int 0 => I1 >=Int I2 [simplification]
   rule #DoCompare(I1:Int, I2:Int) >Int 0 => I1 >Int I2 [simplification]
-
-  configuration <michelsonTop/>
-                <symbolsLoaded> false </symbolsLoaded>
-                <assumeFailed> false </assumeFailed>
-                <symbols> .Map </symbols>
 endmodule
 ```
