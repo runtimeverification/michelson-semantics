@@ -16,7 +16,6 @@ module SYMBOLIC-UNIT-TEST-SYNTAX
   syntax InvariantsGroup ::= "invariants" Invariants
 
   syntax Group ::= PreconditionGroup | PostconditionGroup | InvariantsGroup
-
   syntax SymbolicData ::= r"$[_a-zA-Z][_0-9a-zA-Z]*" [token]
 
   syntax Data ::= SymbolicData

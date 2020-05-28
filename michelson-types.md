@@ -18,13 +18,13 @@ module MICHELSON-TYPES
   syntax TypeInput ::= TypeSeq | TypeError
   syntax TypeResult ::= TypeTransition | TypeError | FailureType
 
-  syntax TypedInstruction ::= #TypeInstruction(TypeContext, Instruction, TypeSeq) [function, functional] 
+  syntax TypedInstruction ::= #TypeInstruction(TypeContext, Instruction, TypeSeq) [function, functional]
   syntax TypedInstructions ::= #TypeInstructions(TypeContext, DataList, TypeInput) [function, functional]
 
   syntax TypedInstruction ::= #TI(Instruction, TypeResult)
   syntax TypedInstructions ::= #TIs(TypedInstructionList, TypeResult)
 
-  syntax TypedInstructionList ::= TypedInstruction ";" TypedInstructionList | TypedInstruction 
+  syntax TypedInstructionList ::= TypedInstruction ";" TypedInstructionList | TypedInstruction
                                 | #Remaining(DataList)
 
   syntax TypeError ::= #InvalidTypeForInstruction(Instruction, TypeSeq)

@@ -14,8 +14,7 @@ module SYMBOLIC-UNIT-TEST
   imports COLLECTIONS
 
   syntax Set ::= Set "|Set" Set [function, functional]
-  rule S1 |Set S2 => S1 (S2 -Set S1) 
-
+  rule S1 |Set S2 => S1 (S2 -Set S1)
   rule #GroupOrder(_:PreconditionGroup) => -1
   rule #GroupOrder(_:PostconditionGroup) => #GroupOrderMax +Int 2
 
@@ -36,7 +35,6 @@ module SYMBOLIC-UNIT-TEST
   rule #FindSymbols(code B) => #FindSymbols(B)
   rule #FindSymbols(precondition B) => #FindSymbols(B)
   rule #FindSymbols(postcondition B) => .Set // #FindSymbols(B)
-
   rule #FindSymbols({ B:BlockList }) => #FindSymbols(B)
 
   rule #FindSymbols(B:Block ; Rs:BlockList) => #FindSymbols(B) #FindSymbols(Rs)
@@ -44,6 +42,7 @@ module SYMBOLIC-UNIT-TEST
   rule #FindSymbols({ }) => .Set
   rule #FindSymbols( { I:Instruction }) => #FindSymbols(I)
   rule #FindSymbols({ I:Instruction ; Is:DataList }) => #FindSymbols(I) |Set #FindSymbols(Is)
+
   rule #FindSymbols(PUSH _ T D) => #FindSymbolsIn(D, T)
 
 
@@ -94,6 +93,7 @@ module SYMBOLIC-UNIT-TEST
   syntax UnificationFailure ::= "#UnificationFailure"
 
   syntax UnifiedSet ::= Set | UnificationFailure
+
   syntax UnifiedSet ::= #UnifyTypes(Set) [function, functional]
 
   rule #UnifyTypes(SetItem(#SymbolicElement(S, #UnknownType)) SetItem(#SymbolicElement(S, T)) Ss) => #UnifyTypes(SetItem(#SymbolicElement(S, T)) Ss)
@@ -162,9 +162,9 @@ module SYMBOLIC-UNIT-TEST
 
   syntax KItem ::= Groups
 
-  rule <michelsonTop> 
-         <k> Gs:Groups => #CreateSymbols(#UnifiedSetToList(#UnifyTypes(#FindSymbols(Gs)))) ~> #ReplaceOutputWithBinder(Gs) </k> 
-         ... 
+  rule <michelsonTop>
+         <k> Gs:Groups => #CreateSymbols(#UnifiedSetToList(#UnifyTypes(#FindSymbols(Gs)))) ~> #ReplaceOutputWithBinder(Gs) </k>
+         ...
        </michelsonTop>
        <symbolsLoaded> false => true </symbolsLoaded>
 
@@ -172,10 +172,11 @@ module SYMBOLIC-UNIT-TEST
 
   rule <k> #AssumeTrue => . ... </k>
        <stack> true => . </stack> [transition]
- 
+
   rule <k> #AssumeTrue ~> _:K => . </k>
        <stack> false => . </stack>
        <assumeFailed> _ => true </assumeFailed> [transition]
+
 
   rule <k> #LoadGroups(precondition { } ; Gs) => #LoadGroups(Gs) ... </k>
   rule <k> #LoadGroups(precondition { B:Block } ; Gs) => B ~> #AssumeTrue ~> #LoadGroups(Gs) ... </k>

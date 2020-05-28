@@ -33,4 +33,4 @@ invariants { @Inv { IF_LEFT { UNPAIR ;
                                     
                                     
                                     } } ;
-postcondition { { PUSH nat $I1 ; DUP ; PUSH nat 1 ; ADD ; MUL ; PUSH nat 2 ; EDIV ; IF_NONE { UNIT ; FAILWITH } { } ; PUSH nat $I2 ; ADD ; PUSH nat $I3 ; COMPARE ; EQ } } 
+postcondition { { PUSH nat $I1 ; DUP ; PUSH nat 1 ; ADD ; MUL ; PUSH nat 2 ; EDIV ; IF_NONE { UNIT ; FAILWITH } { } ; PUSH nat $I2 ; ADD ; PUSH nat $I3 ; COMPARE ; EQ } }
