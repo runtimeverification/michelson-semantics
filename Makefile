@@ -86,7 +86,17 @@ MAIN_MODULE    := UNIT-TEST
 SYNTAX_MODULE  := $(MAIN_MODULE)
 MAIN_DEFN_FILE := unit-test
 
-SOURCE_FILES  := michelson-common michelson-config michelson-internal-syntax michelson michelson-syntax michelson-types unit-test unit-test-syntax
+SOURCE_FILES  := michelson-common          \
+                 michelson-config          \
+                 michelson-internal-syntax \
+                 michelson                 \
+                 michelson-syntax          \
+                 michelson-types           \
+                 symbolic-configuration    \
+                 symbolic-unit-test        \
+                 symbolic-unit-test-syntax \
+                 unit-test                 \
+                 unit-test-syntax
 EXTRA_K_FILES :=
 ALL_K_FILES   := $(patsubst %, %.k, $(SOURCE_FILES) $(EXTRA_K_FILES))
 
