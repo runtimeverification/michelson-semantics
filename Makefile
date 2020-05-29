@@ -116,8 +116,15 @@ build-llvm: $(llvm_kompiled)
 
 # LLVM
 
+CPP_FILES := hex.cpp time.cpp
+
 LLVM_KOMPILE_OPTS := -L$(LOCAL_LIB) -I$(K_RELEASE)/include/kllvm \
-                     -g -std=c++14
+                     $(abspath $(CPP_FILES))                     \
+                     -std=c++14
+
+ifeq (,$(RELEASE))
+    LLVM_KOMPILE_OPTS += -g
+endif
 
 $(llvm_kompiled): $(llvm_files)
 	kompile --debug --main-module $(MAIN_MODULE) --backend llvm              \
