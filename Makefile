@@ -82,27 +82,19 @@ deps-tangle: $(TANGLER)
 # Building
 # --------
 
-MAIN_MODULE    := UNIT-TEST
-SYNTAX_MODULE  := $(MAIN_MODULE)
-MAIN_DEFN_FILE := unit-test
-
-SOURCE_FILES  := michelson-common          \
-                 michelson-config          \
-                 michelson-internal-syntax \
-                 michelson                 \
-                 michelson-syntax          \
-                 michelson-types           \
-                 symbolic-configuration    \
-                 symbolic-unit-test        \
-                 symbolic-unit-test-syntax \
-                 unit-test                 \
-                 unit-test-syntax
-EXTRA_K_FILES :=
-ALL_K_FILES   := $(patsubst %, %.k, $(SOURCE_FILES) $(EXTRA_K_FILES))
-
-llvm_dir := $(DEFN_DIR)/llvm
-
-llvm_kompiled := $(llvm_dir)/$(MAIN_DEFN_FILE)-kompiled/interpreter
+SOURCE_FILES       := michelson-common          \
+                      michelson-config          \
+                      michelson-internal-syntax \
+                      michelson                 \
+                      michelson-syntax          \
+                      michelson-types           \
+                      symbolic-configuration    \
+                      symbolic-unit-test        \
+                      symbolic-unit-test-syntax \
+                      unit-test                 \
+                      unit-test-syntax
+EXTRA_SOURCE_FILES :=
+ALL_FILES          := $(patsubst %, %.k, $(SOURCE_FILES) $(EXTRA_SOURCE_FILES))
 
 export MAIN_DEFN_FILE
 
@@ -110,24 +102,20 @@ export MAIN_DEFN_FILE
 
 tangle_selector := .k
 
-llvm_files := $(patsubst %, $(llvm_dir)/%, $(ALL_K_FILES))
-
-defn: defn-llvm
-defn-llvm: $(llvm_files)
-
-$(llvm_dir)/%.k: %.md $(TANGLER)
-	@mkdir -p $(llvm_dir)
-	pandoc --from markdown --to "$(TANGLER)" --metadata=code:"$(tangle_selector)" $< > $@
-
-# Kompiling
-
-build: build-llvm build-compat
-build-llvm: $(llvm_kompiled)
+defn:  defn-llvm defn-haskel
+build: build-llvm build-haskell build-compat
 
 build-compat:
 	./compat/build.sh
 
 # LLVM
+
+llvm_dir           := $(DEFN_DIR)/llvm
+llvm_files         := $(patsubst %, $(llvm_dir)/%, $(ALL_FILES))
+llvm_main_file     := unit-test
+llvm_main_module   := UNIT-TEST
+llvm_syntax_module := $(llvm_main_module)
+llvm_kompiled      := $(llvm_dir)/$(llvm_main_file)-kompiled/interpreter
 
 CPP_FILES := hex.cpp time.cpp
 
@@ -139,9 +127,38 @@ ifeq (,$(RELEASE))
     LLVM_KOMPILE_OPTS += -g
 endif
 
+defn-llvm:  $(llvm_files)
+build-llvm: $(llvm_kompiled)
+
+$(llvm_dir)/%.k: %.md $(TANGLER)
+	@mkdir -p $(llvm_dir)
+	pandoc --from markdown --to "$(TANGLER)" --metadata=code:"$(tangle_selector)" $< > $@
+
 $(llvm_kompiled): $(llvm_files)
-	kompile --debug --main-module $(MAIN_MODULE) --backend llvm              \
-	        --syntax-module $(SYNTAX_MODULE) $(llvm_dir)/$(MAIN_DEFN_FILE).k \
-	        --directory $(llvm_dir) -I $(llvm_dir)                           \
-	        $(KOMPILE_OPTS)                                                  \
+	kompile --debug --backend llvm $(llvm_dir)/$(llvm_main_file).k                  \
+	        --directory $(llvm_dir) -I $(llvm_dir)                                  \
+	        --main-module $(llvm_main_module) --syntax-module $(llvm_syntax_module) \
+	        $(KOMPILE_OPTS)                                                         \
 	        $(addprefix -ccopt ,$(LLVM_KOMPILE_OPTS))
+
+### Haskell
+
+haskell_dir           := $(DEFN_DIR)/haskell
+haskell_files         := $(patsubst %, $(haskell_dir)/%, $(ALL_FILES))
+haskell_main_file     := symbolic-unit-test
+haskell_main_module   := SYMBOLIC-UNIT-TEST
+haskell_syntax_module := $(haskell_main_module)
+haskell_kompiled      := $(haskell_dir)/$(haskell_main_file)-kompiled/definition.kore
+
+defn-haskell:  $(haskell_files)
+build-haskell: $(haskell_kompiled)
+
+$(haskell_dir)/%.k: %.md $(TANGLER)
+	@mkdir -p $(haskell_dir)
+	pandoc --from markdown --to "$(TANGLER)" --metadata=code:"$(tangle_selector)" $< > $@
+
+$(haskell_kompiled): $(haskell_files)
+	kompile --debug --backend haskell $(haskell_dir)/$(haskell_main_file).k               \
+	        --directory $(haskell_dir) -I $(haskell_dir)                                  \
+	        --main-module $(haskell_main_module) --syntax-module $(haskell_syntax_module) \
+	        $(KOMPILE_OPTS)
