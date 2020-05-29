@@ -14,9 +14,10 @@ def emit_expression(obj, suppress_parens=False):
     if type(obj) == list_type:
         if not suppress_parens:
             emit("{")
-        for elem in obj:
-            emit_expression(elem, True)
-            emit(";")
+        for i in range(len(obj)):
+            emit_expression(obj[i], True)
+            if (i != len(obj) - 1):
+                emit(";")
         if not suppress_parens:
             emit("}")
     elif "int" in obj:

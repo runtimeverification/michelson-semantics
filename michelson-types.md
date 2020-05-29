@@ -19,13 +19,13 @@ module MICHELSON-TYPES
   syntax TypeResult ::= TypeTransition | TypeError | FailureType
 
   syntax TypedInstruction ::= #TypeInstruction(TypeContext, Instruction, TypeSeq) [function, functional]
-  syntax TypedInstructions ::= #TypeInstructions(TypeContext, InstructionList, TypeInput) [function, functional]
+  syntax TypedInstructions ::= #TypeInstructions(TypeContext, DataList, TypeInput) [function, functional]
 
   syntax TypedInstruction ::= #TI(Instruction, TypeResult)
   syntax TypedInstructions ::= #TIs(TypedInstructionList, TypeResult)
 
   syntax TypedInstructionList ::= TypedInstruction ";" TypedInstructionList | TypedInstruction
-                                | #Remaining(InstructionList)
+                                | #Remaining(DataList)
 
   syntax TypeError ::= #InvalidTypeForInstruction(Instruction, TypeSeq)
                      | #IncompatibleTypesForBranch(Instruction, TypeInput, TypeInput)
@@ -80,6 +80,8 @@ module MICHELSON-TYPES
   rule #TypeData(C, (Left V) #as D, (or _ TI _) #as T) => #CheckInnerData(D, T, ListItem(#TypeData(C, V, TI)))
   rule #TypeData(C, (Right V) #as D, (or _ _ TI) #as T) => #CheckInnerData(D, T, ListItem(#TypeData(C, V, TI)))
 
+  rule #TypeData(C, D:String, (contract _ _) #as T) => #Typed(D, T)
+
   syntax Bool ::= #AllWellTyped(List) [function, functional]
   rule #AllWellTyped(ListItem(#Typed(_, _)) L) => #AllWellTyped(L)
   rule #AllWellTyped(ListItem(_) L) => false [owise]
@@ -93,12 +95,14 @@ module MICHELSON-TYPES
   syntax MaybeData ::= #TypeLambdaAux(TypedInstruction, Type, Type) [function, functional]
   syntax TypeError ::= #IllTypedLambda(TypedInstruction, Type, Type)
 
+  rule #TypeData(C, B:Block, lambda _ T1 T2) => #TypeLambdaAux(#TypeInstruction(C, B, T1), T1, T2)
+
   rule #TypeData(C, #Lambda(T1, T2, B), lambda _ T1 T2) => #TypeLambdaAux(#TypeInstruction(C, B, T1), T1, T2)
 
-  rule #TypeLambdaAux((#TI(_, T1 ; .TypeSeq -> T2 ; .TypeSeq) #as B), T1, T2) => #Typed({ #Exec(B) }, lambda .AnnotationList T1 T2)
+  rule #TypeLambdaAux((#TI(_, T1:Type ; .TypeSeq -> T2:Type ; .TypeSeq) #as B), T1:Type, T2:Type) => #Typed({ #Exec(B) }, lambda .AnnotationList T1 T2)
   rule #TypeLambdaAux(T, T1, T2) => #IllTypedLambda(T, T1, T2) [owise]
 
-  syntax InstructionList ::= #Exec(TypedInstructionList)
+  syntax DataList ::= #Exec(TypedInstructionList)
 
   rule #TypeData(C, { } #as D, (list _ _) #as T) => #Typed(D, T)
   rule #TypeData(C, { } #as D, (set _ _) #as T) => #Typed(D, T)
@@ -127,7 +131,7 @@ module MICHELSON-TYPES
   rule #TypeData(C, (Set_delegate(_, _) #as D), (operation _) #as T) => #Typed(D, T)
 
   rule #TypeInstruction(C, { }, TS) => #TI({ }, TS -> TS)
-  rule #TypeInstruction(C, { Is:InstructionList }, TS) => #fun(#TIs(Is2, TR) => #TI({ #Exec(Is2) }, TR))(#TypeInstructions(C, Is, TS))
+  rule #TypeInstruction(C, { Is:DataList }, TS) => #fun(#TIs(Is2, TR) => #TI({ #Exec(Is2) }, TR))(#TypeInstructions(C, Is, TS))
 
   rule #TypeInstructions(C, Is, TE:TypeError) => #TIs(#Remaining(Is), TE)
 
@@ -140,8 +144,6 @@ module MICHELSON-TYPES
   rule #TypeInstructions(C, I1 ; Is, Input:TypeSeq) => #fun(#TI(_, TR1) #as T => #fun(#TIs(Ts2, TR2) => #TIs(T ; Ts2, #MergeResults(Input, TR2)))(#TypeInstructions(C, Is, #EndType(TR1))))(#TypeInstruction(C, I1, Input))
 
   rule #TypeInstructions(C, I:Instruction, TS:TypeSeq) => #fun(#TI(I2, TR) => #TIs(#TI(I2, TR), TR))(#TypeInstruction(C, I, TS))
-  rule #TypeInstructions(C, I:Instruction;, TS:TypeSeq) => #TypeInstructions(C, I, TS)
-
 
   rule #TypeInstruction(C, (DROP _) #as I, (_ ; Rs) #as T1) => #TI(I, T1 -> Rs)
   rule #TypeInstruction(C, (DROP _ N) #as I, T1) => #TI(I, T1 -> #DropFirst(T1, N))

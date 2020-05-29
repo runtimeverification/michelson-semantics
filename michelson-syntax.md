@@ -36,9 +36,10 @@ An element in a map in Michelson is specified in the form `Elt Key Value`. A map
 Here we define the three sequence sorts in Michelson.  Note that these sorts cover only *nonempty* sequences - the empty sequence is defined separately to avoid parsing ambiguities.
 
 ```k
+  syntax Data ::= Instruction
   syntax DataList ::= Data | Data ";" DataList
+
   syntax MapEntryList ::= MapEntry | MapEntry ";" MapEntryList
-  syntax InstructionList ::= Instruction | Instruction ";" InstructionList | Instruction ";"
 ```
 
 [//]: # (What about sets?)
@@ -91,14 +92,13 @@ Here we specify the various forms of sequence literals in Michelson, including M
 
 ```k
   syntax MapLiteral ::= "{" MapEntryList "}"
-  syntax ListLiteral ::= "{" DataList "}"
 
   syntax EmptyBlock ::= "{" "}"
 
-  syntax Block ::= "{" InstructionList "}"
+  syntax Block ::= "{" DataList "}"
                  | EmptyBlock
 
-  syntax SequenceData ::= MapLiteral | ListLiteral | Block
+  syntax SequenceData ::= MapLiteral | Block
   syntax Data ::= SequenceData
 ```
 

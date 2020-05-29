@@ -1,6 +1,36 @@
-code { PAIR ; LEFT nat ; LOOP_LEFT @Inv { UNPAIR ; DUP ; DIP { ADD } ; PUSH nat 1 ; SWAP ; SUB ; ISNAT ; IF_NONE { RIGHT (pair nat nat)  } { PAIR ; LEFT nat } } ; 
+code { PAIR ; 
+       LEFT nat ; 
+       LOOP_LEFT @Inv { UNPAIR ; 
+                        DUP ; 
+                        DIP { ADD } ; 
+                        PUSH nat 1 ; 
+                        SWAP ; 
+                        SUB ; 
+                        ISNAT ; 
+                        IF_NONE { RIGHT (pair nat nat) } { PAIR ; LEFT nat } } } ; 
 input { Stack_elt nat $I1 ; Stack_elt nat $I2 } ;
 output { Stack_elt nat $I3 } ;
 precondition { } ;
-invariants { @Inv { } } {  } }  ; How do we express the arguments to this?
-postcondition { { PUSH nat $I1 ; DUP ; PUSH nat 1 ; ADD ; PUSH nat 2 ; EDIV ; IF_NONE { UNIT ; FAILWITH } { } ; PUSH nat $I2 ; ADD ; PUSH nat $I3 ; COMPARE ; EQ } } 
+invariants { @Inv { IF_LEFT { UNPAIR ; 
+                              DIP { DUP ; 
+                                    PUSH nat 1 ; 
+                                    ADD ; 
+                                    MUL ; 
+                                    PUSH nat 2 ;
+                                    EDIV ; 
+                                    IF_NONE { UNIT ; FAIL } { } }
+                              ADD ;
+                              PUSH nat $I2 ;
+                              PUSH nat $I1 ; 
+                              DIP { DUP ; 
+                                    PUSH nat 1 ; 
+                                    ADD ; 
+                                    MUL ; 
+                                    PUSH nat 2 ;
+                                    EDIV ; 
+                                    IF_NONE { UNIT ; FAIL } {  } } } { }
+
+                                    
+                                    
+                                    } } ;
+postcondition { { PUSH nat $I1 ; DUP ; PUSH nat 1 ; ADD ; MUL ; PUSH nat 2 ; EDIV ; IF_NONE { UNIT ; FAILWITH } { } ; PUSH nat $I2 ; ADD ; PUSH nat $I3 ; COMPARE ; EQ } }

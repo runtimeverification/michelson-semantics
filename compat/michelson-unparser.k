@@ -32,11 +32,6 @@ module MICHELSON-UNPARSER
     " ; " +String
     #doUnparse(ML, false)
 
-  rule #doUnparse(I1:Instruction ; IL:InstructionList, _) =>
-    #doUnparse(I1, false) +String
-    " ; " +String
-    #doUnparse(IL, false)
-
   syntax String ::= #unparseTypeAnnotation(TypeAnnotation) [function, functional, hook(STRING.token2string)]
   syntax String ::= #unparseVariableAnnotation(VariableAnnotation) [function, functional, hook(STRING.token2string)]
   syntax String ::= #unparseFieldAnnotation(FieldAnnotation) [function, functional, hook(STRING.token2string)]
@@ -69,7 +64,6 @@ module MICHELSON-UNPARSER
 
   rule #doUnparse({ ML:MapEntryList }, _) => "{" +String #doUnparse(ML, false) +String "}"
   rule #doUnparse({ DL:DataList }, _) => "{" +String #doUnparse(DL, false) +String "}"
-  rule #doUnparse({ IL:InstructionList }, _) => "{" +String #doUnparse(IL, false) +String "}"
   rule #doUnparse({ }, _) => "{ }"
 
   rule #doUnparse(I:Int, _) => Int2String(I)
@@ -158,7 +152,7 @@ module MICHELSON-UNPARSER
   rule #doUnparse(map AList T1 T2, true) => "(" +String #doUnparse(map AList T1 T2, false) +String ")"
   rule #doUnparse(big_map AList T1 T2, true) => "(" +String #doUnparse(big_map AList T1 T2, false) +String ")"
 
-  rule #doUnparse(I:Instruction ;, _) => #doUnparse(I, false) +String ";"
+//  rule #doUnparse(I:Instruction ;, _) => #doUnparse(I, false) +String ";"
 
   rule #doUnparse(DROP AList, _) => "DROP" +String #doUnparse(AList, false)
   rule #doUnparse(DROP AList I:Int, _) => "DROP" +String #doUnparse(AList, false) +String " " +String #doUnparse(I, true)

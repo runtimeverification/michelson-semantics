@@ -153,28 +153,28 @@ Collections are converted one element at a time.  We need to handle the cases of
 
 ```k
   rule #ConcreteArgToSemantics({ }, list _ _) => .List
-  rule #ConcreteArgToSemantics({ D1:Data }, list _ T) => ListItem(#ConcreteArgToSemantics(D1, T)) [concrete]
-  rule #ConcreteArgToSemantics({ D1 ; DL:DataList }, list _ T) => #ConcreteArgToSemantics(D1 ; DL, list .AnnotationList T) [concrete]
+  rule #ConcreteArgToSemantics({ D1:Data }, list _ T) => ListItem(#ConcreteArgToSemantics(D1, T))
+  rule #ConcreteArgToSemantics({ D1 ; DL:DataList }, list _ T) => #ConcreteArgToSemantics(D1 ; DL, list .AnnotationList T)
 
   rule #ConcreteArgToSemantics(D1:Data ; D2:Data, list _ T) =>
-       ListItem(#ConcreteArgToSemantics(D1, T)) ListItem(#ConcreteArgToSemantics(D2, T)) [concrete]
+       ListItem(#ConcreteArgToSemantics(D1, T)) ListItem(#ConcreteArgToSemantics(D2, T))
 
   rule #ConcreteArgToSemantics(D1:Data ; D2:Data ; DL:DataList, list _ T) =>
-       ListItem(#ConcreteArgToSemantics(D1, T)) {#ConcreteArgToSemantics(D2 ; DL, list .AnnotationList T)}:>List [concrete]
+       ListItem(#ConcreteArgToSemantics(D1, T)) {#ConcreteArgToSemantics(D2 ; DL, list .AnnotationList T)}:>List
 ```
 
 Sets are handled essentially the same way as lists, with the same caveat about needing to handle 3 cases (0-Size sets, 1-Size sets, and otherwise).
 
 ```k
   rule #ConcreteArgToSemantics({ }, set _ _) => .Set
-  rule #ConcreteArgToSemantics({ D:Data }, set _ T) => SetItem(#ConcreteArgToSemantics(D, T)) [concrete]
-  rule #ConcreteArgToSemantics({ D1 ; DL:DataList }, set _ T) => #ConcreteArgToSemantics(D1 ; DL, set .AnnotationList T) [concrete]
+  rule #ConcreteArgToSemantics({ D:Data }, set _ T) => SetItem(#ConcreteArgToSemantics(D, T))
+  rule #ConcreteArgToSemantics({ D1 ; DL:DataList }, set _ T) => #ConcreteArgToSemantics(D1 ; DL, set .AnnotationList T)
 
   rule #ConcreteArgToSemantics(D1:Data ; D2:Data, set _ T) =>
-       SetItem(#ConcreteArgToSemantics(D1, T)) SetItem(#ConcreteArgToSemantics(D2, T)) [concrete]
+       SetItem(#ConcreteArgToSemantics(D1, T)) SetItem(#ConcreteArgToSemantics(D2, T))
 
   rule #ConcreteArgToSemantics(D1:Data ; D2:Data ; DL:DataList, set _ T) =>
-       SetItem(#ConcreteArgToSemantics(D1, T)) {#ConcreteArgToSemantics(D2 ; DL, set .AnnotationList T)}:>Set [concrete]
+       SetItem(#ConcreteArgToSemantics(D1, T)) {#ConcreteArgToSemantics(D2 ; DL, set .AnnotationList T)}:>Set
 ```
 
 Maps and big\_maps do not have the same parsing ambiguity, so we do not need to handle the case of size 1 maps separately.  Note that, internally, no difference exists between maps and big\_maps in K-Michelson.
@@ -182,18 +182,18 @@ Maps and big\_maps do not have the same parsing ambiguity, so we do not need to 
 ```k
   rule #ConcreteArgToSemantics({ }, map _ _ _) => .Map
   rule #ConcreteArgToSemantics({ M:MapEntryList }, map _:AnnotationList KT VT) =>
-       #ConcreteArgToSemantics(M, map .AnnotationList KT VT) [concrete]
+       #ConcreteArgToSemantics(M, map .AnnotationList KT VT)
 
   rule #ConcreteArgToSemantics(Elt K V ; ML, map _:AnnotationList KT VT) =>
-       ({#ConcreteArgToSemantics(ML, map .AnnotationList KT VT)}:>Map)[#ConcreteArgToSemantics(K, KT) <- #ConcreteArgToSemantics(V, VT)] [concrete]
+       ({#ConcreteArgToSemantics(ML, map .AnnotationList KT VT)}:>Map)[#ConcreteArgToSemantics(K, KT) <- #ConcreteArgToSemantics(V, VT)]
 
   rule #ConcreteArgToSemantics(Elt K V, map _:AnnotationList KT VT) =>
-       #ConcreteArgToSemantics(K, KT) |-> #ConcreteArgToSemantics(V, VT) [concrete]
+       #ConcreteArgToSemantics(K, KT) |-> #ConcreteArgToSemantics(V, VT)
 
   rule #ConcreteArgToSemantics({ }, big_map _:AnnotationList K V) => .Map
 
   rule #ConcreteArgToSemantics({ M:MapEntryList }, big_map _:AnnotationList K V) =>
-       #ConcreteArgToSemantics({ M:MapEntryList }, map .AnnotationList K V) [concrete] // We handle big_map literals as maps.
+       #ConcreteArgToSemantics({ M:MapEntryList }, map .AnnotationList K V)  // We handle big_map literals as maps.
 ```
 
 We construct a contract datatype from its string address and type.  Note that, for convenience, we do not enforce that this address exists in the other\_contracts map!
@@ -471,10 +471,10 @@ These rules split apart blocks into KItems so that the main semantic rules can u
   rule <k> #TI(I, T1 -> T2) => I ... </k>
        <stacktypes> _ => T1 </stacktypes>
 
-  rule I:Instruction ; Is:InstructionList => I ~> Is
+  rule I:Instruction ; Is => I ~> Is
   rule {} => .K [structrual]
-  rule { Is:InstructionList } => Is
-  rule I:Instruction ; => I [anywhere]
+  rule { Is:DataList } => Is
+//  rule I:Data ; => I [anywhere]
 ```
 
 For now, annotations are simply ignored.
@@ -797,9 +797,9 @@ We lift the COMPARE operation to a function over Data, allowing many different i
   rule #DoCompare(false, true) => -1
   rule #DoCompare(true, false) => 1
 
-  rule #DoCompare(I1:Int, I2:Int) => -1 requires I1 <Int I2
-  rule #DoCompare(I1:Int, I2:Int) => 0 requires I1 ==Int I2
-  rule #DoCompare(I1:Int, I2:Int) => 1 requires I1 >Int I2
+  rule #DoCompare(I1:Int, I2:Int) => -1 requires I1 <Int I2 [concrete(I1,I2)]
+  rule #DoCompare(I1:Int, I2:Int) => 0 requires I1 ==Int I2 [concrete(I1,I2)]
+  rule #DoCompare(I1:Int, I2:Int) => 1 requires I1 >Int I2  [concrete(I1,I2)]
 
   rule #DoCompare(S1:String, S2:String) => -1 requires S1 <String S2
   rule #DoCompare(S1:String, S2:String) => 0 requires S1 ==String S2
