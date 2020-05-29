@@ -35,7 +35,7 @@ export PATH
 .PHONY: all clean distclean                \
         deps deps-k deps-tezos deps-tangle \
         defn defn-llvm                     \
-        build build-llvm
+        build build-llvm build-compat
 .SECONDARY:
 
 all: build
@@ -111,8 +111,11 @@ $(llvm_dir)/%.k: %.md $(TANGLER)
 
 # Kompiling
 
-build: build-llvm
+build: build-llvm build-compat
 build-llvm: $(llvm_kompiled)
+
+build-compat:
+	./compat/build.sh
 
 # LLVM
 
