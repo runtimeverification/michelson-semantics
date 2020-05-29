@@ -16,6 +16,7 @@ module SYMBOLIC-UNIT-TEST
   syntax Set ::= Set "|Set" Set [function, functional]
   rule S1 |Set S2 => S1 (S2 -Set S1)
   rule #GroupOrder(_:PreconditionGroup) => -1
+  rule #GroupOrder(_:InvariantsGroup) => 0
   rule #GroupOrder(_:PostconditionGroup) => #GroupOrderMax +Int 2
 
   syntax Type ::= "#UnknownType"
@@ -171,10 +172,10 @@ module SYMBOLIC-UNIT-TEST
   syntax KItem ::= "#AssumeTrue" | "#AssertTrue"
 
   rule <k> #AssumeTrue => . ... </k>
-       <stack> true => . </stack> [transition]
+       <stack> true => . ... </stack> [transition]
 
   rule <k> #AssumeTrue ~> _:K => . </k>
-       <stack> false => . </stack>
+       <stack> false => . ... </stack>
        <assumeFailed> _ => true </assumeFailed> [transition]
 
 
@@ -212,7 +213,7 @@ module SYMBOLIC-UNIT-TEST
   rule <k> #DoPostConditions(B) => B ~> #AssertTrue ... </k>
 
   rule <k> #AssertTrue => . ... </k>
-       <stack> true => . </stack>
+       <stack> true => . ... </stack>
 
   syntax KItem ::= "#AssertFailed"
 
@@ -235,10 +236,49 @@ module SYMBOLIC-UNIT-TEST
 
   rule #Ceil(#DoCompare(@A:Int, @B:Int)) => #Ceil(@A) #And #Ceil(@B)  [anywhere, simplification]
 
+  syntax MaybeInvariantId ::= "#NoInvariant" | VariableAnnotation
+
+  syntax KItem ::= "#RecordHaltCondition"
+  syntax KItem ::= "#AssumeHaltCondition"
+  syntax KItem ::= #AssertInvariant(MaybeInvariantId)
+  syntax KItem ::= #AssumeInvariant(MaybeInvariantId)
+
+  syntax KItem ::= #AssertBlocks(Blocks) 
+
+  rule #AssertBlocks({ }) => .
+  rule #AssertBlocks({ B }) => B ~> #AssertTrue
+  rule #AssertBlocks({ B ; Bs }) => B ~> #AssertTrue ~> #AssertBlocks(Bs)
+
+  rule <k> #AssertInvariant(V:VariableAnnotation) => #AssertBlocks(B) ... </k>
+       <invariants> ... V |-> B ... </invariants>
+
+  rule <k> LOOP A B => #AssertInvariant(#FindInvariant(A)) ~> 
+                       #AssumeInvariant(#FindInvariant(A)) ~> 
+                       B ~>
+                       #RecordHaltCondition ~>
+                       #AssertInvariant(#FindInvariant(A)) ~> 
+                       #AssumeHaltCondition ~>
+                       #AssumeInvariant(#FindInvariant(A))
+                       ... </k>
+       <stack> true => . ... </stack> 
+       requires #HasInvariant(A)
+       [simplification]
+
+  syntax MaybeInvariantId ::= #FindInvariant(AnnotationList) [function, functional]
+
+  rule #FindInvariant(V:VariableAnnotation _) => V
+  rule #FindInvariant(_:Annotation Rs) => #FindInvariant(Rs) [owise]
+  rule #FindInvariant(.AnnotationList) => #NoInvariant
+
+  syntax Bool ::= #HasInvariant(AnnotationList) [function, functional]
+  rule #HasInvariant(L) => #FindInvariant(L) =/=K #NoInvariant
+
   rule #DoCompare(I1:Int, I2:Int) <Int 0 => I1 <Int I2 [simplification]
   rule #DoCompare(I1:Int, I2:Int) <=Int 0 => I1 <=Int I2 [simplification]
   rule #DoCompare(I1:Int, I2:Int) ==Int 0 => I1 ==Int I2 [simplification]
   rule #DoCompare(I1:Int, I2:Int) >=Int 0 => I1 >=Int I2 [simplification]
   rule #DoCompare(I1:Int, I2:Int) >Int 0 => I1 >Int I2 [simplification]
+
+  rule I1 >=Int I2 andBool I1 <=Int I2 => I1 ==Int I2 [simplification]
 endmodule
 ```

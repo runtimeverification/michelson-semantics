@@ -1,25 +1,25 @@
-code { DUP ; # I1 I1 I2
-       DIG 2 ; # I2 I1 I1
-       DUP ; # I2 I2 I1 I1
-       DUG 3 ; # I2 I1 I1 I2
-       SWAP ; # I1 I2 I1 I2
-       COMPARE ; # (I1 - I2) I1 I2 
-       LT ; # (I1 - I2) < 0 I1 I2
-       LOOP @I { # I1 I2
-           PUSH nat 1 ; # 1 I1 I2
-           ADD ; # (I1 + 1) I2
-           DUP ; # I1 I1 I2
-           DIG 2 ; # I2 I1 I1
-           DUP ; # I2 I2 I1 I1
-           DUG 3 ; # I2 I1 I1 I2
-           SWAP ; # I1 I2 I1 I2
-           COMPARE ; # (I1 - I2) I1 I2 
-           LT ; # (I1 - I2) < 0 I1 I2 
+code { DUP ; 
+       DIG 2 ; 
+       DUP ; 
+       DUG 3 ; 
+       SWAP ; 
+       COMPARE ; 
+       LT ; 
+       LOOP @I { 
+           PUSH nat 1 ; 
+           ADD ; 
+           DUP ; 
+           DIG 2 ; 
+           DUP ; 
+           DUG 3 ; 
+           SWAP ; 
+           COMPARE ; 
+           LT 
        } ;
-       DIP { DROP }
-       ; 
+       DIP { DROP } 
+} ;
 input { Stack_elt nat $I1 ; Stack_elt nat $I2 } ;
 output { Stack_elt nat $I3 } ;
-invariants { @I { PUSH bool True } } ;
-precondition { { PUSH nat $I2 ; PUSH nat $I1 ; COMPARE ; LE } } ;
-postcondition { { PUSH nat $I3 ; PUSH nat $I2 ; COMPARE ; EQ } } 
+invariants { @I { { PUSH bool True } } } ;
+precondition { { PUSH nat $I2 ; PUSH nat $I1 ; COMPARE ; LT } } ;
+postcondition { { PUSH nat $I2 ; PUSH nat $I3 ; COMPARE ; EQ } } 
