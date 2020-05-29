@@ -14,7 +14,7 @@ pipeline {
     stage('Build and Test') {
       when { changeRequest() }
       stages {
-        stage('Dependencies')          { steps { sh 'make deps-tezos'             } }
+        stage('Tezos Dependencies')    { steps { sh 'make deps-tezos'             } }
         stage('Build')                 { steps { sh 'make build -j8 RELEASE=true' } }
         stage('Build Compat')          { steps { sh './compat/build.sh'           } }
         stage('Test')                  { steps { sh './run-tests.sh'              } }
