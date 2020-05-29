@@ -144,8 +144,6 @@ module MICHELSON-TYPES
   rule #TypeInstructions(C, I1 ; Is, Input:TypeSeq) => #fun(#TI(_, TR1) #as T => #fun(#TIs(Ts2, TR2) => #TIs(T ; Ts2, #MergeResults(Input, TR2)))(#TypeInstructions(C, Is, #EndType(TR1))))(#TypeInstruction(C, I1, Input))
 
   rule #TypeInstructions(C, I:Instruction, TS:TypeSeq) => #fun(#TI(I2, TR) => #TIs(#TI(I2, TR), TR))(#TypeInstruction(C, I, TS))
-//  rule #TypeInstructions(C, I:Instruction;, TS:TypeSeq) => #TypeInstructions(C, I, TS)
-
 
   rule #TypeInstruction(C, (DROP _) #as I, (_ ; Rs) #as T1) => #TI(I, T1 -> Rs)
   rule #TypeInstruction(C, (DROP _ N) #as I, T1) => #TI(I, T1 -> #DropFirst(T1, N))
