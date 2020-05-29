@@ -9,7 +9,10 @@ DEFN_DIR      := $(DEFN_BASE_DIR)/$(SUBDEFN_DIR)
 BUILD_LOCAL   := $(abspath $(BUILD_DIR)/local)
 LOCAL_LIB     := $(BUILD_LOCAL)/lib
 
-K_SUBMODULE := $(DEPS_DIR)/k
+K_SUBMODULE             := $(DEPS_DIR)/k
+TEZOS_SUBMODULE         := $(DEPS_DIR)/tezos
+PANDOC_TANGLE_SUBMODULE := $(DEPS_DIR)/pandoc-tangle
+
 ifneq (,$(wildcard $(K_SUBMODULE)/k-distribution/target/release/k/bin/*))
     K_RELEASE ?= $(abspath $(K_SUBMODULE)/k-distribution/target/release/k)
 else
