@@ -52,7 +52,7 @@ deps-k: $(K_JAR)
 
 deps-tezos: $(TEZOS_SUBMODULE)/make.timestamp
 
-$(TEZOS_SUBMODULE)/make.timestamp
+$(TEZOS_SUBMODULE)/make.timestamp:
 	./build-deps-tezos.sh
 	touch $(TEZOS_SUBMODULE)/make.timestamp
 
