@@ -32,8 +32,9 @@ export C_INCLUDE_PATH
 export CPLUS_INCLUDE_PATH
 export PATH
 
-.PHONY: all clean distclean    \
-        deps deps-k deps-tezos \
+.PHONY: all clean distclean                \
+        deps deps-k deps-tezos deps-tangle \
+        defn defn-llvm                     \
         build build-llvm
 .SECONDARY:
 
@@ -50,10 +51,8 @@ distclean:
 
 K_JAR := $(K_SUBMODULE)/k-distribution/target/release/k/lib/java/kernel-1.0-SNAPSHOT.jar
 
-deps: deps-k deps-tezos
+deps: deps-k deps-tezos deps-tangle
 deps-k: $(K_JAR)
-
-deps-tezos: $(TEZOS_SUBMODULE)/make.timestamp
 
 $(TEZOS_SUBMODULE)/make.timestamp:
 	./build-deps-tezos.sh
@@ -71,6 +70,15 @@ endif
 $(K_JAR):
 	cd $(K_SUBMODULE) && mvn package -DskipTests -U -Dproject.build.type=$(K_BUILD_TYPE)
 
+deps-tezos: $(TEZOS_SUBMODULE)/make.timestamp
+
+TANGLER  := $(PANDOC_TANGLE_SUBMODULE)/tangle.lua
+LUA_PATH := $(PANDOC_TANGLE_SUBMODULE)/?.lua;;
+export TANGLER
+export LUA_PATH
+
+deps-tangle: $(TANGLER)
+
 # Building
 # --------
 
@@ -80,7 +88,7 @@ MAIN_DEFN_FILE := unit-test
 
 SOURCE_FILES  := michelson-common michelson-config michelson-internal-syntax michelson michelson-syntax michelson-types unit-test unit-test-syntax
 EXTRA_K_FILES :=
-ALL_FILES     := $(patsubst %, %.md, $(SOURCE_FILES) $(EXTRA_K_FILES))
+ALL_K_FILES   := $(patsubst %, %.k, $(SOURCE_FILES) $(EXTRA_K_FILES))
 
 llvm_dir := $(DEFN_DIR)/llvm
 
@@ -92,6 +100,15 @@ export MAIN_DEFN_FILE
 
 tangle_selector := .k
 
+llvm_files := $(patsubst %, $(llvm_dir)/%, $(ALL_K_FILES))
+
+defn: defn-llvm
+defn-llvm: $(llvm_files)
+
+$(llvm_dir)/%.k: %.md $(TANGLER)
+	@mkdir -p $(llvm_dir)
+	pandoc --from markdown --to "$(TANGLER)" --metadata=code:"$(tangle_selector)" $< > $@
+
 # Kompiling
 
 build: build-llvm
@@ -102,9 +119,9 @@ build-llvm: $(llvm_kompiled)
 LLVM_KOMPILE_OPTS := -L$(LOCAL_LIB) -I$(K_RELEASE)/include/kllvm \
                      -g -std=c++14
 
-$(llvm_kompiled): $(libff_out) $(ALL_FILES)
-	kompile --debug --main-module $(MAIN_MODULE) --backend llvm        \
-	        --syntax-module $(SYNTAX_MODULE) $(MAIN_DEFN_FILE).md      \
-	        --directory $(llvm_dir) --md-selector "$(tangle_selector)" \
-	        $(KOMPILE_OPTS)                                            \
+$(llvm_kompiled): $(llvm_files)
+	kompile --debug --main-module $(MAIN_MODULE) --backend llvm              \
+	        --syntax-module $(SYNTAX_MODULE) $(llvm_dir)/$(MAIN_DEFN_FILE).k \
+	        --directory $(llvm_dir) -I $(llvm_dir)                           \
+	        $(KOMPILE_OPTS)                                                  \
 	        $(addprefix -ccopt ,$(LLVM_KOMPILE_OPTS))
