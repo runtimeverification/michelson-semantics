@@ -302,21 +302,6 @@ KPROVE_MODULE := VERIFICATION
 
 test: test-unit test-cross test-prove
 
-tests/%.run: tests/% $(llvm_kompiled)
-	$(TEST) run --backend llvm $<
-
-tests/%.cross: tests/%.output $(output_compare_kompiled)
-	$(TEST) run --backend output-compare $< --output none > $@
-
-tests/%.extracted: tests/% $(extractor_kompiled)
-	$(TEST) run --backend extractor $< --output none > $@
-
-tests/%.input: tests/% $(input_creator_kompiled)
-	$(TEST) run --backend input-creator $< --output none > $@
-
-tests/%.prove: tests/% $(prove_kompiled)
-	$(TEST) prove --backend prove $< $(KPROVE_MODULE)
-
 # Unit
 
 unit_tests         := $(wildcard tests/unit/*.tzt)
@@ -325,6 +310,9 @@ unit_tests_passing := $(filter-out $(unit_tests_failing), $(unit_tests))
 
 test-unit:         $(unit_tests_passing:=.run)
 test-unit-failing: $(unit_tests_failing:=.run)
+
+tests/%.run: tests/% $(llvm_kompiled)
+	$(TEST) run --backend llvm $<
 
 # Cross Validation
 
@@ -335,10 +323,29 @@ cross_tests_passing := $(filter-out $(cross_tests_failing), $(cross_tests))
 test-cross:         $(cross_tests_passing:=.cross)
 test-cross-failing: $(cross_tests_failing:=.cross)
 
-$(cross_tests_passing:=.output): run-tests-ci.sh.output
+tests/%.cross: tests/%.output $(output_compare_kompiled)
+	$(TEST) run --backend output-compare $< --output none > $@
 
-run-tests-ci.sh.output: $(cross_tests_passing) $(cross_tests_passing:=.extracted) $(cross_tests_passing:=.input) $(contract_expander_kompiled)
-	./run-tests-ci.sh > $@
+$(cross_tests_passing:=.output): run-tezos.timestamp
+
+run-tezos.timestamp: $(cross_tests_passing) $(cross_tests_passing:=.expanded) $(cross_tests_passing:=.input) $(cross_tests_passing:=.extracted)
+	./run-tests-ci.sh run-tezos
+	touch $@
+
+tests/%.expanded: tests/%.address $(contract_expander_kompiled)
+	$(TEST) run --backend contract-expander $< --output none > $@
+
+$(cross_tests_passing:=.address): fix-address.timestamp
+
+fix-address.timestamp: $(cross_tests_passing) $(cross_tests_passing:=.extracted) $(cross_tests_passing:=.input)
+	./run-tests-ci.sh fix-address
+	touch $@
+
+tests/%.extracted: tests/% $(extractor_kompiled)
+	$(TEST) run --backend extractor $< --output none > $@
+
+tests/%.input: tests/% $(input_creator_kompiled)
+	$(TEST) run --backend input-creator $< --output none > $@
 
 # Prove
 
@@ -348,3 +355,6 @@ prove_tests_passing := $(filter-out $(prove_tests_failing), $(prove_tests))
 
 test-prove:         $(prove_tests_passing:=.prove)
 test-prove-failing: $(prove_tests_failing:=.prove)
+
+tests/%.prove: tests/% $(prove_kompiled)
+	$(TEST) prove --backend prove $< $(KPROVE_MODULE)

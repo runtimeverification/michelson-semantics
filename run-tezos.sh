@@ -8,12 +8,14 @@ fatal() { echo "[FATAL] $@" ; exit 1 ; }
 test_file="$1" ; shift
 test_file_extracted="$test_file.extracted"
 test_file_input="$test_file.input"
+test_file_expanded="$test_file.expanded"
 
-[[ -f "$test_file"           ]] || fatal "File doesn't exist: $test_file"
-[[ -f "$test_file_extracted" ]] || fatal "File doesn't exist: $test_file_extracted"
-[[ -f "$test_file_input"     ]] || fatal "File doesn't exist: $test_file_input"
+test_file_output="$test_file.output"
 
-notif "Cross Validating: $test_file"
+[[ -f "$test_file"       ]] || fatal "File doesn't exist: $test_file"
+[[ -f "$test_file_input" ]] || fatal "File doesn't exist: $test_file_input"
+
+notif "Running Tezos: $test_file"
 SCRIPT_DIR="$(dirname "$(readlink -f "$BASH_SOURCE")")"
 
 TEMP_DIR="$SCRIPT_DIR/.failure"
@@ -33,7 +35,6 @@ ORIGINATION_OUTPUTS="$TEMP_DIR/originations"
 ORIGINATION_SUBS="$TEMP_DIR/origination_subs"
 ALL_SUBS="$TEMP_DIR/subs"
 FIXED_ADDRESS_CONTRACT="$TEMP_DIR/fixed_addrs"
-EXPANDED_FILE="$TEMP_DIR/expanded"
 TYPECHECK_OUTPUT="$TEMP_DIR/typecheck"
 RAW_TYPES="$TEMP_DIR/rawtypes"
 TYPES_FILE="$TEMP_DIR/types"
@@ -44,12 +45,7 @@ DATA_FILE="$TEMP_DIR/data"
 FIXED_ADDRS_OUTPUT="$TEMP_DIR/others_fixed"
 REAL_OUTPUT_FILE="$TEMP_DIR/actual"
 EXPECTED_OUTPUT_FILE="$TEMP_DIR/expected"
-OUTPUT_FILE="$TEMP_DIR/actual-and-expected"
 COMPARE_FILE="$TEMP_DIR/comparison"
-
-function extract {
-    python3 "$SCRIPT_DIR/extract-group.py" "$test_file_extracted" "$@"
-}
 
 if ! grep -o '@Address([^)"]*)' "$test_file" | sort | uniq > "$FOUND_ADDRESSES"; then
     touch "$FOUND_ADDRESSES"
@@ -64,6 +60,10 @@ fi
 # input-creator takes the version with expanded addresses and converts it into their format.
 #
 # output-compare is a slight extension of our syntax to compare the output stacks for equality between our format and theirs.
+
+function extract {
+    python3 "$SCRIPT_DIR/extract-group.py" "$test_file_extracted" "$@"
+}
 
 extract other_contracts true | tr -d '{}' | tr ';' '\n' | sed -E 's/^\s*//;s/\s*$//;s/Elt\s*"([^"]*)"\s*(.*)/\1#\2/;/^\s*$/d' > "$REAL_ADDRESSES_UNSORTED"
 
@@ -99,12 +99,8 @@ python3 $SCRIPT_DIR/originate.py $REAL_ADDRESSES > $ORIGINATION_OUTPUTS \
 paste -d '/' <(cut -d'#' -f1 "$REAL_ADDRESSES") <(grep -Po '(?<=New contract )[a-zA-Z0-9_]*' "$ORIGINATION_OUTPUTS") | sed -E 's|(.*)|s/\1/|;s|s///||' > "$ORIGINATION_SUBS"
 
 cat "$FAKE_ADDRESS_SUBS" "$ORIGINATION_SUBS" > "$ALL_SUBS"
-sed -f "$ALL_SUBS" "$test_file" > "$FIXED_ADDRESS_CONTRACT"
 
-notif "Expanding: $test_file"
-./kmich run --backend contract-expander $FIXED_ADDRESS_CONTRACT --output none > $EXPANDED_FILE \
-    || fatal "Expanding failed: $test_file"
-tezos-client typecheck script "$(cat $EXPANDED_FILE)" --details  > $TYPECHECK_OUTPUT 2>&1 \
+tezos-client typecheck script "$(cat $test_file_expanded)" --details  > $TYPECHECK_OUTPUT 2>&1 \
     || fatal "Contract did not typecheck: $test_file"
 
 pcregrep -oM '(?<=\[)\s*@exitToken[^]]*' "$TYPECHECK_OUTPUT" > "$RAW_TYPES"
@@ -129,7 +125,7 @@ if [ ! -z "$FAKE_SENDER" ] ; then
     fi ;
 fi
 
-tezos-client run script "$(cat $EXPANDED_FILE)" on storage Unit and input "$(cat "$test_file_input")" --amount "$AMOUNT" --trace-stack "${TRACE_CLI[@]}" > "$EXECUTION" 2>&1 || true
+tezos-client run script "$(cat $test_file_expanded)" on storage Unit and input "$(cat "$test_file_input")" --amount "$AMOUNT" --trace-stack "${TRACE_CLI[@]}" > "$EXECUTION" 2>&1 || true
 # For some reason, the cli argument for "SENDER" is "--source" and "SOURCE" is "--payer"
 
 pcregrep -oM '(?<=\[)\s*Unit\s*@exitToken[^]]*' "$EXECUTION" > "$RAW_DATA"
@@ -157,4 +153,4 @@ else
     fi ;
 fi
 
-echo | cat "$FIXED_ADDRS_OUTPUT" "$REAL_OUTPUT_FILE" "$EXPECTED_OUTPUT_FILE" - > "$OUTPUT_FILE" ;
+echo | cat "$FIXED_ADDRS_OUTPUT" "$REAL_OUTPUT_FILE" "$EXPECTED_OUTPUT_FILE" - > "$test_file_output" ;
