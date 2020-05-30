@@ -1,4 +1,513 @@
     {
+      1 +Int ?V2 <=Int ?V0
+    #Equals
+      false
+    }
+  #And
+    {
+      ?V0 >=Int 0
+    #Equals
+      true
+    }
+  #And
+    {
+      ?V1 >=Int 0
+    #Equals
+      true
+    }
+  #And
+    {
+      ?V2 <=Int ?V0
+    #Equals
+      true
+    }
+  #And
+    {
+      ?V <=Int ?V0
+    #Equals
+      true
+    }
+  #And
+    {
+      ?V <Int ?V0
+    #Equals
+      true
+    }
+  #And
+    {
+      ?V >=Int 0
+    #Equals
+      true
+    }
+  #And
+    {
+      Result
+    #Equals
+      <generatedTop>
+        <michelsonTop>
+          <k>
+            #AssertFailed ~> #RestoreStack ( 1 +Int ?V2 ~> ?V0:Int ) ~> #AssumeHaltCondition ( 1 +Int ?V2 <Int ?V0 ) ~> #AssumeInvariant ( @I ) ~> #TI ( DIP .AnnotationList 1 { #Exec ( #TI ( { #Exec ( #TI ( DROP .AnnotationList , nat .AnnotationList ; .TypeSeq -> .TypeSeq ) ) } , nat .AnnotationList ; .TypeSeq -> .TypeSeq ) ) } , nat .AnnotationList ; nat .AnnotationList ; .TypeSeq -> nat .AnnotationList ; .TypeSeq ) ~> #LoadGroups ( postcondition { { PUSH .AnnotationList nat .AnnotationList $I2 ; PUSH .AnnotationList nat .AnnotationList $I3 ; COMPARE .AnnotationList ; EQ .AnnotationList } } ) ~> #Bind ( { Stack_elt nat .AnnotationList $I3 } )
+          </k>
+          <stack>
+            .
+          </stack>
+          <stacktypes>
+            int .AnnotationList ; nat .AnnotationList ; nat .AnnotationList ; .TypeSeq
+          </stacktypes>
+          <paramtype>
+            #NotSet
+          </paramtype>
+          <paramvalue>
+            #NoData
+          </paramvalue>
+          <storagetype>
+            #NotSet
+          </storagetype>
+          <storagevalue>
+            #NoData
+          </storagevalue>
+          <mybalance>
+            #Mutez ( 0 )
+          </mybalance>
+          <myamount>
+            #Mutez ( 0 )
+          </myamount>
+          <mynow>
+            #Timestamp ( 0 )
+          </mynow>
+          <myaddr>
+            #Address ( "InvalidMyAddr" )
+          </myaddr>
+          <knownaddrs>
+            .Map
+          </knownaddrs>
+          <sourceaddr>
+            #Address ( "InvalidSourceAddr" )
+          </sourceaddr>
+          <senderaddr>
+            #Address ( "InvalidSenderAddr" )
+          </senderaddr>
+          <mychainid>
+            #ChainId ( 0x )
+          </mychainid>
+          <nonce>
+            #Nonce ( 0 )
+          </nonce>
+          <bigmaps>
+            .Map
+          </bigmaps>
+          <returncode>
+            1
+          </returncode>
+        </michelsonTop>
+        <symbolsLoaded>
+          true
+        </symbolsLoaded>
+        <symbols>
+          $I1 |-> #TypedSymbol ( nat .AnnotationList , ?V:Int )
+          $I2 |-> #TypedSymbol ( nat .AnnotationList , ?V0:Int )
+        </symbols>
+        <preconditions>
+          .List
+        </preconditions>
+        <postconditions>
+          .List
+        </postconditions>
+        <invariants>
+          @I |-> { { COMPARE .AnnotationList ; LE .AnnotationList } }
+        </invariants>
+        <assumeFailed>
+          false
+        </assumeFailed>
+      </generatedTop>
+    }
+#Or
+    {
+      1 +Int ?V2 <=Int ?V0
+    #Equals
+      true
+    }
+  #And
+    {
+      1 +Int ?V2 <Int ?V0
+    #Equals
+      false
+    }
+  #And
+    {
+      ?V0 >=Int 0
+    #Equals
+      true
+    }
+  #And
+    {
+      ?V1 >=Int 0
+    #Equals
+      true
+    }
+  #And
+    {
+      ?V2 <=Int ?V0
+    #Equals
+      true
+    }
+  #And
+    {
+      ?V <=Int ?V0
+    #Equals
+      true
+    }
+  #And
+    {
+      ?V <Int ?V0
+    #Equals
+      true
+    }
+  #And
+    {
+      ?V >=Int 0
+    #Equals
+      true
+    }
+  #And
+    {
+      Result
+    #Equals
+      <generatedTop>
+        <michelsonTop>
+          <k>
+            .
+          </k>
+          <stack>
+            1 +Int ?V2 ~> ?V0:Int
+          </stack>
+          <stacktypes>
+            int .AnnotationList ; nat .AnnotationList ; nat .AnnotationList ; .TypeSeq
+          </stacktypes>
+          <paramtype>
+            #NotSet
+          </paramtype>
+          <paramvalue>
+            #NoData
+          </paramvalue>
+          <storagetype>
+            #NotSet
+          </storagetype>
+          <storagevalue>
+            #NoData
+          </storagevalue>
+          <mybalance>
+            #Mutez ( 0 )
+          </mybalance>
+          <myamount>
+            #Mutez ( 0 )
+          </myamount>
+          <mynow>
+            #Timestamp ( 0 )
+          </mynow>
+          <myaddr>
+            #Address ( "InvalidMyAddr" )
+          </myaddr>
+          <knownaddrs>
+            .Map
+          </knownaddrs>
+          <sourceaddr>
+            #Address ( "InvalidSourceAddr" )
+          </sourceaddr>
+          <senderaddr>
+            #Address ( "InvalidSenderAddr" )
+          </senderaddr>
+          <mychainid>
+            #ChainId ( 0x )
+          </mychainid>
+          <nonce>
+            #Nonce ( 0 )
+          </nonce>
+          <bigmaps>
+            .Map
+          </bigmaps>
+          <returncode>
+            0
+          </returncode>
+        </michelsonTop>
+        <symbolsLoaded>
+          true
+        </symbolsLoaded>
+        <symbols>
+          $I1 |-> #TypedSymbol ( nat .AnnotationList , ?V:Int )
+          $I2 |-> #TypedSymbol ( nat .AnnotationList , ?V0:Int )
+        </symbols>
+        <preconditions>
+          .List
+        </preconditions>
+        <postconditions>
+          .List
+        </postconditions>
+        <invariants>
+          @I |-> { { COMPARE .AnnotationList ; LE .AnnotationList } }
+        </invariants>
+        <assumeFailed>
+          true
+        </assumeFailed>
+      </generatedTop>
+    }
+#Or
+    {
+      1 +Int ?V2 <=Int ?V0
+    #Equals
+      true
+    }
+  #And
+    {
+      1 +Int ?V2 <Int ?V0
+    #Equals
+      true
+    }
+  #And
+    {
+      1 +Int ?V2 ==Int ?V0
+    #Equals
+      false
+    }
+  #And
+    {
+      ?V0 >=Int 0
+    #Equals
+      true
+    }
+  #And
+    {
+      ?V1 >=Int 0
+    #Equals
+      true
+    }
+  #And
+    {
+      ?V2 <=Int ?V0
+    #Equals
+      true
+    }
+  #And
+    {
+      ?V <=Int ?V0
+    #Equals
+      true
+    }
+  #And
+    {
+      ?V <Int ?V0
+    #Equals
+      true
+    }
+  #And
+    {
+      ?V >=Int 0
+    #Equals
+      true
+    }
+  #And
+    {
+      Result
+    #Equals
+      <generatedTop>
+        <michelsonTop>
+          <k>
+            #AssertFailed
+          </k>
+          <stack>
+            .
+          </stack>
+          <stacktypes>
+            nat .AnnotationList ; .TypeSeq
+          </stacktypes>
+          <paramtype>
+            #NotSet
+          </paramtype>
+          <paramvalue>
+            #NoData
+          </paramvalue>
+          <storagetype>
+            #NotSet
+          </storagetype>
+          <storagevalue>
+            #NoData
+          </storagevalue>
+          <mybalance>
+            #Mutez ( 0 )
+          </mybalance>
+          <myamount>
+            #Mutez ( 0 )
+          </myamount>
+          <mynow>
+            #Timestamp ( 0 )
+          </mynow>
+          <myaddr>
+            #Address ( "InvalidMyAddr" )
+          </myaddr>
+          <knownaddrs>
+            .Map
+          </knownaddrs>
+          <sourceaddr>
+            #Address ( "InvalidSourceAddr" )
+          </sourceaddr>
+          <senderaddr>
+            #Address ( "InvalidSenderAddr" )
+          </senderaddr>
+          <mychainid>
+            #ChainId ( 0x )
+          </mychainid>
+          <nonce>
+            #Nonce ( 0 )
+          </nonce>
+          <bigmaps>
+            .Map
+          </bigmaps>
+          <returncode>
+            1
+          </returncode>
+        </michelsonTop>
+        <symbolsLoaded>
+          true
+        </symbolsLoaded>
+        <symbols>
+          $I1 |-> #TypedSymbol ( nat .AnnotationList , ?V:Int )
+          $I2 |-> #TypedSymbol ( nat .AnnotationList , ?V0:Int )
+          $I3 |-> #TypedSymbol ( nat .AnnotationList , 1 +Int ?V2 )
+        </symbols>
+        <preconditions>
+          .List
+        </preconditions>
+        <postconditions>
+          .List
+        </postconditions>
+        <invariants>
+          @I |-> { { COMPARE .AnnotationList ; LE .AnnotationList } }
+        </invariants>
+        <assumeFailed>
+          false
+        </assumeFailed>
+      </generatedTop>
+    }
+#Or
+    {
+      ?V0 >=Int 0
+    #Equals
+      true
+    }
+  #And
+    {
+      ?V1 >=Int 0
+    #Equals
+      true
+    }
+  #And
+    {
+      ?V2 <=Int ?V0
+    #Equals
+      false
+    }
+  #And
+    {
+      ?V <=Int ?V0
+    #Equals
+      true
+    }
+  #And
+    {
+      ?V <Int ?V0
+    #Equals
+      true
+    }
+  #And
+    {
+      ?V >=Int 0
+    #Equals
+      true
+    }
+  #And
+    {
+      Result
+    #Equals
+      <generatedTop>
+        <michelsonTop>
+          <k>
+            .
+          </k>
+          <stack>
+            .
+          </stack>
+          <stacktypes>
+            nat .AnnotationList ; nat .AnnotationList ; .TypeSeq
+          </stacktypes>
+          <paramtype>
+            #NotSet
+          </paramtype>
+          <paramvalue>
+            #NoData
+          </paramvalue>
+          <storagetype>
+            #NotSet
+          </storagetype>
+          <storagevalue>
+            #NoData
+          </storagevalue>
+          <mybalance>
+            #Mutez ( 0 )
+          </mybalance>
+          <myamount>
+            #Mutez ( 0 )
+          </myamount>
+          <mynow>
+            #Timestamp ( 0 )
+          </mynow>
+          <myaddr>
+            #Address ( "InvalidMyAddr" )
+          </myaddr>
+          <knownaddrs>
+            .Map
+          </knownaddrs>
+          <sourceaddr>
+            #Address ( "InvalidSourceAddr" )
+          </sourceaddr>
+          <senderaddr>
+            #Address ( "InvalidSenderAddr" )
+          </senderaddr>
+          <mychainid>
+            #ChainId ( 0x )
+          </mychainid>
+          <nonce>
+            #Nonce ( 0 )
+          </nonce>
+          <bigmaps>
+            .Map
+          </bigmaps>
+          <returncode>
+            0
+          </returncode>
+        </michelsonTop>
+        <symbolsLoaded>
+          true
+        </symbolsLoaded>
+        <symbols>
+          $I1 |-> #TypedSymbol ( nat .AnnotationList , ?V:Int )
+          $I2 |-> #TypedSymbol ( nat .AnnotationList , ?V0:Int )
+        </symbols>
+        <preconditions>
+          .List
+        </preconditions>
+        <postconditions>
+          .List
+        </postconditions>
+        <invariants>
+          @I |-> { { COMPARE .AnnotationList ; LE .AnnotationList } }
+        </invariants>
+        <assumeFailed>
+          true
+        </assumeFailed>
+      </generatedTop>
+    }
+#Or
+    {
       ?V0 >=Int 0
     #Equals
       true
@@ -94,106 +603,6 @@
         </invariants>
         <assumeFailed>
           true
-        </assumeFailed>
-      </generatedTop>
-    }
-#Or
-    {
-      ?V0 >=Int 0
-    #Equals
-      true
-    }
-  #And
-    {
-      ?V <Int ?V0
-    #Equals
-      true
-    }
-  #And
-    {
-      ?V >=Int 0
-    #Equals
-      true
-    }
-  #And
-    {
-      Result
-    #Equals
-      <generatedTop>
-        <michelsonTop>
-          <k>
-            #AssumeInvariant ( @I ) ~> { PUSH .AnnotationList nat .AnnotationList 1 ; ADD .AnnotationList ; DUP .AnnotationList ; DIG .AnnotationList 2 ; DUP .AnnotationList ; DUG .AnnotationList 3 ; SWAP .AnnotationList ; COMPARE .AnnotationList ; LT .AnnotationList } ~> #RecordHaltCondition ~> #AssertInvariant ( @I ) ~> #AssumeHaltCondition ~> #AssumeInvariant ( @I ) ~> DIP .AnnotationList { DROP .AnnotationList } ~> #LoadGroups ( Binder { Stack_elt nat .AnnotationList $I3 } ; postcondition { { PUSH .AnnotationList nat .AnnotationList $I2 ; PUSH .AnnotationList nat .AnnotationList $I3 ; COMPARE .AnnotationList ; EQ .AnnotationList } } )
-          </k>
-          <stack>
-            ?V:Int ~> ?V0:Int
-          </stack>
-          <stacktypes>
-            nat .AnnotationList ; nat .AnnotationList ; .TypeSeq
-          </stacktypes>
-          <paramtype>
-            #NotSet
-          </paramtype>
-          <paramvalue>
-            #NoData
-          </paramvalue>
-          <storagetype>
-            #NotSet
-          </storagetype>
-          <storagevalue>
-            #NoData
-          </storagevalue>
-          <mybalance>
-            #Mutez ( 0 )
-          </mybalance>
-          <myamount>
-            #Mutez ( 0 )
-          </myamount>
-          <mynow>
-            #Timestamp ( 0 )
-          </mynow>
-          <myaddr>
-            #Address ( "InvalidMyAddr" )
-          </myaddr>
-          <knownaddrs>
-            .Map
-          </knownaddrs>
-          <sourceaddr>
-            #Address ( "InvalidSourceAddr" )
-          </sourceaddr>
-          <senderaddr>
-            #Address ( "InvalidSenderAddr" )
-          </senderaddr>
-          <mychainid>
-            #ChainId ( 0x )
-          </mychainid>
-          <nonce>
-            #Nonce ( 0 )
-          </nonce>
-          <bigmaps>
-            .Map
-          </bigmaps>
-          <returncode>
-            1
-          </returncode>
-        </michelsonTop>
-        <symbolsLoaded>
-          true
-        </symbolsLoaded>
-        <symbols>
-          $I1 |-> #TypedSymbol ( nat .AnnotationList , ?V:Int )
-          $I2 |-> #TypedSymbol ( nat .AnnotationList , ?V0:Int )
-        </symbols>
-        <preconditions>
-          .List
-        </preconditions>
-        <postconditions>
-          .List
-        </postconditions>
-        <invariants>
-          @I |-> { { PUSH .AnnotationList bool .AnnotationList true } }
-        </invariants>
-        <assumeFailed>
-          false
         </assumeFailed>
       </generatedTop>
     }

@@ -19,6 +19,11 @@ module SYMBOLIC-UNIT-TEST
   rule #GroupOrder(_:InvariantsGroup) => 0
   rule #GroupOrder(_:PostconditionGroup) => #GroupOrderMax +Int 2
 
+  syntax BinderGroup ::= "Binder" LiteralStack
+  syntax Group ::= BinderGroup
+
+  rule #GroupOrder(_:BinderGroup) => #GroupOrderMax -Int 1
+
   syntax Type ::= "#UnknownType"
 
   syntax KItem ::= SymbolicElement
@@ -139,16 +144,9 @@ module SYMBOLIC-UNIT-TEST
        </michelsonTop>
        <symbols> M => M[N <- #TypedSymbol(T, ?V:String)] </symbols>
 
-  rule [[ #TypeData(_, S:SymbolicData, T) => #Typed(S, T) ]]
-       <symbols> ... S |-> #TypedSymbol(T, _) ... </symbols>
+  rule #TypeData(_, S:SymbolicData, T) => #Typed(S, T)
 
    // Complex types..._
-
-
-  syntax BinderGroup ::= "Binder" LiteralStack
-  syntax Group ::= BinderGroup
-
-  rule #GroupOrder(_:BinderGroup) => #GroupOrderMax +Int 1
 
   syntax Group ::= #DoReplace(Group) [function, functional]
 
@@ -188,8 +186,8 @@ module SYMBOLIC-UNIT-TEST
 
   syntax KItem ::= #BindSingle(StackElement)
 
-  rule <k> #LoadGroups(Binder LS ; Gs) => #Bind(LS) ~> #LoadGroups(Gs) ... </k>
-  rule <k> #LoadGroups(Binder LS) => #Bind(LS) ... </k>
+  rule <k> #LoadGroups(Binder LS ; (code B #as Gs)) => #CheckTypes(LS, B) ~> #LoadGroups(Gs) ~> #Bind(LS) ... </k>
+  rule <k> #LoadGroups(Binder LS ; ((code B ; _) #as Gs)) => #CheckTypes(LS, B) ~> #LoadGroups(Gs) ~> #Bind(LS) ... </k>
 
   rule <k> #Bind({ }) => . ... </k>
        <stack> . </stack>
@@ -220,8 +218,8 @@ module SYMBOLIC-UNIT-TEST
   rule <k> #AssertTrue => #AssertFailed ... </k>
        <stack> false => . </stack>
 
-  rule <k> #LoadGroups(postcondition { }) => . ... </k>
-  rule <k> #LoadGroups(postcondition { B }) => #DoPostConditions(B)  ... </k>
+  rule <k> #LoadGroups(postcondition { }) ~> #Bind(_) => . ... </k>
+  rule <k> #LoadGroups(postcondition { B }) ~> #Bind(Rs) => #Bind(Rs) ~> #DoPostConditions(B) ... </k>
 
   syntax KItem ::= #LoadInvariants(Invariants) | #LoadInvariant(Invariant)
 
@@ -239,30 +237,177 @@ module SYMBOLIC-UNIT-TEST
   syntax MaybeInvariantId ::= "#NoInvariant" | VariableAnnotation
 
   syntax KItem ::= "#RecordHaltCondition"
-  syntax KItem ::= "#AssumeHaltCondition"
+  syntax KItem ::= #AssumeHaltCondition(Bool)
+  syntax KItem ::= #ForgetAllModifiable(Block)
   syntax KItem ::= #AssertInvariant(MaybeInvariantId)
   syntax KItem ::= #AssumeInvariant(MaybeInvariantId)
+
+  syntax KItem ::= "#SaveStack"
+  syntax KItem ::= #RestoreStack(K)
 
   syntax KItem ::= #AssertBlocks(Blocks) 
 
   rule #AssertBlocks({ }) => .
-  rule #AssertBlocks({ B }) => B ~> #AssertTrue
-  rule #AssertBlocks({ B ; Bs }) => B ~> #AssertTrue ~> #AssertBlocks(Bs)
+  rule #AssertBlocks({ B }) => #SaveStack ~> B ~> #AssertTrue ~> #RestoreStack(.K)
+  rule #AssertBlocks({ B ; Bs }) => #SaveStack ~> B ~> #AssertTrue ~> #RestoreStack(.K)  ~> #AssertBlocks(Bs)
+
+  syntax KItem ::= #AssumeBlocks(Blocks) 
+
+  rule #AssumeBlocks({ }) => .
+  rule #AssumeBlocks({ B }) => #SaveStack ~>  B ~> #AssumeTrue ~> #RestoreStack(.K)
+  rule #AssumeBlocks({ B ; Bs }) => #SaveStack ~> B ~> #AssumeTrue ~> #RestoreStack(.K) ~> #AssumeBlocks(Bs)
+
+  rule <k> #SaveStack ~> X:KItem ~> Y:KItem ~> #RestoreStack(_) => X ~> Y ~> #RestoreStack(S) ... </k>
+       <stack> S </stack>
+
+  rule <k> #RestoreStack(S) => . ... </k>
+       <stack> _ => S </stack>
+
+  rule <k> #AssumeInvariant(V:VariableAnnotation) => #AssumeBlocks(B) ... </k>
+       <invariants> ... V |-> B ... </invariants>
 
   rule <k> #AssertInvariant(V:VariableAnnotation) => #AssertBlocks(B) ... </k>
        <invariants> ... V |-> B ... </invariants>
 
+  rule <k> (#RecordHaltCondition ~> #AssertInvariant(V) ~> #AssumeHaltCondition(R)) => (#AssertInvariant(V) ~> #AssumeHaltCondition(R ==Bool C)) ... </k>
+       <stack> C:Bool => . ... </stack>
+
+  rule <k> #AssumeHaltCondition(V) => #AssumeTrue ... </k>
+       <stack> .K => V ... </stack>
+
   rule <k> LOOP A B => #AssertInvariant(#FindInvariant(A)) ~> 
-                       #AssumeInvariant(#FindInvariant(A)) ~> 
+                       #ForgetAllModifiable(B) ~>
+                       #AssumeInvariant(#FindInvariant(A)) ~>  // Split invariant in two?  One for before loop (incl. halt condition), one for after (we try to prove halt = false -> pre-condition)?
                        B ~>
                        #RecordHaltCondition ~>
-                       #AssertInvariant(#FindInvariant(A)) ~> 
-                       #AssumeHaltCondition ~>
-                       #AssumeInvariant(#FindInvariant(A))
+                       #AssertInvariant(#FindInvariant(A)) ~>
+                       #AssumeHaltCondition(true) ~>
+                       #AssumeInvariant(#FindInvariant(A)) 
                        ... </k>
        <stack> true => . ... </stack> 
        requires #HasInvariant(A)
        [simplification]
+
+  syntax KItem ::= #ForgetAllAbove(Int)
+  syntax KItem ::= #ForgetAllAboveAux(Int, K, TypeSeq, K, TypeSeq)
+
+  rule <k> #ForgetAllModifiable({ #Exec(B) }) => #ForgetAllAbove(#GetCriticalPoint(B)) ... </k>
+
+  syntax K ::= #ReverseKSeq(K) [function, functional]
+  syntax K ::= #ReverseKSeqAux(K, K) [function, functional]
+  rule #ReverseKSeq(V) => #ReverseKSeqAux(V, .K)
+  rule #ReverseKSeqAux(V:KItem ~> Vs1, Vs2) => #ReverseKSeqAux(Vs1, V ~> Vs2)
+  rule #ReverseKSeqAux(.K, Vs) => Vs
+
+  rule <k> #ForgetAllAbove(I) => #ForgetAllAboveAux(I, #ReverseKSeq(Ds), #ReverseTypeSeq(Ts), .K, .TypeSeq) ... </k>
+       <stack> Ds => . </stack>
+       <stacktypes> Ts => .TypeSeq </stacktypes>
+
+  rule <k> #ForgetAllAboveAux(I, V:KItem ~> Vs1, T ; Ts1, Vs2, Ts2) => #ForgetAllAboveAux(I -Int 1, Vs1, Ts1, V ~> Vs2, T ; Ts2) ... </k> requires I >Int 0
+
+  rule <k> #ForgetAllAboveAux(0, _:Int ~> Vs1, int A ; Ts1, Vs2, Ts2) => #ForgetAllAboveAux(0, Vs1, Ts1, ?_:Int ~> Vs2, int A ; Ts2) ... </k>
+  rule <k> #ForgetAllAboveAux(0, _:Int ~> Vs1, nat A ; Ts1, Vs2, Ts2) => #ForgetAllAboveAux(0, Vs1, Ts1, ?V:Int ~> Vs2, nat A ; Ts2) ... </k> requires ?V:Int >=Int 0
+  rule <k> #ForgetAllAboveAux(0, _:String ~> Vs1, string A ; Ts1, Vs2, Ts2) => #ForgetAllAboveAux(0, Vs1, Ts1, ?V:String ~> Vs2, string A ; Ts2) ... </k>
+
+  rule <k> #ForgetAllAboveAux(0, .K, _, Vs2, Ts2) => . ... </k>
+       <stack> _ => Vs2 </stack>
+       <stacktypes> _ => Ts2 </stacktypes>
+
+
+  syntax Int ::= #GetCriticalPoint(TypedInstructionList) [function]
+
+  rule #GetCriticalPoint(T ; Ts) => minInt(#GetCriticalPoint(T), #GetCriticalPoint(Ts))
+
+  rule #GetCriticalPoint(#TI({ #Exec(Ts) }, _)) => #GetCriticalPoint(Ts)
+  rule #GetCriticalPoint(#TI({ }, Ts1 -> Ts1)) => #LengthTypeSeq(Ts1)
+
+  rule #GetCriticalPoint(#TI(DROP _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetCriticalPoint(#TI(DROP _ N, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int N
+  rule #GetCriticalPoint(#TI(DIG _ N, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int N
+  rule #GetCriticalPoint(#TI(DUG _ N, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int N
+  rule #GetCriticalPoint(#TI(DUP _, Ts1 -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetCriticalPoint(#TI(SWAP _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 2
+  rule #GetCriticalPoint(#TI(PUSH _ _ _, Ts1 -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetCriticalPoint(#TI(SOME _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetCriticalPoint(#TI(NONE _ _, Ts1 -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetCriticalPoint(#TI(UNIT _, Ts1 -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetCriticalPoint(#TI(IF_NONE _ { #Exec(B1) } { #Exec(B2) }, Ts1 -> _)) => minInt(#LengthTypeSeq(Ts1) -Int 1, minInt(#GetCriticalPoint(B1), #GetCriticalPoint(B2)))
+  rule #GetCriticalPoint(#TI(PAIR _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 2
+  rule #GetCriticalPoint(#TI(UNPAIR _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetCriticalPoint(#TI(CAR _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetCriticalPoint(#TI(CDR _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetCriticalPoint(#TI(LEFT _ _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetCriticalPoint(#TI(RIGHT _ _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetCriticalPoint(#TI(IF_LEFT _ { #Exec(B1) } { #Exec(B2) }, Ts1 -> _)) => minInt(#LengthTypeSeq(Ts1) -Int 1, minInt(#GetCriticalPoint(B1), #GetCriticalPoint(B2)))
+  rule #GetCriticalPoint(#TI(IF_RIGHT _ { #Exec(B1) } { #Exec(B2) }, Ts1 -> _)) => minInt(#LengthTypeSeq(Ts1) -Int 1, minInt(#GetCriticalPoint(B1), #GetCriticalPoint(B2)))
+  rule #GetCriticalPoint(#TI(NIL _ _, Ts1 -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetCriticalPoint(#TI(CONS _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 2
+  rule #GetCriticalPoint(#TI(IF_CONS _ { #Exec(B1) } { #Exec(B2) }, Ts1 -> _)) => minInt(#LengthTypeSeq(Ts1) -Int 1, minInt(#GetCriticalPoint(B1), #GetCriticalPoint(B2)))
+  rule #GetCriticalPoint(#TI(SIZE _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetCriticalPoint(#TI(EMPTY_SET _ _, Ts1 -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetCriticalPoint(#TI(EMPTY_MAP _ _ _, Ts1 -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetCriticalPoint(#TI(EMPTY_BIG_MAP _ _ _, Ts1 -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetCriticalPoint(#TI(MAP _ { #Exec(B1) }, Ts1 -> _)) => minInt(#LengthTypeSeq(Ts1) -Int 1, #GetCriticalPoint(B1))
+  rule #GetCriticalPoint(#TI(ITER _ { #Exec(B1) }, Ts1 -> _)) => minInt(#LengthTypeSeq(Ts1) -Int 1, #GetCriticalPoint(B1))
+  rule #GetCriticalPoint(#TI(MEM _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 2
+  rule #GetCriticalPoint(#TI(GET _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 2
+  rule #GetCriticalPoint(#TI(UPDATE _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 3
+  rule #GetCriticalPoint(#TI(IF _ { #Exec(B1) } { #Exec(B2) }, Ts1 -> _)) => minInt(#LengthTypeSeq(Ts1) -Int 1, minInt(#GetCriticalPoint(B1), #GetCriticalPoint(B2)))
+  rule #GetCriticalPoint(#TI(LOOP _ { #Exec(B1) }, Ts1 -> _)) => minInt(#LengthTypeSeq(Ts1) -Int 1, #GetCriticalPoint(B1))
+  rule #GetCriticalPoint(#TI(LOOP_LEFT _ { #Exec(B1) }, Ts1 -> _)) => minInt(#LengthTypeSeq(Ts1) -Int 1, #GetCriticalPoint(B1))
+  rule #GetCriticalPoint(#TI(LAMBDA _ _ _ _, Ts1 -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetCriticalPoint(#TI(EXEC _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 2
+  rule #GetCriticalPoint(#TI(APPLY _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 2
+  rule #GetCriticalPoint(#TI(DIP _ { #Exec(B1) }, Ts1 -> _)) => #GetCriticalPoint(B1)
+  rule #GetCriticalPoint(#TI(DIP _ _:Int { #Exec(B1) }, Ts1 -> _)) => #GetCriticalPoint(B1)
+  rule #GetCriticalPoint(#TI(FAILWITH _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetCriticalPoint(#TI(CAST _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetCriticalPoint(#TI(RENAME _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetCriticalPoint(#TI(CONCAT _, (string _ ; string _ ; Ts1) -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetCriticalPoint(#TI(CONCAT _, (bytes _ ; bytes _ ; Ts1) -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetCriticalPoint(#TI(CONCAT _, (list _ _ ; Ts1) -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetCriticalPoint(#TI(SLICE _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 3
+  rule #GetCriticalPoint(#TI(PACK _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetCriticalPoint(#TI(UNPACK _ _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetCriticalPoint(#TI(ADD _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 2
+  rule #GetCriticalPoint(#TI(SUB _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 2
+  rule #GetCriticalPoint(#TI(MUL _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 2
+  rule #GetCriticalPoint(#TI(EDIV _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 2
+  rule #GetCriticalPoint(#TI(ABS _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetCriticalPoint(#TI(ISNAT _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetCriticalPoint(#TI(INT _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetCriticalPoint(#TI(NEG _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetCriticalPoint(#TI(LSL _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetCriticalPoint(#TI(LSR _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetCriticalPoint(#TI(OR _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 2
+  rule #GetCriticalPoint(#TI(AND _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 2
+  rule #GetCriticalPoint(#TI(XOR _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 2
+  rule #GetCriticalPoint(#TI(NOT _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetCriticalPoint(#TI(COMPARE _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 2
+  rule #GetCriticalPoint(#TI(EQ _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetCriticalPoint(#TI(NEQ _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetCriticalPoint(#TI(LT _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetCriticalPoint(#TI(GT _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetCriticalPoint(#TI(LE _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetCriticalPoint(#TI(GE _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetCriticalPoint(#TI(SELF _, Ts1 -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetCriticalPoint(#TI(CONTRACT _ _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetCriticalPoint(#TI(TRANSFER_TOKENS _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 3
+  rule #GetCriticalPoint(#TI(SET_DELEGATE _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 2
+  rule #GetCriticalPoint(#TI(NOW _, Ts1 -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetCriticalPoint(#TI(CHAIN_ID _, Ts1 -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetCriticalPoint(#TI(AMOUNT _, Ts1 -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetCriticalPoint(#TI(BALANCE _, Ts1 -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetCriticalPoint(#TI(CHECK_SIGNATURE _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 3
+  rule #GetCriticalPoint(#TI(BLAKE2B _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetCriticalPoint(#TI(SHA256 _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetCriticalPoint(#TI(SHA512 _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetCriticalPoint(#TI(HASH_KEY _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetCriticalPoint(#TI(SOURCE _, Ts1 -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetCriticalPoint(#TI(SENDER _, Ts1 -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetCriticalPoint(#TI(ADDRESS _, Ts1 -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetCriticalPoint(#TI(CREATE_CONTRACT _ { _ }, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 3
+  rule #GetCriticalPoint(#TI(IMPLICIT_ACCOUNT _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
 
   syntax MaybeInvariantId ::= #FindInvariant(AnnotationList) [function, functional]
 
@@ -280,5 +425,8 @@ module SYMBOLIC-UNIT-TEST
   rule #DoCompare(I1:Int, I2:Int) >Int 0 => I1 >Int I2 [simplification]
 
   rule I1 >=Int I2 andBool I1 <=Int I2 => I1 ==Int I2 [simplification]
+
+  rule B:Bool ==Bool true => B [simplification]
+  rule B:Bool ==Bool false => notBool(B) [simplification]
 endmodule
 ```

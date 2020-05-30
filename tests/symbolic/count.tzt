@@ -20,6 +20,6 @@ code { DUP ;
 } ;
 input { Stack_elt nat $I1 ; Stack_elt nat $I2 } ;
 output { Stack_elt nat $I3 } ;
-invariants { @I { { PUSH bool True } } } ;
+invariants { @I { { COMPARE ; LE } } } ;
 precondition { { PUSH nat $I2 ; PUSH nat $I1 ; COMPARE ; LT } } ;
 postcondition { { PUSH nat $I2 ; PUSH nat $I3 ; COMPARE ; EQ } } 

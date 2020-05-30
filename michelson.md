@@ -510,8 +510,8 @@ The control flow instruction's implementations in K should look extremely simila
   rule <k> IF A BT BF => #HandleAnnotations(A) ~> BF ... </k>
        <stack> false => . ... </stack>
 
-  rule <k> LOOP A B => #HandleAnnotations(A) ~> B ~> LOOP .AnnotationList B ... </k>
-       <stack> true => . ... </stack> [owise]
+  rule <k> LOOP .AnnotationList B => B ~> LOOP .AnnotationList B ... </k>
+       <stack> true => . ... </stack>  // [owise]
 
   rule <k> LOOP A B => #HandleAnnotations(A) ... </k>
        <stack> false => . ... </stack>
