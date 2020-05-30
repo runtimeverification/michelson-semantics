@@ -27,8 +27,8 @@ pipeline {
             stage('Prove')            { steps { sh 'make test-prove -j2' } }
             stage('Cross-Validation') { steps { sh 'make test-cross'     } }
           }
+          post { always { sh 'stop-kserver || true' } }
         }
-        post { always { sh 'stop-kserver || true' } }
       }
     }
     stage('Deploy') {
