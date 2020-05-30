@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -xeuo pipefail
+set -euo pipefail
 
 SCRIPT_DIRECTORY="$(dirname "$(readlink -f "$BASH_SOURCE")")"
 REPO_DIRECTORY="$SCRIPT_DIRECTORY/.."

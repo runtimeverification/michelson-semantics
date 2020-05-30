@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+
+set -euo pipefail
+
 DEFN_DIR="$(dirname "$(readlink -f "$BASH_SOURCE")")/.$1/$1-kompiled/"
 TEMP_DIR="$(mktemp -d)"
 trap "rm -rf $TEMP_DIR" EXIT

@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
 UT="$1"
 SCRIPT_DIR="$(dirname "$(readlink -f "$BASH_SOURCE")")"
 

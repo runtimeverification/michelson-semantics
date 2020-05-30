@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
 shopt -s expand_aliases
 
 SCRIPT_DIR="$(dirname "$(readlink -f "$BASH_SOURCE")")"

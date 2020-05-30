@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
 # either validates that all expected tests pass or marks which tests fail
 # when the first argument is "record", then do mark failing tests
 # when there are no arguments, then validate all expected tests pass

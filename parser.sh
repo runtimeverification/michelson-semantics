@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+
+set -euo pipefail
+
 SCRIPT_DIR="$(dirname "$(readlink -f "$BASH_SOURCE")")"
 COMPAT_DIR="$SCRIPT_DIR/compat/"
 
