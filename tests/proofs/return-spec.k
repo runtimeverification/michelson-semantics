@@ -1,7 +1,11 @@
-requires "../../michelson.k"
+requires "michelson.k"
 
-module RETURN
+module VERIFICATION
   imports MICHELSON
+endmodule
+
+module RETURN-SPEC
+  imports VERIFICATION
 
   rule <k>
        { 

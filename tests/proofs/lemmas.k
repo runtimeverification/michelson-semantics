@@ -1,4 +1,4 @@
-requires "../../.build/unit-test.k"
+requires "unit-test.k"
 
 module LEMMAS
   imports UNIT-TEST
