@@ -107,7 +107,7 @@ tangle_selector := .k
 
 hook_namespaces := TIME MICHELSON
 
-KOMPILE_OPTS += --hook-namespaces "$(hook_namespaces)"
+KOMPILE_OPTS += --gen-bison-parser --hook-namespaces "$(hook_namespaces)"
 
 ifneq (,$(RELEASE))
     KOMPILE_OPTS += -O3
