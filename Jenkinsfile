@@ -20,7 +20,8 @@ pipeline {
     }
     stage('Test') {
       parallel {
-        stage('Direct')           { steps { sh './run-tests.sh'           } }
+        stage('Unit')             { steps { sh 'make test-unit  -j8'      } }
+        stage('Prove')            { steps { sh 'make test-prove -j2'      } }
         stage('Cross-Validation') { steps { sh './compat/run-tests-ci.sh' } }
       }
     }
