@@ -21,9 +21,9 @@ pipeline {
     stage('Test') {
       option { timeout(time: 20, unit: 'MINUTES') }
       parallel {
-        stage('Unit')             { steps { sh 'make test-unit  -j8'      } }
-        stage('Prove')            { steps { sh 'make test-prove -j2'      } }
-        stage('Cross-Validation') { steps { sh './compat/run-tests-ci.sh' } }
+        stage('Unit')             { steps { sh 'make test-unit  -j8' } }
+        stage('Cross-Validation') { steps { sh 'make test-cross -j8' } }
+        stage('Prove')            { steps { sh 'make test-prove -j2' } }
       }
     }
     stage('Deploy') {
