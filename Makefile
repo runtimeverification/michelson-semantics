@@ -115,13 +115,23 @@ endif
 
 CPP_FILES := hex.cpp time.cpp decode.cpp
 
-LLVM_KOMPILE_OPTS := -L$(LOCAL_LIB) -I$(K_RELEASE)/include/kllvm \
+LLVM_KOMPILE_OPTS += -L$(LOCAL_LIB) -I$(K_RELEASE)/include/kllvm \
                      $(abspath $(CPP_FILES))                     \
                      -std=c++14
 
 ifeq (,$(RELEASE))
     LLVM_KOMPILE_OPTS += -g
 endif
+
+KOMPILE_LLVM := kompile --debug --backend llvm            \
+                $(KOMPILE_OPTS)                           \
+                $(addprefix -ccopt ,$(LLVM_KOMPILE_OPTS))
+
+HASKELL_KOMPILE_OPTS +=
+
+KOMPILE_HASKELL := kompile --debug --backend haskell \
+                   $(KOMPILE_OPTS)                   \
+                   $(HASKELL_KOMPILE_OPTS)
 
 defn:        defn-k defn-compat
 defn-k:      defn-llvm defn-prove defn-symbolic
@@ -148,11 +158,10 @@ $(llvm_dir)/%.k: %.md $(TANGLER)
 	pandoc --from markdown --to "$(TANGLER)" --metadata=code:"$(tangle_selector)" $< > $@
 
 $(llvm_kompiled): $(llvm_files)
-	kompile --debug --backend llvm $(llvm_dir)/$(llvm_main_file).k                  \
-	        --directory $(llvm_dir) -I $(llvm_dir)                                  \
-	        --main-module $(llvm_main_module) --syntax-module $(llvm_syntax_module) \
-	        $(KOMPILE_OPTS)                                                         \
-	        $(addprefix -ccopt ,$(LLVM_KOMPILE_OPTS))
+	$(KOMPILE_LLVM) $(llvm_dir)/$(llvm_main_file).k        \
+	                --directory $(llvm_dir) -I $(llvm_dir) \
+	                --main-module $(llvm_main_module)      \
+	                --syntax-module $(llvm_syntax_module)
 
 ### Prove
 
@@ -171,10 +180,10 @@ $(prove_dir)/%.k: %.md $(TANGLER)
 	pandoc --from markdown --to "$(TANGLER)" --metadata=code:"$(tangle_selector)" $< > $@
 
 $(prove_kompiled): $(prove_files)
-	kompile --debug --backend haskell $(prove_dir)/$(prove_main_file).k               \
-	        --directory $(prove_dir) -I $(prove_dir)                                  \
-	        --main-module $(prove_main_module) --syntax-module $(prove_syntax_module) \
-	        $(KOMPILE_OPTS)
+	$(KOMPILE_HASKELL) $(prove_dir)/$(prove_main_file).k        \
+	                   --directory $(prove_dir) -I $(prove_dir) \
+	                   --main-module $(prove_main_module)       \
+	                   --syntax-module $(prove_syntax_module)
 
 ### Symbolic
 
@@ -193,10 +202,10 @@ $(symbolic_dir)/%.k: %.md $(TANGLER)
 	pandoc --from markdown --to "$(TANGLER)" --metadata=code:"$(tangle_selector)" $< > $@
 
 $(symbolic_kompiled): $(symbolic_files)
-	kompile --debug --backend haskell $(symbolic_dir)/$(symbolic_main_file).k               \
-	        --directory $(symbolic_dir) -I $(symbolic_dir)                                  \
-	        --main-module $(symbolic_main_module) --syntax-module $(symbolic_syntax_module) \
-	        $(KOMPILE_OPTS)
+	$(KOMPILE_HASKELL) $(symbolic_dir)/$(symbolic_main_file).k        \
+	                   --directory $(symbolic_dir) -I $(symbolic_dir) \
+	                   --main-module $(symbolic_main_module)          \
+	                   --syntax-module $(symbolic_syntax_module)
 
 # Compat Contract Expander
 
@@ -215,11 +224,10 @@ $(contract_expander_dir)/%.k: %.md $(TANGLER)
 	pandoc --from markdown --to "$(TANGLER)" --metadata=code:"$(tangle_selector)" $< > $@
 
 $(contract_expander_kompiled): $(contract_expander_files)
-	kompile --debug --backend llvm $(contract_expander_dir)/$(contract_expander_main_file).k                  \
-	        --directory $(contract_expander_dir) -I $(contract_expander_dir)                                  \
-	        --main-module $(contract_expander_main_module) --syntax-module $(contract_expander_syntax_module) \
-	        $(KOMPILE_OPTS)                                                                                   \
-	        $(addprefix -ccopt ,$(LLVM_KOMPILE_OPTS))
+	$(KOMPILE_LLVM) $(contract_expander_dir)/$(contract_expander_main_file).k        \
+	                --directory $(contract_expander_dir) -I $(contract_expander_dir) \
+	                --main-module $(contract_expander_main_module)                   \
+	                --syntax-module $(contract_expander_syntax_module)
 
 # Compat Extractor
 
@@ -238,11 +246,10 @@ $(extractor_dir)/%.k: %.md $(TANGLER)
 	pandoc --from markdown --to "$(TANGLER)" --metadata=code:"$(tangle_selector)" $< > $@
 
 $(extractor_kompiled): $(extractor_files)
-	kompile --debug --backend llvm $(extractor_dir)/$(extractor_main_file).k                  \
-	        --directory $(extractor_dir) -I $(extractor_dir)                                  \
-	        --main-module $(extractor_main_module) --syntax-module $(extractor_syntax_module) \
-	        $(KOMPILE_OPTS)                                                                   \
-	        $(addprefix -ccopt ,$(LLVM_KOMPILE_OPTS))
+	$(KOMPILE_LLVM) $(extractor_dir)/$(extractor_main_file).k        \
+	                --directory $(extractor_dir) -I $(extractor_dir) \
+	                --main-module $(extractor_main_module)           \
+	                --syntax-module $(extractor_syntax_module)
 
 # Compat Input Creator
 
@@ -261,11 +268,10 @@ $(input_creator_dir)/%.k: %.md $(TANGLER)
 	pandoc --from markdown --to "$(TANGLER)" --metadata=code:"$(tangle_selector)" $< > $@
 
 $(input_creator_kompiled): $(input_creator_files)
-	kompile --debug --backend llvm $(input_creator_dir)/$(input_creator_main_file).k                  \
-	        --directory $(input_creator_dir) -I $(input_creator_dir)                                  \
-	        --main-module $(input_creator_main_module) --syntax-module $(input_creator_syntax_module) \
-	        $(KOMPILE_OPTS)                                                                           \
-	        $(addprefix -ccopt ,$(LLVM_KOMPILE_OPTS))
+	$(KOMPILE_LLVM) $(input_creator_dir)/$(input_creator_main_file).k        \
+	                --directory $(input_creator_dir) -I $(input_creator_dir) \
+	                --main-module $(input_creator_main_module)               \
+	                --syntax-module $(input_creator_syntax_module)
 
 # Compat Output Compare
 
@@ -284,8 +290,7 @@ $(output_compare_dir)/%.k: %.md $(TANGLER)
 	pandoc --from markdown --to "$(TANGLER)" --metadata=code:"$(tangle_selector)" $< > $@
 
 $(output_compare_kompiled): $(output_compare_files)
-	kompile --debug --backend llvm $(output_compare_dir)/$(output_compare_main_file).k                  \
-	        --directory $(output_compare_dir) -I $(output_compare_dir)                                  \
-	        --main-module $(output_compare_main_module) --syntax-module $(output_compare_syntax_module) \
-	        $(KOMPILE_OPTS)                                                                             \
-	        $(addprefix -ccopt ,$(LLVM_KOMPILE_OPTS))
+	$(KOMPILE_LLVM) $(output_compare_dir)/$(output_compare_main_file).k        \
+	                --directory $(output_compare_dir) -I $(output_compare_dir) \
+	                --main-module $(output_compare_main_module)                \
+	                --syntax-module $(output_compare_syntax_module)
