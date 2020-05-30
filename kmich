@@ -19,7 +19,7 @@ if [[ ! -f "${k_release_dir}/bin/kompile" ]]; then
     fi
 fi
 
-export PATH="${defn_dir}/web3/build:$k_release_dir/lib/native/linux:$k_release_dir/lib/native/linux64:$k_release_dir/bin/:$PATH"
+export PATH="$k_release_dir/bin:$PATH"
 export LD_LIBRARY_PATH="$k_release_dir/lib/native/linux64:$lib_dir:${LD_LIBRARY_PATH:-}"
 
 # Runners
