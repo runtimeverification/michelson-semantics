@@ -7,6 +7,8 @@ notes.txt
 template.tz
 diff_file.txt
 /.build
+*.extracted
+*.input
 **/.krun*
 **/.kprove*
 **/.kompile*

@@ -1,15 +1,22 @@
 #!/usr/bin/env bash
 
-set -euo pipefail
+set -xeuo pipefail
 
-UT="$1"
+notif() { echo "== $@" >&2 ; }
+fatal() { echo "[FATAL] $@" ; exit 1 ; }
+
+test_file="$1" ; shift
+test_file_extracted="$test_file.extracted"
+test_file_input="$test_file.input"
+
+notif "Cross Validating: $test_file"
 SCRIPT_DIR="$(dirname "$(readlink -f "$BASH_SOURCE")")"
 
 function output_if_failing {
     bash -c "$1"
     local r="$?"
     if [ $r -ne 0 ] ; then
-        echo "$UT: (exit code $r) $2" ;
+        echo "$test_file: (exit code $r) $2" ;
         exit 1
     fi
 }
@@ -21,7 +28,6 @@ mkdir -p "$TEMP_DIR"
 
 KNOWN_FAKES="$SCRIPT_DIR/addresses.txt"
 
-EXTRACTED_JSON="$TEMP_DIR/json"
 FOUND_ADDRESSES="$TEMP_DIR/addresses"
 REAL_ADDRESSES_UNSORTED="$TEMP_DIR/contracts_unsorted"
 REAL_ADDRESSES="$TEMP_DIR/contracts"
@@ -36,7 +42,6 @@ EXPANDED_FILE="$TEMP_DIR/expanded"
 TYPECHECK_OUTPUT="$TEMP_DIR/typecheck"
 RAW_TYPES="$TEMP_DIR/rawtypes"
 TYPES_FILE="$TEMP_DIR/types"
-INPUT_FILE="$TEMP_DIR/input"
 EXECUTION="$TEMP_DIR/execution"
 ERROR_FILE="$TEMP_DIR/error"
 RAW_DATA="$TEMP_DIR/rawdata"
@@ -48,10 +53,10 @@ OUTPUT_FILE="$TEMP_DIR/actual-and-expected"
 COMPARE_FILE="$TEMP_DIR/comparison"
 
 function extract {
-    python3 "$SCRIPT_DIR/extract-group.py" "$EXTRACTED_JSON" "$@"
+    python3 "$SCRIPT_DIR/extract-group.py" "$test_file_extracted" "$@"
 }
 
-if ! grep -o '@Address([^)"]*)' "$UT" | sort | uniq > "$FOUND_ADDRESSES"; then
+if ! grep -o '@Address([^)"]*)' "$test_file" | sort | uniq > "$FOUND_ADDRESSES"; then
     touch "$FOUND_ADDRESSES"
 fi
 
@@ -64,8 +69,6 @@ fi
 # input-creator takes the version with expanded addresses and converts it into their format.
 #
 # output-compare is a slight extension of our syntax to compare the output stacks for equality between our format and theirs.
-
-./kmich run --backend extractor "$UT" --output none > "$EXTRACTED_JSON"
 
 extract other_contracts true | tr -d '{}' | tr ';' '\n' | sed -E 's/^\s*//;s/\s*$//;s/Elt\s*"([^"]*)"\s*(.*)/\1#\2/;/^\s*$/d' > "$REAL_ADDRESSES_UNSORTED"
 
@@ -80,6 +83,7 @@ if [ ! -z $FAKE_SOURCE ] && ! ( grep "$FAKE_SOURCE" "$REAL_ADDRESSES_UNSORTED" )
 fi
 
 FAKE_SELF=$(extract self true)
+tezos-client run script "parameter unit ; storage (option address) ; code { DROP ; SELF ; ADDRESS ; CONTRACT unit ; IF_SOME { ADDRESS ; SOME ; NIL operation ; PAIR } {FAIL} }" on storage None and input Unit
 REAL_SELF="$(tezos-client run script "parameter unit ; storage (option address) ; code { DROP ; SELF ; ADDRESS ; CONTRACT unit ; IF_SOME { ADDRESS ; SOME ; NIL operation ; PAIR } {FAIL} }" on storage None and input Unit 2>&1 | grep "Some" | sed -E 's/\s*\(Some "([^"]*)"\)\s*/\1/')"
 
 sort "$REAL_ADDRESSES_UNSORTED" | uniq > "$REAL_ADDRESSES"
@@ -102,9 +106,11 @@ paste -d '/' <(cut -d'#' -f1 "$REAL_ADDRESSES") <(grep -Po '(?<=New contract )[a
 
 
 cat "$FAKE_ADDRESS_SUBS" "$ORIGINATION_SUBS" > "$ALL_SUBS"
-sed -f "$ALL_SUBS" "$UT" > "$FIXED_ADDRESS_CONTRACT"
+sed -f "$ALL_SUBS" "$test_file" > "$FIXED_ADDRESS_CONTRACT"
 
-output_if_failing "./kmich run --backend contract-expander '$FIXED_ADDRESS_CONTRACT' --output none > '$EXPANDED_FILE'" "Contract did not expand properly"
+notif "Expanding: $test_file"
+./kmich run --backend contract-expander $FIXED_ADDRESS_CONTRACT --output none > $EXPANDED_FILE \
+    || fatal "Expanding failed: $test_file"
 output_if_failing "tezos-client typecheck script '$(cat "$EXPANDED_FILE")' --details  >$TYPECHECK_OUTPUT 2>&1" "Contract did not typecheck"
 
 pcregrep -oM '(?<=\[)\s*@exitToken[^]]*' "$TYPECHECK_OUTPUT" > "$RAW_TYPES"
@@ -129,9 +135,7 @@ if [ ! -z "$FAKE_SENDER" ] ; then
     fi ;
 fi
 
-output_if_failing "./kmich run --backend input-creator '$UT' --output none > '$INPUT_FILE'" "Could not generate input"
-
-tezos-client run script "$(cat $EXPANDED_FILE)" on storage Unit and input "$(cat "$INPUT_FILE")" --amount "$AMOUNT" --trace-stack "${TRACE_CLI[@]}" > "$EXECUTION" 2>&1 || true
+tezos-client run script "$(cat $EXPANDED_FILE)" on storage Unit and input "$(cat "$test_file_input")" --amount "$AMOUNT" --trace-stack "${TRACE_CLI[@]}" > "$EXECUTION" 2>&1 || true
 # For some reason, the cli argument for "SENDER" is "--source" and "SOURCE" is "--payer"
 
 pcregrep -oM '(?<=\[)\s*Unit\s*@exitToken[^]]*' "$EXECUTION" > "$RAW_DATA"
@@ -162,6 +166,8 @@ fi
 
 echo | cat "$FIXED_ADDRS_OUTPUT" "$REAL_OUTPUT_FILE" "$EXPECTED_OUTPUT_FILE" - > "$OUTPUT_FILE" ;
 
-output_if_failing "./kmich run --backend output-compare '$OUTPUT_FILE' --output none > '$COMPARE_FILE'" "Output did not compare correctly"
+notif "Comparing output: $test_file"
+./kmich run --backend output-compare $OUTPUT_FILE --output none > $COMPARE_FILE \
+    || fatal "Comparing output failed: $test_file"
 
-echo "$1 Passed"
+echo "$test_file Passed"

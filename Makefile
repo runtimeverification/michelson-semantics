@@ -306,7 +306,13 @@ tests/%.run: tests/% $(llvm_kompiled)
 	$(TEST) run --backend llvm $<
 
 tests/%.cross: tests/% $(llvm_kompiled) $(contract_expander_kompiled) $(extractor_kompiled) $(output_compare_kompiled) $(input_creator_kompiled)
-	$(TEST) cross $<
+	./cross-validate.sh $<
+
+tests/%.extracted: tests/% $(extractor_kompiled)
+	$(TEST) run --backend extractor $< --output none > $@
+
+tests/%.input: tests/% $(input_creator_kompiled)
+	$(TEST) run --backend input-creator $< --output none > $@
 
 tests/%.prove: tests/% $(prove_kompiled)
 	$(TEST) prove --backend prove $< $(KPROVE_MODULE)
@@ -322,13 +328,13 @@ test-unit-failing: $(unit_tests_failing:=.run)
 
 # Cross Validation
 
-#cross_tests         := $(wildcard tests/unit/*.tzt)
-#cross_tests_failing := $(shell cat tests/failing.cross)
-#cross_tests_passing := $(filter-out $(cross_tests_failing), $(cross_tests))
+cross_tests         := $(wildcard tests/unit/*.tzt)
+cross_tests_failing := $(shell cat tests/failing.cross)
+cross_tests_passing := $(filter-out $(cross_tests_failing), $(cross_tests))
 
 #test-cross:         $(cross_tests_passing:=.cross)
 #test-cross-failing: $(cross_tests_failing:=.cross)
-test-cross:
+test-cross: $(cross_tests_passing:=.extracted) $(cross_tests_passing:=.input) $(llvm_kompiled) $(contract_expander_kompiled) $(output_compare_kompiled)
 	./run-tests-ci.sh
 
 # Prove
