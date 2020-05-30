@@ -19,6 +19,7 @@ pipeline {
       }
     }
     stage('Test') {
+      option { timeout(time: 20, unit: 'MINUTES') }
       parallel {
         stage('Unit')             { steps { sh 'make test-unit  -j8'      } }
         stage('Prove')            { steps { sh 'make test-prove -j2'      } }
