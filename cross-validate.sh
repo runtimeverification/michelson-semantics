@@ -9,6 +9,10 @@ test_file="$1" ; shift
 test_file_extracted="$test_file.extracted"
 test_file_input="$test_file.input"
 
+[[ -f "$test_file"           ]] || fatal "File doesn't exist: $test_file"
+[[ -f "$test_file_extracted" ]] || fatal "File doesn't exist: $test_file_extracted"
+[[ -f "$test_file_input"     ]] || fatal "File doesn't exist: $test_file_input"
+
 notif "Cross Validating: $test_file"
 SCRIPT_DIR="$(dirname "$(readlink -f "$BASH_SOURCE")")"
 
@@ -103,8 +107,6 @@ fi
 output_if_failing "python3 '$SCRIPT_DIR/originate.py' '$REAL_ADDRESSES' > '$ORIGINATION_OUTPUTS'" "Failed to originate contracts"
 paste -d '/' <(cut -d'#' -f1 "$REAL_ADDRESSES") <(grep -Po '(?<=New contract )[a-zA-Z0-9_]*' "$ORIGINATION_OUTPUTS") | sed -E 's|(.*)|s/\1/|;s|s///||' > "$ORIGINATION_SUBS"
 
-
-
 cat "$FAKE_ADDRESS_SUBS" "$ORIGINATION_SUBS" > "$ALL_SUBS"
 sed -f "$ALL_SUBS" "$test_file" > "$FIXED_ADDRESS_CONTRACT"
 
@@ -163,11 +165,4 @@ else
     fi ;
 fi
 
-
 echo | cat "$FIXED_ADDRS_OUTPUT" "$REAL_OUTPUT_FILE" "$EXPECTED_OUTPUT_FILE" - > "$OUTPUT_FILE" ;
-
-notif "Comparing output: $test_file"
-./kmich run --backend output-compare $OUTPUT_FILE --output none > $COMPARE_FILE \
-    || fatal "Comparing output failed: $test_file"
-
-echo "$test_file Passed"
