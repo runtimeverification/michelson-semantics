@@ -48,8 +48,8 @@ clean:
 distclean:
 	rm -rf $(BUILD_DIR)
 
-# K Dependencies
-# --------------
+# Dependencies
+# ------------
 
 K_JAR := $(K_SUBMODULE)/k-distribution/target/release/k/lib/java/kernel-1.0-SNAPSHOT.jar
 
