@@ -2,16 +2,15 @@
 
 set -euo pipefail
 
-SCRIPT_DIRECTORY="$(dirname "$(readlink -f "$BASH_SOURCE")")"
-source "$SCRIPT_DIRECTORY/common.sh"
-TEMP_DIR="$(mktemp -d)" ;
-trap 'rm -rf "$TEMP_DIR"' EXIT ;
-"$SCRIPT_DIRECTORY/parser.sh" "$1" > "$TEMP_DIR/input.kore"
-llvm-krun -d "$SCRIPT_DIRECTORY/unit-test-kompiled" -c PGM "$TEMP_DIR/input.kore" Pgm korefile -o "$TEMP_DIR/output.kore"
+DEFN_DIR="$(dirname "$(readlink -f "$BASH_SOURCE")")/.$1/$1-kompiled/"
+TEMP_DIR="$(mktemp -d)"
+trap "rm -rf $TEMP_DIR" EXIT
+sed 's/;\s*}/}/g' "$2" | "$DEFN_DIR/parser_PGM" > "$TEMP_DIR/in.kore"
+llvm-krun -d "$DEFN_DIR" -c PGM "$TEMP_DIR/in.kore" Pgm korefile -c IO '\dv{SortString{}}("on")' String kore -o "$TEMP_DIR/out.kore"
 RET="$?"
 
 if [ $RET -ne "0" ] ; then
-    kast -d "$SCRIPT_DIRECTORY" -i kore -o pretty "$TEMP_DIR/output.kore";
+    kast -d "$DEFN_DIR/.." -i kore -o pretty "$TEMP_DIR/out.kore" > /dev/stderr;
 fi
 
 exit $RET
