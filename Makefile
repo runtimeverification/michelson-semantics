@@ -32,10 +32,11 @@ export C_INCLUDE_PATH
 export CPLUS_INCLUDE_PATH
 export PATH
 
-.PHONY: all clean distclean                \
-        deps deps-k deps-tezos deps-tangle \
-        defn defn-llvm                     \
-        build build-llvm build-compat
+.PHONY: all clean distclean                   \
+        deps deps-k deps-tezos deps-tangle    \
+        defn defn-llvm                        \
+        build build-k build-compat            \
+        build-llvm build-prove build-symbolic
 .SECONDARY:
 
 all: build
@@ -61,7 +62,6 @@ $(TEZOS_SUBMODULE)/make.timestamp:
 ifneq ($(RELEASE),)
     K_BUILD_TYPE         := FastBuild
     SEMANTICS_BUILD_TYPE := Release
-    KOMPILE_OPTS         += -O3
 else
     K_BUILD_TYPE         := FastBuild
     SEMANTICS_BUILD_TYPE := Debug
@@ -96,14 +96,20 @@ SOURCE_FILES       := michelson-common          \
 EXTRA_SOURCE_FILES :=
 ALL_FILES          := $(patsubst %, %.k, $(SOURCE_FILES) $(EXTRA_SOURCE_FILES))
 
-# Tangler for *.md files
-
 tangle_selector := .k
 
 hook_namespaces := TIME MICHELSON
 
+KOMPILE_OPTS += --hook-namespaces "$(hook_namespaces)"
+
+ifneq (,$(RELEASE))
+    KOMPILE_OPTS += -O3
+endif
+
 defn:  defn-llvm defn-prove defn-symbolic
-build: build-llvm build-prove build-symbolic build-compat
+build: build-k build-compat
+
+build-k: build-llvm build-prove build-symbolic
 
 build-compat:
 	./compat/build.sh
@@ -138,7 +144,6 @@ $(llvm_kompiled): $(llvm_files)
 	kompile --debug --backend llvm $(llvm_dir)/$(llvm_main_file).k                  \
 	        --directory $(llvm_dir) -I $(llvm_dir)                                  \
 	        --main-module $(llvm_main_module) --syntax-module $(llvm_syntax_module) \
-	        --hook-namespaces "$(hook_namespaces)"                                  \
 	        $(KOMPILE_OPTS)                                                         \
 	        $(addprefix -ccopt ,$(LLVM_KOMPILE_OPTS))
 
@@ -159,10 +164,9 @@ $(prove_dir)/%.k: %.md $(TANGLER)
 	pandoc --from markdown --to "$(TANGLER)" --metadata=code:"$(tangle_selector)" $< > $@
 
 $(prove_kompiled): $(prove_files)
-	kompile --debug --backend prove $(prove_dir)/$(prove_main_file).k                 \
+	kompile --debug --backend haskell $(prove_dir)/$(prove_main_file).k               \
 	        --directory $(prove_dir) -I $(prove_dir)                                  \
 	        --main-module $(prove_main_module) --syntax-module $(prove_syntax_module) \
-	        --hook-namespaces "$(hook_namespaces)"                                    \
 	        $(KOMPILE_OPTS)
 
 ### Symbolic
@@ -182,8 +186,7 @@ $(symbolic_dir)/%.k: %.md $(TANGLER)
 	pandoc --from markdown --to "$(TANGLER)" --metadata=code:"$(tangle_selector)" $< > $@
 
 $(symbolic_kompiled): $(symbolic_files)
-	kompile --debug --backend symbolic $(symbolic_dir)/$(symbolic_main_file).k              \
+	kompile --debug --backend haskell $(symbolic_dir)/$(symbolic_main_file).k               \
 	        --directory $(symbolic_dir) -I $(symbolic_dir)                                  \
 	        --main-module $(symbolic_main_module) --syntax-module $(symbolic_syntax_module) \
-	        --hook-namespaces "$(hook_namespaces)"                                          \
 	        $(KOMPILE_OPTS)
