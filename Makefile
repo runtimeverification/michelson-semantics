@@ -143,12 +143,12 @@ build-compat: build-contract-expander build-extractor build-input-creator build-
 
 # LLVM
 
-llvm_dir             := $(DEFN_DIR)/llvm
-llvm_files           := $(patsubst %, $(llvm_dir)/%, $(ALL_FILES))
-llvm_main_file       := unit-test
-llvm_main_module     := UNIT-TEST
-llvm_syntax_module   := $(llvm_main_module)
-llvm_kompiled        := $(llvm_dir)/$(llvm_main_file)-kompiled/interpreter
+llvm_dir           := $(DEFN_DIR)/llvm
+llvm_files         := $(patsubst %, $(llvm_dir)/%, $(ALL_FILES))
+llvm_main_file     := unit-test
+llvm_main_module   := UNIT-TEST
+llvm_syntax_module := $(llvm_main_module)
+llvm_kompiled      := $(llvm_dir)/$(llvm_main_file)-kompiled/interpreter
 
 defn-llvm:  $(llvm_files)
 build-llvm: $(llvm_kompiled)
@@ -209,12 +209,12 @@ $(symbolic_kompiled): $(symbolic_files)
 
 # Compat Contract Expander
 
-contract_expander_dir             := $(DEFN_DIR)/contract-expander
-contract_expander_files           := $(patsubst %, $(contract_expander_dir)/%, $(ALL_FILES))
-contract_expander_main_file       := contract-expander
-contract_expander_main_module     := CONTRACT-EXPANDER
-contract_expander_syntax_module   := $(contract_expander_main_module)
-contract_expander_kompiled        := $(contract_expander_dir)/$(contract_expander_main_file)-kompiled/interpreter
+contract_expander_dir           := $(DEFN_DIR)/contract-expander
+contract_expander_files         := $(patsubst %, $(contract_expander_dir)/%, $(ALL_FILES))
+contract_expander_main_file     := contract-expander
+contract_expander_main_module   := CONTRACT-EXPANDER
+contract_expander_syntax_module := $(contract_expander_main_module)
+contract_expander_kompiled      := $(contract_expander_dir)/$(contract_expander_main_file)-kompiled/interpreter
 
 defn-contract-expander:  $(contract_expander_files)
 build-contract-expander: $(contract_expander_kompiled)
@@ -231,12 +231,12 @@ $(contract_expander_kompiled): $(contract_expander_files)
 
 # Compat Extractor
 
-extractor_dir             := $(DEFN_DIR)/extractor
-extractor_files           := $(patsubst %, $(extractor_dir)/%, $(ALL_FILES))
-extractor_main_file       := extractor
-extractor_main_module     := EXTRACTOR
-extractor_syntax_module   := $(extractor_main_module)
-extractor_kompiled        := $(extractor_dir)/$(extractor_main_file)-kompiled/interpreter
+extractor_dir           := $(DEFN_DIR)/extractor
+extractor_files         := $(patsubst %, $(extractor_dir)/%, $(ALL_FILES))
+extractor_main_file     := extractor
+extractor_main_module   := EXTRACTOR
+extractor_syntax_module := $(extractor_main_module)
+extractor_kompiled      := $(extractor_dir)/$(extractor_main_file)-kompiled/interpreter
 
 defn-extractor:  $(extractor_files)
 build-extractor: $(extractor_kompiled)
@@ -253,12 +253,12 @@ $(extractor_kompiled): $(extractor_files)
 
 # Compat Input Creator
 
-input_creator_dir             := $(DEFN_DIR)/input-creator
-input_creator_files           := $(patsubst %, $(input_creator_dir)/%, $(ALL_FILES))
-input_creator_main_file       := input-creator
-input_creator_main_module     := INPUT-CREATOR
-input_creator_syntax_module   := $(input_creator_main_module)
-input_creator_kompiled        := $(input_creator_dir)/$(input_creator_main_file)-kompiled/interpreter
+input_creator_dir           := $(DEFN_DIR)/input-creator
+input_creator_files         := $(patsubst %, $(input_creator_dir)/%, $(ALL_FILES))
+input_creator_main_file     := input-creator
+input_creator_main_module   := INPUT-CREATOR
+input_creator_syntax_module := $(input_creator_main_module)
+input_creator_kompiled      := $(input_creator_dir)/$(input_creator_main_file)-kompiled/interpreter
 
 defn-input-creator:  $(input_creator_files)
 build-input-creator: $(input_creator_kompiled)
@@ -275,12 +275,12 @@ $(input_creator_kompiled): $(input_creator_files)
 
 # Compat Output Compare
 
-output_compare_dir             := $(DEFN_DIR)/output-compare
-output_compare_files           := $(patsubst %, $(output_compare_dir)/%, $(ALL_FILES))
-output_compare_main_file       := output-compare
-output_compare_main_module     := OUTPUT-COMPARE
-output_compare_syntax_module   := $(output_compare_main_module)
-output_compare_kompiled        := $(output_compare_dir)/$(output_compare_main_file)-kompiled/interpreter
+output_compare_dir           := $(DEFN_DIR)/output-compare
+output_compare_files         := $(patsubst %, $(output_compare_dir)/%, $(ALL_FILES))
+output_compare_main_file     := output-compare
+output_compare_main_module   := OUTPUT-COMPARE
+output_compare_syntax_module := $(output_compare_main_module)
+output_compare_kompiled      := $(output_compare_dir)/$(output_compare_main_file)-kompiled/interpreter
 
 defn-output-compare:  $(output_compare_files)
 build-output-compare: $(output_compare_kompiled)
