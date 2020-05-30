@@ -13,7 +13,6 @@ fix-address.timestamp
 .node-pid
 notes.txt
 *.output
-run-tests-ci.sh.output
 run-tezos.timestamp
 *.swp
 template.tz

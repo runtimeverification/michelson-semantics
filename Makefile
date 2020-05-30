@@ -331,7 +331,7 @@ tests/%.cross: tests/%.output $(output_compare_kompiled)
 $(cross_tests_passing:=.output): run-tezos.timestamp
 
 run-tezos.timestamp: $(cross_tests_passing) $(cross_tests_passing:=.expanded) $(cross_tests_passing:=.input) $(cross_tests_passing:=.extracted)
-	./run-tests-ci.sh run-tezos
+	./run-with-tezos.sh run-tezos
 	touch $@
 
 tests/%.expanded: tests/%.address $(contract_expander_kompiled)
@@ -340,7 +340,7 @@ tests/%.expanded: tests/%.address $(contract_expander_kompiled)
 $(cross_tests_passing:=.address): fix-address.timestamp
 
 fix-address.timestamp: $(cross_tests_passing) $(cross_tests_passing:=.extracted) $(cross_tests_passing:=.input)
-	./run-tests-ci.sh fix-address
+	./run-with-tezos.sh fix-address
 	touch $@
 
 tests/%.extracted: tests/% $(extractor_kompiled)
