@@ -13,9 +13,9 @@ pipeline {
     }
     stage('Build') {
       parallel {
-        stage('Tezos Dependencies') { steps { sh 'make deps-tezos'                    } }
-        stage('Build')              { steps { sh 'make build-k      -j8 RELEASE=true' } }
-        stage('Build Compat')       { steps { sh 'make build-compat -j8 RELEASE=true' } }
+        stage('Tezos')  { steps { sh 'make deps-tezos'                    } }
+        stage('K')      { steps { sh 'make build-k      -j8 RELEASE=true' } }
+        stage('Compat') { steps { sh 'make build-compat -j8 RELEASE=true' } }
       }
     }
     stage('Test') {
