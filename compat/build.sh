@@ -3,6 +3,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(dirname "$(readlink -f "$BASH_SOURCE")")"
+KOMPILE_OPTS="${KOMPILE_OPTS:-}"
 
 function kompile_defn {
     DEFN_MAIN="$SCRIPT_DIR/$1";
@@ -11,12 +12,14 @@ function kompile_defn {
     kompile "$DEFN_MAIN" $KOMPILE_OPTS -ccopt $SCRIPT_DIR/decode.cpp --hook-namespaces MICHELSON --directory "$DEFN_DIR"
 }
 
-if [ -z "$1" ]; then
+if [[ "$#" -lt '1' ]]; then
     kompile_defn 'contract-expander.k' &
     kompile_defn 'extractor.k' &
     kompile_defn 'input-creator.k' &
     kompile_defn 'output-compare.k' &
     wait ;
 else
-    kompile_defn "$1" ;
+    for defn in "$@"; do
+        kompile_defn "$1"
+    done
 fi
