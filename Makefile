@@ -37,7 +37,8 @@ export PATH
         defn defn-llvm                                                                   \
         build build-k build-compat                                                       \
         build-llvm build-prove build-symbolic                                            \
-        build-contract-expander build-extractor build-input-creator build-output-compare
+        build-contract-expander build-extractor build-input-creator build-output-compare \
+        test test-unit test-unit-failing
 .SECONDARY:
 
 all: build
@@ -107,7 +108,7 @@ tangle_selector := .k
 
 hook_namespaces := TIME MICHELSON
 
-KOMPILE_OPTS += --gen-bison-parser --hook-namespaces "$(hook_namespaces)"
+KOMPILE_OPTS += --hook-namespaces "$(hook_namespaces)"
 
 ifneq (,$(RELEASE))
     KOMPILE_OPTS += -O3
@@ -294,3 +295,37 @@ $(output_compare_kompiled): $(output_compare_files)
 	                --directory $(output_compare_dir) -I $(output_compare_dir) \
 	                --main-module $(output_compare_main_module)                \
 	                --syntax-module $(output_compare_syntax_module)
+
+# Tests
+# -----
+
+TEST  := ./kmich
+CHECK := git --no-pager diff --no-index --ignore-all-space -R
+
+KPROVE_MODULE := VERIFICATION
+
+test: test-unit
+
+tests/%.run: tests/% $(llvm_kompiled)
+	$(TEST) run --backend llvm $<
+
+tests/%.prove: tests/% $(prove_kompiled)
+	$(TEST) prove --backend prove $< $(KPROVE_MODULE)
+
+# Unit Tests
+
+unit_tests         := $(wildcard tests/unit/*.tzt)
+unit_tests_failing := $(shell cat tests/failing.unit)
+unit_tests_passing := $(filter-out $(unit_tests_failing), $(unit_tests))
+
+test-unit:         $(unit_tests_passing:=.run)
+test-unit-failing: $(unit_tests_failing:=.run)
+
+# Prove Tests
+
+prove_tests         := $(wildcard tests/proofs/*-spec.k)
+prove_tests_failing := $(shell cat tests/failing.prove)
+prove_tests_passing := $(filter-out $(prove_tests_failing), $(prove_tests))
+
+test-prove:         $(prove_tests_passing:=.prove)
+test-prove-failing: $(prove_tests_failing:=.prove)
