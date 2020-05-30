@@ -32,13 +32,13 @@ export C_INCLUDE_PATH
 export CPLUS_INCLUDE_PATH
 export PATH
 
-.PHONY: all clean distclean                                                              \
-        deps deps-k deps-tezos deps-tangle                                               \
-        defn defn-llvm                                                                   \
-        build build-k build-compat                                                       \
-        build-llvm build-prove build-symbolic                                            \
-        build-contract-expander build-extractor build-input-creator build-output-compare \
-        test test-unit test-unit-failing
+.PHONY: all clean distclean                                                                         \
+        deps deps-k deps-tezos deps-tangle                                                          \
+        defn defn-llvm                                                                              \
+        build build-k build-compat                                                                  \
+        build-llvm build-prove build-symbolic                                                       \
+        build-contract-expander build-extractor build-input-creator build-output-compare            \
+        test test-unit test-unit-failing test-cross test-cross-faling test-prove test-prove-failing
 .SECONDARY:
 
 all: build
@@ -304,15 +304,18 @@ CHECK := git --no-pager diff --no-index --ignore-all-space -R
 
 KPROVE_MODULE := VERIFICATION
 
-test: test-unit
+test: test-unit test-cross test-prove
 
 tests/%.run: tests/% $(llvm_kompiled)
 	$(TEST) run --backend llvm $<
 
+tests/%.cross: tests/% $(llvm_kompiled)
+	./tests/cross/cross-validate.sh $<
+
 tests/%.prove: tests/% $(prove_kompiled)
 	$(TEST) prove --backend prove $< $(KPROVE_MODULE)
 
-# Unit Tests
+# Unit
 
 unit_tests         := $(wildcard tests/unit/*.tzt)
 unit_tests_failing := $(shell cat tests/failing.unit)
@@ -321,7 +324,16 @@ unit_tests_passing := $(filter-out $(unit_tests_failing), $(unit_tests))
 test-unit:         $(unit_tests_passing:=.run)
 test-unit-failing: $(unit_tests_failing:=.run)
 
-# Prove Tests
+# Cross Validation
+
+cross_tests         := $(wildcard tests/cross/*.tzt)
+cross_tests_failing := $(shell cat tests/failing.cross)
+cross_tests_passing := $(filter-out $(cross_tests_failing), $(cross_tests))
+
+test-cross:         $(cross_tests_passing:=.cross)
+test-cross-failing: $(cross_tests_failing:=.cross)
+
+# Prove
 
 prove_tests         := $(wildcard tests/proofs/*-spec.k)
 prove_tests_failing := $(shell cat tests/failing.prove)
