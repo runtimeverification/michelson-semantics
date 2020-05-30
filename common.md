@@ -1,3 +1,4 @@
+```k
 requires "unit-test.k"
 requires "michelson-unparser.k"
 
@@ -7,3 +8,4 @@ module COMPAT-COMMON
 
   configuration <michelsonTop/> <out stream="stdout"> .List </out>
 endmodule
+```

@@ -1,3 +1,4 @@
+```k
 requires "michelson.k"
 requires "common.k"
 
@@ -51,3 +52,4 @@ module OUTPUT-COMPARE
   rule <k> Gs:Groups </k>
        <returncode> 0 => 1 </returncode> [owise]
 endmodule
+```

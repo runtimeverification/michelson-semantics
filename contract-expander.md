@@ -1,3 +1,4 @@
+```k
 requires "common.k"
 
 module CONTRACT-EXPANDER-SYNTAX
@@ -62,3 +63,4 @@ module CONTRACT-EXPANDER
        <out> ... .List => ListItem(#unparse(#FillTemplateContract(#StackToPush(#FindInputGroup(G)), #FindCodeGroup(G), #FindParamType(G)))) </out>
        <returncode> _ => 0 </returncode>
 endmodule
+```

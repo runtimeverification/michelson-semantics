@@ -1,3 +1,4 @@
+```k
 requires "json.k"
 requires "common.k"
 
@@ -64,3 +65,4 @@ module EXTRACTOR
        <out> ... .List => ListItem(JSON2String(#GroupsToJson(Gs))) </out>
        <returncode> 1 => 0 </returncode>
 endmodule
+```

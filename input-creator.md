@@ -1,3 +1,4 @@
+```k
 requires "common.k"
 
 module INPUT-CREATOR-SYNTAX
@@ -48,3 +49,4 @@ module INPUT-CREATOR
        <out> ... .List => ListItem(#unparse(#DataForType(#FindParamType(G)))) </out>
        <returncode> _ => 0 </returncode>
 endmodule
+```
