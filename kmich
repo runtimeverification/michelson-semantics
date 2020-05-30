@@ -54,8 +54,8 @@ run_command="$1" ; shift
 
 if [[ "$run_command" == 'help' ]] || [[ "$run_command" == '--help' ]] ; then
     echo "
-        usage: $0 run   [--backend (llvm|prove|symbolic|expander|extractor|input-creator|output-compare)] <pgm>  <K arg>*
-               $0 kast  [--backend (llvm|prove|symbolic|expander|extractor|input-creator|output-compare)] <pgm>  <output format> <K arg>*
+        usage: $0 run   [--backend (llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare)] <pgm>  <K arg>*
+               $0 kast  [--backend (llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare)] <pgm>  <output format> <K arg>*
                $0 prove [--backend (prove|symbolic)]                                                      <spec> <def_module>    <K arg>*
 
                $0 [help|--help|version|--version]
@@ -116,8 +116,8 @@ fi
 case "$run_command-$backend" in
 
     # Running
-    run-@(llvm|prove|symbolic|expander|extractor|input-creator|output-compare)  ) run_krun  "$@" ;;
-    kast-@(llvm|prove|symbolic|expander|extractor|input-creator|output-compare) ) run_kast  "$@" ;;
+    run-@(llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare)  ) run_krun  "$@" ;;
+    kast-@(llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare) ) run_kast  "$@" ;;
     prove-@(prove|symbolic)                                                     ) run_prove "$@" ;;
     *) $0 help ; fatal "Unknown command on backend: $run_command $backend" ;;
 esac

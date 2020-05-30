@@ -48,12 +48,24 @@ OUTPUT_FILE="$TEMP_DIR/actual-and-expected"
 COMPARE_FILE="$TEMP_DIR/comparison"
 
 function extract {
-    python3 "$SCRIPT_DIR/extract-group.py" "$EXTRACTED_JSON" "$1" "$2" "$3"
+    python3 "$SCRIPT_DIR/extract-group.py" "$EXTRACTED_JSON" "$@"
 }
 
-grep -o '@Address([^)"]*)' "$UT" | sort | uniq > "$FOUND_ADDRESSES"
+if ! grep -o '@Address([^)"]*)' "$UT" | sort | uniq > "$FOUND_ADDRESSES"; then
+    touch "$FOUND_ADDRESSES"
+fi
 
-"$SCRIPT_DIR/run.sh" "extractor" "$UT" > "$EXTRACTED_JSON"
+# Point is to cross-validate our results with the reference interpreter.
+# Reference interpreter does not understand our format, we need to convert from our format to theirs.
+#
+# extractor, expander, input-creator all convert our format to theirs.
+# extractor turns the unit tests into a structured JSON for easily grabbing the parts.
+# expander takes our account address format and expands it out into proper Tezos account addresses.
+# input-creator takes the version with expanded addresses and converts it into their format.
+#
+# output-compare is a slight extension of our syntax to compare the output stacks for equality between our format and theirs.
+
+./kmich run --backend extractor "$UT" --output none > "$EXTRACTED_JSON"
 
 extract other_contracts true | tr -d '{}' | tr ';' '\n' | sed -E 's/^\s*//;s/\s*$//;s/Elt\s*"([^"]*)"\s*(.*)/\1#\2/;/^\s*$/d' > "$REAL_ADDRESSES_UNSORTED"
 
@@ -92,7 +104,7 @@ paste -d '/' <(cut -d'#' -f1 "$REAL_ADDRESSES") <(grep -Po '(?<=New contract )[a
 cat "$FAKE_ADDRESS_SUBS" "$ORIGINATION_SUBS" > "$ALL_SUBS"
 sed -f "$ALL_SUBS" "$UT" > "$FIXED_ADDRESS_CONTRACT"
 
-output_if_failing "'$SCRIPT_DIR/run.sh' contract-expander '$FIXED_ADDRESS_CONTRACT' > '$EXPANDED_FILE'" "Contract did not expand properly"
+output_if_failing "./kmich run --backend contract-expander '$FIXED_ADDRESS_CONTRACT' --output none > '$EXPANDED_FILE'" "Contract did not expand properly"
 output_if_failing "tezos-client typecheck script '$(cat "$EXPANDED_FILE")' --details  >$TYPECHECK_OUTPUT 2>&1" "Contract did not typecheck"
 
 pcregrep -oM '(?<=\[)\s*@exitToken[^]]*' "$TYPECHECK_OUTPUT" > "$RAW_TYPES"
@@ -102,23 +114,24 @@ sed -E 's/ : /\n/g;s/@%|@%%|%@|[@:%][_a-zA-Z][_0-9a-zA-Z\.%@]*//g' "$RAW_TYPES" 
 
 AMOUNT="$(python -c 'import sys ; print("0" if len(sys.argv) < 2 or sys.argv[1].strip() == "" else "%f" % (float(sys.argv[1]) / 1000000.0))' "$(extract amount true)")"
 
+TRACE_CLI=()
 if [ ! -z "$FAKE_SOURCE" ] ; then
     REAL_SOURCE="$(grep "$FAKE_SOURCE" $ORIGINATION_SUBS | sed -E 's|s/[^/]*/([^/]*)/|\1|')" ;
     if [ ! -z "$REAL_SOURCE" ] ; then
-        SOURCE_CLI="--payer $REAL_SOURCE" ;
+        TRACE_CLI+=(--payer $REAL_SOURCE)
     fi ;
 fi
 
 if [ ! -z "$FAKE_SENDER" ] ; then
     REAL_SENDER="$(grep "$FAKE_SENDER" $ORIGINATION_SUBS | sed -E 's|s/[^/]*/([^/]*)/|\1|')" ;
     if [ ! -z "$REAL_SENDER" ] ; then
-        SENDER_CLI="--source $REAL_SENDER" ;
+        TRACE_CLI+=(--source $REAL_SENDER)
     fi ;
 fi
 
-output_if_failing "'$SCRIPT_DIR/run.sh' input-creator '$UT' > '$INPUT_FILE'" "Could not generate input"
+output_if_failing "./kmich run --backend input-creator '$UT' --output none > '$INPUT_FILE'" "Could not generate input"
 
-tezos-client run script "$(cat $EXPANDED_FILE)" on storage Unit and input "$(cat "$INPUT_FILE")" --amount "$AMOUNT" --trace-stack $SENDER_CLI $SOURCE_CLI > "$EXECUTION" 2>&1
+tezos-client run script "$(cat $EXPANDED_FILE)" on storage Unit and input "$(cat "$INPUT_FILE")" --amount "$AMOUNT" --trace-stack "${TRACE_CLI[@]}" > "$EXECUTION" 2>&1 || true
 # For some reason, the cli argument for "SENDER" is "--source" and "SOURCE" is "--payer"
 
 pcregrep -oM '(?<=\[)\s*Unit\s*@exitToken[^]]*' "$EXECUTION" > "$RAW_DATA"
@@ -149,6 +162,6 @@ fi
 
 echo | cat "$FIXED_ADDRS_OUTPUT" "$REAL_OUTPUT_FILE" "$EXPECTED_OUTPUT_FILE" - > "$OUTPUT_FILE" ;
 
-output_if_failing "'$SCRIPT_DIR/run.sh' output-compare '$OUTPUT_FILE' > '$COMPARE_FILE'" "Output did not compare correctly"
+output_if_failing "./kmich run --backend output-compare '$OUTPUT_FILE' --output none > '$COMPARE_FILE'" "Output did not compare correctly"
 
 echo "$1 Passed"
