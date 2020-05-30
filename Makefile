@@ -305,6 +305,9 @@ test: test-unit test-cross test-prove
 tests/%.run: tests/% $(llvm_kompiled)
 	$(TEST) run --backend llvm $<
 
+tests/%.cross: tests/% $(llvm_kompiled) $(contract_expander_kompiled) $(extractor_kompiled) $(output_compare_kompiled) $(input_creator_kompiled)
+	$(TEST) cross $<
+
 tests/%.prove: tests/% $(prove_kompiled)
 	$(TEST) prove --backend prove $< $(KPROVE_MODULE)
 
