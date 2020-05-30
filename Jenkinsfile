@@ -19,7 +19,7 @@ pipeline {
       }
     }
     stage('Test') {
-      option { timeout(time: 20, unit: 'MINUTES') }
+      options { timeout(time: 20, unit: 'MINUTES') }
       parallel {
         stage('Unit')             { steps { sh 'make test-unit  -j8' } }
         stage('Cross-Validation') { steps { sh 'make test-cross -j8' } }
