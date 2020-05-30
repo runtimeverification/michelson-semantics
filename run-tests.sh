@@ -43,7 +43,7 @@ do
   fi
   # check whether test results agree and record result
   if [ $actual -ne $expected ]; then
-    echo "$test"
+    echo "FAILED $test"
     failed=1
     if [ $record -eq 1 ]; then
       echo "$test" >> "$RECORD_FILE"
