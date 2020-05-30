@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(dirname "$(readlink -f "$BASH_SOURCE")")"
+
 notif() { echo "== $@" >&2 ; }
 fatal() { echo "[FATAL] $@" ; exit 1 ; }
 
@@ -15,8 +17,11 @@ test_file_address="$test_file.address"
 [[ -f "$test_file_extracted" ]] || fatal "File doesn't exist: $test_file_extracted"
 [[ -f "$test_file_input"     ]] || fatal "File doesn't exist: $test_file_input"
 
+extract() {
+    python3 "$SCRIPT_DIR/extract-group.py" "$test_file_extracted" "$@"
+}
+
 notif "Fixing Address: $test_file"
-SCRIPT_DIR="$(dirname "$(readlink -f "$BASH_SOURCE")")"
 
 TEMP_DIR="$SCRIPT_DIR/.failure"
 
@@ -30,42 +35,13 @@ REAL_ADDRESSES_UNSORTED="$TEMP_DIR/contracts_unsorted"
 REAL_ADDRESSES="$TEMP_DIR/contracts"
 FAKE_ADDRESSES="$TEMP_DIR/fake_addresses"
 FAKE_ADDRESS_SUBS="$TEMP_DIR/fake_address_subs"
-FIXED_FAKE_ADDRESS_CONTRACT="$TEMP_DIR/fixed_fake_address"
 ORIGINATION_OUTPUTS="$TEMP_DIR/originations"
 ORIGINATION_SUBS="$TEMP_DIR/origination_subs"
 ALL_SUBS="$TEMP_DIR/subs"
-FIXED_ADDRESS_CONTRACT="$TEMP_DIR/fixed_addrs"
-EXPANDED_FILE="$TEMP_DIR/expanded"
-TYPECHECK_OUTPUT="$TEMP_DIR/typecheck"
-RAW_TYPES="$TEMP_DIR/rawtypes"
-TYPES_FILE="$TEMP_DIR/types"
-EXECUTION="$TEMP_DIR/execution"
-ERROR_FILE="$TEMP_DIR/error"
-RAW_DATA="$TEMP_DIR/rawdata"
-DATA_FILE="$TEMP_DIR/data"
-FIXED_ADDRS_OUTPUT="$TEMP_DIR/others_fixed"
-REAL_OUTPUT_FILE="$TEMP_DIR/actual"
-EXPECTED_OUTPUT_FILE="$TEMP_DIR/expected"
-OUTPUT_FILE="$TEMP_DIR/actual-and-expected"
-COMPARE_FILE="$TEMP_DIR/comparison"
 
 if ! grep -o '@Address([^)"]*)' "$test_file" | sort | uniq > "$FOUND_ADDRESSES"; then
     touch "$FOUND_ADDRESSES"
 fi
-
-# Point is to cross-validate our results with the reference interpreter.
-# Reference interpreter does not understand our format, we need to convert from our format to theirs.
-#
-# extractor, expander, input-creator all convert our format to theirs.
-# extractor turns the unit tests into a structured JSON for easily grabbing the parts.
-# expander takes our account address format and expands it out into proper Tezos account addresses.
-# input-creator takes the version with expanded addresses and converts it into their format.
-#
-# output-compare is a slight extension of our syntax to compare the output stacks for equality between our format and theirs.
-
-function extract {
-    python3 "$SCRIPT_DIR/extract-group.py" "$test_file_extracted" "$@"
-}
 
 extract other_contracts true | tr -d '{}' | tr ';' '\n' | sed -E 's/^\s*//;s/\s*$//;s/Elt\s*"([^"]*)"\s*(.*)/\1#\2/;/^\s*$/d' > "$REAL_ADDRESSES_UNSORTED"
 
