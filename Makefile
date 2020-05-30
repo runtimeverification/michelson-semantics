@@ -45,8 +45,10 @@ all: build
 
 clean:
 	rm -rf $(DEFN_BASE_DIR)
+	git clean -dffx -- tests
+	rm run-tezos.timestamp fix-address.timestamp
 
-distclean:
+distclean: clean
 	rm -rf $(BUILD_DIR)
 
 # Dependencies
