@@ -25,7 +25,7 @@ export K_RELEASE
 LIBRARY_PATH       := $(LOCAL_LIB)
 C_INCLUDE_PATH     += :$(BUILD_LOCAL)/include
 CPLUS_INCLUDE_PATH += :$(BUILD_LOCAL)/include
-PATH               := $(K_BIN):$(PATH)
+PATH               := $(K_BIN):$(TEZOS_SUBMODULE):$(PATH)
 
 export LIBRARY_PATH
 export C_INCLUDE_PATH
@@ -305,9 +305,6 @@ test: test-unit test-cross test-prove
 tests/%.run: tests/% $(llvm_kompiled)
 	$(TEST) run --backend llvm $<
 
-tests/%.cross: tests/% $(llvm_kompiled)
-	./tests/cross/cross-validate.sh $<
-
 tests/%.prove: tests/% $(prove_kompiled)
 	$(TEST) prove --backend prove $< $(KPROVE_MODULE)
 
@@ -322,12 +319,14 @@ test-unit-failing: $(unit_tests_failing:=.run)
 
 # Cross Validation
 
-cross_tests         := $(wildcard tests/unit/*.tzt)
-cross_tests_failing := $(shell cat tests/failing.cross)
-cross_tests_passing := $(filter-out $(cross_tests_failing), $(cross_tests))
+#cross_tests         := $(wildcard tests/unit/*.tzt)
+#cross_tests_failing := $(shell cat tests/failing.cross)
+#cross_tests_passing := $(filter-out $(cross_tests_failing), $(cross_tests))
 
-test-cross:         $(cross_tests_passing:=.cross)
-test-cross-failing: $(cross_tests_failing:=.cross)
+#test-cross:         $(cross_tests_passing:=.cross)
+#test-cross-failing: $(cross_tests_failing:=.cross)
+test-cross:
+	./run-tests-ci.sh
 
 # Prove
 
