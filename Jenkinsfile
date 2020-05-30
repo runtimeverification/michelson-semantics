@@ -20,7 +20,7 @@ pipeline {
     }
     stage('Test') {
       stages {
-        stage('Start KServer') { sh 'spawn-kserver kserver.log' }
+        stage('Start KServer') { steps { sh 'spawn-kserver kserver.log' } }
         stage('Run Tests') {
           parallel {
             stage('Unit')             { steps { sh 'make test-unit  -j8' } }
