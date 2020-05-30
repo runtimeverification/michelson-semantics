@@ -12,6 +12,22 @@ export PATH="$TEZOS_DIR:$PATH"
 
 TEZOS_NODE_PID=
 
+list_files() {
+    if [[ "$#" -gt 0 ]]; then
+        while [[ "$#" -gt 0 ]]; do
+            echo "$1"
+            shift
+        done
+    else
+        for f in $(find $TEST_DIR -name '*.tzt'); do
+            fshort="${f#$TEST_DIR}"
+            if ! grep $fshort $FAILING_FILE &> /dev/null; then
+                echo $fshort
+            fi
+        done
+    fi
+}
+
 start_tezos() {
     "$TEZOS_DIR/src/bin_node/tezos-sandboxed-node.sh" 1 --connections 1 >/dev/null 2>&1 &
     TEZOS_NODE_PID=$!
@@ -38,13 +54,11 @@ start_tezos
 
 FAILING_FILE="$SCRIPT_DIRECTORY/tests/failing.cross"
 TEST_DIR="$SCRIPT_DIRECTORY/tests/unit"
+
 command="$1" ; shift
 
-for test in $(find $TEST_DIR -name '*.tzt'); do
-  ! grep "${test#$TEST_DIR}" "$FAILING_FILE" &> /dev/null || continue
-  # run test and get actual return value
+for test in $(list_files "$@"); do
   notif "Running '$command': $test"
-  cross_validate_output='0'
   case "$command" in
     fix-address) $SCRIPT_DIRECTORY/fix-address.sh "$test" ;;
     run-tezos)   $SCRIPT_DIRECTORY/run-tezos.sh   "$test" ;;
