@@ -26,12 +26,12 @@ elif [ $# -ge 1 ] || [ ! -f "$RECORD_FILE" ]; then
   exit 1
 fi
 
-for test in $(ls "$TEST_DIR");
+for test in $(find $TEST_DIR -name '*.tzt');
 do
   # run test and get actual return value
   echo "Cross Validating: $test"
   cross_validate_output='0'
-  "$SCRIPT_DIRECTORY/cross-validate.sh" "$TEST_DIR/$test" || cross_validate_output="$?"
+  "$SCRIPT_DIRECTORY/cross-validate.sh" "$test" || cross_validate_output="$?"
   actual=$(( "$cross_validate_output" ? 1 : 0 ))
   # get expected value of test
   if [ $record -eq 1 ]; then
