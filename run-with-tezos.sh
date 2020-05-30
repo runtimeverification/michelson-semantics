@@ -10,7 +10,6 @@ command="$1" ; shift
 SCRIPT_DIRECTORY="$(dirname "$(readlink -f "$BASH_SOURCE")")"
 
 # do test initialization
-source "$SCRIPT_DIRECTORY/common.sh"
 set +u
 source "$SCRIPT_DIRECTORY/start.sh"
 set -u
