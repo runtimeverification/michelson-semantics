@@ -32,11 +32,12 @@ export C_INCLUDE_PATH
 export CPLUS_INCLUDE_PATH
 export PATH
 
-.PHONY: all clean distclean                   \
-        deps deps-k deps-tezos deps-tangle    \
-        defn defn-llvm                        \
-        build build-k build-compat            \
-        build-llvm build-prove build-symbolic
+.PHONY: all clean distclean                                                              \
+        deps deps-k deps-tezos deps-tangle                                               \
+        defn defn-llvm                                                                   \
+        build build-k build-compat                                                       \
+        build-llvm build-prove build-symbolic                                            \
+        build-contract-expander build-extractor build-input-creator build-output-compare
 .SECONDARY:
 
 all: build
@@ -82,12 +83,18 @@ deps-tangle: $(TANGLER)
 # Building
 # --------
 
-SOURCE_FILES       := michelson-common          \
+SOURCE_FILES       := common                    \
+                      contract-expander         \
+                      extractor                 \
+                      input-creator             \
+                      michelson-common          \
                       michelson-config          \
                       michelson-internal-syntax \
                       michelson                 \
                       michelson-syntax          \
                       michelson-types           \
+                      michelson-unparser        \
+                      output-compare            \
                       symbolic-configuration    \
                       symbolic-unit-test        \
                       symbolic-unit-test-syntax \
@@ -106,13 +113,23 @@ ifneq (,$(RELEASE))
     KOMPILE_OPTS += -O3
 endif
 
-defn:  defn-llvm defn-prove defn-symbolic
-build: build-k build-compat
+CPP_FILES := hex.cpp time.cpp decode.cpp
 
-build-k: build-llvm build-prove build-symbolic
+LLVM_KOMPILE_OPTS := -L$(LOCAL_LIB) -I$(K_RELEASE)/include/kllvm \
+                     $(abspath $(CPP_FILES))                     \
+                     -std=c++14
 
-build-compat:
-	./compat/build.sh
+ifeq (,$(RELEASE))
+    LLVM_KOMPILE_OPTS += -g
+endif
+
+defn:        defn-k defn-compat
+defn-k:      defn-llvm defn-prove defn-symbolic
+defn-compat: defn-contract-expander defn-extractor defn-input-creator defn-output-compare
+
+build:        build-k build-compat
+build-k:      build-llvm build-prove build-symbolic
+build-compat: build-contract-expander build-extractor build-input-creator build-output-compare
 
 # LLVM
 
@@ -122,16 +139,6 @@ llvm_main_file       := unit-test
 llvm_main_module     := UNIT-TEST
 llvm_syntax_module   := $(llvm_main_module)
 llvm_kompiled        := $(llvm_dir)/$(llvm_main_file)-kompiled/interpreter
-
-CPP_FILES := hex.cpp time.cpp
-
-LLVM_KOMPILE_OPTS := -L$(LOCAL_LIB) -I$(K_RELEASE)/include/kllvm \
-                     $(abspath $(CPP_FILES))                     \
-                     -std=c++14
-
-ifeq (,$(RELEASE))
-    LLVM_KOMPILE_OPTS += -g
-endif
 
 defn-llvm:  $(llvm_files)
 build-llvm: $(llvm_kompiled)
@@ -190,3 +197,95 @@ $(symbolic_kompiled): $(symbolic_files)
 	        --directory $(symbolic_dir) -I $(symbolic_dir)                                  \
 	        --main-module $(symbolic_main_module) --syntax-module $(symbolic_syntax_module) \
 	        $(KOMPILE_OPTS)
+
+# Compat Contract Expander
+
+contract_expander_dir             := $(DEFN_DIR)/contract-expander
+contract_expander_files           := $(patsubst %, $(contract_expander_dir)/%, $(ALL_FILES))
+contract_expander_main_file       := contract-expander
+contract_expander_main_module     := CONTRACT-EXPANDER
+contract_expander_syntax_module   := $(contract_expander_main_module)
+contract_expander_kompiled        := $(contract_expander_dir)/$(contract_expander_main_file)-kompiled/interpreter
+
+defn-contract-expander:  $(contract_expander_files)
+build-contract-expander: $(contract_expander_kompiled)
+
+$(contract_expander_dir)/%.k: %.md $(TANGLER)
+	@mkdir -p $(contract_expander_dir)
+	pandoc --from markdown --to "$(TANGLER)" --metadata=code:"$(tangle_selector)" $< > $@
+
+$(contract_expander_kompiled): $(contract_expander_files)
+	kompile --debug --backend llvm $(contract_expander_dir)/$(contract_expander_main_file).k                  \
+	        --directory $(contract_expander_dir) -I $(contract_expander_dir)                                  \
+	        --main-module $(contract_expander_main_module) --syntax-module $(contract_expander_syntax_module) \
+	        $(KOMPILE_OPTS)                                                                                   \
+	        $(addprefix -ccopt ,$(LLVM_KOMPILE_OPTS))
+
+# Compat Extractor
+
+extractor_dir             := $(DEFN_DIR)/extractor
+extractor_files           := $(patsubst %, $(extractor_dir)/%, $(ALL_FILES))
+extractor_main_file       := extractor
+extractor_main_module     := EXTRACTOR
+extractor_syntax_module   := $(extractor_main_module)
+extractor_kompiled        := $(extractor_dir)/$(extractor_main_file)-kompiled/interpreter
+
+defn-extractor:  $(extractor_files)
+build-extractor: $(extractor_kompiled)
+
+$(extractor_dir)/%.k: %.md $(TANGLER)
+	@mkdir -p $(extractor_dir)
+	pandoc --from markdown --to "$(TANGLER)" --metadata=code:"$(tangle_selector)" $< > $@
+
+$(extractor_kompiled): $(extractor_files)
+	kompile --debug --backend llvm $(extractor_dir)/$(extractor_main_file).k                  \
+	        --directory $(extractor_dir) -I $(extractor_dir)                                  \
+	        --main-module $(extractor_main_module) --syntax-module $(extractor_syntax_module) \
+	        $(KOMPILE_OPTS)                                                                   \
+	        $(addprefix -ccopt ,$(LLVM_KOMPILE_OPTS))
+
+# Compat Input Creator
+
+input_creator_dir             := $(DEFN_DIR)/input-creator
+input_creator_files           := $(patsubst %, $(input_creator_dir)/%, $(ALL_FILES))
+input_creator_main_file       := input-creator
+input_creator_main_module     := INPUT-CREATOR
+input_creator_syntax_module   := $(input_creator_main_module)
+input_creator_kompiled        := $(input_creator_dir)/$(input_creator_main_file)-kompiled/interpreter
+
+defn-input-creator:  $(input_creator_files)
+build-input-creator: $(input_creator_kompiled)
+
+$(input_creator_dir)/%.k: %.md $(TANGLER)
+	@mkdir -p $(input_creator_dir)
+	pandoc --from markdown --to "$(TANGLER)" --metadata=code:"$(tangle_selector)" $< > $@
+
+$(input_creator_kompiled): $(input_creator_files)
+	kompile --debug --backend llvm $(input_creator_dir)/$(input_creator_main_file).k                  \
+	        --directory $(input_creator_dir) -I $(input_creator_dir)                                  \
+	        --main-module $(input_creator_main_module) --syntax-module $(input_creator_syntax_module) \
+	        $(KOMPILE_OPTS)                                                                           \
+	        $(addprefix -ccopt ,$(LLVM_KOMPILE_OPTS))
+
+# Compat Output Compare
+
+output_compare_dir             := $(DEFN_DIR)/output-compare
+output_compare_files           := $(patsubst %, $(output_compare_dir)/%, $(ALL_FILES))
+output_compare_main_file       := output-compare
+output_compare_main_module     := OUTPUT-COMPARE
+output_compare_syntax_module   := $(output_compare_main_module)
+output_compare_kompiled        := $(output_compare_dir)/$(output_compare_main_file)-kompiled/interpreter
+
+defn-output-compare:  $(output_compare_files)
+build-output-compare: $(output_compare_kompiled)
+
+$(output_compare_dir)/%.k: %.md $(TANGLER)
+	@mkdir -p $(output_compare_dir)
+	pandoc --from markdown --to "$(TANGLER)" --metadata=code:"$(tangle_selector)" $< > $@
+
+$(output_compare_kompiled): $(output_compare_files)
+	kompile --debug --backend llvm $(output_compare_dir)/$(output_compare_main_file).k                  \
+	        --directory $(output_compare_dir) -I $(output_compare_dir)                                  \
+	        --main-module $(output_compare_main_module) --syntax-module $(output_compare_syntax_module) \
+	        $(KOMPILE_OPTS)                                                                             \
+	        $(addprefix -ccopt ,$(LLVM_KOMPILE_OPTS))
