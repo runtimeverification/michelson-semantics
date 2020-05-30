@@ -19,7 +19,6 @@ pipeline {
       }
     }
     stage('Test') {
-      options { timeout(time: 20, unit: 'MINUTES') }
       stages {
         stage('Start KServer') { sh 'spawn-kserver kserver.log' }
         stage('Run Tests') {
