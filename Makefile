@@ -96,26 +96,26 @@ SOURCE_FILES       := michelson-common          \
 EXTRA_SOURCE_FILES :=
 ALL_FILES          := $(patsubst %, %.k, $(SOURCE_FILES) $(EXTRA_SOURCE_FILES))
 
-export MAIN_DEFN_FILE
-
 # Tangler for *.md files
 
 tangle_selector := .k
 
-defn:  defn-llvm defn-haskel
-build: build-llvm build-haskell build-compat
+hook_namespaces := TIME MICHELSON
+
+defn:  defn-llvm defn-prove defn-symbolic
+build: build-llvm build-prove build-symbolic build-compat
 
 build-compat:
 	./compat/build.sh
 
 # LLVM
 
-llvm_dir           := $(DEFN_DIR)/llvm
-llvm_files         := $(patsubst %, $(llvm_dir)/%, $(ALL_FILES))
-llvm_main_file     := unit-test
-llvm_main_module   := UNIT-TEST
-llvm_syntax_module := $(llvm_main_module)
-llvm_kompiled      := $(llvm_dir)/$(llvm_main_file)-kompiled/interpreter
+llvm_dir             := $(DEFN_DIR)/llvm
+llvm_files           := $(patsubst %, $(llvm_dir)/%, $(ALL_FILES))
+llvm_main_file       := unit-test
+llvm_main_module     := UNIT-TEST
+llvm_syntax_module   := $(llvm_main_module)
+llvm_kompiled        := $(llvm_dir)/$(llvm_main_file)-kompiled/interpreter
 
 CPP_FILES := hex.cpp time.cpp
 
@@ -138,27 +138,52 @@ $(llvm_kompiled): $(llvm_files)
 	kompile --debug --backend llvm $(llvm_dir)/$(llvm_main_file).k                  \
 	        --directory $(llvm_dir) -I $(llvm_dir)                                  \
 	        --main-module $(llvm_main_module) --syntax-module $(llvm_syntax_module) \
+	        --hook-namespaces "$(hook_namespaces)"                                  \
 	        $(KOMPILE_OPTS)                                                         \
 	        $(addprefix -ccopt ,$(LLVM_KOMPILE_OPTS))
 
-### Haskell
+### Prove
 
-haskell_dir           := $(DEFN_DIR)/haskell
-haskell_files         := $(patsubst %, $(haskell_dir)/%, $(ALL_FILES))
-haskell_main_file     := symbolic-unit-test
-haskell_main_module   := SYMBOLIC-UNIT-TEST
-haskell_syntax_module := $(haskell_main_module)
-haskell_kompiled      := $(haskell_dir)/$(haskell_main_file)-kompiled/definition.kore
+prove_dir           := $(DEFN_DIR)/prove
+prove_files         := $(patsubst %, $(prove_dir)/%, $(ALL_FILES))
+prove_main_file     := unit-test
+prove_main_module   := UNIT-TEST
+prove_syntax_module := $(prove_main_module)
+prove_kompiled      := $(prove_dir)/$(prove_main_file)-kompiled/definition.kore
 
-defn-haskell:  $(haskell_files)
-build-haskell: $(haskell_kompiled)
+defn-prove:  $(prove_files)
+build-prove: $(prove_kompiled)
 
-$(haskell_dir)/%.k: %.md $(TANGLER)
-	@mkdir -p $(haskell_dir)
+$(prove_dir)/%.k: %.md $(TANGLER)
+	@mkdir -p $(prove_dir)
 	pandoc --from markdown --to "$(TANGLER)" --metadata=code:"$(tangle_selector)" $< > $@
 
-$(haskell_kompiled): $(haskell_files)
-	kompile --debug --backend haskell $(haskell_dir)/$(haskell_main_file).k               \
-	        --directory $(haskell_dir) -I $(haskell_dir)                                  \
-	        --main-module $(haskell_main_module) --syntax-module $(haskell_syntax_module) \
+$(prove_kompiled): $(prove_files)
+	kompile --debug --backend prove $(prove_dir)/$(prove_main_file).k                 \
+	        --directory $(prove_dir) -I $(prove_dir)                                  \
+	        --main-module $(prove_main_module) --syntax-module $(prove_syntax_module) \
+	        --hook-namespaces "$(hook_namespaces)"                                    \
+	        $(KOMPILE_OPTS)
+
+### Symbolic
+
+symbolic_dir           := $(DEFN_DIR)/symbolic
+symbolic_files         := $(patsubst %, $(symbolic_dir)/%, $(ALL_FILES))
+symbolic_main_file     := symbolic-unit-test
+symbolic_main_module   := SYMBOLIC-UNIT-TEST
+symbolic_syntax_module := $(symbolic_main_module)
+symbolic_kompiled      := $(symbolic_dir)/$(symbolic_main_file)-kompiled/definition.kore
+
+defn-symbolic:  $(symbolic_files)
+build-symbolic: $(symbolic_kompiled)
+
+$(symbolic_dir)/%.k: %.md $(TANGLER)
+	@mkdir -p $(symbolic_dir)
+	pandoc --from markdown --to "$(TANGLER)" --metadata=code:"$(tangle_selector)" $< > $@
+
+$(symbolic_kompiled): $(symbolic_files)
+	kompile --debug --backend symbolic $(symbolic_dir)/$(symbolic_main_file).k              \
+	        --directory $(symbolic_dir) -I $(symbolic_dir)                                  \
+	        --main-module $(symbolic_main_module) --syntax-module $(symbolic_syntax_module) \
+	        --hook-namespaces "$(hook_namespaces)"                                          \
 	        $(KOMPILE_OPTS)
