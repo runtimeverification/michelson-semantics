@@ -326,7 +326,7 @@ test-unit-failing: $(unit_tests_failing:=.run)
 
 # Cross Validation
 
-cross_tests         := $(wildcard tests/cross/*.tzt)
+cross_tests         := $(wildcard tests/unit/*.tzt)
 cross_tests_failing := $(shell cat tests/failing.cross)
 cross_tests_passing := $(filter-out $(cross_tests_failing), $(cross_tests))
 
