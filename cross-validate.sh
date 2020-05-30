@@ -16,15 +16,6 @@ test_file_input="$test_file.input"
 notif "Cross Validating: $test_file"
 SCRIPT_DIR="$(dirname "$(readlink -f "$BASH_SOURCE")")"
 
-function output_if_failing {
-    bash -c "$1"
-    local r="$?"
-    if [ $r -ne 0 ] ; then
-        echo "$test_file: (exit code $r) $2" ;
-        exit 1
-    fi
-}
-
 TEMP_DIR="$SCRIPT_DIR/.failure"
 
 rm -rf "$TEMP_DIR"
@@ -87,7 +78,6 @@ if [ ! -z $FAKE_SOURCE ] && ! ( grep "$FAKE_SOURCE" "$REAL_ADDRESSES_UNSORTED" )
 fi
 
 FAKE_SELF=$(extract self true)
-tezos-client run script "parameter unit ; storage (option address) ; code { DROP ; SELF ; ADDRESS ; CONTRACT unit ; IF_SOME { ADDRESS ; SOME ; NIL operation ; PAIR } {FAIL} }" on storage None and input Unit
 REAL_SELF="$(tezos-client run script "parameter unit ; storage (option address) ; code { DROP ; SELF ; ADDRESS ; CONTRACT unit ; IF_SOME { ADDRESS ; SOME ; NIL operation ; PAIR } {FAIL} }" on storage None and input Unit 2>&1 | grep "Some" | sed -E 's/\s*\(Some "([^"]*)"\)\s*/\1/')"
 
 sort "$REAL_ADDRESSES_UNSORTED" | uniq > "$REAL_ADDRESSES"
@@ -104,7 +94,8 @@ if [ ! -z $FAKE_SELF ] ; then
     echo "s|$FAKE_SELF|$REAL_SELF|" >> "$FAKE_ADDRESS_SUBS"
 fi
 
-output_if_failing "python3 '$SCRIPT_DIR/originate.py' '$REAL_ADDRESSES' > '$ORIGINATION_OUTPUTS'" "Failed to originate contracts"
+python3 $SCRIPT_DIR/originate.py $REAL_ADDRESSES > $ORIGINATION_OUTPUTS \
+    || fatal "Failed to originate contracts: $test_file"
 paste -d '/' <(cut -d'#' -f1 "$REAL_ADDRESSES") <(grep -Po '(?<=New contract )[a-zA-Z0-9_]*' "$ORIGINATION_OUTPUTS") | sed -E 's|(.*)|s/\1/|;s|s///||' > "$ORIGINATION_SUBS"
 
 cat "$FAKE_ADDRESS_SUBS" "$ORIGINATION_SUBS" > "$ALL_SUBS"
@@ -113,7 +104,8 @@ sed -f "$ALL_SUBS" "$test_file" > "$FIXED_ADDRESS_CONTRACT"
 notif "Expanding: $test_file"
 ./kmich run --backend contract-expander $FIXED_ADDRESS_CONTRACT --output none > $EXPANDED_FILE \
     || fatal "Expanding failed: $test_file"
-output_if_failing "tezos-client typecheck script '$(cat "$EXPANDED_FILE")' --details  >$TYPECHECK_OUTPUT 2>&1" "Contract did not typecheck"
+tezos-client typecheck script "$(cat $EXPANDED_FILE)" --details  > $TYPECHECK_OUTPUT 2>&1 \
+    || fatal "Contract did not typecheck: $test_file"
 
 pcregrep -oM '(?<=\[)\s*@exitToken[^]]*' "$TYPECHECK_OUTPUT" > "$RAW_TYPES"
 FOUND_TYPES="$?"

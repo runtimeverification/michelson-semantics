@@ -59,7 +59,7 @@ deps-k: $(K_JAR)
 
 $(TEZOS_SUBMODULE)/make.timestamp:
 	./build-deps-tezos.sh
-	touch $(TEZOS_SUBMODULE)/make.timestamp
+	touch $@
 
 ifneq ($(RELEASE),)
     K_BUILD_TYPE         := FastBuild
@@ -335,8 +335,10 @@ cross_tests_passing := $(filter-out $(cross_tests_failing), $(cross_tests))
 test-cross:         $(cross_tests_passing:=.cross)
 test-cross-failing: $(cross_tests_failing:=.cross)
 
-$(cross_tests_passing:=.output): $(cross_tests_passing) $(cross_tests_passing:=.extracted) $(cross_tests_passing:=.input) $(contract_expander_kompiled)
-	./run-tests-ci.sh
+$(cross_tests_passing:=.output): run-tests-ci.sh.output
+
+run-tests-ci.sh.output: $(cross_tests_passing) $(cross_tests_passing:=.extracted) $(cross_tests_passing:=.input) $(contract_expander_kompiled)
+	./run-tests-ci.sh > $@
 
 # Prove
 
