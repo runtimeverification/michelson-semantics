@@ -20,8 +20,9 @@ list_files() {
         done
     else
         for f in $(find $TEST_DIR -name '*.tzt'); do
-            if ! grep $f $FAILING_FILE &> /dev/null; then
-                echo $f
+            shortf="${f#$SCRIPT_DIRECTORY/}"
+            if ! grep $shortf $FAILING_FILE &> /dev/null; then
+                echo $shortf
             fi
         done
     fi
