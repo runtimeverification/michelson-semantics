@@ -316,7 +316,7 @@ test-unit:         $(unit_tests_passing:=.run)
 test-unit-failing: $(unit_tests_failing:=.run)
 
 tests/%.run: tests/% $(llvm_kompiled)
-	$(TEST) run --backend llvm $<
+	$(TEST) interpret --backend llvm $< --output-file /dev/null
 
 # Cross Validation
 
@@ -328,7 +328,7 @@ test-cross:         $(cross_tests_passing:=.cross)
 test-cross-failing: $(cross_tests_failing:=.cross)
 
 tests/%.cross: tests/%.output $(output_compare_kompiled)
-	$(TEST) run --backend output-compare $< --output none > $@
+	$(TEST) interpret --backend output-compare $< --output-file /dev/null > $@
 
 $(cross_tests_passing:=.output): run-tezos.timestamp
 
@@ -337,7 +337,7 @@ run-tezos.timestamp: $(cross_tests_passing) $(cross_tests_passing:=.expanded) $(
 	touch $@
 
 tests/%.expanded: tests/%.address $(contract_expander_kompiled)
-	$(TEST) run --backend contract-expander $< --output none > $@
+	$(TEST) interpret --backend contract-expander $< --output-file /dev/null > $@
 
 $(cross_tests_passing:=.address): fix-address.timestamp
 
@@ -346,10 +346,10 @@ fix-address.timestamp: $(cross_tests_passing) $(cross_tests_passing:=.extracted)
 	touch $@
 
 tests/%.extracted: tests/% $(extractor_kompiled)
-	$(TEST) run --backend extractor $< --output none > $@
+	$(TEST) interpret --backend extractor $< --output-file /dev/null > $@
 
 tests/%.input: tests/% $(input_creator_kompiled)
-	$(TEST) run --backend input-creator $< --output none > $@
+	$(TEST) interpret --backend input-creator $< --output-file /dev/null > $@
 
 # Prove
 
