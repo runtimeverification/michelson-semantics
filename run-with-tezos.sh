@@ -49,12 +49,14 @@ command="$1" ; shift
 
 failures='0'
 for test in $(list_files "$@"); do
-  [[ "$status" == '0' ]] || break
-  notif "Running '$command': $test"
-  if ! $SCRIPT_DIRECTORY/$command.sh "$test"; then
-    notif "FAILED: $command on $test"
-    failures=$((failures + 1))
-  fi
+    [[ "$status" == '0' ]] || break
+    notif "RUNNING: $command on $test"
+    if ! $SCRIPT_DIRECTORY/$command.sh "$test"; then
+        notif "FAILED: $command on $test"
+        failures=$((failures + 1))
+    else
+        notif "PASSED: $command on $test"
+    fi
 done
 
 kill -15 "$TEZOS_NODE_PID"
