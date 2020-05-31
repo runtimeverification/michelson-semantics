@@ -9,7 +9,7 @@ module SYMBOLIC-UNIT-TEST-SYNTAX
 
   syntax Invariants ::= EmptyBlock | "{" InvariantList "}"
   syntax InvariantList ::= Invariant | Invariant ";" InvariantList
-  syntax Invariant ::= VariableAnnotation Blocks
+  syntax Invariant ::= VariableAnnotation Blocks Blocks
 
   syntax PreconditionGroup ::= "precondition" Blocks
   syntax PostconditionGroup ::= "postcondition" Blocks

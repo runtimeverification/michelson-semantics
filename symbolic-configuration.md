@@ -9,6 +9,7 @@ module SYMBOLIC-CONFIGURATION
                 <preconditions> .List </preconditions>
                 <postconditions> .List </postconditions>
                 <invariants> .Map </invariants>
+                <guards> .Map </guards>
                 <assumeFailed> false </assumeFailed>
 endmodule
 ```

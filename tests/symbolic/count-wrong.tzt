@@ -6,7 +6,7 @@ code { DUP ;
        COMPARE ; 
        LT ; 
        LOOP @I { 
-           PUSH nat 1 ; 
+           PUSH nat 2 ; 
            ADD ; 
            DUP ; 
            DIG 2 ; 

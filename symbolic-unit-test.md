@@ -167,20 +167,22 @@ module SYMBOLIC-UNIT-TEST
        </michelsonTop>
        <symbolsLoaded> false => true </symbolsLoaded>
 
-  syntax KItem ::= "#AssumeTrue" | "#AssertTrue"
+  syntax KItem ::= #Assume(Bool) | #Assert(Bool)
 
-  rule <k> #AssumeTrue => . ... </k>
-       <stack> true => . ... </stack> [transition]
+  rule <k> #Assume(B) => . ... </k>
+       <stack> B => . ... </stack> [transition]
 
-  rule <k> #AssumeTrue ~> _:K => . </k>
-       <stack> false => . ... </stack>
-       <assumeFailed> _ => true </assumeFailed> [transition]
+  rule <k> #Assume(B1) ~> _:K => . </k>
+       <stack> B2 => . ... </stack>
+       <assumeFailed> _ => true </assumeFailed> 
+       requires B1 =/=Bool B2
+       [transition]
 
 
   rule <k> #LoadGroups(precondition { } ; Gs) => #LoadGroups(Gs) ... </k>
-  rule <k> #LoadGroups(precondition { B:Block } ; Gs) => B ~> #AssumeTrue ~> #LoadGroups(Gs) ... </k>
+  rule <k> #LoadGroups(precondition { B:Block } ; Gs) => B ~> #Assume(true) ~> #LoadGroups(Gs) ... </k>
   rule <k> #LoadGroups(precondition { B:Block ; Bs } ; Gs) =>
-       B ~> #AssumeTrue ~> #LoadGroups(precondition { Bs } ; Gs) ... </k>
+       B ~> #Assume(true) ~> #LoadGroups(precondition { Bs } ; Gs) ... </k>
 
   syntax KItem ::= #Bind(LiteralStack)
 
@@ -207,16 +209,17 @@ module SYMBOLIC-UNIT-TEST
 
   syntax KItem ::= #DoPostConditions(BlockList)
 
-  rule <k> #DoPostConditions(B ; Bs) => B ~> #AssertTrue ~> #DoPostConditions(Bs) ... </k>
-  rule <k> #DoPostConditions(B) => B ~> #AssertTrue ... </k>
+  rule <k> #DoPostConditions(B ; Bs) => B ~> #Assert(true) ~> #DoPostConditions(Bs) ... </k>
+  rule <k> #DoPostConditions(B) => B ~> #Assert(true) ... </k>
 
-  rule <k> #AssertTrue => . ... </k>
-       <stack> true => . ... </stack>
+  rule <k> #Assert(B) => . ... </k>
+       <stack> B => . ... </stack>
 
   syntax KItem ::= "#AssertFailed"
 
-  rule <k> #AssertTrue => #AssertFailed ... </k>
-       <stack> false => . </stack>
+  rule <k> #Assert(B1) => #AssertFailed ... </k>
+       <stack> B2 => . ... </stack>
+       requires B1 =/=Bool B2
 
   rule <k> #LoadGroups(postcondition { }) ~> #Bind(_) => . ... </k>
   rule <k> #LoadGroups(postcondition { B }) ~> #Bind(Rs) => #Bind(Rs) ~> #DoPostConditions(B) ... </k>
@@ -229,8 +232,9 @@ module SYMBOLIC-UNIT-TEST
   rule #LoadInvariants({ I }) => #LoadInvariant(I)
   rule #LoadInvariants({ I1 ; Is }) => #LoadInvariant(I1) ~> #LoadInvariants({ Is })
 
-  rule <k> #LoadInvariant(V Bs) => . ... </k>
-       <invariants> M => M[V <- Bs] </invariants>
+  rule <k> #LoadInvariant(V Bs1 Bs2) => . ... </k>
+       <invariants> M => M[V <- Bs1] </invariants>
+       <guards> C => C[V <- Bs2] </guards>
 
   rule #Ceil(#DoCompare(@A:Int, @B:Int)) => #Ceil(@A) #And #Ceil(@B)  [anywhere, simplification]
 
@@ -241,21 +245,26 @@ module SYMBOLIC-UNIT-TEST
   syntax KItem ::= #ForgetAllModifiable(Block)
   syntax KItem ::= #AssertInvariant(MaybeInvariantId)
   syntax KItem ::= #AssumeInvariant(MaybeInvariantId)
+  syntax KItem ::= #AssertGuard(MaybeInvariantId)
+  syntax KItem ::= #AssumeNotGuard(MaybeInvariantId)
+  syntax KItem ::= #AssertNotGuard(MaybeInvariantId)
+  syntax KItem ::= #AssumeGuard(MaybeInvariantId)
+  syntax KItem ::= #VerifyLoopEnd(MaybeInvariantId)
 
   syntax KItem ::= "#SaveStack"
   syntax KItem ::= #RestoreStack(K)
 
-  syntax KItem ::= #AssertBlocks(Blocks) 
+  syntax KItem ::= #AssertBlocks(Blocks, Bool) 
 
-  rule #AssertBlocks({ }) => .
-  rule #AssertBlocks({ B }) => #SaveStack ~> B ~> #AssertTrue ~> #RestoreStack(.K)
-  rule #AssertBlocks({ B ; Bs }) => #SaveStack ~> B ~> #AssertTrue ~> #RestoreStack(.K)  ~> #AssertBlocks(Bs)
+  rule #AssertBlocks({ }, _) => .
+  rule #AssertBlocks({ B }, C) => #SaveStack ~> B ~> #Assert(C) ~> #RestoreStack(.K)
+  rule #AssertBlocks({ B ; Bs }, C) => #SaveStack ~> B ~> #Assert(C) ~> #RestoreStack(.K)  ~> #AssertBlocks(Bs, C)
 
-  syntax KItem ::= #AssumeBlocks(Blocks) 
+  syntax KItem ::= #AssumeBlocks(Blocks, Bool) 
 
-  rule #AssumeBlocks({ }) => .
-  rule #AssumeBlocks({ B }) => #SaveStack ~>  B ~> #AssumeTrue ~> #RestoreStack(.K)
-  rule #AssumeBlocks({ B ; Bs }) => #SaveStack ~> B ~> #AssumeTrue ~> #RestoreStack(.K) ~> #AssumeBlocks(Bs)
+  rule #AssumeBlocks({ }, _) => .
+  rule #AssumeBlocks({ B }, C) => #SaveStack ~>  B ~> #Assume(C) ~> #RestoreStack(.K)
+  rule #AssumeBlocks({ B ; Bs }, C) => #SaveStack ~> B ~> #Assume(C) ~> #RestoreStack(.K) ~> #AssumeBlocks(Bs, C)
 
   rule <k> #SaveStack ~> X:KItem ~> Y:KItem ~> #RestoreStack(_) => X ~> Y ~> #RestoreStack(S) ... </k>
        <stack> S </stack>
@@ -263,26 +272,40 @@ module SYMBOLIC-UNIT-TEST
   rule <k> #RestoreStack(S) => . ... </k>
        <stack> _ => S </stack>
 
-  rule <k> #AssumeInvariant(V:VariableAnnotation) => #AssumeBlocks(B) ... </k>
+  rule <k> #AssumeInvariant(V:VariableAnnotation) => #AssumeBlocks(B, true) ... </k>
        <invariants> ... V |-> B ... </invariants>
 
-  rule <k> #AssertInvariant(V:VariableAnnotation) => #AssertBlocks(B) ... </k>
+  rule <k> #AssertInvariant(V:VariableAnnotation) => #AssertBlocks(B, true) ... </k>
        <invariants> ... V |-> B ... </invariants>
 
-  rule <k> (#RecordHaltCondition ~> #AssertInvariant(V) ~> #AssumeHaltCondition(R)) => (#AssertInvariant(V) ~> #AssumeHaltCondition(R ==Bool C)) ... </k>
-       <stack> C:Bool => . ... </stack>
+  rule <k> #AssumeGuard(V:VariableAnnotation) => #AssumeBlocks(B, true) ... </k>
+       <guards> ... V |-> B ... </guards>
 
-  rule <k> #AssumeHaltCondition(V) => #AssumeTrue ... </k>
-       <stack> .K => V ... </stack>
+  rule <k> #AssertGuard(V:VariableAnnotation) => #AssertBlocks(B, true) ... </k>
+       <guards> ... V |-> B ... </guards>
+
+  rule <k> #AssumeNotGuard(V:VariableAnnotation) => #AssumeBlocks(B, false) ... </k>
+       <guards> ... V |-> B ... </guards>
+
+  rule <k> #AssertNotGuard(V:VariableAnnotation) => #AssertBlocks(B, false) ... </k>
+       <guards> ... V |-> B ... </guards>
+
+  rule <k> #VerifyLoopEnd(V) ~> _:K => #AssertGuard(V) ~> #AssertInvariant(V) </k>
+       <stack> true => . ... </stack> [transition]
+
+  rule <k> #VerifyLoopEnd(V) => #AssertNotGuard(V) ~> #AssertInvariant(V) ... </k>
+       <stack> false => . ... </stack> [transition]
 
   rule <k> LOOP A B => #AssertInvariant(#FindInvariant(A)) ~> 
+                       #AssertGuard(#FindInvariant(A)) ~> 
                        #ForgetAllModifiable(B) ~>
                        #AssumeInvariant(#FindInvariant(A)) ~>  // Split invariant in two?  One for before loop (incl. halt condition), one for after (we try to prove halt = false -> pre-condition)?
+                       #AssumeGuard(#FindInvariant(A)) ~>
                        B ~>
-                       #RecordHaltCondition ~>
-                       #AssertInvariant(#FindInvariant(A)) ~>
-                       #AssumeHaltCondition(true) ~>
-                       #AssumeInvariant(#FindInvariant(A)) 
+                       #VerifyLoopEnd(#FindInvariant(A)) ~>
+                       #ForgetAllModifiable(B) ~>
+                       #AssumeInvariant(#FindInvariant(A)) ~>
+                       #AssumeNotGuard(#FindInvariant(A)) 
                        ... </k>
        <stack> true => . ... </stack> 
        requires #HasInvariant(A)
@@ -423,6 +446,11 @@ module SYMBOLIC-UNIT-TEST
   rule #DoCompare(I1:Int, I2:Int) ==Int 0 => I1 ==Int I2 [simplification]
   rule #DoCompare(I1:Int, I2:Int) >=Int 0 => I1 >=Int I2 [simplification]
   rule #DoCompare(I1:Int, I2:Int) >Int 0 => I1 >Int I2 [simplification]
+
+
+  syntax KItem ::= "#Stop"
+  rule <k> COMPARE _ => #Stop ... </k> 
+       <stack> _:Bool ~> _:Int ... </stack> [simplification]
 
   rule I1 >=Int I2 andBool I1 <=Int I2 => I1 ==Int I2 [simplification]
 
