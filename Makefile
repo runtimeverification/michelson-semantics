@@ -32,7 +32,7 @@ export C_INCLUDE_PATH
 export CPLUS_INCLUDE_PATH
 export PATH
 
-.PHONY: all clean distclean                                                                         \
+.PHONY: all clean distclean clean-tests                                                             \
         deps deps-k deps-tezos deps-tangle                                                          \
         defn defn-llvm                                                                              \
         build build-k build-compat                                                                  \
@@ -43,10 +43,12 @@ export PATH
 
 all: build
 
-clean:
-	rm -rf $(DEFN_BASE_DIR)
+clean-tests:
 	git clean -dffx -- tests
-	rm run-tezos.timestamp fix-address.timestamp
+	rm -rf run-tezos.timestamp fix-address.timestamp
+
+clean: clean-tests
+	rm -rf $(DEFN_BASE_DIR)
 
 distclean: clean
 	rm -rf $(BUILD_DIR)
