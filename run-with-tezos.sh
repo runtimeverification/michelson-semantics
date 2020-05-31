@@ -49,7 +49,6 @@ command="$1" ; shift
 
 failures='0'
 for test in $(list_files "$@"); do
-    [[ "$status" == '0' ]] || break
     notif "RUNNING: $command on $test"
     if ! $SCRIPT_DIRECTORY/$command.sh "$test"; then
         notif "FAILED: $command on $test"
