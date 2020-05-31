@@ -20,50 +20,43 @@ list_files() {
         done
     else
         for f in $(find $TEST_DIR -name '*.tzt'); do
-            fshort="${f#$TEST_DIR}"
-            if ! grep $fshort $FAILING_FILE &> /dev/null; then
-                echo $fshort
+            if ! grep $f $FAILING_FILE &> /dev/null; then
+                echo $f
             fi
         done
     fi
 }
 
-start_tezos() {
-    "$TEZOS_DIR/src/bin_node/tezos-sandboxed-node.sh" 1 --connections 1 >/dev/null 2>&1 &
-    TEZOS_NODE_PID=$!
-    sleep 5
-
-    if ! kill -0 "$TEZOS_NODE_PID" >/dev/null 2>&1 ; then
-        echo 'There seems to already be a tezos sandboxed node running, exitting' ;
-        kill -2 $$ # https://stackoverflow.com/questions/6112540/return-an-exit-code-without-closing-shell
-    fi
-
-    set +u
-    eval $("$TEZOS_DIR/src/bin_client/tezos-init-sandboxed-client.sh" 1)
-    set -u
-
-    tezos-activate-alpha
-    tezos-autocomplete
-}
-
-stop_tezos() {
-    kill -15 "$TEZOS_NODE_PID"
-}
-
-start_tezos
+# start tezos
+"$TEZOS_DIR/src/bin_node/tezos-sandboxed-node.sh" 1 --connections 1 >/dev/null 2>&1 &
+TEZOS_NODE_PID=$!
+sleep 5
+if ! kill -0 "$TEZOS_NODE_PID" >/dev/null 2>&1 ; then
+    echo 'There seems to already be a tezos sandboxed node running, exitting' ;
+    kill -2 $$ # https://stackoverflow.com/questions/6112540/return-an-exit-code-without-closing-shell
+fi
+set +u
+eval `"$TEZOS_DIR/src/bin_client/tezos-init-sandboxed-client.sh" 1`
+set -u
+tezos-activate-alpha
+tezos-autocomplete
 
 FAILING_FILE="$SCRIPT_DIRECTORY/tests/failing.cross"
 TEST_DIR="$SCRIPT_DIRECTORY/tests/unit"
 
 command="$1" ; shift
 
+status='0'
 for test in $(list_files "$@"); do
+  [[ "$status" == '0' ]] || break
   notif "Running '$command': $test"
   case "$command" in
-    fix-address) $SCRIPT_DIRECTORY/fix-address.sh "$test" ;;
-    run-tezos)   $SCRIPT_DIRECTORY/run-tezos.sh   "$test" ;;
-    *) fatal "Unknown command: $command"                  ;;
+    fix-address) $SCRIPT_DIRECTORY/fix-address.sh "$test" || status="$?" ;;
+    run-tezos)   $SCRIPT_DIRECTORY/run-tezos.sh   "$test" || status="$?" ;;
+    *) fatal "Unknown command: $command"                                 ;;
   esac
 done
 
-stop_tezos
+kill -15 "$TEZOS_NODE_PID"
+
+exit "$status"
