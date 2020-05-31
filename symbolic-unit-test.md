@@ -146,7 +146,7 @@ module SYMBOLIC-UNIT-TEST
 
   rule #TypeData(_, S:SymbolicData, T) => #Typed(S, T)
 
-   // Complex types..._
+   // Complex types...
 
   syntax Group ::= #DoReplace(Group) [function, functional]
 
@@ -177,7 +177,6 @@ module SYMBOLIC-UNIT-TEST
        <assumeFailed> _ => true </assumeFailed> 
        requires B1 =/=Bool B2
        [transition]
-
 
   rule <k> #LoadGroups(precondition { } ; Gs) => #LoadGroups(Gs) ... </k>
   rule <k> #LoadGroups(precondition { B:Block } ; Gs) => B ~> #Assume(true) ~> #LoadGroups(Gs) ... </k>
@@ -235,6 +234,14 @@ module SYMBOLIC-UNIT-TEST
   rule <k> #LoadInvariant(V Bs1 Bs2) => . ... </k>
        <invariants> M => M[V <- Bs1] </invariants>
        <guards> C => C[V <- Bs2] </guards>
+
+  syntax KItem ::= #LoadInvariants(Invariants) | #LoadInvariant(Invariant)
+
+  rule #LoadGroups(invariants Invs ; Gs) => #LoadInvariants(Invs) ~> #LoadGroups(Gs)
+
+  rule #LoadInvariants({ }) => .
+  rule #LoadInvariants({ I }) => #LoadInvariant(I)
+  rule #LoadInvariants({ I1 ; Is }) => #LoadInvariant(I1) ~> #LoadInvariants({ Is })
 
   rule #Ceil(#DoCompare(@A:Int, @B:Int)) => #Ceil(@A) #And #Ceil(@B)  [anywhere, simplification]
 
@@ -446,7 +453,6 @@ module SYMBOLIC-UNIT-TEST
   rule #DoCompare(I1:Int, I2:Int) ==Int 0 => I1 ==Int I2 [simplification]
   rule #DoCompare(I1:Int, I2:Int) >=Int 0 => I1 >=Int I2 [simplification]
   rule #DoCompare(I1:Int, I2:Int) >Int 0 => I1 >Int I2 [simplification]
-
 
   syntax KItem ::= "#Stop"
   rule <k> COMPARE _ => #Stop ... </k> 
