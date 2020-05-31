@@ -10,7 +10,7 @@ kmich_dir="${KMICH_DIR:-.}"
 build_dir="$kmich_dir/.build"
 defn_dir="${KMICH_DEFN_DIR:-$build_dir/defn}"
 lib_dir="$build_dir/local/lib"
-k_release_dir="${K_RELEASE:-$kmich_dir/deps/k/k-distribution/target/release/k}"
+k_release_dir="${K_RELEASE:-$kmich_dir/ext/k/k-distribution/target/release/k}"
 if [[ ! -f "${k_release_dir}/bin/kompile" ]]; then
     if which kompile &> /dev/null; then
         k_release_dir="$(dirname $(which kompile))/.."
