@@ -20,16 +20,10 @@ pipeline {
     }
     stage('Test') {
       options { timeout(time: 10, unit: 'MINUTES') }
-      stages {
-        stage('Start KServer') { steps { sh 'spawn-kserver kserver.log' } }
-        stage('Run Tests') {
-          parallel {
-            stage('Unit')             { steps { sh 'make test-unit  -j8' } }
-            stage('Prove')            { steps { sh 'make test-prove -j2' } }
-            stage('Cross-Validation') { steps { sh 'make test-cross -j8' } }
-          }
-          post { always { sh 'stop-kserver || true' } }
-        }
+      parallel {
+        stage('Unit')             { steps { sh 'make test-unit  -j8' } }
+        stage('Prove')            { steps { sh 'make test-prove -j2' } }
+        stage('Cross-Validation') { steps { sh 'make test-cross -j8' } }
       }
     }
     stage('Deploy') {
