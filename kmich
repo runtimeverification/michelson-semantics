@@ -90,7 +90,7 @@ fi
 
 backend="llvm"
 debug=false
-[[ ! "$run_command" == 'prove' ]] || backend='java'
+[[ ! "$run_command" == 'prove' ]] || backend='prove'
 args=()
 while [[ $# -gt 0 ]]; do
     arg="$1"
@@ -118,6 +118,6 @@ case "$run_command-$backend" in
     # Running
     run-@(llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare)  ) run_krun  "$@" ;;
     kast-@(llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare) ) run_kast  "$@" ;;
-    prove-@(prove|symbolic)                                                     ) run_prove "$@" ;;
+    prove-@(prove|symbolic)                                                              ) run_prove "$@" ;;
     *) $0 help ; fatal "Unknown command on backend: $run_command $backend" ;;
 esac
