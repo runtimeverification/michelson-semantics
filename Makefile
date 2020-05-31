@@ -106,9 +106,9 @@ ALL_FILES          := $(patsubst %, %.k, $(SOURCE_FILES) $(EXTRA_SOURCE_FILES))
 
 tangle_selector := .k
 
-hook_namespaces := TIME MICHELSON
+HOOK_NAMESPACES := TIME MICHELSON
 
-KOMPILE_OPTS += --hook-namespaces "$(hook_namespaces)" --gen-bison-parser
+KOMPILE_OPTS += --hook-namespaces "$(HOOK_NAMESPACES)" --gen-bison-parser
 
 ifneq (,$(RELEASE))
     KOMPILE_OPTS += -O3
