@@ -55,7 +55,7 @@ run_interpret() {
     trap "rm -rf $in_kore $out_kore" INT TERM EXIT
 
     cat "$run_file" | $kompiled_dir/parser_PGM > $in_kore
-    llvm-krun --directory "$kompiled_dir" -c PGM $in_kore Pgm prettyfile --pretty-print
+    llvm-krun --directory "$kompiled_dir" -c PGM $in_kore Pgm korefile --pretty-print
 }
 
 # Main
