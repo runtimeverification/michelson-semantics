@@ -50,12 +50,16 @@ run_prove() {
 run_interpret() {
     local in_kore out_kore
 
-    in_kore=$(mktemp)
-    out_kore=$(mktemp)
-    trap "rm -rf $in_kore $out_kore" INT TERM EXIT
+    in_kore=$(mktemp $kompiled_dir/in_kore.XXXXXX)
+    out_kore=$(mktemp $kompiled_dir/out_kore.XXXXXX)
+    if $debug; then
+        notif "Input Kore: $in_kore"
+        notif "Output Kore: $out_kore"
+        trap "rm -rf $in_kore $out_kore" INT TERM EXIT
+    fi
 
     cat "$run_file" | $kompiled_dir/parser_PGM > $in_kore
-    llvm-krun --directory "$kompiled_dir" -c PGM $in_kore Pgm korefile --pretty-print
+    llvm-krun --directory "$kompiled_dir" -c PGM $in_kore Pgm korefile --pretty-print "${llvm_krun_args[@]}" "$@"
 }
 
 # Main
@@ -68,7 +72,7 @@ if [[ "$run_command" == 'help' ]] || [[ "$run_command" == '--help' ]] ; then
         usage: $0 run       [--backend (llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare)] <pgm>  <K arg>*
                $0 kast      [--backend (llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare)] <pgm>  <output format> <K arg>*
                $0 prove     [--backend (prove|symbolic)]                                                               <spec> <def_module>    <K arg>*
-               $0 interpret [--backend (llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare)] <pgm>
+               $0 interpret [--backend (llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare)] <pgm>  <LLVM KRun arg>*
 
                $0 [help|--help|version|--version]
 
@@ -83,6 +87,7 @@ if [[ "$run_command" == 'help' ]] || [[ "$run_command" == '--help' ]] ; then
            Note: <pgm> is a path to a file containing an EVM program/test.
                  <spec> is a K specification to be proved.
                  <K arg> is an argument you want to pass to K.
+                 <LLVM KRun arg> are arguments to pass to llvm-krun.
                  <output format> is the format for Kast to output the term in.
                  <def_module> is the module to take as axioms when doing verification.
     "
@@ -128,12 +133,18 @@ if [[ "$run_file" == '-' ]]; then
 fi
 [[ -f "$run_file" ]] || fatal "File does not exist: $run_file"
 
+llvm_krun_args=()
+! $debug \
+    || llvm_krun_args+=(--debug)
+!  echo "$backend_dir" | grep -e contract-expander -e extractor -e input-creator -e output-comare &> /dev/null \
+    || llvm_krun_args+=(-c IO '\dv{SortString{}}("on")' String kore)
+
 case "$run_command-$backend" in
 
     # Running
-    run-@(llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare)       ) run_krun  "$@" ;;
-    kast-@(llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare)      ) run_kast  "$@" ;;
-    prove-@(prove|symbolic)                                                                   ) run_prove "$@" ;;
-    interpret-@(llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare) ) run_interpret  ;;
+    run-@(llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare)       ) run_krun       "$@" ;;
+    kast-@(llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare)      ) run_kast       "$@" ;;
+    prove-@(prove|symbolic)                                                                   ) run_prove      "$@" ;;
+    interpret-@(llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare) ) run_interpret  "$@" ;;
     *) $0 help ; fatal "Unknown command on backend: $run_command $backend" ;;
 esac
