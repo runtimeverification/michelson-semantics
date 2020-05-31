@@ -35,7 +35,7 @@ run_krun() {
 run_kast() {
     local output_mode
 
-    output_mode="$1"
+    output_mode="$1" ; shift
     kast --directory "$backend_dir" "$run_file" --output "$output_mode" "$@"
 }
 
@@ -47,6 +47,17 @@ run_prove() {
     kprove --directory "$backend_dir" "$run_file" --def-module "$def_module" "$@"
 }
 
+run_interpret() {
+    local in_kore out_kore
+
+    in_kore=$(mktemp)
+    out_kore=$(mktemp)
+    trap "rm -rf $in_kore $out_kore" INT TERM EXIT
+
+    cat "$run_file" | $kompiled_dir/parser_PGM > $in_kore
+    llvm-krun --directory "$kompiled_dir" -c PGM $in_kore Pgm prettyfile --pretty-print
+}
+
 # Main
 # ----
 
@@ -54,18 +65,20 @@ run_command="$1" ; shift
 
 if [[ "$run_command" == 'help' ]] || [[ "$run_command" == '--help' ]] ; then
     echo "
-        usage: $0 run   [--backend (llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare)] <pgm>  <K arg>*
-               $0 kast  [--backend (llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare)] <pgm>  <output format> <K arg>*
-               $0 prove [--backend (prove|symbolic)]                                                      <spec> <def_module>    <K arg>*
+        usage: $0 run       [--backend (llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare)] <pgm>  <K arg>*
+               $0 kast      [--backend (llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare)] <pgm>  <output format> <K arg>*
+               $0 prove     [--backend (prove|symbolic)]                                                               <spec> <def_module>    <K arg>*
+               $0 interpret [--backend (llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare)] <pgm>  <K arg>*
 
                $0 [help|--help|version|--version]
 
-           $0 run       : Run a single EVM program
-           $0 kast      : Parse an EVM program and output it in a supported format
-           $0 prove     : Run an EVM K proof
+           $0 run       : Run a single Michelson program.
+           $0 kast      : Parse a Michelson program and output it in a supported format.
+           $0 prove     : Run a Michelson K proof.
+           $0 interpret : Run a single Michelson program using the fast bison parser.
 
            $0 help    : Display this help message.
-           $0 version : Display the versions of KMich, K, Kore, and Z3 in use.
+           $0 version : Display the versions of KMichelson, K, Kore, and Z3 in use.
 
            Note: <pgm> is a path to a file containing an EVM program/test.
                  <spec> is a K specification to be proved.
@@ -102,6 +115,8 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 backend_dir="${backend_dir:-$defn_dir/$backend}"
+kompiled_dir=$(find $backend_dir -name '*-kompiled')
+[[ -d "$kompiled_dir" ]] || fatal "Could not find single *-kompiled directory in $backend_dir"
 
 # get the run file
 run_file="$1" ; shift
@@ -116,8 +131,9 @@ fi
 case "$run_command-$backend" in
 
     # Running
-    run-@(llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare)  ) run_krun  "$@" ;;
-    kast-@(llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare) ) run_kast  "$@" ;;
-    prove-@(prove|symbolic)                                                              ) run_prove "$@" ;;
+    run-@(llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare)       ) run_krun  "$@" ;;
+    kast-@(llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare)      ) run_kast  "$@" ;;
+    prove-@(prove|symbolic)                                                                   ) run_prove "$@" ;;
+    interpret-@(llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare) ) run_interpret  "$@" ;;
     *) $0 help ; fatal "Unknown command on backend: $run_command $backend" ;;
 esac
