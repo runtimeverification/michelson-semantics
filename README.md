@@ -31,15 +31,39 @@ following to install all needed dependencies:
 sudo apt-get install rsync git m4 build-essential patch unzip bubblewrap wget  \
 pkg-config libgmp-dev libev-dev libhidapi-dev libmpfr-dev flex bison z3        \
 libz3-dev maven python3 cmake gcc zlib1g-dev libboost-test-dev libyaml-dev     \
-libjemalloc-dev openjdk-8-jdk clang-8 lld-8 llvm-8-tools
+libjemalloc-dev openjdk-8-jdk clang-8 lld-8 llvm-8-tools pcregrep pandoc
 ```
 
-For other Linux distributions, you may need to modify the package names as well
-as the package installation command. Consult your distribution documentation
-for details.
-
-Note that in the above command, the JDK and Clang packages typically can be
+Note that the JDK and Clang packages referenced above typically can be
 substituted with more recent versions without any issues.
+
+You will also need a recent version of [Haskell stack](https://docs.haskellstack.org/en/stable/install_and_upgrade).
+You can either install the Ubuntu package and upgrade it locally:
+
+```
+sudo apt-get install haskell-stack
+stack upgrade --binary-only
+```
+
+or else get the latest version with their installer script by doing:
+
+```
+curl -sSL https://get.haskellstack.org/ | sh
+```
+
+You will additionally need to install a recent version of the [OCaml package manager, opam](https://opam.ocaml.org/doc/Install.html).
+For Ubuntu, the recommended installation steps are:
+
+```
+sudo apt-get install software-properties-common
+sudo add-apt-repository ppa:avsm/ppa
+sudo apt-get install opam
+```
+
+For other Linux distributions, you may need to adapt the above instructions,
+especially package names and package installation commands.
+Consult your distribution documentation for details as well as the links
+above for guidance on installing Haskell Stack as well as opam.
 
 ### Building K-Michelson
 
