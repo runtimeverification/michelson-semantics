@@ -47,17 +47,17 @@ TEST_DIR="$SCRIPT_DIRECTORY/tests/unit"
 
 command="$1" ; shift
 
-status='0'
+failures='0'
 for test in $(list_files "$@"); do
-  [[ "$status" == '0' ]] || break
-  notif "Running '$command': $test"
-  case "$command" in
-    fix-address) $SCRIPT_DIRECTORY/fix-address.sh "$test" || status="$?" ;;
-    run-tezos)   $SCRIPT_DIRECTORY/run-tezos.sh   "$test" || status="$?" ;;
-    *) fatal "Unknown command: $command"                                 ;;
-  esac
+    notif "RUNNING: $command on $test"
+    if ! $SCRIPT_DIRECTORY/$command.sh "$test"; then
+        notif "FAILED: $command on $test"
+        failures=$((failures + 1))
+    else
+        notif "PASSED: $command on $test"
+    fi
 done
 
 kill -15 "$TEZOS_NODE_PID"
 
-exit "$status"
+exit "$failures"

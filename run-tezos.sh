@@ -21,8 +21,6 @@ extract() {
     python3 "$SCRIPT_DIR/extract-group.py" "$test_file_extracted" "$@"
 }
 
-notif "Running Tezos: $test_file"
-
 TEMP_DIR="$SCRIPT_DIR/.failure"
 
 rm -rf "$TEMP_DIR"

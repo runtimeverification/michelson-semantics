@@ -106,9 +106,9 @@ ALL_FILES          := $(patsubst %, %.k, $(SOURCE_FILES) $(EXTRA_SOURCE_FILES))
 
 tangle_selector := .k
 
-hook_namespaces := TIME MICHELSON
+HOOK_NAMESPACES := TIME MICHELSON
 
-KOMPILE_OPTS += --hook-namespaces "$(hook_namespaces)"
+KOMPILE_OPTS += --hook-namespaces "$(HOOK_NAMESPACES)" --gen-bison-parser
 
 ifneq (,$(RELEASE))
     KOMPILE_OPTS += -O3
@@ -148,7 +148,7 @@ llvm_dir           := $(DEFN_DIR)/llvm
 llvm_files         := $(patsubst %, $(llvm_dir)/%, $(ALL_FILES))
 llvm_main_file     := unit-test
 llvm_main_module   := UNIT-TEST
-llvm_syntax_module := $(llvm_main_module)
+llvm_syntax_module := $(llvm_main_module)-SYNTAX
 llvm_kompiled      := $(llvm_dir)/$(llvm_main_file)-kompiled/interpreter
 
 defn-llvm:  $(llvm_files)
@@ -170,7 +170,7 @@ prove_dir           := $(DEFN_DIR)/prove
 prove_files         := $(patsubst %, $(prove_dir)/%, $(ALL_FILES))
 prove_main_file     := unit-test
 prove_main_module   := UNIT-TEST
-prove_syntax_module := $(prove_main_module)
+prove_syntax_module := $(prove_main_module)-SYNTAX
 prove_kompiled      := $(prove_dir)/$(prove_main_file)-kompiled/definition.kore
 
 defn-prove:  $(prove_files)
@@ -192,7 +192,7 @@ symbolic_dir           := $(DEFN_DIR)/symbolic
 symbolic_files         := $(patsubst %, $(symbolic_dir)/%, $(ALL_FILES))
 symbolic_main_file     := symbolic-unit-test
 symbolic_main_module   := SYMBOLIC-UNIT-TEST
-symbolic_syntax_module := $(symbolic_main_module)
+symbolic_syntax_module := $(symbolic_main_module)-SYNTAX
 symbolic_kompiled      := $(symbolic_dir)/$(symbolic_main_file)-kompiled/definition.kore
 
 defn-symbolic:  $(symbolic_files)
@@ -214,7 +214,7 @@ contract_expander_dir           := $(DEFN_DIR)/contract-expander
 contract_expander_files         := $(patsubst %, $(contract_expander_dir)/%, $(ALL_FILES))
 contract_expander_main_file     := compat
 contract_expander_main_module   := CONTRACT-EXPANDER
-contract_expander_syntax_module := $(contract_expander_main_module)
+contract_expander_syntax_module := $(contract_expander_main_module)-SYNTAX
 contract_expander_kompiled      := $(contract_expander_dir)/$(contract_expander_main_file)-kompiled/interpreter
 
 defn-contract-expander:  $(contract_expander_files)
@@ -236,7 +236,7 @@ extractor_dir           := $(DEFN_DIR)/extractor
 extractor_files         := $(patsubst %, $(extractor_dir)/%, $(ALL_FILES))
 extractor_main_file     := compat
 extractor_main_module   := EXTRACTOR
-extractor_syntax_module := $(extractor_main_module)
+extractor_syntax_module := $(extractor_main_module)-SYNTAX
 extractor_kompiled      := $(extractor_dir)/$(extractor_main_file)-kompiled/interpreter
 
 defn-extractor:  $(extractor_files)
@@ -258,7 +258,7 @@ input_creator_dir           := $(DEFN_DIR)/input-creator
 input_creator_files         := $(patsubst %, $(input_creator_dir)/%, $(ALL_FILES))
 input_creator_main_file     := compat
 input_creator_main_module   := INPUT-CREATOR
-input_creator_syntax_module := $(input_creator_main_module)
+input_creator_syntax_module := $(input_creator_main_module)-SYNTAX
 input_creator_kompiled      := $(input_creator_dir)/$(input_creator_main_file)-kompiled/interpreter
 
 defn-input-creator:  $(input_creator_files)
@@ -280,7 +280,7 @@ output_compare_dir           := $(DEFN_DIR)/output-compare
 output_compare_files         := $(patsubst %, $(output_compare_dir)/%, $(ALL_FILES))
 output_compare_main_file     := compat
 output_compare_main_module   := OUTPUT-COMPARE
-output_compare_syntax_module := $(output_compare_main_module)
+output_compare_syntax_module := $(output_compare_main_module)-SYNTAX
 output_compare_kompiled      := $(output_compare_dir)/$(output_compare_main_file)-kompiled/interpreter
 
 defn-output-compare:  $(output_compare_files)
@@ -316,7 +316,7 @@ test-unit:         $(unit_tests_passing:=.run)
 test-unit-failing: $(unit_tests_failing:=.run)
 
 tests/%.run: tests/% $(llvm_kompiled)
-	$(TEST) run --backend llvm $<
+	$(TEST) interpret --backend llvm $< --output-file /dev/null
 
 # Cross Validation
 
@@ -328,7 +328,7 @@ test-cross:         $(cross_tests_passing:=.cross)
 test-cross-failing: $(cross_tests_failing:=.cross)
 
 tests/%.cross: tests/%.output $(output_compare_kompiled)
-	$(TEST) run --backend output-compare $< --output none > $@
+	$(TEST) interpret --backend output-compare $< --output-file /dev/null > $@
 
 $(cross_tests_passing:=.output): run-tezos.timestamp
 
@@ -337,7 +337,7 @@ run-tezos.timestamp: $(cross_tests_passing) $(cross_tests_passing:=.expanded) $(
 	touch $@
 
 tests/%.expanded: tests/%.address $(contract_expander_kompiled)
-	$(TEST) run --backend contract-expander $< --output none > $@
+	$(TEST) interpret --backend contract-expander $< --output-file /dev/null > $@
 
 $(cross_tests_passing:=.address): fix-address.timestamp
 
@@ -346,10 +346,10 @@ fix-address.timestamp: $(cross_tests_passing) $(cross_tests_passing:=.extracted)
 	touch $@
 
 tests/%.extracted: tests/% $(extractor_kompiled)
-	$(TEST) run --backend extractor $< --output none > $@
+	$(TEST) interpret --backend extractor $< --output-file /dev/null > $@
 
 tests/%.input: tests/% $(input_creator_kompiled)
-	$(TEST) run --backend input-creator $< --output none > $@
+	$(TEST) interpret --backend input-creator $< --output-file /dev/null > $@
 
 # Prove
 
