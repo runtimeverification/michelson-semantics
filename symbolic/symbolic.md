@@ -213,7 +213,7 @@ module SYMBOLIC-UNIT-TEST
   rule <k> #AssertTrue => . ... </k>
        <stack> true => . </stack>
 
-  syntax KItem ::= "#AssertFailed"
+  syntax KItem ::= "#AssertFailed" [klabel(#AssertFailed), symbol]
 
   rule <k> #AssertTrue => #AssertFailed ... </k>
        <stack> false => . </stack>

@@ -1,0 +1,62 @@
+#!/usr/bin/env python3
+
+# Usage: ./kmich run ... --search-final --output json | $0 <path-to-definition>
+#
+# Reads kmichelson json output for unit-tests and checks that all branches have succeeded.
+# Exits 127 if there is a stuck term. Otherwise, exits with the number of failing branches
+
+import json
+import os
+import pyk
+import sys
+
+def findSubtermsByLabel(label, term):
+    if not term['node'] in ['KSequence', 'KApply']: return []
+    if term['node'] == 'KApply':
+        if term['label'] == label: return [term]
+        ret = []
+        for subterm in term['args']:
+            ret += findSubtermsByLabel(label, subterm)
+        return ret
+    return []
+
+def parseKastTerm(jsonString):
+    return json.loads(jsonString)['term']
+
+def findFailingBranches(term):
+    success_count = 0
+    failures = []
+    stucks = []
+    for kCell in findSubtermsByLabel('<k>', term):
+        assert(kCell['arity'] == 1)
+        kSeq = kCell['args'][0]
+        assert(kSeq['node'] == 'KSequence')
+
+        if   kSeq['items'] == []:                          success_count += 1
+        elif kSeq['items'][0]['label'] != '#AssertFailed': stucks += [kSeq]
+        else:                                              failures += [kSeq]
+    return success_count, failures, stucks
+
+assert(len(sys.argv) == 2)
+pathToDefinition = sys.argv[1]
+definition = pyk.readKastTerm(os.path.join(pathToDefinition, 'compiled.json'))
+symbolTable = pyk.buildSymbolTable(definition)
+outputTerm = parseKastTerm(sys.stdin.read())
+success_count, failures, stucks = findFailingBranches(outputTerm)
+
+if len(stucks) != 0: print("Stucks:")
+for term in stucks:
+    print(pyk.prettyPrintKast(term, symbolTable))
+    print(term)
+    print()
+print()
+
+if len(failures) != 0: print("Failures:")
+for term in failures:
+    print(pyk.prettyPrintKast(term, symbolTable))
+    print()
+print()
+
+print("%d branches succeeded; %d branches failed; %d branches stuck." % (success_count, len(failures), len(stucks)))
+if len(stucks) != 0: sys.exit(127)
+sys.exit(min(len(failures), 126))

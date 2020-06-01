@@ -2,6 +2,7 @@
 # --------
 
 DEPS_DIR      := ext
+LIB_DIR       := lib
 BUILD_DIR     := .build
 SUBDEFN_DIR   := .
 DEFN_BASE_DIR := $(BUILD_DIR)/defn
@@ -25,11 +26,13 @@ LIBRARY_PATH       := $(LOCAL_LIB)
 C_INCLUDE_PATH     += :$(BUILD_LOCAL)/include
 CPLUS_INCLUDE_PATH += :$(BUILD_LOCAL)/include
 PATH               := $(K_BIN):$(TEZOS_SUBMODULE):$(PATH)
+PYTHONPATH         := $(K_RELEASE)/lib:$(PYTHONPATH)
 
 export LIBRARY_PATH
 export C_INCLUDE_PATH
 export CPLUS_INCLUDE_PATH
 export PATH
+export PYTHONPATH
 
 .PHONY: all clean distclean clean-tests                                                             \
         deps deps-k deps-tezos                                                                      \
@@ -186,7 +189,8 @@ $(symbolic_kompiled): $(symbolic_files)
 	$(KOMPILE_HASKELL) $(symbolic_main_file).md                  \
 	                   --directory $(symbolic_dir) -I $(CURDIR)  \
 	                   --main-module $(symbolic_main_module)     \
-	                   --syntax-module $(symbolic_syntax_module)
+	                   --syntax-module $(symbolic_syntax_module) \
+	                   --emit-json
 
 # Compat Contract Expander
 
@@ -281,6 +285,23 @@ test-unit-failing: $(unit_tests_failing:=.run)
 
 tests/%.run: tests/% $(llvm_kompiled)
 	$(TEST) interpret --backend llvm $< --output-file /dev/null
+
+# symbolic
+
+symbolic_tests         := $(wildcard tests/symbolic/*.tzt)
+symbolic_tests_failing := $(shell cat tests/failing.symbolic)
+symbolic_tests_passing := $(filter-out $(symbolic_tests_failing), $(symbolic_tests))
+
+test-symbolic:         $(symbolic_tests_passing:=.symbolic)
+test-symbolic-failing: $(symbolic_tests_failing:=.symbolic)
+
+EXPECTED_EXITCODE = 0
+tests/symbolic/%.stuck.tzt.symbolic: EXPECTED_EXITCODE = 127
+tests/symbolic/%.fail.tzt.symbolic:  EXPECTED_EXITCODE = 1
+
+tests/%.symbolic: tests/% $(symbolic_kompiled)
+	$(TEST) run --backend symbolic $< --search-final --output json \
+  | $(LIB_DIR)/check-exit-code $(EXPECTED_EXITCODE) $(LIB_DIR)/michelson-test-check $(dir $(symbolic_kompiled)) > /dev/null
 
 # Cross Validation
 
