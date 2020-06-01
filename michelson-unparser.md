@@ -1,3 +1,4 @@
+```k
 requires "michelson-syntax.k"
 requires "michelson-internal-syntax.k"
 requires "michelson-common.k"
@@ -473,3 +474,4 @@ module MICHELSON-UNPARSER
 
   rule #doUnparse(#Any, _) => "#Any"
 endmodule
+```

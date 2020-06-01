@@ -1,7 +1,11 @@
-requires "../../.build/michelson.k"
+requires "michelson.k"
 
-module SUM-TO-N
+module VERIFICATION
   imports MICHELSON
+endmodule
+
+module SUM-TO-N-SPEC
+  imports VERIFICATION
 
   rule <k> LEFT .AnnotationList nat => .K </k>
        <stack> Pair A:Int B:Int => Left Pair A B </stack>

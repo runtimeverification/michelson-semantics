@@ -1,9 +1,13 @@
-requires "../../.build/unit-test.k"
+requires "unit-test.k"
 requires "lemmas.k"
 
-module VOTE
+module VERIFICATION
   imports UNIT-TEST
   imports LEMMAS
+endmodule
+
+module VOTE-SPEC
+  imports VERIFICATION
   
   rule <k>
          storage_value ((M:Map)[S:String <- I:Int]) ;

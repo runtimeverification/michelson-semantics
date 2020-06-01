@@ -1,9 +1,13 @@
-requires "../../.build/michelson.k"
+requires "michelson.k"
 requires "lemmas.k"
 
-module SUM-SIMPLE
+module VERIFICATION
   imports MICHELSON
   imports LEMMAS
+endmodule
+
+module SUM-SIMPLE-SPEC
+  imports VERIFICATION
 
   rule <k> { PUSH .AnnotationList (int .AnnotationList) 2 ; 
              PUSH .AnnotationList (int .AnnotationList) I1:Int ; 

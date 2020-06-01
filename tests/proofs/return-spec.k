@@ -1,7 +1,11 @@
-requires "../../michelson.k"
+requires "michelson.k"
 
-module RETURN
+module VERIFICATION
   imports MICHELSON
+endmodule
+
+module RETURN-SPEC
+  imports VERIFICATION
 
   rule <k>
        { 
@@ -24,14 +28,14 @@ module RETURN
         <stack> Pair Unit Unit => Pair ListItem(#TransferTokens(Unit, #Mutez(A), #Contract(#Address("SourceAddr"), unit .TypeAnnotationList .FieldAnnotationList))) Unit </stack>
         <paramtype> unit .TypeAnnotationList .FieldAnnotationList </paramtype>
         <storagetype> unit .TypeAnnotationList .FieldAnnotationList </storagetype>
-        <balance> #Mutez(0) </balance>
-        <amount> #Mutez(A) </amount>
-        <now> #Timestamp(0) </now>
+        <mybalance> #Mutez(0) </mybalance>
+        <myamount> #Mutez(A) </myamount>
+        <mynow> #Timestamp(0) </mynow>
         <myaddr> #Address("OwnAddr") </myaddr>
         <knownaddrs> #Address("SourceAddr") |-> #Contract(#Address("SourceAddr"), unit .TypeAnnotationList .FieldAnnotationList) </knownaddrs>
         <sourceaddr> #Address("SourceAddr") </sourceaddr>
         <senderaddr> #Address("SenderAddr") </senderaddr>
-        <chainid> #ChainId(0) </chainid>
+        <mychainid> #ChainId(0) </mychainid>
         requires A >Int 0 
 
 
@@ -56,12 +60,12 @@ module RETURN
         <stack> Pair Unit Unit => Pair .List Unit </stack>
         <paramtype> unit .TypeAnnotationList .FieldAnnotationList </paramtype>
         <storagetype> unit .TypeAnnotationList .FieldAnnotationList </storagetype>
-        <balance> #Mutez(0) </balance>
-        <amount> #Mutez(0) </amount>
-        <now> #Timestamp(0) </now>
+        <mybalance> #Mutez(0) </mybalance>
+        <myamount> #Mutez(0) </myamount>
+        <mynow> #Timestamp(0) </mynow>
         <myaddr> #Address("OwnAddr") </myaddr>
         <knownaddrs> #Address("SourceAddr") |-> #Contract(#Address("SourceAddr"), unit .TypeAnnotationList .FieldAnnotationList) </knownaddrs>
         <sourceaddr> #Address("SourceAddr") </sourceaddr>
         <senderaddr> #Address("SenderAddr") </senderaddr>
-        <chainid> #ChainId(0) </chainid>
+        <mychainid> #ChainId(0) </mychainid>
 endmodule
