@@ -1,5 +1,5 @@
 ```k
-requires "michelson-common.md"
+requires "michelson/common.md"
 
 module MICHELSON-TYPES
   imports MICHELSON-COMMON

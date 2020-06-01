@@ -8,7 +8,7 @@ Common
 
 ```k
 requires "json.k"
-requires "unit-test.md"
+requires "unit-test/unit-test.md"
 requires "michelson-unparser.md"
 
 module COMPAT-COMMON

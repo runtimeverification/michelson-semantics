@@ -1,8 +1,8 @@
 ```k
-requires "michelson-syntax.md"
-requires "michelson-internal-syntax.md"
-requires "michelson-common.md"
-requires "unit-test-syntax.md"
+requires "michelson/syntax.md"
+requires "michelson/internal-syntax.md"
+requires "michelson/common.md"
+requires "unit-test/syntax.md"
 
 module MICHELSON-UNPARSER
   imports MICHELSON-SYNTAX

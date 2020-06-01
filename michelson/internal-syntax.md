@@ -1,7 +1,7 @@
 This file extends the normal Michelson syntax to describe Blockchain operations and error conditions.  This module should remain separate from MICHELSON-SYNTAX to prevent normal contracts from using these productions, which are intended only for unit tests.  But, this cannot be merged into the UNIT-TEST-SYNTAX module, as the MICHELSON module needs to be able to use them, and MICHELSON should not depend upon UNIT-TEST-SYNTAX.
 
 ```k
-requires "michelson-syntax.md"
+requires "michelson/syntax.md"
 
 module MICHELSON-INTERNAL-SYNTAX
   imports MICHELSON-SYNTAX
