@@ -32,7 +32,7 @@ export CPLUS_INCLUDE_PATH
 export PATH
 
 .PHONY: all clean distclean clean-tests                                                             \
-        deps deps-k deps-tezos deps-tangle                                                          \
+        deps deps-k deps-tezos                                                                      \
         defn defn-llvm                                                                              \
         build build-k build-compat                                                                  \
         build-llvm build-prove build-symbolic                                                       \
