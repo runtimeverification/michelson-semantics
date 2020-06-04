@@ -96,7 +96,7 @@ SOURCE_FILES       := compat                    \
 EXTRA_SOURCE_FILES :=
 ALL_FILES          := $(patsubst %, %.md, $(SOURCE_FILES) $(EXTRA_SOURCE_FILES))
 
-tangle_selector := .k
+tangle_selector := k
 
 HOOK_NAMESPACES := TIME MICHELSON
 
