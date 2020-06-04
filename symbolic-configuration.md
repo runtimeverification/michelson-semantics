@@ -1,5 +1,5 @@
 ```k
-requires "unit-test.k"
+requires "unit-test.md"
 
 module SYMBOLIC-CONFIGURATION
   imports UNIT-TEST

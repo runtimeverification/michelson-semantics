@@ -1,5 +1,5 @@
 ```k
-requires "unit-test-syntax.k"
+requires "unit-test-syntax.md"
 
 module SYMBOLIC-UNIT-TEST-SYNTAX
   imports UNIT-TEST-SYNTAX
