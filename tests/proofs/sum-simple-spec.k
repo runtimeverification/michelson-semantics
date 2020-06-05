@@ -1,4 +1,4 @@
-requires "michelson.k"
+requires "michelson.md"
 requires "lemmas.k"
 
 module VERIFICATION

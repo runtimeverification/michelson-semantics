@@ -1,9 +1,9 @@
 This file implements the unit test section of the .tzt format described by the Tezos foundation [here](https://gitlab.com/tezos/tezos/-/merge_requests/1487/diffs).  This file implements the behavior of the 'code,' 'input,' and 'output' applications discussed in that document.
 
 ```k
-requires "unit-test-syntax.k"
-requires "michelson.k"
-requires "michelson-types.k"
+requires "unit-test-syntax.md"
+requires "michelson.md"
+requires "michelson-types.md"
 
 module UNIT-TEST
   imports UNIT-TEST-SYNTAX

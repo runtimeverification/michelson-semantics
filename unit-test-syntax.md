@@ -1,8 +1,8 @@
 This module extends the Michelson contract format to include the .tzt unit testing format proposed by the Tezos foundation [here](https://gitlab.com/tezos/tezos/-/merge_requests/1487/diffs).  Note that, unlike normal contract execution, unit tests *may* use internal syntax.  They furthermore specify entire input and expected output stacks, rather than only a parameter and storage value.
 
 ```k
-requires "michelson-internal-syntax.k"
-requires "michelson-syntax.k"
+requires "michelson-internal-syntax.md"
+requires "michelson-syntax.md"
 
 module UNIT-TEST-SYNTAX
   imports MICHELSON-SYNTAX
