@@ -1,8 +1,8 @@
 ```k
-requires "unit-test.k"
-requires "symbolic-configuration.k"
-requires "michelson-types.k"
-requires "symbolic-unit-test-syntax.k"
+requires "unit-test.md"
+requires "symbolic-configuration.md"
+requires "michelson-types.md"
+requires "symbolic-unit-test-syntax.md"
 
 
 module SYMBOLIC-UNIT-TEST
