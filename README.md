@@ -90,10 +90,21 @@ Running Tests
 
 There are three major test-suites you may be interested in running.
 
-The unit tests (running individual `*.tzt` programs and checking their output):
+The unit tests (running individual `*.tzt` programs and checking their exit code):
 
 ```sh
 make test-unit -j8
+```
+
+The symbolic unit tests (running individual `*.tzt` programs and checking their
+output using `lib/michelson-test-check`). Note that their are three flavours of
+symbolic unit tests. Those with the `stuck.tzt` extension, test ill-formed
+programs and are expected to get stuck before completing exectution. Those with
+the `fail.tzt` extension, are "broken" tests where assertions are expected to
+fail.
+
+```sh
+make test-symbolic -j8
 ```
 
 The proof tests:
