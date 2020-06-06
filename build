@@ -1,0 +1,87 @@
+#!/usr/bin/env python3
+
+import os
+import subprocess
+import sys
+
+# Bootstrapping
+# =============
+
+# Make sure the KNinja repo is available.
+#
+subprocess.check_call(['git', 'submodule', 'update', '--init', '--recursive'])
+extdir = 'ext'
+sys.path.append(os.path.join(os.path.dirname(__file__), extdir))
+
+from kninja import *
+
+# Helpers
+# =======
+
+def topdir(*args): return os.path.join(os.path.dirname(os.path.realpath(__file__)), *args)
+
+def defn(backend, alias, main, sources, flags):
+    return proj.definition( alias = alias
+                          , main = main
+                          , other = sources
+                          , backend = backend
+                          , flags = ' '.join(flags)
+                          )
+
+# Note that the "main" file is not included in these source lists
+
+core_sources = [ 'michelson-common.md'
+               , 'michelson-config.md'
+               , 'michelson-internal-syntax.md'
+               , 'michelson.md'
+               , 'michelson-syntax.md'
+               , 'michelson-types.md'
+               , 'unit-test-syntax.md'
+               ]
+
+llvm_sources = core_sources + \
+               [ 'hex.cpp'
+               , 'time.cpp'
+               ]
+llvm_flags = [ '--gen-bison-parser'
+             , '-ccopt', topdir('hex.cpp')
+             , '-ccopt', topdir('time.cpp')
+             , '-ccopt', '-std=c++14'
+             , '--hook-namespaces' , 'TIME'
+             ]
+
+compat_sources = llvm_sources + \
+                 [ 'unit-test.md'
+                 , 'compat/common.k'
+                 , 'compat/michelson-unparser.k'
+                 , 'compat/decode.cpp'
+                 ]
+compat_flags   = llvm_flags + \
+                 [ '-ccopt', topdir('compat', 'decode.cpp')
+                 , '--hook-namespaces', 'MICHELSON'
+                 ]
+
+symbolic_sources = core_sources + \
+                   [ 'unit-test.md'
+                   , 'symbolic-unit-test-syntax.md'
+                   ]
+
+# Build
+# =====
+
+proj = KProject(extdir = extdir)
+
+unit_test         = defn('llvm',    'unit-test',         'unit-test.md',               llvm_sources,       llvm_flags  )
+contract_expander = defn('llvm',    'contract-expander', 'compat/contract-expander.k', compat_sources,     compat_flags)
+extractor         = defn('llvm',    'extractor',         'compat/extractor.k',         compat_sources,     compat_flags)
+input_creator     = defn('llvm',    'input-creator',     'compat/input-creator.k',     compat_sources,     compat_flags)
+output_compare    = defn('llvm',    'output-compare',    'compat/output-compare.k',    compat_sources,     compat_flags)
+
+coverage          = defn('llvm',    'coverage',          'unit-test.md',               llvm_sources,       llvm_flags + ['--coverage'])
+
+proof             = defn('haskell', 'proof',             'unit-test.md',               core_sources,       [])
+symbolic          = defn('haskell', 'symbolic',          'symbolic-unit-test.md',      symbolic_sources,   [])
+
+proj.default([unit_test.target, contract_expander.target, extractor.target, input_creator.target, output_compare.target])
+
+proj.main()
