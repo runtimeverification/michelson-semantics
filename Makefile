@@ -280,10 +280,10 @@ unit_tests         := $(wildcard tests/unit/*.tzt)
 unit_tests_failing := $(shell cat tests/failing.unit)
 unit_tests_passing := $(filter-out $(unit_tests_failing), $(unit_tests))
 
-test-unit:         $(unit_tests_passing:=.run)
-test-unit-failing: $(unit_tests_failing:=.run)
+test-unit:         $(unit_tests_passing:=.unit)
+test-unit-failing: $(unit_tests_failing:=.unit)
 
-tests/%.run: tests/% $(llvm_kompiled)
+tests/%.unit: tests/% $(llvm_kompiled)
 	$(TEST) interpret --backend llvm $< --output-file /dev/null
 
 # symbolic
