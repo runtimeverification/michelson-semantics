@@ -26,7 +26,7 @@ LIBRARY_PATH       := $(LOCAL_LIB)
 C_INCLUDE_PATH     += :$(BUILD_LOCAL)/include
 CPLUS_INCLUDE_PATH += :$(BUILD_LOCAL)/include
 PATH               := $(K_BIN):$(TEZOS_SUBMODULE):$(PATH)
-PYTHONPATH         := $(K_RELEASE)/lib:$(PYTHONPATH)
+PYTHONPATH         := $(K_LIB):$(PYTHONPATH)
 
 export LIBRARY_PATH
 export C_INCLUDE_PATH
