@@ -6,3 +6,6 @@
 	path = ext/tezos
 	url = https://gitlab.com/tezos/tezos.git
 	ignore = untracked
+[submodule "ext/kninja"]
+	path = ext/kninja
+	url = https://github.com/nishantjr/kninja.git
