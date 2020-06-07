@@ -20,68 +20,157 @@ from kninja import *
 
 def topdir(*args): return os.path.join(os.path.dirname(os.path.realpath(__file__)), *args)
 
-def defn(backend, alias, main, sources, flags):
+all_sources = [ 'michelson/common.md'
+              , 'michelson/configuration.md'
+              , 'michelson/internal-syntax.md'
+              , 'michelson/michelson.md'
+              , 'michelson/syntax.md'
+              , 'michelson/types.md'
+              , 'unit-test/syntax.md'
+              , 'unit-test/unit-test.md'
+              , 'symbolic/configuration.md'
+              , 'symbolic/symbolic.md'
+              , 'symbolic/syntax.md'
+              , 'compat.md'
+              ]
+hook_sources = [ 'hooks/hex.cpp'
+               , 'hooks/time.cpp'
+               , 'hooks/decode.cpp'
+               ]
+
+llvm_flags = [ '--gen-bison-parser'
+             , '-ccopt', topdir('hooks/hex.cpp')
+             , '-ccopt', topdir('hooks/time.cpp')
+             , '-ccopt', topdir('hooks/decode.cpp')
+             , '-ccopt', '-std=c++14'
+             , '--hook-namespaces', 'TIME'
+             , '--hook-namespaces', 'MICHELSON'
+             ]
+
+def defn(backend, alias, main, flags, main_module = None):
+    flags = [] + flags # Don't modify parameters passed by reference
+    flags += ['-I', topdir()]
+    if main_module: flags += ['--main-module', main_module]
     return proj.definition( alias = alias
                           , main = main
-                          , other = sources
+                          , other = all_sources
                           , backend = backend
                           , flags = ' '.join(flags)
                           )
-
-# Note that the "main" file is not included in these source lists
-
-core_sources = [ 'michelson-common.md'
-               , 'michelson-config.md'
-               , 'michelson-internal-syntax.md'
-               , 'michelson.md'
-               , 'michelson-syntax.md'
-               , 'michelson-types.md'
-               , 'unit-test-syntax.md'
-               ]
-
-llvm_sources = core_sources + \
-               [ 'hex.cpp'
-               , 'time.cpp'
-               ]
-llvm_flags = [ '--gen-bison-parser'
-             , '-ccopt', topdir('hex.cpp')
-             , '-ccopt', topdir('time.cpp')
-             , '-ccopt', '-std=c++14'
-             , '--hook-namespaces' , 'TIME'
-             ]
-
-compat_sources = llvm_sources + \
-                 [ 'unit-test.md'
-                 , 'compat/common.k'
-                 , 'compat/michelson-unparser.k'
-                 , 'compat/decode.cpp'
-                 ]
-compat_flags   = llvm_flags + \
-                 [ '-ccopt', topdir('compat', 'decode.cpp')
-                 , '--hook-namespaces', 'MICHELSON'
-                 ]
-
-symbolic_sources = core_sources + \
-                   [ 'unit-test.md'
-                   , 'symbolic-unit-test-syntax.md'
-                   ]
 
 # Build
 # =====
 
 proj = KProject(extdir = extdir)
 
-unit_test         = defn('llvm',    'unit-test',         'unit-test.md',               llvm_sources,       llvm_flags  )
-contract_expander = defn('llvm',    'contract-expander', 'compat/contract-expander.k', compat_sources,     compat_flags)
-extractor         = defn('llvm',    'extractor',         'compat/extractor.k',         compat_sources,     compat_flags)
-input_creator     = defn('llvm',    'input-creator',     'compat/input-creator.k',     compat_sources,     compat_flags)
-output_compare    = defn('llvm',    'output-compare',    'compat/output-compare.k',    compat_sources,     compat_flags)
+unit_test         = defn('llvm',    'llvm',              'unit-test/unit-test.md',  llvm_flags                                                     )
+contract_expander = defn('llvm',    'contract-expander', 'compat.md',               llvm_flags                 , main_module = 'CONTRACT-EXPANDER' )
+extractor         = defn('llvm',    'extractor',         'compat.md',               llvm_flags                 , main_module = 'EXTRACTOR'         )
+input_creator     = defn('llvm',    'input-creator',     'compat.md',               llvm_flags                 , main_module = 'INPUT-CREATOR'     )
+output_compare    = defn('llvm',    'output-compare',    'compat.md',               llvm_flags                 , main_module = 'OUTPUT-COMPARE'    )
 
-coverage          = defn('llvm',    'coverage',          'unit-test.md',               llvm_sources,       llvm_flags + ['--coverage'])
+coverage          = defn('llvm',    'coverage',          'unit-test/unit-test.md',  llvm_flags + ['--coverage']                                    )
 
-proof             = defn('haskell', 'proof',             'unit-test.md',               core_sources,       [])
-symbolic          = defn('haskell', 'symbolic',          'symbolic-unit-test.md',      symbolic_sources,   [])
+prove             = defn('haskell', 'prove',             'unit-test/unit-test.md',  []                                                             )
+symbolic          = defn('haskell', 'symbolic',          'symbolic/symbolic.md',    ['--emit-json']            , main_module = 'SYMBOLIC-UNIT-TEST')
 
 proj.default([unit_test.target, contract_expander.target, extractor.target, input_creator.target, output_compare.target])
+
+# Test
+# ====
+
+def readlines(file):
+    with open(file) as f_in:
+        lines = list(filter(None, (line.rstrip() for line in f_in)))
+    return lines
+
+def list_diff(l1, l2): return list(set(l1) - set(l2))
+
+def kmich_rule(defn, mode, suffix, flags):
+    return proj.rule( 'kmich'
+                    , description = 'kmich: $in'
+                    , command = './kmich $mode --backend $defn_name $in > $out $flags'
+                    )                                \
+               .variable('mode', mode)               \
+               .variable('defn_name', defn._alias)   \
+               .variable('flags', flags)             \
+               .implicit([defn.target])              \
+               .ext(suffix)
+
+def check_unit_test(exit_code, defn, input):
+    rule = proj.rule( 'check-unit-test'
+                    , description = 'check-unit-test: $in'
+                    , command = 'lib/check-exit-code $exit_code lib/michelson-test-check $defn_dir < $in > $out'
+                    , ext = 'check'
+                    )                                  \
+               .variable('exit_code', exit_code) \
+               .variable('defn_dir', defn.kompiled_dir()) \
+               .implicit([defn.target])
+    return input.then(rule)
+
+def kmich(defn, mode, suffix, flags = []):
+    def r(input):
+        return proj.source(input).then(kmich_rule(defn, mode, suffix, flags))
+    return r
+
+def suite(name, inputs, runner, default = True):
+    tests = []
+    for input in inputs:
+        tests += [runner(input)]
+    alias = proj.alias(name, tests)
+    if default: proj.default([alias])
+    return alias
+
+# Unit
+# ----
+
+unit_tests_all     = glob('tests/unit/*.tzt')
+unit_tests_failing = readlines('tests/failing.unit')
+unit_tests_passing = list_diff(unit_tests_all, unit_tests_failing)
+
+unit_test_runner = kmich(unit_test, 'interpret', suffix = 'unit')
+
+suite('test-unit',         unit_tests_passing, unit_test_runner)
+suite('test-unit-failing', unit_tests_failing, unit_test_runner, default = False)
+
+# Symbolic
+# --------
+
+symbolic_tests_all     = glob('tests/symbolic/*.tzt')
+symbolic_tests_failing = readlines('tests/failing.symbolic')
+symbolic_tests_passing = list_diff(symbolic_tests_all, symbolic_tests_failing)
+
+def symbolic_test_runner(input):
+    json_output = kmich(symbolic, 'run', 'symbolic-json', '--search-final --output json')(input)
+
+    exit_code = 0
+    if input.endswith('stuck.tzt'): exit_code = 127
+    if input.endswith('fail.tzt'):  exit_code = 1
+    check = check_unit_test(exit_code, symbolic, json_output)
+    return check
+
+suite('test-symbolic',         symbolic_tests_passing, symbolic_test_runner)
+suite('test-symbolic-failing', symbolic_tests_failing, symbolic_test_runner, default = False)
+
+# Prove
+# -----
+
+prove_tests_all     = glob('tests/proofs/*-spec.k')
+prove_tests_failing = readlines('tests/failing.prove')
+prove_tests_passing = list_diff(prove_tests_all, prove_tests_failing)
+
+prove_runner = kmich(prove, 'prove', suffix = 'prove', flags = 'VERIFICATION')
+
+suite('test-prove',         prove_tests_passing, prove_runner)
+suite('test-prove-failing', prove_tests_failing, prove_runner, default = False)
+
+# Main
+# ====
+
+python_path = None
+if 'PYTHONPATH' in os.environ: python_path = ':' + os.environ.get('PYTHONPATH')
+else: python_path = ''
+python_path = proj.klibdir() + python_path
+os.environ["PYTHONPATH"] = python_path
 
 proj.main()
