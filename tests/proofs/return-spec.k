@@ -1,4 +1,4 @@
-requires "michelson.md"
+requires "michelson/michelson.md"
 
 module VERIFICATION
   imports MICHELSON

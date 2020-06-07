@@ -1,4 +1,4 @@
-requires "unit-test.md"
+requires "unit-test/unit-test.md"
 requires "lemmas.k"
 
 module VERIFICATION
