@@ -47,7 +47,6 @@ success_count, failures, stucks = findFailingBranches(outputTerm)
 if len(stucks) != 0: print("Stucks:")
 for term in stucks:
     print(pyk.prettyPrintKast(term, symbolTable))
-    print(term)
     print()
 print()
 
