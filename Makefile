@@ -300,8 +300,7 @@ tests/symbolic/%.stuck.tzt.symbolic: EXPECTED_EXITCODE = 127
 tests/symbolic/%.fail.tzt.symbolic:  EXPECTED_EXITCODE = 1
 
 tests/%.symbolic: tests/% $(symbolic_kompiled)
-	$(TEST) run --backend symbolic $< --search-final --output json \
-  | $(LIB_DIR)/check-exit-code $(EXPECTED_EXITCODE) $(LIB_DIR)/michelson-test-check $(dir $(symbolic_kompiled)) > /dev/null
+	$(LIB_DIR)/check-exit-code $(EXPECTED_EXITCODE) $(TEST) symbtest --backend symbolic $< > /dev/null
 
 # Cross Validation
 

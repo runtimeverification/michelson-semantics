@@ -21,6 +21,7 @@ fi
 
 export PATH="$k_release_dir/bin:$PATH"
 export LD_LIBRARY_PATH="$k_release_dir/lib/native/linux64:$lib_dir:${LD_LIBRARY_PATH:-}"
+export PYTHONPATH="$k_release_dir/lib/kframework:${PYTHONPATH:-}"
 
 # Runners
 # -------
@@ -62,6 +63,10 @@ run_interpret() {
     llvm-krun --directory "$kompiled_dir" -c PGM $in_kore Pgm korefile --pretty-print "${llvm_krun_args[@]}" "$@"
 }
 
+run_symbtest() {
+    run_krun --search-final --output json "$@" | $kmich_dir/lib/michelson-test-check "$kompiled_dir"
+}
+
 # Main
 # ----
 
@@ -71,6 +76,7 @@ if [[ "$run_command" == 'help' ]] || [[ "$run_command" == '--help' ]] ; then
     echo "
         usage: $0 run       [--backend (llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare)] <pgm>  <K arg>*
                $0 kast      [--backend (llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare)] <pgm>  <output format> <K arg>*
+               $0 symbtest  [--backend symbolic]                                                                       <pgm>                  <K arg>*
                $0 prove     [--backend (prove|symbolic)]                                                               <spec> <def_module>    <K arg>*
                $0 interpret [--backend (llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare)] <pgm>  <LLVM KRun arg>*
 
@@ -78,6 +84,7 @@ if [[ "$run_command" == 'help' ]] || [[ "$run_command" == '--help' ]] ; then
 
            $0 run       : Run a single Michelson program.
            $0 kast      : Parse a Michelson program and output it in a supported format.
+           $0 symbtest  : Run a Michelson symbolic test.
            $0 prove     : Run a Michelson K proof.
            $0 interpret : Run a single Michelson program using the fast bison parser.
 
@@ -144,6 +151,7 @@ case "$run_command-$backend" in
     # Running
     run-@(llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare)       ) run_krun       "$@" ;;
     kast-@(llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare)      ) run_kast       "$@" ;;
+    symbtest-symbolic                                                                         ) run_symbtest   "$@" ;;
     prove-@(prove|symbolic)                                                                   ) run_prove      "$@" ;;
     interpret-@(llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare) ) run_interpret  "$@" ;;
     *) $0 help ; fatal "Unknown command on backend: $run_command $backend" ;;
