@@ -30,7 +30,7 @@ def findFailingBranches(term):
     for kCell in findSubtermsByLabel('<k>', term):
         assert(kCell['arity'] == 1)
         kSeq = kCell['args'][0]
-        assert(kSeq['node'] == 'KSequence')
+        assert(pyk.isKSequence(kSeq))
 
         if   kSeq['items'] == []:                          success_count += 1
         elif kSeq['items'][0]['label'] != '#AssertFailed': stucks += [kSeq]
