@@ -115,7 +115,8 @@ fi
 
 backend="llvm"
 debug=false
-[[ ! "$run_command" == 'prove' ]] || backend='prove'
+[[ ! "$run_command" == 'prove' ]]    || backend='prove'
+[[ ! "$run_command" == 'symbtest' ]] || backend='symbolic'
 args=()
 while [[ $# -gt 0 ]]; do
     arg="$1"
