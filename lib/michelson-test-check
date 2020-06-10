@@ -11,8 +11,8 @@ import pyk
 import sys
 
 def findSubtermsByLabel(label, term):
-    if not term['node'] in ['KSequence', 'KApply']: return []
-    if term['node'] == 'KApply':
+    if not (pyk.isKSequence(term) or pyk.isKApply(term)): return []
+    if pyk.isKApply(term):
         if term['label'] == label: return [term]
         ret = []
         for subterm in term['args']:
