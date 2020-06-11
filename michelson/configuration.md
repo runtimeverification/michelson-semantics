@@ -1,9 +1,9 @@
 The configuration of a K semantics captures all of the mutable state which rules may act upon.  In a Michelson contract, this includes the current continuation derived from contract code, the current stack, and various pieces of state related to the blockchain.  Note that, while in general all cells of a `K` configuration are mutable, once contract execution has begun only the `k`, `stack`, `nonce` and `returncode` cells will actually mutate.  The other cells are set at most once and then remain the same throughout execution.
 
 ```k
-requires "michelson-syntax.md"
-requires "michelson-common.md"
-requires "michelson-types.md"
+requires "michelson/syntax.md"
+requires "michelson/common.md"
+requires "michelson/types.md"
 
 module MICHELSON-CONFIG
   imports MICHELSON-SYNTAX

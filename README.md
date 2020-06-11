@@ -90,10 +90,21 @@ Running Tests
 
 There are three major test-suites you may be interested in running.
 
-The unit tests (running individual `*.tzt` programs and checking their output):
+The unit tests (running individual `*.tzt` programs and checking their exit code):
 
 ```sh
 make test-unit -j8
+```
+
+The symbolic unit tests (running individual `*.tzt` programs and checking their
+output using `lib/michelson-test-check`). Note that their are three flavours of
+symbolic unit tests. Those with the `stuck.tzt` extension, test ill-formed
+programs and are expected to get stuck before completing exectution. Those with
+the `fail.tzt` extension, are "broken" tests where assertions are expected to
+fail.
+
+```sh
+make test-symbolic -j8
 ```
 
 The proof tests:
@@ -171,17 +182,18 @@ Project Structure
 
 ### Michelson Semantics Definition
 
-[michelson-syntax.md](./michelson-syntax.md) contains the specification for the syntax of a Michelson contract and the other input data.
+The [michelson/](./michelson/) directory contains files related to the Michelson language, contracts and input data
 
-[michelson-config.md](./michelson-config.md) describes the template state of a Michelson contract.
+* [michelson/syntax.md](./michelson/syntax.md) contains the specification for the syntax of a Michelson contract and the other input data.
+* [michelson/configuration.md](./michelson/configuration.md) describes the template state of a Michelson contract.
+* [michelson/common.md](./michelson/common.md) specifies most of the K-Michelson internal datatypes.
+* [michelson/michelson.md](./michelson/michelson.md) specifies the semantics of the Michelson language as rewrite rules over the syntax, configuration and datatypes defined in the previous files.
 
-[michelson-common.md](./michelson-common.md) specifies most of the K-Michelson internal datatypes.
+[unit-test/unit-test.md](./unit-test/unit-test.md) and [unit-test/syntax.md](./unit-test/syntax.md) extend the semantics and syntax of the Michelson language to include unit testing facilities, such as the ability to specify an initial and final stack, and to check that the final stack matches the expected result.
 
-[michelson.md](./michelson.md) specifies the semantics of the Michelson language as rewrite rules over the syntax, configuration and datatypes defined in the previous files.
-
-[unit-test.md](./unit-test.md) and [unit-test-syntax.md](./unit-test-syntax.md) extend the semantics and syntax of the Michelson language to include unit testing facilities, such as the ability to specify an initial and final stack, and to check that the final stack matches the expected result.
+Similarly, [symbolic/symbolic.md](./symbolic/symbolic.md) and [symbolic/syntax.md](./symbolic/syntax.md) extend the unit-tests with the ability to specify symbolic variables, and contract and look invariants.
 
 [compat.md](./compat.md) is a compatability layer between KMichelson and the Tezon Reference client used for doing cross-validation between the two.
 
-`time.cpp` and `hex.cpp` implement backend hooks to perform timestamp translation (i.e. from an ISO-8601 human readable timestamp to a Unix timestamp) and print binary blobs as hexadecimal strings.
+`hooks/time.cpp` and `hooks/hex.cpp` implement backend hooks to perform timestamp translation (i.e. from an ISO-8601 human readable timestamp to a Unix timestamp) and print binary blobs as hexadecimal strings.
 They are used by the K semantics internally.

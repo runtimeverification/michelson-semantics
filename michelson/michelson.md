@@ -1,10 +1,10 @@
 This is the main execution semantics file for Michelson.  It contains the rewrite rule semantics for the all Michelson instructions, as well as logic for transforming values from their Micheline representations to K internal representations.  It also contains the .tzt file loading and contract initialization logic.
 
 ```k
-requires "michelson-syntax.md"
-requires "michelson-config.md"
-requires "michelson-internal-syntax.md"
-requires "michelson-types.md"
+requires "michelson/syntax.md"
+requires "michelson/configuration.md"
+requires "michelson/internal-syntax.md"
+requires "michelson/types.md"
 
 module MICHELSON
   imports MICHELSON-SYNTAX
