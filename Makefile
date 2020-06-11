@@ -103,7 +103,7 @@ tangle_selector := k
 
 HOOK_NAMESPACES := TIME MICHELSON
 
-KOMPILE_OPTS += --hook-namespaces "$(HOOK_NAMESPACES)" --gen-bison-parser
+KOMPILE_OPTS += --hook-namespaces "$(HOOK_NAMESPACES)" --gen-bison-parser --emit-json
 
 ifneq (,$(RELEASE))
     KOMPILE_OPTS += -O3
@@ -189,8 +189,7 @@ $(symbolic_kompiled): $(symbolic_files)
 	$(KOMPILE_HASKELL) $(symbolic_main_file).md                  \
 	                   --directory $(symbolic_dir) -I $(CURDIR)  \
 	                   --main-module $(symbolic_main_module)     \
-	                   --syntax-module $(symbolic_syntax_module) \
-	                   --emit-json
+	                   --syntax-module $(symbolic_syntax_module)
 
 # Compat Contract Expander
 
