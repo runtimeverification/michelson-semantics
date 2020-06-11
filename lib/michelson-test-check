@@ -49,12 +49,14 @@ for term in stucks:
     print(pyk.prettyPrintKast(term, symbolTable))
     print()
 print()
+sys.stdout.flush()
 
 if len(failures) != 0: print("Failures:")
 for term in failures:
     print(pyk.prettyPrintKast(term, symbolTable))
     print()
 print()
+sys.stdout.flush()
 
 print("%d branches succeeded; %d branches failed; %d branches stuck." % (success_count, len(failures), len(stucks)))
 if len(stucks) != 0: sys.exit(127)
