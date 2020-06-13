@@ -1,4 +1,8 @@
-This file implements the unit test section of the .tzt format described by the Tezos foundation [here](https://gitlab.com/tezos/tezos/-/merge_requests/1487/diffs).  This file implements the behavior of the 'code,' 'input,' and 'output' applications discussed in that document.
+This file implements the unit test section of the .tzt format described by the
+Tezos foundation
+[here](https://gitlab.com/tezos/tezos/-/merge_requests/1487/diffs). This file
+implements the behavior of the 'code,' 'input,' and 'output' applications
+discussed in that document.
 
 ```k
 requires "michelson/michelson.md"
@@ -11,13 +15,18 @@ module UNIT-TEST
   imports MICHELSON-TYPES
 ```
 
-During the final output comparison step we discard the type information retained in lists.  This allows us to compare lists which result from the 'MAP' instruction correctly, since we do not presently determine a type for those lists.
+During the final output comparison step we discard the type information retained
+in lists. This allows us to compare lists which result from the 'MAP'
+instruction correctly, since we do not presently determine a type for those
+lists.
 
 ```k
   syntax Data ::= List
 ```
 
-This function implements a relaxed equality check between two data elements.  In particular, it handles the wildcard matching behavior described in the .tzt format proposal and discards list type information as discussed earlier.
+This function implements a relaxed equality check between two data elements. In
+particular, it handles the wildcard matching behavior described in the .tzt
+format proposal and discards list type information as discussed earlier.
 
 ```k
   syntax Bool ::= #Matches(Data, Data) [function] // Expected, Actual
@@ -63,13 +72,15 @@ This function implements a relaxed equality check between two data elements.  In
   rule #Matches(Right D1, Right D2) => #Matches(D1, D2)
 ```
 
-The representation of #Any is the same in the semantics and the concrete syntax.
+The representation of \#Any is the same in the semantics and the concrete
+syntax.
 
 ```k
   rule #ConcreteArgToSemantics(#Any, _) => #Any
 ```
 
-This function transforms a LiteralStack (e.g. a sequence of `Stack_elt` productions) into a KSequence (the same format as the execution stack).
+This function transforms a LiteralStack (e.g. a sequence of `Stack_elt`
+productions) into a KSequence (the same format as the execution stack).
 
 ```k
   syntax K ::= #LiteralStackToSemantics(LiteralStack) [function]
@@ -98,7 +109,9 @@ This function transforms a LiteralStack (e.g. a sequence of `Stack_elt` producti
        requires #Typed(D, T) :=K #TypeData(PT, D, T)
 ```
 
-This function transforms an expected output stack to its internal representation (failed stacks are already in their internal representation, literals must be transformed as in the input group).
+This function transforms an expected output stack to its internal representation
+(failed stacks are already in their internal representation, literals must be
+transformed as in the input group).
 
 ```k
   syntax K ::= #OutputStackToSemantics(OutputStack) [function]
@@ -106,7 +119,8 @@ This function transforms an expected output stack to its internal representation
   rule #OutputStackToSemantics(X:FailedStack) => X
 ```
 
-All groups are required to have a #GroupOrder.  Input, code and output should be loaded after any supplementary groups.
+All groups are required to have a `#GroupOrder`. Input, code and output should
+be loaded after any supplementary groups.
 
 ```k
   rule #GroupOrder(_:CodeGroup) => #GroupOrderMax
@@ -114,7 +128,9 @@ All groups are required to have a #GroupOrder.  Input, code and output should be
   rule #GroupOrder(_:InputGroup) => #GroupOrderMax -Int 2
 ```
 
-Loading the input stack involves simply converting it to a KSeq whose elements are Data in their internal representations, and then placing that KSeq in the main execution stack configuration cell.
+Loading the input stack involves simply converting it to a KSeq whose elements
+are Data in their internal representations, and then placing that KSeq in the
+main execution stack configuration cell.
 
 ```k
   rule <k> #LoadGroups(input LS ; Gs => Gs) </k>
@@ -123,7 +139,9 @@ Loading the input stack involves simply converting it to a KSeq whose elements a
        <stacktypes> .TypeSeq => #LiteralStackToTypes(LS, PT) </stacktypes>
 ```
 
-Loading the expected output group is unusual because an output group will not do anything when loaded.  Instead it simply schedules the output for verification later on, and then passes directly to the next group.
+Loading the expected output group is unusual because an output group will not do
+anything when loaded. Instead it simply schedules the output for verification
+later on, and then passes directly to the next group.
 
 ```k
   syntax KItem ::= #CheckTypes(OutputStack, Block)
@@ -148,14 +166,18 @@ Loading the expected output group is unusual because an output group will not do
        <stacktypes> Is </stacktypes>
 ```
 
-As in the case of the contract group, loading the code group is trivial - simply extract the block and let the main semantics handle the rest.
+As in the case of the contract group, loading the code group is trivial -- simply
+extract the block and let the main semantics handle the rest.
 
 ```k
   rule <k> #LoadGroups(code C ; Gs) => C ~> #LoadGroups(Gs) ... </k> [owise]
   rule <k> #LoadGroups(code C) => C ... </k>
 ```
 
-Once execution finishes, the output verification is simply stepping through the KSequence and removing any elements that #Match.  An unsuccessful unit test will get stuck during this step, with the first sequence in the #VerifyOutput production and stack cells being the expected and actual outputs respectively.
+Once execution finishes, the output verification is simply stepping through the
+KSequence and removing any elements that `#Match`. An unsuccessful unit test
+will get stuck during this step, with the first sequence in the `#VerifyOutput`
+production and stack cells being the expected and actual outputs respectively.
 
 ```k
   rule <k> #VerifyOutput(S1 ~> L => L) </k>
@@ -163,7 +185,12 @@ Once execution finishes, the output verification is simply stepping through the 
        requires #Matches(S1, S2)
 ```
 
-The final step when all elements of the KSequences have been exhausted is to set the process' exit code as appropriate to indicate a successful test execution, and then empty the k cell.  In a successful unit test execution (except expected failures), this rule is where the semantics will halt.  Implicitly, this rule also checks that #VerifyOutput is the last remaining production in the k cell by excluding the normal '...' variable at the end of the K cell.
+The final step when all elements of the KSequences have been exhausted is to set
+the process' exit code as appropriate to indicate a successful test execution,
+and then empty the k cell. In a successful unit test execution (except expected
+failures), this rule is where the semantics will halt. Implicitly, this rule
+also checks that `#VerifyOutput` is the last remaining production in the k cell
+by excluding the normal '...' variable at the end of the K cell.
 
 ```k
   rule <k> #VerifyOutput(.) => . </k>
@@ -171,7 +198,11 @@ The final step when all elements of the KSequences have been exhausted is to set
        <returncode> _ => 0 </returncode>
 ```
 
-In the case of an expected failure, we cannot guarantee that the contents of the K cell will be empty when the main semantics abort.  However, we know that the #VerifyOutput will still be in the k cell.  Hence, if the main semantics abort (by placing the Aborted production on the top of the k cell), we should find the #VerifyOutput production in the K cell and pull it out.
+In the case of an expected failure, we cannot guarantee that the contents of the
+K cell will be empty when the main semantics abort. However, we know that the
+`#VerifyOutput` will still be in the k cell. Hence, if the main semantics abort
+(by placing the Aborted production on the top of the k cell), we should find the
+`#VerifyOutput` production in the K cell and pull it out.
 
 ```k
   syntax KItem ::= #FindVerifyOutput(K, KItem)
