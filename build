@@ -8,17 +8,20 @@ import sys
 # =============
 
 # Make sure the KNinja repo is available.
-#
 subprocess.check_call(['git', 'submodule', 'update', '--init', '--recursive'])
+
 extdir = 'ext'
-sys.path.append(os.path.join(os.path.dirname(__file__), extdir))
+repodir = os.path.dirname(__file__)
+sys.path.append(os.path.join(repodir, extdir))
 
 from kninja import *
+proj = KProject(extdir = extdir)
 
 # Helpers
 # =======
 
 def topdir(*args): return os.path.join(os.path.dirname(os.path.realpath(__file__)), *args)
+def ccopt(opt): return ['-ccopt', opt]
 
 all_sources = [ 'michelson/common.md'
               , 'michelson/configuration.md'
@@ -38,11 +41,13 @@ hook_sources = [ 'hooks/hex.cpp'
                , 'hooks/decode.cpp'
                ]
 
-llvm_flags = [ '--gen-bison-parser'
-             , '-ccopt', topdir('hooks/hex.cpp')
-             , '-ccopt', topdir('hooks/time.cpp')
-             , '-ccopt', topdir('hooks/decode.cpp')
-             , '-ccopt', '-std=c++14'
+llvm_flags = [ # This needs to be an absolute path because the kompile chdirs before resolving all paths.
+               *ccopt('-I' + topdir(proj.kreleasedir('include/kllvm')))
+             , *ccopt(topdir('hooks/hex.cpp'))
+             , *ccopt(topdir('hooks/time.cpp'))
+             , *ccopt(topdir('hooks/decode.cpp'))
+             , *ccopt('-std=c++14')
+             , '--gen-bison-parser'
              , '--hook-namespaces', 'TIME'
              , '--hook-namespaces', 'MICHELSON'
              ]
@@ -60,8 +65,6 @@ def defn(backend, alias, main, flags, main_module = None):
 
 # Build
 # =====
-
-proj = KProject(extdir = extdir)
 
 unit_test         = defn('llvm',    'llvm',              'unit-test/unit-test.md',  llvm_flags                                                     )
 contract_expander = defn('llvm',    'contract-expander', 'compat.md',               llvm_flags                 , main_module = 'CONTRACT-EXPANDER' )
