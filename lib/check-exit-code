@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+# Usage: $0 <expected_exit_code> <command>
+
+expected_exit_code=$1; shift
+"$@"; actual_exit_code=$?
+if [[ "$actual_exit_code" = "$expected_exit_code" ]]; then
+    exit 0
+else
+    echo >&2 "Expected exitcode '$expected_exit_code', got '$actual_exit_code'"
+    exit 1
+fi

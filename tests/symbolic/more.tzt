@@ -1,0 +1,5 @@
+code { MUL } ; 
+input { Stack_elt int $I1 ; Stack_elt int 2 } ;
+output { Stack_elt int $I3 } ;
+precondition { { PUSH int $I1 ; PUSH int 0 ; COMPARE ; GT } } ;
+postcondition { { PUSH int 2 ; PUSH int $I3 ; EDIV ; IF_NONE { PUSH bool False } { CDR ; PUSH nat 0 ; COMPARE ; EQ } } } 
