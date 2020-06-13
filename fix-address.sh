@@ -21,11 +21,6 @@ extract() {
     python3 "$SCRIPT_DIR/extract-group.py" "$test_file_extracted" "$@"
 }
 
-TEMP_DIR="$SCRIPT_DIR/.failure"
-
-rm -rf "$TEMP_DIR"
-mkdir -p "$TEMP_DIR"
-
 KNOWN_FAKES="$SCRIPT_DIR/addresses.txt"
 
 FOUND_ADDRESSES="$TEMP_DIR/addresses"
@@ -54,7 +49,7 @@ if [ ! -z $FAKE_SOURCE ] && ! ( grep "$FAKE_SOURCE" "$REAL_ADDRESSES_UNSORTED" )
 fi
 
 FAKE_SELF=$(extract self true)
-REAL_SELF="$(tezos-client run script "parameter unit ; storage (option address) ; code { DROP ; SELF ; ADDRESS ; CONTRACT unit ; IF_SOME { ADDRESS ; SOME ; NIL operation ; PAIR } {FAIL} }" on storage None and input Unit 2>&1 | grep "Some" | sed -E 's/\s*\(Some "([^"]*)"\)\s*/\1/')"
+REAL_SELF="$($TEZOS_CLIENT run script "parameter unit ; storage (option address) ; code { DROP ; SELF ; ADDRESS ; CONTRACT unit ; IF_SOME { ADDRESS ; SOME ; NIL operation ; PAIR } {FAIL} }" on storage None and input Unit 2>&1 | grep "Some" | sed -E 's/\s*\(Some "([^"]*)"\)\s*/\1/')"
 
 sort "$REAL_ADDRESSES_UNSORTED" | uniq > "$REAL_ADDRESSES"
 

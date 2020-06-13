@@ -21,11 +21,6 @@ extract() {
     python3 "$SCRIPT_DIR/extract-group.py" "$test_file_extracted" "$@"
 }
 
-TEMP_DIR="$SCRIPT_DIR/.failure"
-
-rm -rf "$TEMP_DIR"
-mkdir -p "$TEMP_DIR"
-
 KNOWN_FAKES="$SCRIPT_DIR/addresses.txt"
 
 FOUND_ADDRESSES="$TEMP_DIR/addresses"
@@ -64,7 +59,7 @@ if [ ! -z $FAKE_SOURCE ] && ! ( grep "$FAKE_SOURCE" "$REAL_ADDRESSES_UNSORTED" )
 fi
 
 FAKE_SELF=$(extract self true)
-REAL_SELF="$(tezos-client run script "parameter unit ; storage (option address) ; code { DROP ; SELF ; ADDRESS ; CONTRACT unit ; IF_SOME { ADDRESS ; SOME ; NIL operation ; PAIR } {FAIL} }" on storage None and input Unit 2>&1 | grep "Some" | sed -E 's/\s*\(Some "([^"]*)"\)\s*/\1/')"
+REAL_SELF="$($TEZOS_CLIENT run script "parameter unit ; storage (option address) ; code { DROP ; SELF ; ADDRESS ; CONTRACT unit ; IF_SOME { ADDRESS ; SOME ; NIL operation ; PAIR } {FAIL} }" on storage None and input Unit 2>&1 | grep "Some" | sed -E 's/\s*\(Some "([^"]*)"\)\s*/\1/')"
 
 sort "$REAL_ADDRESSES_UNSORTED" | uniq > "$REAL_ADDRESSES"
 
@@ -86,7 +81,7 @@ paste -d '/' <(cut -d'#' -f1 "$REAL_ADDRESSES") <(grep -Po '(?<=New contract )[a
 
 cat "$FAKE_ADDRESS_SUBS" "$ORIGINATION_SUBS" > "$ALL_SUBS"
 
-tezos-client typecheck script "$(cat $test_file_expanded)" --details  > $TYPECHECK_OUTPUT 2>&1 \
+$TEZOS_CLIENT typecheck script "$(cat $test_file_expanded)" --details  > $TYPECHECK_OUTPUT 2>&1 \
     || fatal "Contract did not typecheck: $test_file"
 
 pcregrep -oM '(?<=\[)\s*@exitToken[^]]*' "$TYPECHECK_OUTPUT" > "$RAW_TYPES"
@@ -111,7 +106,7 @@ if [ ! -z "$FAKE_SENDER" ] ; then
     fi ;
 fi
 
-tezos-client run script "$(cat $test_file_expanded)" on storage Unit and input "$(cat "$test_file_input")" --amount "$AMOUNT" --trace-stack "${TRACE_CLI[@]}" > "$EXECUTION" 2>&1 || true
+$TEZOS_CLIENT run script "$(cat $test_file_expanded)" on storage Unit and input "$(cat "$test_file_input")" --amount "$AMOUNT" --trace-stack "${TRACE_CLI[@]}" > "$EXECUTION" 2>&1 || true
 # For some reason, the cli argument for "SENDER" is "--source" and "SOURCE" is "--payer"
 
 pcregrep -oM '(?<=\[)\s*Unit\s*@exitToken[^]]*' "$EXECUTION" > "$RAW_DATA"

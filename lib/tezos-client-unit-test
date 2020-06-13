@@ -2,8 +2,19 @@
 
 set -euo pipefail
 
-repodir="$(cd $(dirname $0)/..; pwd -P)"
-tesozdir="$repodir/ext/tezos"
+# Variables
+# =========
+
+repo_dir="$(cd $(dirname $0)/..; pwd -P)"
+tezos_dir="$repo_dir/ext/tezos"
+
+export TEMP_DIR=$(mktemp --directory --tmpdir tmp-tezos-unit-test.XXXXXX)
+tezos_base_dir="$TEMP_DIR/mockup-base/"
+
+PATH="$tezos_dir:$PATH"
+
+# Helpers
+# =======
 
 interpret() {
     local backend=$1; shift
@@ -12,28 +23,24 @@ interpret() {
     # --output-file only controls where the final configuration is output.
     # --output-file /dev/null supresses that, without supressing output
     # from `stream="stdout"` cells.
-    "$repodir/kmich" interpret --backend $backend $input --output-file /dev/null "$@"
+    "$repo_dir/kmich" interpret --backend $backend $input --output-file /dev/null "$@"
 }
 
-# This can't be a function because of the way alias expansion works
-# start_tezos()
-# {
-    "$tesozdir/src/bin_node/tezos-sandboxed-node.sh" 1 --connections 1 >/dev/null 2>&1 &
-    TEZOS_NODE_PID=$!
-    sleep 5
-    if ! kill -0 "$TEZOS_NODE_PID" >/dev/null 2>&1 ; then
-        echo 'There seems to already be a tezos sandboxed node running, exitting' ;
-        kill -2 $$ # https://stackoverflow.com/questions/6112540/return-an-exit-code-without-closing-shell
-    fi
-    set +u
-    shopt -s expand_aliases
-    eval $("$tesozdir/src/bin_client/tezos-init-sandboxed-client.sh" 1)
-    set -u
-    alias
-    tezos-activate-alpha
-# }
+start_tezos()
+{
+    local tezos_protocol=ProtoALphaALphaALphaALphaALphaALphaALphaALphaDdp3zK
+    mkdir "$tezos_base_dir"
+    tezos-client --protocol "$tezos_protocol" --base-dir "$tezos_base_dir" create mockup
+    export TEZOS_CLIENT="tezos-client --mode mockup --base-dir $tezos_base_dir"
+}
+
 stop_tezos() {
-    kill -15 "$TEZOS_NODE_PID"
+    rm -r "$tezos_base_dir"
+}
+
+tezos_client()
+{
+     $TEZOS_CLIENT "$@"   
 }
 
 # Main
@@ -43,10 +50,10 @@ test=$1; shift
 interpret input-creator $test > $test.input
 interpret extractor $test > $test.extracted
 
-
-# start_tezos
-"$repodir/fix-address.sh" "$test"
+start_tezos
+"$repo_dir/fix-address.sh" "$test"
 interpret contract-expander "$test.address" > "$test.expanded"
-"$repodir/run-tezos.sh" "$test"
+"$repo_dir/run-tezos.sh" "$test"
 stop_tezos
 interpret output-compare "$test.output"
+rm -r "$TEMP_DIR"
