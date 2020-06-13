@@ -55,14 +55,15 @@ fix_address() {
     [[ -f "$test_extracted" ]] || fatal "File doesn't exist: $test_file_extracted"
     [[ -f "$test_input"     ]] || fatal "File doesn't exist: $test_file_input"
 
-    # Shared with run-tezos
-    export KNOWN_FAKES="$repo_dir/addresses.txt"
-    export FOUND_ADDRESSES="$TEMP_DIR/addresses"
-    export REAL_ADDRESSES_UNSORTED="$TEMP_DIR/contracts_unsorted"
-    export REAL_ADDRESSES="$TEMP_DIR/contracts"
-    export FAKE_ADDRESSES="$TEMP_DIR/fake_addresses"
-    export FAKE_ADDRESS_SUBS="$TEMP_DIR/fake_address_subs"
-    export ORIGINATION_OUTPUTS="$TEMP_DIR/originations"
+    # We export variables shared with run-tezos
+
+    KNOWN_FAKES="$repo_dir/addresses.txt"
+    FOUND_ADDRESSES="$TEMP_DIR/addresses"
+    REAL_ADDRESSES_UNSORTED="$TEMP_DIR/contracts_unsorted"
+    REAL_ADDRESSES="$TEMP_DIR/contracts"
+    FAKE_ADDRESSES="$TEMP_DIR/fake_addresses"
+    FAKE_ADDRESS_SUBS="$TEMP_DIR/fake_address_subs"
+    ORIGINATION_OUTPUTS="$TEMP_DIR/originations"
     export ORIGINATION_SUBS="$TEMP_DIR/origination_subs"
     export ALL_SUBS="$TEMP_DIR/subs"
 
@@ -72,12 +73,12 @@ fix_address() {
 
     extract other_contracts true | tr -d '{}' | tr ';' '\n' | sed -E 's/^\s*//;s/\s*$//;s/Elt\s*"([^"]*)"\s*(.*)/\1#\2/;/^\s*$/d' > "$REAL_ADDRESSES_UNSORTED"
 
-    FAKE_SENDER=$(extract sender true)
+    export FAKE_SENDER=$(extract sender true)
     if [ ! -z $FAKE_SENDER ] && ! ( grep "$FAKE_SENDER" "$REAL_ADDRESSES_UNSORTED" ); then
         echo "$FAKE_SENDER#unit" >> "$REAL_ADDRESSES_UNSORTED"
     fi
 
-    FAKE_SOURCE=$(extract source true)
+    export FAKE_SOURCE=$(extract source true)
     if [ ! -z $FAKE_SOURCE ] && ! ( grep "$FAKE_SOURCE" "$REAL_ADDRESSES_UNSORTED" ); then
         echo "$FAKE_SOURCE#unit" >> "$REAL_ADDRESSES_UNSORTED"
     fi
