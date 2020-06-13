@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+repodir="$(cd $(dirname $0)/..; pwd -P)"
+tesozdir="$repodir/ext/tezos"
+
+interpret() {
+    local backend=$1; shift
+    local input=$1; shift
+
+    # --output-file only controls where the final configuration is output.
+    # --output-file /dev/null supresses that, without supressing output
+    # from `stream="stdout"` cells.
+    "$repodir/kmich" interpret --backend $backend $input --output-file /dev/null "$@"
+}
+
+# This can't be a function because of the way alias expansion works
+# start_tezos()
+# {
+    "$tesozdir/src/bin_node/tezos-sandboxed-node.sh" 1 --connections 1 >/dev/null 2>&1 &
+    TEZOS_NODE_PID=$!
+    sleep 5
+    if ! kill -0 "$TEZOS_NODE_PID" >/dev/null 2>&1 ; then
+        echo 'There seems to already be a tezos sandboxed node running, exitting' ;
+        kill -2 $$ # https://stackoverflow.com/questions/6112540/return-an-exit-code-without-closing-shell
+    fi
+    set +u
+    shopt -s expand_aliases
+    eval $("$tesozdir/src/bin_client/tezos-init-sandboxed-client.sh" 1)
+    set -u
+    alias
+    tezos-activate-alpha
+# }
+stop_tezos() {
+    kill -15 "$TEZOS_NODE_PID"
+}
+
+# Main
+# ====
+
+test=$1; shift
+interpret input-creator $test > $test.input
+interpret extractor $test > $test.extracted
+
+
+# start_tezos
+"$repodir/fix-address.sh" "$test"
+interpret contract-expander "$test.address" > "$test.expanded"
+"$repodir/run-tezos.sh" "$test"
+stop_tezos
+interpret output-compare "$test.output"

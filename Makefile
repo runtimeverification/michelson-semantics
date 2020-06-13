@@ -310,29 +310,8 @@ cross_tests_passing := $(filter-out $(cross_tests_failing), $(cross_tests))
 test-cross:         $(cross_tests_passing:=.cross)
 test-cross-failing: $(cross_tests_failing:=.cross)
 
-tests/%.cross: tests/%.output $(output_compare_kompiled)
-	$(TEST) interpret --backend output-compare $< --output-file /dev/null > $@
-
-$(cross_tests_passing:=.output): run-tezos.timestamp
-
-run-tezos.timestamp: $(cross_tests_passing) $(cross_tests_passing:=.expanded) $(cross_tests_passing:=.input) $(cross_tests_passing:=.extracted)
-	./run-with-tezos.sh run-tezos
-	touch $@
-
-tests/%.expanded: tests/%.address $(contract_expander_kompiled)
-	$(TEST) interpret --backend contract-expander $< --output-file /dev/null > $@
-
-$(cross_tests_passing:=.address): fix-address.timestamp
-
-fix-address.timestamp: $(cross_tests_passing) $(cross_tests_passing:=.extracted) $(cross_tests_passing:=.input)
-	./run-with-tezos.sh fix-address
-	touch $@
-
-tests/%.extracted: tests/% $(extractor_kompiled)
-	$(TEST) interpret --backend extractor $< --output-file /dev/null > $@
-
-tests/%.input: tests/% $(input_creator_kompiled)
-	$(TEST) interpret --backend input-creator $< --output-file /dev/null > $@
+tests/%.cross: tests/% $(input_creator_kompiled) $(extractor_kompiled) $(contract_expander_kompiled) $(output_compare_kompiled)
+	$(LIB_DIR)/tezos-client-unit-test $< > $@
 
 # Prove
 
