@@ -6,6 +6,7 @@ set -euo pipefail
 # =========
 
 repo_dir="$(cd $(dirname $0)/..; pwd -P)"
+lib_dir=$repo_dir/lib
 tezos_dir="$repo_dir/ext/tezos"
 
 export TEMP_DIR=$(mktemp --directory --tmpdir tmp-tezos-unit-test.XXXXXX)
@@ -47,7 +48,7 @@ tezos_client()
 # =================
 
 extract() {
-    python3 "$repo_dir/extract-group.py" "$test_extracted" "$@"
+    python3 "$lib_dir/extract-group.py" "$test_extracted" "$@"
 }
 
 fix_address() {
@@ -57,7 +58,7 @@ fix_address() {
 
     # We export variables shared with run-tezos
 
-    KNOWN_FAKES="$repo_dir/addresses.txt"
+    KNOWN_FAKES="$lib_dir/addresses.txt"
     FOUND_ADDRESSES="$TEMP_DIR/addresses"
     REAL_ADDRESSES_UNSORTED="$TEMP_DIR/contracts_unsorted"
     REAL_ADDRESSES="$TEMP_DIR/contracts"
@@ -100,7 +101,7 @@ fix_address() {
         echo "s|$FAKE_SELF|$REAL_SELF|" >> "$FAKE_ADDRESS_SUBS"
     fi
 
-    python3 $repo_dir/originate.py $REAL_ADDRESSES > $ORIGINATION_OUTPUTS \
+    python3 $lib_dir/originate.py $REAL_ADDRESSES > $ORIGINATION_OUTPUTS \
         || fatal "Failed to originate contracts: $test"
     paste -d '/' <(cut -d'#' -f1 "$REAL_ADDRESSES") <(grep -Po '(?<=New contract )[a-zA-Z0-9_]*' "$ORIGINATION_OUTPUTS") | sed -E 's|(.*)|s/\1/|;s|s///||' > "$ORIGINATION_SUBS"
 
@@ -125,7 +126,7 @@ interpret extractor $test > $test_extracted
 start_tezos
 fix_address "$test"
 interpret contract-expander $test_address > $test_expanded
-"$repo_dir/run-tezos.sh" "$test"
+"$lib_dir/run-tezos.sh" "$test"
 stop_tezos
 interpret output-compare $test_output
 rm -r "$TEMP_DIR"
