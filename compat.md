@@ -12,10 +12,12 @@ requires "unit-test/unit-test.md"
 requires "michelson-unparser.md"
 
 module COMPAT-COMMON
-  imports UNIT-TEST
+  imports UNIT-TEST-SYNTAX
   imports MICHELSON-UNPARSER
 
-  configuration <michelsonTop/> <out stream="stdout"> .List </out>
+  configuration <k> $PGM </k>
+                <out stream="stdout"> .List </out>
+                <returncode exit=""> 1 </returncode>
 endmodule
 ```
 
@@ -222,8 +224,14 @@ endmodule
 
 module OUTPUT-COMPARE
   imports OUTPUT-COMPARE-SYNTAX
-  imports COMPAT-COMMON
   imports K-REFLECTION
+  imports MICHELSON-UNPARSER
+
+  // TODO: This only depends on functions from UNIT-TEST and not the configuration.
+  imports UNIT-TEST
+
+  configuration <michelsonTop/>
+                <out stream="stdout"> .List </out>
 
   syntax String ::= #decodeBinaryRepresentation(Bytes) [function, hook(MICHELSON.decode)]
   syntax BlockchainOperation ::= #parseOperation(String) [function]
