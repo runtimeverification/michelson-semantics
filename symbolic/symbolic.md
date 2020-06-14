@@ -173,7 +173,7 @@ module SYMBOLIC-UNIT-TEST
 
   rule <k> #Assume(B1) ~> _:K => . </k>
        <stack> B2 => . ... </stack>
-       <assumeFailed> _ => true </assumeFailed> 
+       <assumeFailed> _ => true </assumeFailed>
        requires B1 =/=Bool B2
        [transition]
 
@@ -260,13 +260,13 @@ module SYMBOLIC-UNIT-TEST
   syntax KItem ::= "#SaveStack"
   syntax KItem ::= #RestoreStack(K)
 
-  syntax KItem ::= #AssertBlocks(Blocks, Bool) 
+  syntax KItem ::= #AssertBlocks(Blocks, Bool)
 
   rule #AssertBlocks({ }, _) => .
   rule #AssertBlocks({ B }, C) => #SaveStack ~> B ~> #Assert(C) ~> #RestoreStack(.K)
   rule #AssertBlocks({ B ; Bs }, C) => #SaveStack ~> B ~> #Assert(C) ~> #RestoreStack(.K)  ~> #AssertBlocks(Bs, C)
 
-  syntax KItem ::= #AssumeBlocks(Blocks, Bool) 
+  syntax KItem ::= #AssumeBlocks(Blocks, Bool)
 
   rule #AssumeBlocks({ }, _) => .
   rule #AssumeBlocks({ B }, C) => #SaveStack ~>  B ~> #Assume(C) ~> #RestoreStack(.K)
@@ -302,8 +302,8 @@ module SYMBOLIC-UNIT-TEST
   rule <k> #VerifyLoopEnd(V) => #AssertNotGuard(V) ~> #AssertInvariant(V) ... </k>
        <stack> false => . ... </stack> [transition]
 
-  rule <k> LOOP A B => #AssertInvariant(#FindInvariant(A)) ~> 
-                       #AssertGuard(#FindInvariant(A)) ~> 
+  rule <k> LOOP A B => #AssertInvariant(#FindInvariant(A)) ~>
+                       #AssertGuard(#FindInvariant(A)) ~>
                        #ForgetAllModifiable(B) ~>
                        #AssumeInvariant(#FindInvariant(A)) ~>  // Split invariant in two?  One for before loop (incl. halt condition), one for after (we try to prove halt = false -> pre-condition)?
                        #AssumeGuard(#FindInvariant(A)) ~>
@@ -311,9 +311,9 @@ module SYMBOLIC-UNIT-TEST
                        #VerifyLoopEnd(#FindInvariant(A)) ~>
                        #ForgetAllModifiable(B) ~>
                        #AssumeInvariant(#FindInvariant(A)) ~>
-                       #AssumeNotGuard(#FindInvariant(A)) 
+                       #AssumeNotGuard(#FindInvariant(A))
                        ... </k>
-       <stack> true => . ... </stack> 
+       <stack> true => . ... </stack>
        requires #HasInvariant(A)
        [simplification]
 
@@ -454,7 +454,7 @@ module SYMBOLIC-UNIT-TEST
   rule #DoCompare(I1:Int, I2:Int) >Int 0 => I1 >Int I2 [simplification]
 
   syntax KItem ::= "#Stop"
-  rule <k> COMPARE _ => #Stop ... </k> 
+  rule <k> COMPARE _ => #Stop ... </k>
        <stack> _:Bool ~> _:Int ... </stack> [simplification]
 
   rule I1 >=Int I2 andBool I1 <=Int I2 => I1 ==Int I2 [simplification]
