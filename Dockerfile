@@ -9,6 +9,7 @@ RUN    apt-get update                                   \
 RUN    apt-get update               \
     && apt-get upgrade --yes        \
     && apt-get install --yes        \
+                cargo               \
                 cmake               \
                 jq                  \
                 libcrypto++-dev     \
@@ -33,10 +34,12 @@ RUN groupadd -g $GROUP_ID user && useradd -m -u $USER_ID -s /bin/sh -g user user
 USER user:user
 WORKDIR /home/user
 
-RUN mkdir -p /home/user/.ssh
-ADD --chown=user:user ssh/config /home/user/.ssh/
-RUN    chmod go-rwx -R /home/user/.ssh                                \
-    && git config --global user.email 'admin@runtimeverification.com' \
-    && git config --global user.name  'RV Jenkins'
-
-ENV OPAMROOT=/home/user/.opam
+RUN    git config --global user.email 'admin@runtimeverification.com' \
+    && git config --global user.name  'RV Jenkins'                    \
+    && mkdir -p ~/.ssh                                                \
+    && echo 'host github.com'                       > ~/.ssh/config   \
+    && echo '    hostname github.com'              >> ~/.ssh/config   \
+    && echo '    user git'                         >> ~/.ssh/config   \
+    && echo '    identityagent SSH_AUTH_SOCK'      >> ~/.ssh/config   \
+    && echo '    stricthostkeychecking accept-new' >> ~/.ssh/config   \
+    && chmod go-rwx -R ~/.ssh

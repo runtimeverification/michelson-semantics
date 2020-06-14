@@ -1,0 +1,10 @@
+/* Add requires two items on stack, but only one provided.
+ * Expected: One branch stuck
+ */
+
+code { ADD } ;
+input { Stack_elt nat $I1  } ;
+output { Stack_elt nat $I3 } ;
+precondition { { PUSH nat 2 ; PUSH nat $I1 ; EDIV ; IF_NONE { PUSH bool False } { CDR ; PUSH nat 1 ; COMPARE ; EQ } } ;
+               { PUSH nat 2 ; PUSH nat $I2 ; EDIV ; IF_NONE { PUSH bool False } { CDR ; PUSH nat 0 ; COMPARE ; EQ } } } ;
+postcondition { { PUSH nat 2 ; PUSH nat $I3 ; EDIV ; IF_NONE { PUSH bool False } { CDR ; PUSH nat 0 ; COMPARE ; EQ } } }

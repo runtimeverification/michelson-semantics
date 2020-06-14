@@ -11,13 +11,20 @@ pipeline {
       when { changeRequest() }
       steps { script { currentBuild.displayName = "PR ${env.CHANGE_ID}: ${env.CHANGE_TITLE}" } }
     }
-    stage('Build and Test') {
-      when { changeRequest() }
-      stages {
-        stage('Dependencies')          { steps { sh './build-deps-tezos.sh'    } }
-        stage('Build')                 { steps { sh './build.sh'               } }
-        stage('Test')                  { steps { sh './run-tests.sh'           } }
-        stage('Cross-Validation Test') { steps { sh './compat/run-tests-ci.sh' } }
+    stage('Build') {
+      parallel {
+        stage('Tezos')  { steps { sh 'make deps-tezos'                    } }
+        stage('K')      { steps { sh 'make build-k      -j8 RELEASE=true' } }
+        stage('Compat') { steps { sh 'make build-compat -j8 RELEASE=true' } }
+      }
+    }
+    stage('Test') {
+      options { timeout(time: 10, unit: 'MINUTES') }
+      parallel {
+        stage('Unit')             { steps { sh 'make test-unit     -j8' } }
+        stage('Symbolic')         { steps { sh 'make test-symbolic -j2' } }
+        stage('Prove')            { steps { sh 'make test-prove    -j2' } }
+        stage('Cross-Validation') { steps { sh 'make test-cross    -j8' } }
       }
     }
     stage('Deploy') {
