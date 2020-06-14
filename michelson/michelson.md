@@ -511,7 +511,7 @@ The control flow instruction's implementations in K should look extremely simila
        <stack> false => . ... </stack>
 
   rule <k> LOOP .AnnotationList B => B ~> LOOP .AnnotationList B ... </k>
-       <stack> true => . ... </stack>  // [owise]
+       <stack> true => . ... </stack>
 
   rule <k> LOOP A B => #HandleAnnotations(A) ... </k>
        <stack> false => . ... </stack>
