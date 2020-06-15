@@ -89,7 +89,7 @@ fix_address() {
 
     sort "$REAL_ADDRESSES_UNSORTED" | uniq > "$REAL_ADDRESSES"
 
-    diff --new-line-format="" --unchanged-line-format="" "$FOUND_ADDRESSES" <(cut -d'#' -f 1 "$REAL_ADDRESSES") > "$FAKE_ADDRESSES"
+    diff --new-line-format="" --unchanged-line-format="" "$FOUND_ADDRESSES" <(cut -d'#' -f 1 "$REAL_ADDRESSES") > "$FAKE_ADDRESSES" || true
 
     if [ ! -z "$FAKE_SELF" ] ; then
         sed -i "/$FAKE_SELF/d" "$FAKE_ADDRESSES" ;
