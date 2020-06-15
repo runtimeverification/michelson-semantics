@@ -39,11 +39,6 @@ stop_tezos() {
     rm -r "$tezos_base_dir"
 }
 
-tezos_client()
-{
-     $TEZOS_CLIENT "$@"
-}
-
 # To be refactored
 # =================
 
@@ -85,7 +80,7 @@ fix_address() {
     fi
 
     FAKE_SELF=$(extract self true)
-    REAL_SELF="$(tezos_client run script "parameter unit ; storage (option address) ; code { DROP ; SELF ; ADDRESS ; CONTRACT unit ; IF_SOME { ADDRESS ; SOME ; NIL operation ; PAIR } {FAIL} }" on storage None and input Unit 2>&1 | grep "Some" | sed -E 's/\s*\(Some "([^"]*)"\)\s*/\1/')"
+    REAL_SELF="$($TEZOS_CLIENT run script "parameter unit ; storage (option address) ; code { DROP ; SELF ; ADDRESS ; CONTRACT unit ; IF_SOME { ADDRESS ; SOME ; NIL operation ; PAIR } {FAIL} }" on storage None and input Unit 2>&1 | grep "Some" | sed -E 's/\s*\(Some "([^"]*)"\)\s*/\1/')"
 
     sort "$REAL_ADDRESSES_UNSORTED" | uniq > "$REAL_ADDRESSES"
 
