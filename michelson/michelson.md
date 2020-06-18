@@ -51,7 +51,56 @@ These include:
 - address
 - key
 - key_hash
+- signature
+- string
+- timestamp (in its human-readable form)
 
+We delegate these datatypes validations to their own functions.
+
+```k
+  rule #ConcreteArgToSemantics(S:String, key_hash _) => #ParseKeyHash(S)
+  rule #ConcreteArgToSemantics(S:String, address _) => #ParseAddress(S)
+  rule #ConcreteArgToSemantics(S:String, key _) => #ParseKey(S)
+  rule #ConcreteArgToSemantics(S:String, signature _) => #ParseSignature(S)
+  rule #ConcreteArgToSemantics(S:String, timestamp _) => #ParseTimestamp(S)
+```
+
+A simple hook to return the Unix epoch representation of a timestamp passed to
+the semantics in an ISO8601 format string. See time.cpp for its implementation.
+The semantics accept timestamps in one of two formats:
+
+1. An ISO-8601 string.
+2. A unix timestamp
+
+```k
+  syntax Int ::= #ISO2Epoch(String) [function, hook(TIME.ISO2Epoch)]
+  syntax Timestamp ::= #ParseTimestamp(String) [function]
+  rule #ParseTimestamp(S) => #Timestamp(#ISO2Epoch(S)) requires findString(S, "Z", 0) >=Int 0
+  rule #ParseTimestamp(S) => #Timestamp(String2Int(S)) requires findString(S, "Z", 0) <Int 0
+```
+
+The other string based datatypes have stubs for their validation functions.
+
+```k
+  syntax KeyHash ::= #ParseKeyHash(String) [function]
+  rule #ParseKeyHash(S) => #KeyHash(S)
+
+  syntax Address ::= #ParseAddress(String) [function]
+  rule #ParseAddress(S) => #Address(S)
+
+  syntax Key ::= #ParseKey(String) [function]
+  rule #ParseKey(S) => #Key(S)
+
+  syntax Signature ::= #ParseSignature(String) [function]
+  rule #ParseSignature(S) => #Signature(S)
+```
+
+Note that timestamps have an optimized form based on integers.
+We convert that form here.
+
+```k
+  rule #ConcreteArgToSemantics(I:Int, timestamp _) => #Timestamp(I)
+```
 
 A ChainId is simply a specially tagged MBytes.
 
@@ -94,61 +143,6 @@ special with them here.
   rule #ConcreteArgToSemantics(B:Bool, bool _) => B
 ```
 
-We delegate these datatypes validations to their own functions.
-
-```k
-  rule #ConcreteArgToSemantics(S:String, key_hash _) => #ParseKeyHash(S)
-  rule #ConcreteArgToSemantics(I:Int, timestamp _) => #Timestamp(I)
-  rule #ConcreteArgToSemantics(S:String, timestamp _) => #ParseTimestamp(S)
-  rule #ConcreteArgToSemantics(S:String, address _) => #ParseAddress(S)
-  rule #ConcreteArgToSemantics(S:String, key _) => #ParseKey(S)
-  rule #ConcreteArgToSemantics(S:String, signature _) => #ParseSignature(S)
-```
-
-In the future, we anticipate this function validating that its argument is
-actually formatted correctly to be a `key_hash` but at this time those
-formatting requirements do not seem to be documented. Hence, presently it simply
-wraps its argument in the appropriate production to retain its typing.
-
-```k
-  syntax KeyHash ::= #ParseKeyHash(String) [function]
-  rule #ParseKeyHash(S) => #KeyHash(S)
-```
-
-A simple hook to return the Unix epoch representation of a timestamp passed to
-the semantics in an ISO8601 format string. See time.cpp for its implementation.
-
-```k
-  syntax Int ::= #ISO2Epoch(String) [function, hook(TIME.ISO2Epoch)]
-```
-
-The semantics accept timestamps in one of two formats:
-
-1. An ISO-8601 string.
-2. A unix timestamp
-
-This function determines which of the two a given timestamp input fits into, and
-calls the appropriate parsing function.
-
-```k
-  syntax Timestamp ::= #ParseTimestamp(String) [function]
-  rule #ParseTimestamp(S) => #Timestamp(#ISO2Epoch(S)) requires findString(S, "Z", 0) >=Int 0
-  rule #ParseTimestamp(S) => #Timestamp(String2Int(S)) requires findString(S, "Z", 0) <Int 0
-```
-
-Similar to `key_hash`, these functions will validate their arguments in the
-future. For now they simply wrap them.
-
-```k
-  syntax Address ::= #ParseAddress(String) [function]
-  rule #ParseAddress(S) => #Address(S)
-
-  syntax Key ::= #ParseKey(String) [function]
-  rule #ParseKey(S) => #Key(S)
-
-  syntax Signature ::= #ParseSignature(String) [function]
-  rule #ParseSignature(S) => #Signature(S)
-```
 
 The Unit token represents itself.
 
