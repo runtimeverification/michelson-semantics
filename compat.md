@@ -18,6 +18,13 @@ module COMPAT-COMMON
   configuration <k> $PGM:Pgm </k>
                 <out stream="stdout"> .List </out>
                 <returncode exit=""> 1 </returncode>
+```
+
+When the `<k>` cell is empty, we consider execution successful
+
+```k
+  rule <k> .K </k>
+       <returncode exit=""> 1 => 0 </returncode>
 endmodule
 ```
 
@@ -85,7 +92,6 @@ module CONTRACT-EXPANDER
 
   rule <k> G:Groups => . </k>
        <out> ... .List => ListItem(#unparse(#FillTemplateContract(#StackToPush(#FindInputGroup(G)), #FindCodeGroup(G), #FindParamType(G)))) </out>
-       <returncode> _ => 0 </returncode>
 endmodule
 ```
 
@@ -208,7 +214,6 @@ module INPUT-CREATOR
 
   rule <k> G:Pgm => . </k>
        <out> ... .List => ListItem(#unparse(#DataForType(#FindParamType(G)))) </out>
-       <returncode> _ => 0 </returncode>
 endmodule
 ```
 
@@ -244,13 +249,10 @@ module OUTPUT-COMPARE
   syntax KItem ::= "#Failed"
 
   rule <k> #CheckOutput( X:FailedStack , X:FailedStack ) => . </k>
-       <returncode> _ => 0 </returncode>
 
   rule <k> #CheckOutput( { } , { } ) => . </k>
-       <returncode> _ => 0 </returncode>
 
   rule <k> #CheckOutput( { Stack_elt ET ED } , { Stack_elt AT AD } ) => . </k>
-       <returncode> _ => 0 </returncode>
        requires #Matches(#MichelineToNative(ED, ET), #MichelineToNative(AD, AT))
 
   rule <k> #CheckOutput( { Stack_elt ET ED } , { Stack_elt AT AD } ) => #Failed  </k>
@@ -264,12 +266,7 @@ module OUTPUT-COMPARE
 
   rule <k> other_contracts M ; Gs => Gs </k>
        <knownaddrs> _ => #OtherContractsMapToKMap(M) </knownaddrs>
-       <returncode> _ => 1 </returncode>
 
   rule <k> real_output AOS ; output EOS ; => #CheckOutput(EOS, AOS) </k>
-       <returncode> _ => 1 </returncode>
-
-  rule <k> Gs:Groups </k>
-       <returncode> 0 => 1 </returncode> [owise]
 endmodule
 ```

@@ -593,7 +593,6 @@ arguments are:
   //// Control Structures
   rule <k> FAILWITH A ~> Rk => #HandleAnnotations(A) ~> Aborted("FAILWITH instruction reached", D, Rk, Rs) </k>
        <stack> D ~> Rs => ( Failed D ) </stack>
-       <returncode> _ => 1 </returncode>
 ```
 
 The control flow instruction's implementations in K should look extremely
@@ -1518,9 +1517,13 @@ identical to those defined over integers.
   rule #DoCompare(#Mutez(I1), #Mutez(I2)) => #DoCompare(I1, I2)
 ```
 
-This rule simply clears the returncode if the k cell empties properly.
+When the `<k>` cell is empty, we consider execution successful
 
 ```k
-  rule <k> . </k> <returncode> 1 => 0 </returncode>
+  rule <k> . </k>
+       <returncode> 1 => 0 </returncode>
+```
+
+```k
 endmodule
 ```
