@@ -19,7 +19,8 @@ module MICHELSON
   imports BYTES
 ```
 
-# Michelson Semantics Initialization
+Michelson Semantics Initialization
+==================================
 
 The internal representation of Michelson sets, lists and maps are simply K sets,
 lists and maps respectively.
@@ -28,7 +29,8 @@ lists and maps respectively.
   syntax Data ::= Set | Map | List
 ```
 
-## From Micheline to K-Michelson Internal Representation
+From Micheline to K-Michelson Internal Representation
+-----------------------------------------------------
 
 This function transforms a Michelson data element from its Micheline
 representation to its internal K representation given the data and its real
@@ -295,7 +297,61 @@ already been converted to K-internal form, so there is no need to recurse here.
 ```k
   rule [[ #ConcreteArgToSemantics(I:Int, big_map _:AnnotationList K V) => {M[I]}:>Data ]]
        <bigmaps> M:Map </bigmaps>
+``` 
+
+Loading groups into the K configuration
+=======================================
+
+Groups must be loaded into configuration. This rule is marked with the owise
+attribute so that semantic extensions can override this behavior, and indeed
+many of the compatibility script extensions do so.
+
+```k
+  rule <k> G:Groups => #LoadGroups(#SortGroups(#ExtendGroups(G))) </k> [owise]
 ```
+
+`#ExtendGroups`
+---------------
+
+`#ExtendGroups` takes a loading group list and extends it with a Parameter and
+Storage group (determining the *type* of the contract's parameter and storage
+respectively) if a contract loading group exists.
+
+```k
+  syntax Groups ::= #ExtendGroups(Groups) [function]
+  rule #ExtendGroups(Gs) => #MakeParameterGroup(Gs) ; #MakeStorageGroup(Gs) ; Gs requires #HasContract(Gs)
+  rule #ExtendGroups(Gs) => Gs [owise]
+```
+
+These functions create Parameter and Storage loading groups respectively from
+the parameter and storage primitive applications in a contract.
+
+```k
+  syntax Group ::= #MakeParameterGroup(Groups) [function]
+  rule #MakeParameterGroup(G) => parameter #ParameterTypeFromContract(#FindContract(G))
+
+  syntax Group ::= #MakeStorageGroup(Groups) [function]
+  rule #MakeStorageGroup(G) => storage #StorageTypeFromContract(#FindContract(G))
+```
+
+This function determines whether or not a contract group exists in a loading group list.
+
+```k
+  syntax Bool ::= #HasContract(Groups) [function]
+  rule #HasContract(contract { C }) => true
+  rule #HasContract(contract { C } ; _) => true
+  rule #HasContract(G ;) => #HasContract(G)
+  rule #HasContract(_ ; Gs) => #HasContract(Gs) [owise]
+  rule #HasContract(_:Group) => false [owise]
+```
+
+`#SortGroups`
+-------------
+
+Some groups can only be loaded after others. So, we sort the groups first and
+then load them. These are the default group orders. If a new extension semantics
+adds a new group, it should also define an order for that group with a rule like
+these.
 
 The `#GroupOrder` function maps groups onto integers to create a total order of
 groups. Groups will be loaded ascending order according to the Int this function
@@ -322,9 +378,6 @@ larger than the number of groups.
   rule #GroupOrderMax => 1000
 ```
 
-These are the default group orders. If a new extension semantics adds a new
-group, it should also define an order for that group with a rule like these.
-
 ```k
   rule #GroupOrder(_:ContractGroup) => #GroupOrderMax
   rule #GroupOrder(_:ParameterValueGroup) => #GroupOrderMax -Int 1
@@ -343,10 +396,10 @@ group, it should also define an order for that group with a rule like these.
   rule #GroupOrder(_:StorageDecl) => 10
 ```
 
-As implied by the name, these rules implement an insertion sort of a loading
-groups list. This is, by far, the simplest sort to implement in K, and since no
-file will require more than 15 loading groups (and the vast majority require far
-fewer), its performance drawbacks should be unnoticable.
+These rules implement an insertion sort of a loading groups list. This is, by
+far, the simplest sort to implement in K, and since no file will require more
+than 15 loading groups (and the vast majority require far fewer), its
+performance drawbacks should be unnoticable.
 
 ```k
   syntax Groups ::= #InsertInOrder(Groups, Group) [function]
@@ -355,10 +408,10 @@ fewer), its performance drawbacks should be unnoticable.
   rule #InsertInOrder(G1 ; Gs, G2) => G1 ; #InsertInOrder(Gs, G2) requires #GroupOrder(G1) <Int #GroupOrder(G2)
   rule #InsertInOrder(G1 ; Gs, G2) => G2 ; G1 ; Gs                requires #GroupOrder(G1) >=Int #GroupOrder(G2)
 
-  syntax Groups ::= #InsertionSort(Groups) [function] // Note that this is a *stable* insertion sort.
-  rule #InsertionSort(G:Group) => G
-  rule #InsertionSort(G:Group;) => G
-  rule #InsertionSort(G ; Gs) => #InsertInOrder(#InsertionSort(Gs), G)
+  syntax Groups ::= #SortGroups(Groups) [function] // Note that this is a *stable* insertion sort.
+  rule #SortGroups(G:Group) => G
+  rule #SortGroups(G:Group;) => G
+  rule #SortGroups(G ; Gs) => #InsertInOrder(#SortGroups(Gs), G)
 ```
 
 This function seeks out a contract loading group in a list of groups. It should
@@ -372,48 +425,10 @@ be used only if `#HasContract` has already returned true.
   rule #FindContract(_ ; Gs) => #FindContract(Gs) [owise]
 ```
 
-These functions create Parameter and Storage loading groups respectively from
-the parameter and storage primitive applications in a contract.
+`#LoadGroups`
+-------------
 
-```k
-  syntax Group ::= #MakeParameterGroup(Groups) [function]
-  rule #MakeParameterGroup(G) => parameter #ParameterTypeFromContract(#FindContract(G))
-
-  syntax Group ::= #MakeStorageGroup(Groups) [function]
-  rule #MakeStorageGroup(G) => storage #StorageTypeFromContract(#FindContract(G))
-```
-
-This function determines whether or not a contract group exists in a loading group list.
-
-```k
-  syntax Bool ::= #HasContract(Groups) [function]
-  rule #HasContract(contract { C }) => true
-  rule #HasContract(contract { C } ; _) => true
-  rule #HasContract(G ;) => #HasContract(G)
-  rule #HasContract(_ ; Gs) => #HasContract(Gs) [owise]
-  rule #HasContract(_:Group) => false [owise]
-```
-
-This function takes a loading group list and extends it with a Parameter and
-Storage group (determining the *type* of the contract's parameter and storage
-respectively) if a contract loading group exists.
-
-```k
-  syntax Groups ::= #ExtendGroups(Groups) [function]
-
-  rule #ExtendGroups(Gs) => #MakeParameterGroup(Gs) ; #MakeStorageGroup(Gs) ; Gs requires #HasContract(Gs)
-  rule #ExtendGroups(Gs) => Gs [owise]
-```
-
-This group performs the loading initial loading step of passing the loading
-groups to the `#LoadGroups` production after sorting them and extending them as
-necessary. This rule is marked with the owise attribute so that semantic
-extensions can override this behavior, and indeed many of the compatibility
-script extensions do so.
-
-```k
-  rule <k> G:Groups => #LoadGroups(#InsertionSort(#ExtendGroups(G))) </k> [owise]
-```
+Below are the rules for loading specific groups.
 
 Loading a `now` group simply involves setting the contents of the now timestamp
 to the contained integer. Similarly simple logic applies to sender, source,
@@ -539,7 +554,8 @@ extracted so that we can move on to the execution semantics.
        <storagevalue> S </storagevalue>
 ```
 
-# Execution Semantics
+Execution Semantics
+===================
 
 These rules split apart blocks into KItems so that the main semantic rules can
 use idiomatic K.
