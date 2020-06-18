@@ -231,7 +231,7 @@ module OUTPUT-COMPARE
 
   syntax KItem ::= #CheckOutput(OutputStack, OutputStack) // Expected, Actual
 
-  rule #ConcreteArgToSemantics(B:Bytes, operation _) => #ConcreteArgToSemantics(#parseOperation(#decodeBinaryRepresentation(B)), operation .AnnotationList)
+  rule #MichelineToNative(B:Bytes, operation _) => #MichelineToNative(#parseOperation(#decodeBinaryRepresentation(B)), operation .AnnotationList)
 
   syntax KItem ::= "#Failed"
 
@@ -243,16 +243,16 @@ module OUTPUT-COMPARE
 
   rule <k> #CheckOutput( { Stack_elt ET ED } , { Stack_elt AT AD } ) => . </k>
        <returncode> _ => 0 </returncode>
-       requires #Matches(#ConcreteArgToSemantics(ED, ET), #ConcreteArgToSemantics(AD, AT))
+       requires #Matches(#MichelineToNative(ED, ET), #MichelineToNative(AD, AT))
 
   rule <k> #CheckOutput( { Stack_elt ET ED } , { Stack_elt AT AD } ) => #Failed  </k>
-       <out> ... .List => ListItem("Mismatch - Expected: " +String #unparse(#ConcreteArgToSemantics(ED, ET)) +String " Actual: " +String #unparse(#ConcreteArgToSemantics(AD, AT))) </out> [owise]
+       <out> ... .List => ListItem("Mismatch - Expected: " +String #unparse(#MichelineToNative(ED, ET)) +String " Actual: " +String #unparse(#MichelineToNative(AD, AT))) </out> [owise]
 
   rule <k> #CheckOutput( { Stack_elt ET ED ; Es } , { Stack_elt AT AD ; As } ) => #CheckOutput( { Es } , { As } ) </k>
-       requires #Matches(#ConcreteArgToSemantics(ED, ET), #ConcreteArgToSemantics(AD, AT))
+       requires #Matches(#MichelineToNative(ED, ET), #MichelineToNative(AD, AT))
 
   rule <k> #CheckOutput( { Stack_elt ET ED ; Es } , { Stack_elt AT AD ; As } ) => #Failed  </k>
-       <out> ... .List => ListItem("Mismatch - Expected: " +String #unparse(#ConcreteArgToSemantics(ED, ET)) +String " Actual: " +String #unparse(#ConcreteArgToSemantics(AD, AT))) </out> [owise]
+       <out> ... .List => ListItem("Mismatch - Expected: " +String #unparse(#MichelineToNative(ED, ET)) +String " Actual: " +String #unparse(#MichelineToNative(AD, AT))) </out> [owise]
 
   rule <k> other_contracts M ; Gs => Gs </k>
        <knownaddrs> _ => #OtherContractsMapToKMap(M) </knownaddrs>

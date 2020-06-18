@@ -40,7 +40,7 @@ real typecheck.
 
 ```k
   syntax DataOrSeq ::= Data | DataList | MapEntryList // Can't subsort DataList to Data, as that would form a cycle.
-  syntax Data ::= #ConcreteArgToSemantics(DataOrSeq, Type) [function]
+  syntax Data ::= #MichelineToNative(DataOrSeq, Type) [function]
 ```
 
 ### Converting String-Based Datatypes
@@ -58,11 +58,11 @@ These include:
 We delegate these datatypes validations to their own functions.
 
 ```k
-  rule #ConcreteArgToSemantics(S:String, key_hash _) => #ParseKeyHash(S)
-  rule #ConcreteArgToSemantics(S:String, address _) => #ParseAddress(S)
-  rule #ConcreteArgToSemantics(S:String, key _) => #ParseKey(S)
-  rule #ConcreteArgToSemantics(S:String, signature _) => #ParseSignature(S)
-  rule #ConcreteArgToSemantics(S:String, timestamp _) => #ParseTimestamp(S)
+  rule #MichelineToNative(S:String, key_hash _) => #ParseKeyHash(S)
+  rule #MichelineToNative(S:String, address _) => #ParseAddress(S)
+  rule #MichelineToNative(S:String, key _) => #ParseKey(S)
+  rule #MichelineToNative(S:String, signature _) => #ParseSignature(S)
+  rule #MichelineToNative(S:String, timestamp _) => #ParseTimestamp(S)
 ```
 
 A simple hook to return the Unix epoch representation of a timestamp passed to
@@ -99,40 +99,40 @@ Note that timestamps have an optimized form based on integers.
 We convert that form here.
 
 ```k
-  rule #ConcreteArgToSemantics(I:Int, timestamp _) => #Timestamp(I)
+  rule #MichelineToNative(I:Int, timestamp _) => #Timestamp(I)
 ```
 
 A ChainId is simply a specially tagged MBytes.
 
 ```k
-  rule #ConcreteArgToSemantics(H:MBytes, chain_id _) => #ChainId(H)
+  rule #MichelineToNative(H:MBytes, chain_id _) => #ChainId(H)
 ```
 
 An int can simply be represented directly as a K int. Nats get an additional
 sanity check to avoid negative nats.
 
 ```k
-  rule #ConcreteArgToSemantics(I:Int, int _) => I
-  rule #ConcreteArgToSemantics(I:Int, nat _) => I requires I >=Int 0
+  rule #MichelineToNative(I:Int, int _) => I
+  rule #MichelineToNative(I:Int, nat _) => I requires I >=Int 0
 ```
 
 Strings, like ints, represent themselves.
 
 ```k
-  rule #ConcreteArgToSemantics(S:String, string _) => S
+  rule #MichelineToNative(S:String, string _) => S
 ```
 
 MBytes conversion is done by the function rule.
 
 ```k
-  rule #ConcreteArgToSemantics(B:MBytes, bytes _) => B
+  rule #MichelineToNative(B:MBytes, bytes _) => B
 ```
 
 Mutez is simply a specially tagged int - we also sanity check the int to ensure
 that it is in bounds.
 
 ```k
-  rule #ConcreteArgToSemantics(I:Int, mutez _) => #Mutez(I) requires #IsLegalMutezValue(I)
+  rule #MichelineToNative(I:Int, mutez _) => #Mutez(I) requires #IsLegalMutezValue(I)
 ```
 
 K's function expansion step has already handled converting Michelsons
@@ -140,33 +140,33 @@ K's function expansion step has already handled converting Michelsons
 special with them here.
 
 ```k
-  rule #ConcreteArgToSemantics(B:Bool, bool _) => B
+  rule #MichelineToNative(B:Bool, bool _) => B
 ```
 
 
 The Unit token represents itself.
 
 ```k
-  rule #ConcreteArgToSemantics(Unit, unit _) => Unit
+  rule #MichelineToNative(Unit, unit _) => Unit
 ```
 
 We recursively convert the contents of pairs, ors and options, if applicable.
 
 ```k
-  rule #ConcreteArgToSemantics(Pair A B, pair _ T1:Type T2:Type) =>
-       Pair #ConcreteArgToSemantics(A, T1) #ConcreteArgToSemantics(B, T2)
+  rule #MichelineToNative(Pair A B, pair _ T1:Type T2:Type) =>
+       Pair #MichelineToNative(A, T1) #MichelineToNative(B, T2)
 
-  rule #ConcreteArgToSemantics(Some V, option _ T) => Some #ConcreteArgToSemantics(V, T)
-  rule #ConcreteArgToSemantics(None, option _:AnnotationList _) => None
+  rule #MichelineToNative(Some V, option _ T) => Some #MichelineToNative(V, T)
+  rule #MichelineToNative(None, option _:AnnotationList _) => None
 
-  rule #ConcreteArgToSemantics(Left V, or _:AnnotationList TL:Type _:Type) => Left #ConcreteArgToSemantics(V, TL)
-  rule #ConcreteArgToSemantics(Right V, or _:AnnotationList _:Type TR:Type) => Right #ConcreteArgToSemantics(V, TR)
+  rule #MichelineToNative(Left V, or _:AnnotationList TL:Type _:Type) => Left #MichelineToNative(V, TL)
+  rule #MichelineToNative(Right V, or _:AnnotationList _:Type TR:Type) => Right #MichelineToNative(V, TR)
 ```
 
 We wrap Lambdas appropriately and save their type information.  Note that we do *not* recurse into the Block.
 
 ```k
-  rule #ConcreteArgToSemantics(B:Block, lambda _:AnnotationList T1 T2) => #Lambda(T1, T2, B)
+  rule #MichelineToNative(B:Block, lambda _:AnnotationList T1 T2) => #Lambda(T1, T2, B)
 ```
 
 Collections are converted one element at a time. We need to handle the cases of
@@ -174,30 +174,30 @@ Collections are converted one element at a time. We need to handle the cases of
 element list, and another embedded list.
 
 ```k
-  rule #ConcreteArgToSemantics({ }, list _ _) => .List
-  rule #ConcreteArgToSemantics({ D1:Data }, list _ T) => ListItem(#ConcreteArgToSemantics(D1, T))
-  rule #ConcreteArgToSemantics({ D1 ; DL:DataList }, list _ T) => #ConcreteArgToSemantics(D1 ; DL, list .AnnotationList T)
+  rule #MichelineToNative({ }, list _ _) => .List
+  rule #MichelineToNative({ D1:Data }, list _ T) => ListItem(#MichelineToNative(D1, T))
+  rule #MichelineToNative({ D1 ; DL:DataList }, list _ T) => #MichelineToNative(D1 ; DL, list .AnnotationList T)
 
-  rule #ConcreteArgToSemantics(D1:Data ; D2:Data, list _ T) =>
-       ListItem(#ConcreteArgToSemantics(D1, T)) ListItem(#ConcreteArgToSemantics(D2, T))
+  rule #MichelineToNative(D1:Data ; D2:Data, list _ T) =>
+       ListItem(#MichelineToNative(D1, T)) ListItem(#MichelineToNative(D2, T))
 
-  rule #ConcreteArgToSemantics(D1:Data ; D2:Data ; DL:DataList, list _ T) =>
-       ListItem(#ConcreteArgToSemantics(D1, T)) {#ConcreteArgToSemantics(D2 ; DL, list .AnnotationList T)}:>List
+  rule #MichelineToNative(D1:Data ; D2:Data ; DL:DataList, list _ T) =>
+       ListItem(#MichelineToNative(D1, T)) {#MichelineToNative(D2 ; DL, list .AnnotationList T)}:>List
 ```
 
 Sets are handled essentially the same way as lists, with the same caveat about
 needing to handle 3 cases (0-Size sets, 1-Size sets, and otherwise).
 
 ```k
-  rule #ConcreteArgToSemantics({ }, set _ _) => .Set
-  rule #ConcreteArgToSemantics({ D:Data }, set _ T) => SetItem(#ConcreteArgToSemantics(D, T))
-  rule #ConcreteArgToSemantics({ D1 ; DL:DataList }, set _ T) => #ConcreteArgToSemantics(D1 ; DL, set .AnnotationList T)
+  rule #MichelineToNative({ }, set _ _) => .Set
+  rule #MichelineToNative({ D:Data }, set _ T) => SetItem(#MichelineToNative(D, T))
+  rule #MichelineToNative({ D1 ; DL:DataList }, set _ T) => #MichelineToNative(D1 ; DL, set .AnnotationList T)
 
-  rule #ConcreteArgToSemantics(D1:Data ; D2:Data, set _ T) =>
-       SetItem(#ConcreteArgToSemantics(D1, T)) SetItem(#ConcreteArgToSemantics(D2, T))
+  rule #MichelineToNative(D1:Data ; D2:Data, set _ T) =>
+       SetItem(#MichelineToNative(D1, T)) SetItem(#MichelineToNative(D2, T))
 
-  rule #ConcreteArgToSemantics(D1:Data ; D2:Data ; DL:DataList, set _ T) =>
-       SetItem(#ConcreteArgToSemantics(D1, T)) {#ConcreteArgToSemantics(D2 ; DL, set .AnnotationList T)}:>Set
+  rule #MichelineToNative(D1:Data ; D2:Data ; DL:DataList, set _ T) =>
+       SetItem(#MichelineToNative(D1, T)) {#MichelineToNative(D2 ; DL, set .AnnotationList T)}:>Set
 ```
 
 Maps and `big_map`s do not have the same parsing ambiguity, so we do not need to
@@ -205,20 +205,20 @@ handle the case of size 1 maps separately. Note that, internally, no difference
 exists between maps and `big_map`s in K-Michelson.
 
 ```k
-  rule #ConcreteArgToSemantics({ }, map _ _ _) => .Map
-  rule #ConcreteArgToSemantics({ M:MapEntryList }, map _:AnnotationList KT VT) =>
-       #ConcreteArgToSemantics(M, map .AnnotationList KT VT)
+  rule #MichelineToNative({ }, map _ _ _) => .Map
+  rule #MichelineToNative({ M:MapEntryList }, map _:AnnotationList KT VT) =>
+       #MichelineToNative(M, map .AnnotationList KT VT)
 
-  rule #ConcreteArgToSemantics(Elt K V ; ML, map _:AnnotationList KT VT) =>
-       ({#ConcreteArgToSemantics(ML, map .AnnotationList KT VT)}:>Map)[#ConcreteArgToSemantics(K, KT) <- #ConcreteArgToSemantics(V, VT)]
+  rule #MichelineToNative(Elt K V ; ML, map _:AnnotationList KT VT) =>
+       ({#MichelineToNative(ML, map .AnnotationList KT VT)}:>Map)[#MichelineToNative(K, KT) <- #MichelineToNative(V, VT)]
 
-  rule #ConcreteArgToSemantics(Elt K V, map _:AnnotationList KT VT) =>
-       #ConcreteArgToSemantics(K, KT) |-> #ConcreteArgToSemantics(V, VT)
+  rule #MichelineToNative(Elt K V, map _:AnnotationList KT VT) =>
+       #MichelineToNative(K, KT) |-> #MichelineToNative(V, VT)
 
-  rule #ConcreteArgToSemantics({ }, big_map _:AnnotationList K V) => .Map
+  rule #MichelineToNative({ }, big_map _:AnnotationList K V) => .Map
 
-  rule #ConcreteArgToSemantics({ M:MapEntryList }, big_map _:AnnotationList K V) =>
-       #ConcreteArgToSemantics({ M:MapEntryList }, map .AnnotationList K V)  // We handle big_map literals as maps.
+  rule #MichelineToNative({ M:MapEntryList }, big_map _:AnnotationList K V) =>
+       #MichelineToNative({ M:MapEntryList }, map .AnnotationList K V)  // We handle big_map literals as maps.
 ```
 
 We construct a contract datatype from its string address and type. Note that,
@@ -226,9 +226,9 @@ for convenience, we do not enforce that this address exists in the
 `other_contracts` map!
 
 ```k
-  rule #ConcreteArgToSemantics(S:String, contract _ T) => #Contract(#ParseAddress(S), T)
+  rule #MichelineToNative(S:String, contract _ T) => #Contract(#ParseAddress(S), T)
 
-  rule #ConcreteArgToSemantics(#Typed(D, T), T) => #ConcreteArgToSemantics(D, T)
+  rule #MichelineToNative(#Typed(D, T), T) => #MichelineToNative(D, T)
 ```
 
 These two helper functions extract type information from a Contract. Note that
@@ -248,17 +248,17 @@ data literals in normal Michelson. Note that we need to recurse into the data
 elements.
 
 ```k
-  rule #ConcreteArgToSemantics(Create_contract(N, C, O, M, S), operation _) =>
+  rule #MichelineToNative(Create_contract(N, C, O, M, S), operation _) =>
        Create_contract(
            N,
            C,
-           {#ConcreteArgToSemantics(O, (option .AnnotationList  key_hash .AnnotationList))}:>OptionData,
-           {#ConcreteArgToSemantics(M, mutez .AnnotationList)}:>Mutez,
-           #ConcreteArgToSemantics(S, #StorageTypeFromContract(C))
+           {#MichelineToNative(O, (option .AnnotationList  key_hash .AnnotationList))}:>OptionData,
+           {#MichelineToNative(M, mutez .AnnotationList)}:>Mutez,
+           #MichelineToNative(S, #StorageTypeFromContract(C))
        )
 
-  rule #ConcreteArgToSemantics(Set_delegate(N, K), operation _) =>
-       Set_delegate(N, {#ConcreteArgToSemantics(K, (option .AnnotationList key_hash .AnnotationList))}:>OptionData)
+  rule #MichelineToNative(Set_delegate(N, K), operation _) =>
+       Set_delegate(N, {#MichelineToNative(K, (option .AnnotationList key_hash .AnnotationList))}:>OptionData)
 ```
 
 These rules use the K syntax for a `withConfig` function. This attribute allows
@@ -272,24 +272,24 @@ a contract lookup.
   syntax Type ::= #TypeFromOtherContract(ContractData) [function]
   rule #TypeFromOtherContract(#Contract(_, T)) => T
 
-  rule [[ #ConcreteArgToSemantics(Transfer_tokens(N, P, M, A), operation _)
+  rule [[ #MichelineToNative(Transfer_tokens(N, P, M, A), operation _)
           => Transfer_tokens(N,
-              #ConcreteArgToSemantics(
+              #MichelineToNative(
                   P,
-                  #TypeFromOtherContract({Known[#ConcreteArgToSemantics(A, address .AnnotationList)]}:>ContractData)
+                  #TypeFromOtherContract({Known[#MichelineToNative(A, address .AnnotationList)]}:>ContractData)
               ),
-              {#ConcreteArgToSemantics(M, mutez .AnnotationList)}:>Mutez,
-              {#ConcreteArgToSemantics(A, address .AnnotationList)}:>Address
+              {#MichelineToNative(M, mutez .AnnotationList)}:>Mutez,
+              {#MichelineToNative(A, address .AnnotationList)}:>Address
           ) ]]
        <knownaddrs> Known </knownaddrs>
-       requires #ConcreteArgToSemantics(A, address .AnnotationList) in_keys(Known)
+       requires #MichelineToNative(A, address .AnnotationList) in_keys(Known)
 ```
 
 We extract a `big_map` by index from the bigmaps map. Note that these have
 already been converted to K-internal form, so there is no need to recurse here.
 
 ```k
-  rule [[ #ConcreteArgToSemantics(I:Int, big_map _:AnnotationList K V) => {M[I]}:>Data ]]
+  rule [[ #MichelineToNative(I:Int, big_map _:AnnotationList K V) => {M[I]}:>Data ]]
        <bigmaps> M:Map </bigmaps>
 ``` 
 
@@ -505,10 +505,10 @@ appropriate K-Michelson type.
   rule #BigMapsEntryListToKMap(E ; Es) => #BigMapsEntryToKMap(E) #BigMapsEntryListToKMap(Es)
 
   rule #BigMapsEntryToKMap(Big_map I T1 T2 { }) =>
-    I |-> #ConcreteArgToSemantics({ }, big_map .AnnotationList T1 T2)
+    I |-> #MichelineToNative({ }, big_map .AnnotationList T1 T2)
 
   rule #BigMapsEntryToKMap(Big_map I T1 T2 ML:MapLiteral) =>
-    I |-> #ConcreteArgToSemantics(ML, big_map .AnnotationList T1 T2)
+    I |-> #MichelineToNative(ML, big_map .AnnotationList T1 T2)
 
   rule <k> #LoadGroups(big_maps M ; Gs => Gs) </k>
        <bigmaps> .Map => #BigMapsToKMap(M) </bigmaps>
@@ -516,16 +516,16 @@ appropriate K-Michelson type.
 
 These groups contain the actual parameter and storage values passed to the
 contract, they must be loaded after their respective type is set so that the
-`#ConcreteArgToSemantics` function can determine what type it should be parsing.
+`#MichelineToNative` function can determine what type it should be parsing.
 
 ```k
   rule <k> #LoadGroups(parameter_value D ; Gs => Gs) </k>
        <paramtype> T </paramtype>
-       <paramvalue> #NoData => #ConcreteArgToSemantics(D, T) </paramvalue>
+       <paramvalue> #NoData => #MichelineToNative(D, T) </paramvalue>
 
   rule <k> #LoadGroups(storage_value D ; Gs => Gs) </k>
        <storagetype> T </storagetype>
-       <storagevalue> #NoData => #ConcreteArgToSemantics(D, T) </storagevalue>
+       <storagevalue> #NoData => #MichelineToNative(D, T) </storagevalue>
 ```
 
 This rule tolerates multiple contract groups in the same file by selecting one
@@ -750,7 +750,7 @@ documentation directly.
 
 ```k
   rule <k> PUSH A T X => #HandleAnnotations(A) ... </k>
-       <stack> . => #ConcreteArgToSemantics(X, T) ... </stack>
+       <stack> . => #MichelineToNative(X, T) ... </stack>
 ```
 
 UNIT and LAMBDA are implemented almost exactly as specified in the documentation.

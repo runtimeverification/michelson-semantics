@@ -76,7 +76,7 @@ The representation of \#Any is the same in the semantics and the concrete
 syntax.
 
 ```k
-  rule #ConcreteArgToSemantics(#Any, _) => #Any
+  rule #MichelineToNative(#Any, _) => #Any
 ```
 
 This function transforms a LiteralStack (e.g. a sequence of `Stack_elt`
@@ -90,10 +90,10 @@ productions) into a KSequence (the same format as the execution stack).
   syntax K ::= #LiteralStackToSemanticsAux(StackElementList) [function]
 
   rule #LiteralStackToSemanticsAux( Stack_elt T D ; Gs:StackElementList) =>
-       #ConcreteArgToSemantics(D, T) ~> #LiteralStackToSemanticsAux(Gs)
+       #MichelineToNative(D, T) ~> #LiteralStackToSemanticsAux(Gs)
 
   rule #LiteralStackToSemanticsAux(Stack_elt T D) =>
-       #ConcreteArgToSemantics(D, T)
+       #MichelineToNative(D, T)
 
   syntax TypeSeq ::= #LiteralStackToTypes(LiteralStack, Type) [function]
 
