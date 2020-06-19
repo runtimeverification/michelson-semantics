@@ -200,10 +200,10 @@ module MICHELSON-TYPES
   rule #DoDug(TS, 0) => TS
   rule #DoDug(T1 ; TS, I) => #DoDugAux(TS, I, T1)
 
-  syntax TypeSeq ::= #DoDugAux(TypeSeq, Int, Type) [function, functional]
+  syntax TypeSeq ::= #DoDugAux(TypeSeq, Int, Type) [function]
   rule #DoDugAux(_, I, T) => .TypeSeq requires I <Int 0 // This pattern is unreachable.
   rule #DoDugAux(TS, 0, T) => T ; TS
-  rule #DoDugAux(T1 ; TS, I, T) => T1 ; #DoDugAux(TS, I -Int 1, T)
+  rule #DoDugAux(T1 ; TS, I, T) => T1 ; #DoDugAux(TS, I -Int 1, T) requires I >Int 0
 
   rule #TypeInstruction(C, (DUP _) #as I, T1 ; Ts) => #TI(I, T1 ; Ts -> T1 ; T1 ; Ts)
   rule #TypeInstruction(C, (SWAP _) #as I, T1 ; T2 ; Ts) => #TI(I, T1 ; T2 ; Ts -> T2 ; T1 ; Ts)
