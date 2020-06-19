@@ -3,12 +3,13 @@ requires "unit-test/unit-test.md"
 
 module SYMBOLIC-CONFIGURATION
   imports UNIT-TEST
+  imports SYMBOLIC-UNIT-TEST-SYNTAX
+
   configuration <michelsonTop/>
-                <symbolsLoaded> false </symbolsLoaded>
                 <symbols> .Map </symbols>
-                <preconditions> .List </preconditions>
-                <postconditions> .List </postconditions>
-                <invariants> .Map </invariants>
+                <pre> {}:Blocks </pre>
+                <post> {}:Blocks </post>
+                <invs> .Map </invs>
                 <assumeFailed> false </assumeFailed>
 endmodule
 ```

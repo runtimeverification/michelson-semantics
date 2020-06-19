@@ -8,11 +8,36 @@ discussed in that document.
 requires "michelson/michelson.md"
 requires "michelson/types.md"
 requires "unit-test/syntax.md"
+```
 
+The unit-test semantics does not need any processing in addition to the base initialization.
+
+```k
+module UNIT-TEST-DRIVER
+  imports UNIT-TEST
+  rule <k> #Init
+        => #UnitTestInit
+        ~> #ExecuteScript
+        ~> #VerifyOutput
+           ...
+       </k>
+endmodule
+```
+
+```k
 module UNIT-TEST
   imports UNIT-TEST-SYNTAX
   imports MICHELSON
   imports MICHELSON-TYPES
+```
+
+```k
+  syntax KItem ::= "#UnitTestInit"
+  rule <k> #UnitTestInit
+        => #BaseInit
+        ~> #ConvertStackToNative
+           ...
+       </k>
 ```
 
 During the final output comparison step we discard the type information retained
@@ -104,7 +129,6 @@ productions) into a KSequence (the same format as the execution stack).
 
   rule #LiteralStackToTypesAux( Stack_elt T D ; Gs:StackElementList, PT) => T ; #LiteralStackToTypesAux(Gs, PT)
        requires #Typed(D, T) :=K #TypeData(PT, D, T)
-
   rule #LiteralStackToTypesAux(Stack_elt T D, PT) => T
        requires #Typed(D, T) :=K #TypeData(PT, D, T)
 ```
@@ -119,24 +143,21 @@ transformed as in the input group).
   rule #OutputStackToSemantics(X:FailedStack) => X
 ```
 
-All groups are required to have a `#GroupOrder`. Input, code and output should
-be loaded after any supplementary groups.
-
-```k
-  rule #GroupOrder(_:CodeGroup) => #GroupOrderMax
-  rule #GroupOrder(_:OutputGroup) => #GroupOrderMax -Int 1
-  rule #GroupOrder(_:InputGroup) => #GroupOrderMax -Int 2
-```
-
 Loading the input stack involves simply converting it to a KSeq whose elements
 are Data in their internal representations, and then placing that KSeq in the
 main execution stack configuration cell.
 
 ```k
-  rule <k> #LoadGroups(input LS ; Gs => Gs) </k>
-       <stack> . => #LiteralStackToSemantics(LS) </stack>
+  rule <k> input LS => .K ... </k>
+       <stack> .K => LS </stack>
+```
+
+```k
+  syntax KItem ::= "#ConvertStackToNative"
+  rule <k> #ConvertStackToNative => .K ... </k>
+       <stack> Actual => #LiteralStackToSemantics(Actual) </stack>
        <paramtype> PT </paramtype>
-       <stacktypes> .TypeSeq => #LiteralStackToTypes(LS, PT) </stacktypes>
+       <stacktypes> .TypeSeq => #LiteralStackToTypes(Actual, PT) </stacktypes>
 ```
 
 Loading the expected output group is unusual because an output group will not do
@@ -146,10 +167,17 @@ later on, and then passes directly to the next group.
 ```k
   syntax KItem ::= #CheckTypes(OutputStack, Block)
 
-  syntax KItem ::= #VerifyOutput(K)
+  syntax KItem ::= "#VerifyOutput"
+  
+  rule <k> output Os => .K ... </k>
+       <expected> .K => Os </expected>
 
-  rule <k> #LoadGroups(output Os ; (code B #as Gs)) => #CheckTypes(Os, B) ~> #LoadGroups(Gs) ~> #VerifyOutput(#OutputStackToSemantics(Os)) ... </k>
-  rule <k> #LoadGroups(output Os ; ((code B ; _) #as Gs)) => #CheckTypes(Os, B) ~> #LoadGroups(Gs) ~> #VerifyOutput(#OutputStackToSemantics(Os)) ... </k>
+//  rule <k> #LoadGroups(output Os ; (code B #as Gs)) => #CheckTypes(Os, B)
+//        ~> #LoadGroups(Gs)
+//        ~> #VerifyOutput(#OutputStackToSemantics(Os))
+//           ...
+//       </k>
+//  rule <k> #LoadGroups(output Os ; ((code B ; _) #as Gs)) => #CheckTypes(Os, B) ~> #LoadGroups(Gs) ~> #VerifyOutput(#OutputStackToSemantics(Os)) ... </k>
 
   syntax KItem ::= #CheckTypesResult(TypeSeq, TypedInstruction)
 
@@ -159,19 +187,24 @@ later on, and then passes directly to the next group.
 
   rule <k> #CheckTypes(_, _) => . ... </k> [owise]
 
-  rule <k> #CheckTypesResult(Os, #TI(_, Is -> Os) #as B) ~> #LoadGroups(code _) => #LoadGroups(code { #Exec(B) }) ... </k>
-       <stacktypes> Is </stacktypes>
-
-  rule <k> #CheckTypesResult(Os, #TI(_, Is -> Os) #as B) ~> #LoadGroups(code _ ; Gs) => #LoadGroups(code { #Exec(B) } ; Gs) ... </k>
-       <stacktypes> Is </stacktypes>
+//  rule <k> #CheckTypesResult(Os, #TI(_, Is -> Os) #as B) ~> #LoadGroups(code _) => #LoadGroups(code { #Exec(B) }) ... </k>
+//       <stacktypes> Is </stacktypes>
+//
+//  rule <k> #CheckTypesResult(Os, #TI(_, Is -> Os) #as B) ~> #LoadGroups(code _ ; Gs) => #LoadGroups(code { #Exec(B) } ; Gs) ... </k>
+//       <stacktypes> Is </stacktypes>
 ```
 
 As in the case of the contract group, loading the code group is trivial -- simply
 extract the block and let the main semantics handle the rest.
 
 ```k
-  rule <k> #LoadGroups(code C ; Gs) => C ~> #LoadGroups(Gs) ... </k> [owise]
-  rule <k> #LoadGroups(code C) => C ... </k>
+  rule <k> code C => .K ... </k>
+       <script> #NoData => C </script>
+```
+
+```k
+  rule <k> #VerifyOutput ... </k>
+       <expected> Expected => #LiteralStackToSemantics(Expected) </expected>
 ```
 
 Once execution finishes, the output verification is simply stepping through the
@@ -180,9 +213,10 @@ will get stuck during this step, with the first sequence in the `#VerifyOutput`
 production and stack cells being the expected and actual outputs respectively.
 
 ```k
-  rule <k> #VerifyOutput(S1 ~> L => L) </k>
-       <stack> S2 => . ... </stack>
-       requires #Matches(S1, S2)
+  rule <k> #VerifyOutput ... </k>
+       <stack>    S2 => . ... </stack>
+       <expected> S1 => . ... </expected>
+    requires #Matches(S1, S2)
 ```
 
 The final step when all elements of the KSequences have been exhausted is to set
@@ -193,9 +227,9 @@ also checks that `#VerifyOutput` is the last remaining production in the k cell
 by excluding the normal '...' variable at the end of the K cell.
 
 ```k
-  rule <k> #VerifyOutput(.) => . </k>
-       <stack> . </stack>
-       <returncode> _ => 0 </returncode>
+  rule <k> #VerifyOutput => . ... </k>
+       <stack>    . </stack>
+       <expected> . </expected>
 ```
 
 In the case of an expected failure, we cannot guarantee that the contents of the
@@ -208,7 +242,7 @@ K cell will be empty when the main semantics abort. However, we know that the
   syntax KItem ::= #FindVerifyOutput(K, KItem)
   syntax KItem ::= #NoVerifyOutput(KItem)
 
-  rule <k> #FindVerifyOutput(#VerifyOutput(O) ~> _, _) => #VerifyOutput(O) ... </k>
+  rule <k> #FindVerifyOutput(#VerifyOutput ~> _, _) => #VerifyOutput ... </k>
   rule <k> #FindVerifyOutput(_:KItem ~> Rs => Rs, _) ... </k> [owise]
 
   rule <k> Aborted(_, _, Rk, _) #as V => #FindVerifyOutput(Rk, V) ... </k>

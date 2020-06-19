@@ -33,9 +33,19 @@ normal execution, the current continuation becomes empty, i.e., reduces to `.K`,
 meaning that the entire requested computation finished without triggering an
 exception.
 
+The special constant `#Init` is used to control initialization of each
+semnatics. It works by having each driver module define a single rule of the
+form: `rule #Init => ...`. This is needed because different drivers may need to
+perform different pre-processing tasks.
+
+```k
+    syntax KItem ::= "#Init"
+```
+
 ```k
   configuration <michelsonTop>
-                  <k> $PGM:Pgm </k>
+                  <k> $PGM:Pgm ~> #Init </k>
+                  <script> #NoData </script>
 ```
 
 The `<stack>` cell contains the data on the stack of the current Michelson
@@ -49,6 +59,12 @@ parameter and storage values passed to the contract through the
 ```k
                   <stack> .K </stack>
                   <stacktypes> .TypeSeq </stacktypes>
+```
+
+TODO: Move this to unit-test only configuration:
+
+```k
+                  <expected> .K </expected>
 ```
 
 This cell contains the type of the parameter of this contract. It may be left

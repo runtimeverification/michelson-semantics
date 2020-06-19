@@ -142,8 +142,8 @@ build-compat: build-contract-expander build-extractor build-input-creator build-
 llvm_dir           := $(DEFN_DIR)/llvm
 llvm_files         := $(ALL_FILES)
 llvm_main_file     := unit-test/unit-test
-llvm_main_module   := UNIT-TEST
-llvm_syntax_module := $(llvm_main_module)-SYNTAX
+llvm_main_module   := UNIT-TEST-DRIVER
+llvm_syntax_module := UNIT-TEST-SYNTAX
 llvm_kompiled      := $(llvm_dir)/$(notdir $(llvm_main_file))-kompiled/interpreter
 
 defn-llvm:  $(llvm_files)
@@ -178,8 +178,8 @@ $(prove_kompiled): $(prove_files)
 symbolic_dir           := $(DEFN_DIR)/symbolic
 symbolic_files         := $(ALL_FILES)
 symbolic_main_file     := symbolic/symbolic
-symbolic_main_module   := SYMBOLIC-UNIT-TEST
-symbolic_syntax_module := $(symbolic_main_module)-SYNTAX
+symbolic_main_module   := SYMBOLIC-UNIT-TEST-DRIVER
+symbolic_syntax_module := SYMBOLIC-UNIT-TEST-SYNTAX
 symbolic_kompiled      := $(symbolic_dir)/$(notdir $(symbolic_main_file))-kompiled/definition.kore
 
 defn-symbolic:  $(symbolic_files)
