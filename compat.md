@@ -15,7 +15,7 @@ module COMPAT-COMMON
   imports UNIT-TEST-SYNTAX
   imports MICHELSON-UNPARSER
 
-  configuration <k> $PGM </k>
+  configuration <k> $PGM:Pgm </k>
                 <out stream="stdout"> .List </out>
                 <returncode exit=""> 1 </returncode>
 endmodule
