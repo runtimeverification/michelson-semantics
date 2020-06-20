@@ -16,6 +16,7 @@ module COMPAT-COMMON
   imports MICHELSON-UNPARSER
 
   configuration <k> $PGM:Pgm </k>
+                <knownaddrs> .Map </knownaddrs>
                 <out stream="stdout"> .List </out>
                 <returncode exit=""> 1 </returncode>
 ```
@@ -229,14 +230,14 @@ endmodule
 
 module OUTPUT-COMPARE
   imports OUTPUT-COMPARE-SYNTAX
+  imports COMPAT-COMMON
   imports K-REFLECTION
-  imports MICHELSON-UNPARSER
+  imports MATCHER
 
-  // TODO: This only depends on functions from UNIT-TEST and not the configuration.
-  imports UNIT-TEST
-
-  configuration <michelsonTop/>
+  configuration <k> $PGM:Pgm </k>
+                <knownaddrs> .Map </knownaddrs>
                 <out stream="stdout"> .List </out>
+                <returncode exit=""> 1 </returncode>
 
   syntax String ::= #decodeBinaryRepresentation(Bytes) [function, hook(MICHELSON.decode)]
   syntax BlockchainOperation ::= #parseOperation(String) [function]

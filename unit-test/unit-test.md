@@ -31,6 +31,7 @@ module UNIT-TEST
   imports UNIT-TEST-SYNTAX
   imports MICHELSON
   imports MICHELSON-TYPES
+  imports MATCHER
 ```
 
 ```k
@@ -51,60 +52,15 @@ lists.
   syntax Data ::= List
 ```
 
-This function implements a relaxed equality check between two data elements. In
-particular, it handles the wildcard matching behavior described in the .tzt
-format proposal and discards list type information as discussed earlier.
-
-```k
-  syntax Bool ::= #Matches(Data, Data) [function] // Expected, Actual
-
-  rule #TypeData(_, #Any, T) => #Typed(#Any, T)
-
-  rule #Matches(#Any, _) => true
-
-  rule #Matches(D1, D2) => D1 ==K D2 [owise]
-  // This also covers any structurally different data. (e.g. (Left 1) vs (Right 1))
-
-  rule #Matches(.List, .List) => true
-  rule #Matches(ListItem(L1) Ls1:List, ListItem(L2) Ls2:List) => #Matches(L1, L2) andBool #Matches(Ls1, Ls2)
-
-  rule #Matches(.Set, .Set) => true
-  rule #Matches(SetItem(S1) Ss1, SetItem(S2) Ss2) => #Matches(S1, S2) andBool #Matches(Ss1, Ss2)
-
-  rule #Matches(.Map, .Map) => true
-  rule #Matches((K |-> V1) M1, (K |-> V2) M2) => #Matches(V1, V2) andBool #Matches(M1, M2)
-
-  syntax Data ::= FailedStack
-
-  rule #Matches(Create_contract(I1, C, O1, M1, D1), Create_contract(I2, C, O2, M2, D2)) =>
-    #Matches(I1, I2) andBool
-    #Matches(O1, O2) andBool
-    #Matches(M1, M2) andBool
-    #Matches(D1, D2)
-
-  rule #Matches(Transfer_tokens(I1, D1, M1, A1), Transfer_tokens(I2, D2, M2, A2)) =>
-    #Matches(I1, I2) andBool
-    #Matches(D1, D2) andBool
-    #Matches(M1, M2) andBool
-    #Matches(A1, A2)
-
-  rule #Matches(Set_delegate(I1, O1), Set_delegate(I2, O2)) =>
-    #Matches(I1, I2) andBool #Matches(O1, O2)
-
-  rule #Matches(Pair L1 R1, Pair L2 R2) => #Matches(L1, L2) andBool #Matches(R1, R2)
-
-  rule #Matches(Some D1, Some D2) => #Matches(D1, D2)
-
-  rule #Matches(Left D1, Left D2) => #Matches(D1, D2)
-  rule #Matches(Right D1, Right D2) => #Matches(D1, D2)
-```
 
 The representation of \#Any is the same in the semantics and the concrete
 syntax.
 
 ```k
   rule #MichelineToNative(#Any, _, _, _) => #Any
+  rule #TypeData(_, #Any, T) => #Typed(#Any, T)
 ```
+
 
 This function transforms a LiteralStack (e.g. a sequence of `Stack_elt`
 productions) into a KSequence (the same format as the execution stack).
@@ -310,5 +266,57 @@ K cell will be empty when the main semantics abort. However, we know that the
   rule <k> #FindVerifyOutput(_:KItem ~> Rs => Rs, _) ... </k> [owise]
 
   rule <k> Aborted(_, _, Rk, _) #as V => #FindVerifyOutput(Rk, V) ... </k>
+endmodule
+```
+
+This function implements a relaxed equality check between two data elements. In
+particular, it handles the wildcard matching behavior described in the .tzt
+format proposal and discards list type information as discussed earlier.
+
+```k
+module MATCHER
+  imports MICHELSON-COMMON
+  imports UNIT-TEST-SYNTAX
+
+  syntax Bool ::= #Matches(Data, Data) [function] // Expected, Actual
+
+  rule #Matches(#Any, _) => true
+
+  rule #Matches(D1, D2) => D1 ==K D2 [owise]
+  // This also covers any structurally different data. (e.g. (Left 1) vs (Right 1))
+
+  rule #Matches(.List, .List) => true
+  rule #Matches(ListItem(L1) Ls1:List, ListItem(L2) Ls2:List) => #Matches(L1, L2) andBool #Matches(Ls1, Ls2)
+
+  rule #Matches(.Set, .Set) => true
+  rule #Matches(SetItem(S1) Ss1, SetItem(S2) Ss2) => #Matches(S1, S2) andBool #Matches(Ss1, Ss2)
+
+  rule #Matches(.Map, .Map) => true
+  rule #Matches((K |-> V1) M1, (K |-> V2) M2) => #Matches(V1, V2) andBool #Matches(M1, M2)
+
+  syntax Data ::= FailedStack
+
+  rule #Matches(Create_contract(I1, C, O1, M1, D1), Create_contract(I2, C, O2, M2, D2)) =>
+    #Matches(I1, I2) andBool
+    #Matches(O1, O2) andBool
+    #Matches(M1, M2) andBool
+    #Matches(D1, D2)
+
+  rule #Matches(Transfer_tokens(I1, D1, M1, A1), Transfer_tokens(I2, D2, M2, A2)) =>
+    #Matches(I1, I2) andBool
+    #Matches(D1, D2) andBool
+    #Matches(M1, M2) andBool
+    #Matches(A1, A2)
+
+  rule #Matches(Set_delegate(I1, O1), Set_delegate(I2, O2)) =>
+    #Matches(I1, I2) andBool #Matches(O1, O2)
+
+  rule #Matches(Pair L1 R1, Pair L2 R2) => #Matches(L1, L2) andBool #Matches(R1, R2)
+
+  rule #Matches(Some D1, Some D2) => #Matches(D1, D2)
+
+  rule #Matches(Left D1, Left D2) => #Matches(D1, D2)
+  rule #Matches(Right D1, Right D2) => #Matches(D1, D2)
+
 endmodule
 ```
