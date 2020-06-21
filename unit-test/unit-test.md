@@ -160,40 +160,6 @@ main execution stack configuration cell.
        <stacktypes> .TypeSeq => #LiteralStackToTypes(Actual, PT) </stacktypes>
 ```
 
-Loading the expected output group is unusual because an output group will not do
-anything when loaded. Instead it simply schedules the output for verification
-later on, and then passes directly to the next group.
-
-```k
-  syntax KItem ::= #CheckTypes(OutputStack, Block)
-
-  syntax KItem ::= "#VerifyOutput"
-  
-  rule <k> output Os => .K ... </k>
-       <expected> .K => Os </expected>
-
-//  rule <k> #LoadGroups(output Os ; (code B #as Gs)) => #CheckTypes(Os, B)
-//        ~> #LoadGroups(Gs)
-//        ~> #VerifyOutput(#OutputStackToSemantics(Os))
-//           ...
-//       </k>
-//  rule <k> #LoadGroups(output Os ; ((code B ; _) #as Gs)) => #CheckTypes(Os, B) ~> #LoadGroups(Gs) ~> #VerifyOutput(#OutputStackToSemantics(Os)) ... </k>
-
-  syntax KItem ::= #CheckTypesResult(TypeSeq, TypedInstruction)
-
-  rule <k> #CheckTypes(LS:LiteralStack, B) => #CheckTypesResult(#LiteralStackToTypes(LS, P), #TypeInstruction(P, B, TS)) ... </k>
-       <paramtype> P </paramtype>
-       <stacktypes> TS </stacktypes>
-
-  rule <k> #CheckTypes(_, _) => . ... </k> [owise]
-
-//  rule <k> #CheckTypesResult(Os, #TI(_, Is -> Os) #as B) ~> #LoadGroups(code _) => #LoadGroups(code { #Exec(B) }) ... </k>
-//       <stacktypes> Is </stacktypes>
-//
-//  rule <k> #CheckTypesResult(Os, #TI(_, Is -> Os) #as B) ~> #LoadGroups(code _ ; Gs) => #LoadGroups(code { #Exec(B) } ; Gs) ... </k>
-//       <stacktypes> Is </stacktypes>
-```
-
 As in the case of the contract group, loading the code group is trivial -- simply
 extract the block and let the main semantics handle the rest.
 
@@ -202,15 +168,52 @@ extract the block and let the main semantics handle the rest.
        <script> #NoData => C </script>
 ```
 
+`output` Group
+--------------
+
 ```k
-  rule <k> #VerifyOutput ... </k>
-       <expected> Expected => #LiteralStackToSemantics(Expected) </expected>
+  rule <k> output Os => .K ... </k>
+       <expected> .K => Os </expected>
+```
+
+TODO: I have not been able to wrap my head around this:
+
+```k
+//  rule <k> #CheckTypes
+//        => #CheckTypesResult(#LiteralStackToTypes(LS, P), #TypeInstruction(P, B, TS))
+//           ...
+//       </k>
+//       <expected> LS:LiteralStack </expected>
+//       <script> B </script>
+//       <paramtype> P </paramtype>
+//       <stacktypes> TS </stacktypes>
+//  rule <k> #CheckTypes(_, _) => . ... </k> [owise]
+//
+//  syntax KItem ::= #CheckTypesResult(TypeSeq, TypedInstruction)
+//  rule <k> #CheckTypesResult(Os, #TI(_, Is -> Os) #as B)
+//        ~> #LoadGroups(code _)
+//        => #LoadGroups(code { #Exec(B) })
+//           ...
+//       </k>
+//       <stacktypes> Is </stacktypes>
+//  rule <k> #CheckTypesResult(Os, #TI(_, Is -> Os) #as B)
+//        ~> #LoadGroups(code _ ; Gs)
+//        => #LoadGroups(code { #Exec(B) } ; Gs)
+//           ...
+//       </k>
+//       <stacktypes> Is </stacktypes>
 ```
 
 Once execution finishes, the output verification is simply stepping through the
 KSequence and removing any elements that `#Match`. An unsuccessful unit test
 will get stuck during this step, with the first sequence in the `#VerifyOutput`
 production and stack cells being the expected and actual outputs respectively.
+
+```k
+  syntax KItem ::= "#VerifyOutput"
+  rule <k> #VerifyOutput ... </k>
+       <expected> Expected => #LiteralStackToSemantics(Expected) </expected>
+```
 
 ```k
   rule <k> #VerifyOutput ... </k>
