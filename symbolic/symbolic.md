@@ -80,10 +80,10 @@ module SYMBOLIC-UNIT-TEST
 
   rule #FindSymbolsIn(_, _) => .Set [owise]
 
-  rule [[ #ConcreteArgToSemantics(S:SymbolicData, T) => D ]]
+  rule [[ #MichelineToNative(S:SymbolicData, T) => D ]]
        <symbols> S |-> #TypedSymbol(T, D) ... </symbols>
 
-  rule #ConcreteArgToSemantics(S:SymbolicData, T) => S [owise]
+  rule #MichelineToNative(S:SymbolicData, T) => S [owise]
 
   syntax Bool ::= #AllTypesKnown(Set) [function, functional]
   rule #AllTypesKnown(SetItem(#SymbolicElement(_, #UnknownType)) _) => false
