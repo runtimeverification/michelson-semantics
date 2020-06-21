@@ -24,7 +24,7 @@ When the `<k>` cell is empty, we consider execution successful
 
 ```k
   rule <k> .K </k>
-       <returncode exit=""> 1 => 0 </returncode>
+       <returncode> 1 => 0 </returncode>
 endmodule
 ```
 
