@@ -267,6 +267,8 @@ module OUTPUT-COMPARE
   rule <k> other_contracts M ; Gs => Gs </k>
        <knownaddrs> _ => #OtherContractsMapToKMap(M) </knownaddrs>
 
-  rule <k> real_output AOS ; output EOS ; => #CheckOutput(EOS, AOS) </k>
+  rule <k> real_output AOS ~> output EOS ; => #CheckOutput(EOS, AOS) ... </k>
+
+  rule <k> #init => .K </k>
 endmodule
 ```
