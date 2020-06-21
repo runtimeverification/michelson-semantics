@@ -252,23 +252,45 @@ module OUTPUT-COMPARE
 
   rule <k> #CheckOutput( { } , { } ) => . </k>
 
-  rule <k> #CheckOutput( { Stack_elt ET ED } , { Stack_elt AT AD } ) => . </k>
-       requires #Matches(#MichelineToNative(ED, ET), #MichelineToNative(AD, AT))
+  rule <k> #CheckOutput( { Stack_elt ET ED } , { Stack_elt AT AD } )
+        => .
+           ...
+       </k>
+    requires #Matches(#MichelineToNative(ED, ET), #MichelineToNative(AD, AT))
 
-  rule <k> #CheckOutput( { Stack_elt ET ED } , { Stack_elt AT AD } ) => #Failed  </k>
-       <out> ... .List => ListItem("Mismatch - Expected: " +String #unparse(#MichelineToNative(ED, ET)) +String " Actual: " +String #unparse(#MichelineToNative(AD, AT))) </out> [owise]
+  rule <k> #CheckOutput( { Stack_elt ET ED } , { Stack_elt AT AD } )
+        => #Failed
+           ...
+       </k>
+       <out> ...
+             .List
+          => ListItem("Mismatch - Expected: " +String #unparse(#MichelineToNative(ED, ET)) +String
+                                  " Actual: " +String #unparse(#MichelineToNative(AD, AT))
+                     )
+       </out> [owise]
 
-  rule <k> #CheckOutput( { Stack_elt ET ED ; Es } , { Stack_elt AT AD ; As } ) => #CheckOutput( { Es } , { As } ) </k>
-       requires #Matches(#MichelineToNative(ED, ET), #MichelineToNative(AD, AT))
+  rule <k> #CheckOutput( { Stack_elt ET ED ; Es } , { Stack_elt AT AD ; As } )
+        => #CheckOutput( { Es } , { As } )
+           ...
+       </k>
+    requires #Matches(#MichelineToNative(ED, ET), #MichelineToNative(AD, AT))
 
-  rule <k> #CheckOutput( { Stack_elt ET ED ; Es } , { Stack_elt AT AD ; As } ) => #Failed  </k>
-       <out> ... .List => ListItem("Mismatch - Expected: " +String #unparse(#MichelineToNative(ED, ET)) +String " Actual: " +String #unparse(#MichelineToNative(AD, AT))) </out> [owise]
+  rule <k> #CheckOutput( { Stack_elt ET ED ; Es } , { Stack_elt AT AD ; As } )
+        => #Failed
+           ...
+       </k>
+       <out> ...
+             .List
+          => ListItem("Mismatch - Expected: " +String #unparse(#MichelineToNative(ED, ET))
+                          +String " Actual: " +String #unparse(#MichelineToNative(AD, AT))
+                     )
+       </out> [owise]
 
   rule <k> other_contracts M ; Gs => Gs </k>
        <knownaddrs> _ => #OtherContractsMapToKMap(M) </knownaddrs>
 
   rule <k> real_output AOS ~> output EOS ; => #CheckOutput(EOS, AOS) ... </k>
 
-  rule <k> #init => .K </k>
+  rule <k> #Init => .K ... </k>
 endmodule
 ```
