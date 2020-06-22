@@ -17,7 +17,7 @@ module UNIT-TEST-DRIVER
   imports UNIT-TEST
   rule <k> #Init
         => #UnitTestInit
-        ~> #ExecuteScript
+        ~> #ExecuteTypedScript
         ~> #ConvertOutputStackToNative
         ~> #VerifyOutput
            ...
@@ -120,18 +120,6 @@ productions) into a KSequence (the same format as the execution stack).
 
   rule #LiteralStackToSemanticsAux(Stack_elt T D) =>
        #MichelineToNative(D, T)
-
-  syntax TypeSeq ::= #LiteralStackToTypes(LiteralStack, Type) [function]
-
-  rule #LiteralStackToTypes( { } , _) => .TypeSeq
-  rule #LiteralStackToTypes( { L } , T ) => #LiteralStackToTypesAux(L, T)
-
-  syntax TypeSeq ::= #LiteralStackToTypesAux(StackElementList, Type) [function]
-
-  rule #LiteralStackToTypesAux( Stack_elt T D ; Gs:StackElementList, PT) => T ; #LiteralStackToTypesAux(Gs, PT)
-       requires #Typed(D, T) :=K #TypeData(PT, D, T)
-  rule #LiteralStackToTypesAux(Stack_elt T D, PT) => T
-       requires #Typed(D, T) :=K #TypeData(PT, D, T)
 ```
 
 This function transforms an expected output stack to its internal representation
@@ -161,7 +149,6 @@ placing that KSeq in the main execution stack configuration cell.
   rule <k> #ConvertStackToNative => .K ... </k>
        <inputstack> Actual => #LiteralStackToSemantics(Actual) </inputstack>
        <paramtype> PT </paramtype>
-       <stacktypes> .TypeSeq => #LiteralStackToTypes(Actual, PT) </stacktypes>
 ```
 
 As in the case of the contract group, loading the code group is trivial --
@@ -172,39 +159,107 @@ simply extract the block and let the main semantics handle the rest.
        <script> #NoData => C </script>
 ```
 
-`output` Group
---------------
+Type Checking Extension
+-----------------------
+
+For type-checking purposes, given an input or expected output stack, we need to
+know what types are on the stack.
 
 ```k
+  syntax TypeSeq ::= #LiteralStackToTypes(LiteralStack, Type) [function]
+
+  rule #LiteralStackToTypes( { } , _) => .TypeSeq
+  rule #LiteralStackToTypes( { L } , T ) => #LiteralStackToTypesAux(L, T)
+
+  syntax TypeSeq ::= #LiteralStackToTypesAux(StackElementList, Type) [function]
+
+  rule #LiteralStackToTypesAux( Stack_elt T D ; Gs:StackElementList, PT)
+    => T ; #LiteralStackToTypesAux(Gs, PT)
+    requires #Typed(D, T) :=K #TypeData(PT, D, T)
+
+  rule #LiteralStackToTypesAux(Stack_elt T D, PT) => T
+    requires #Typed(D, T) :=K #TypeData(PT, D, T)
 ```
 
-TODO: I have not been able to wrap my head around this:
+### `#TypeAndExecute` function
+
+Executing Michelson code without type information leads to non-determinism.
+For example, the `CONCAT` instruction, when applied to an empty list, produces
+either an empty `string` or empty `bytes`. Without knowing the type of the list,
+the resulting type of value is unknown.
+
+The K-Michelson semantics was originally written without a type system/checker.
+Later, a type system was added to resolve various issues, including the one
+mentioned above.
+
+The result of type-checking a block of code produces an equivalent block where
+each instruction has been wrapped in its corresponding type. These types are
+unwrapped and stored in a fresh configuration cell `<stacktypes>` during
+execution. This allows the oringal "type-free" semantics can be used for all
+unambiguous cases while any type-dependent instructions can reference the
+`<stacktypes>` cell to determine which execution path is needed.
+
+To correctly check the typing of a unit test, we need the following info:
+
+1. the contract parameter type --- only used in typing the `SELF` instruction
+2. the input stack types --- which depend on (1) because `lambda`
+3. the output stack types --- which depend on (1) for the same reason
+4. a Michelson script
+
+The `#TypeAndExecute` takes parameters 1-4, performs the type-check, and then
+replaces the code in the K cell with typed version.
+
+TODO: `#TypeAndExecute` currently is a no-op when the expected output stack is
+a failed stack --- but this means that we cannot execute tests fully when we
+expect failure. See note below.
 
 ```k
-//  rule <k> #CheckTypes
-//        => #CheckTypesResult(#LiteralStackToTypes(LS, P), #TypeInstruction(P, B, TS))
-//           ...
-//       </k>
-//       <expected> LS:LiteralStack </expected>
-//       <script> B </script>
-//       <paramtype> P </paramtype>
-//       <stacktypes> TS </stacktypes>
-//  rule <k> #CheckTypes(_, _) => . ... </k> [owise]
-//
-//  syntax KItem ::= #CheckTypesResult(TypeSeq, TypedInstruction)
-//  rule <k> #CheckTypesResult(Os, #TI(_, Is -> Os) #as B)
-//        ~> #LoadGroups(code _)
-//        => #LoadGroups(code { #Exec(B) })
-//           ...
-//       </k>
-//       <stacktypes> Is </stacktypes>
-//  rule <k> #CheckTypesResult(Os, #TI(_, Is -> Os) #as B)
-//        ~> #LoadGroups(code _ ; Gs)
-//        => #LoadGroups(code { #Exec(B) } ; Gs)
-//           ...
-//       </k>
-//       <stacktypes> Is </stacktypes>
+  syntax KItem ::= #TypeAndExecute(Block, Type, LiteralStack, OutputStack)
+  syntax KItem ::= #TypeAndExecuteAux(LiteralStack, LiteralStack, TypeSeq, TypedInstruction)
+
+  rule <k> #TypeAndExecute(B,P,IS,OS:LiteralStack)
+        => #TypeAndExecuteAux(
+             IS,
+             OS,
+             #LiteralStackToTypes(OS, P),
+             #TypeInstruction(P, B, #LiteralStackToTypes(IS,P))
+           )
+           ...
+       </k>
+
+  // TODO: Implement a "partial" type check case
+  rule <k> #TypeAndExecute(B,P,IS,OS:FailedStack) => B ... </k>
+       <stack> _ => IS </stack>
+       <stacktypes> _ => #LiteralStackToTypes(IS,P) </stacktypes>
+
+  rule <k> #TypeAndExecuteAux(IS, OS, OSTypes, #TI(B, ISTypes -> OSTypes))
+        => #Exec(#TI(B, ISTypes -> OSTypes)) ...
+       </k>
+       <stack> _ => IS </stack>
+       <stacktypes> _ => ISTypes </stacktypes>
 ```
+
+### `#ExecuteTypedScript`
+
+This function executes a script in a typed fashion with an expected output
+stack. Currently, it just calls `#TypeAndExecute` with the appropriate
+arguments.
+
+```k
+  syntax KItem ::= "#ExecuteTypedScript"
+
+  rule <k> #ExecuteTypedScript
+        => #TypeAndExecute(B,PT,IS,OS)
+        ...
+       </k>
+       <script> B </script>
+       <paramtype> PT </paramtype>
+       <inputstack> IS </inputstack>
+       <expected> OS </expected>
+```
+
+`#VerifyOutput`
+---------------
 
 Once execution finishes, the output verification is simply stepping through the
 KSequence and removing any elements that `#Match`. An unsuccessful unit test

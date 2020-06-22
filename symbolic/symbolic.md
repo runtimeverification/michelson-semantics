@@ -18,7 +18,7 @@ module SYMBOLIC-UNIT-TEST-DRIVER
         => #CreateSymbols
         ~> #UnitTestInit
         ~> #ExecutePreConditions
-        ~> #ExecuteScript
+        ~> #ExecuteTypedScript
         ~> #CheckSymbolicOutput
         ~> #ExecutePostConditions
            ...
