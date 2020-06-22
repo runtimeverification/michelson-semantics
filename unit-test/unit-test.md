@@ -18,6 +18,7 @@ module UNIT-TEST-DRIVER
   rule <k> #Init
         => #UnitTestInit
         ~> #ExecuteScript
+        ~> #ConvertOutputStackToNative
         ~> #VerifyOutput
            ...
        </k>
@@ -143,13 +144,16 @@ transformed as in the input group).
   rule #OutputStackToSemantics(X:FailedStack) => X
 ```
 
-Loading the input stack involves simply converting it to a KSeq whose elements
-are Data in their internal representations, and then placing that KSeq in the
-main execution stack configuration cell.
+Loading the input or expected output stack involves simply converting it to a
+KSeq whose elements are Data in their internal representations, and then
+placing that KSeq in the main execution stack configuration cell.
 
 ```k
   rule <k> input LS => .K ... </k>
        <stack> .K => LS </stack>
+
+  rule <k> output Os => .K ... </k>
+       <expected> .K => Os </expected>
 ```
 
 ```k
@@ -160,8 +164,8 @@ main execution stack configuration cell.
        <stacktypes> .TypeSeq => #LiteralStackToTypes(Actual, PT) </stacktypes>
 ```
 
-As in the case of the contract group, loading the code group is trivial -- simply
-extract the block and let the main semantics handle the rest.
+As in the case of the contract group, loading the code group is trivial --
+simply extract the block and let the main semantics handle the rest.
 
 ```k
   rule <k> code C => .K ... </k>
@@ -172,8 +176,6 @@ extract the block and let the main semantics handle the rest.
 --------------
 
 ```k
-  rule <k> output Os => .K ... </k>
-       <expected> .K => Os </expected>
 ```
 
 TODO: I have not been able to wrap my head around this:
@@ -210,12 +212,13 @@ will get stuck during this step, with the first sequence in the `#VerifyOutput`
 production and stack cells being the expected and actual outputs respectively.
 
 ```k
-  syntax KItem ::= "#VerifyOutput"
-  rule <k> #VerifyOutput ... </k>
-       <expected> Expected => #LiteralStackToSemantics(Expected) </expected>
+  syntax KItem ::= "#ConvertOutputStackToNative"
+  rule <k> #ConvertOutputStackToNative => . ... </k>
+       <expected> Expected => #OutputStackToSemantics(Expected) </expected>
 ```
 
 ```k
+  syntax KItem ::= "#VerifyOutput"
   rule <k> #VerifyOutput ... </k>
        <stack>    S2 => . ... </stack>
        <expected> S1 => . ... </expected>
