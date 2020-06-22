@@ -269,6 +269,7 @@ Load symbolic variables into the `<symbols>` map.
         => B ~> #AssertTrue ~>  #ExecutePostConditions
            ...
        </k>
+       <stack> Stack => .K </stack>
 
   rule <k> #ExecutePostConditions => #ExecutePostConditions(B) ... </k>
        <post> { B ; Bs } => { Bs } </post>
