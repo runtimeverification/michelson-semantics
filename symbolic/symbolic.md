@@ -193,6 +193,15 @@ Load symbolic variables into the `<symbols>` map.
   syntax KItem ::= "#AssertFailed" [klabel(#AssertFailed), symbol]
 ```
 
+`#RestoreStack` utility function
+--------------------------------
+
+```k
+  syntax KItem ::= "#RestoreStack" "(" K ")"
+  rule <k> #RestoreStack(Stack) => .K ... </k>
+       <stack> _ => Stack </stack>
+```
+
 `precondition` Groups
 ---------------------
 
@@ -215,10 +224,6 @@ Load symbolic variables into the `<symbols>` map.
        <pre> { B } => { }  </pre>
   rule <k> #ExecutePreConditions => .K ... </k>
        <pre> { } </pre>
-
-  syntax KItem ::= "#RestoreStack" "(" K ")"
-  rule <k> #RestoreStack(Stack) => .K ... </k>
-       <stack> _ => Stack </stack>
 ```
 
 `#CheckSymbolicOutput`
