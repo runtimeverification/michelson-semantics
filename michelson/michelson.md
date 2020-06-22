@@ -457,7 +457,7 @@ Execution Semantics
 
 ```k
   syntax KItem ::= "#LoadStack"
-  rule <k> #ExecuteScript ... </k>
+  rule <k> #LoadStack ... </k>
        <stack> .K => Pair P S </stack>
        <paramvalue> P </paramvalue>
        <storagevalue> S </storagevalue>
