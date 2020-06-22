@@ -214,10 +214,11 @@ Load symbolic variables into the `<symbols>` map.
   syntax KItem ::= "#ExecutePreConditions"
                  | "#ExecutePreConditions" "(" Block ")"
   rule <k> #ExecutePreConditions(B:Block)
-        => B ~> #AssumeTrue  ~> #RestoreStack(Stack) ~> #ExecutePreConditions
+        => B ~> #AssumeTrue ~> #ExecutePreConditions
            ...
        </k>
        <stack> Stack => .K </stack>
+
   rule <k> #ExecutePreConditions => #ExecutePreConditions(B) ... </k>
        <pre> { B ; Bs } => { Bs } </pre>
   rule <k> #ExecutePreConditions => #ExecutePreConditions(B) ... </k>
