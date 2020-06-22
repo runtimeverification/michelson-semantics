@@ -170,7 +170,7 @@ From Micheline to K-Michelson Internal Representation
        <paramvalue> D => #MichelineToNative(D, T) </paramvalue>
     requires D =/=K #NoData
   rule <k> #ConvertParamToNative => .K ... </k>
-       <paramvalue> #NoData </paramvalue>
+       <paramvalue> #NoData </paramvalue> [owise]
 
   syntax KItem ::= "#ConvertStorageToNative"
   rule <k> #ConvertStorageToNative => .K ... </k>
@@ -178,7 +178,7 @@ From Micheline to K-Michelson Internal Representation
        <storagevalue> D => #MichelineToNative(D, T) </storagevalue>
     requires D =/=K #NoData
   rule <k> #ConvertStorageToNative => .K ... </k>
-       <storagevalue> #NoData </storagevalue>
+       <storagevalue> #NoData </storagevalue> [owise]
 ```
 
 The internal representation of Michelson sets, lists and maps are simply K sets,
