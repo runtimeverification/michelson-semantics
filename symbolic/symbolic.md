@@ -128,7 +128,7 @@ Load symbolic variables into the `<symbols>` map.
                          )                )           )
            ...
        </k>
-       <stack> Stack </stack>
+       <inputstack> Stack </inputstack>
        <pre> Pre </pre>
        <script> Script </script>
 ```

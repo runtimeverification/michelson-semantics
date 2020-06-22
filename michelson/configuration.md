@@ -67,6 +67,14 @@ TODO: Move this to unit-test only configuration:
                   <expected> .K </expected>
 ```
 
+The `<inputstack>` cell contains the initial input stack for unit tests. Storing
+this separately from the `<stack>` cell lets us rewrite the stack as much as we
+want during program evaluation without having to worry about restoring it later.
+
+```k
+                  <inputstack> .K </inputstack>
+```
+
 This cell contains the type of the parameter of this contract. It may be left
 unset during the execution of a unit test.
 

@@ -150,7 +150,7 @@ placing that KSeq in the main execution stack configuration cell.
 
 ```k
   rule <k> input LS => .K ... </k>
-       <stack> .K => LS </stack>
+       <inputstack> .K => LS </inputstack>
 
   rule <k> output Os => .K ... </k>
        <expected> .K => Os </expected>
@@ -159,7 +159,7 @@ placing that KSeq in the main execution stack configuration cell.
 ```k
   syntax KItem ::= "#ConvertStackToNative"
   rule <k> #ConvertStackToNative => .K ... </k>
-       <stack> Actual => #LiteralStackToSemantics(Actual) </stack>
+       <inputstack> Actual => #LiteralStackToSemantics(Actual) </inputstack>
        <paramtype> PT </paramtype>
        <stacktypes> .TypeSeq => #LiteralStackToTypes(Actual, PT) </stacktypes>
 ```
