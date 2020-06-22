@@ -17,7 +17,7 @@ module UNIT-TEST-DRIVER
   imports UNIT-TEST
   rule <k> #Init
         => #UnitTestInit
-        ~> #ExecuteTypedScript
+        ~> #ExecuteScript
         ~> #ConvertOutputStackToNative
         ~> #VerifyOutput
            ...
@@ -36,6 +36,7 @@ module UNIT-TEST
   syntax KItem ::= "#UnitTestInit"
   rule <k> #UnitTestInit
         => #BaseInit
+        ~> #TypeCheck
         ~> #ConvertStackToNative
            ...
        </k>
@@ -181,7 +182,7 @@ know what types are on the stack.
     requires #Typed(D, T) :=K #TypeData(PT, D, T)
 ```
 
-### `#TypeAndExecute` function
+### `#TypeCheck` function
 
 Executing Michelson code without type information leads to non-determinism.
 For example, the `CONCAT` instruction, when applied to an empty list, produces
@@ -206,19 +207,21 @@ To correctly check the typing of a unit test, we need the following info:
 3. the output stack types --- which depend on (1) for the same reason
 4. a Michelson script
 
-The `#TypeAndExecute` takes parameters 1-4, performs the type-check, and then
-replaces the code in the K cell with typed version.
+The `#TypeCheck` takes parameters 1-4, performs the type-check, and then
+replaces the code in the script cell with typed version.
 
-TODO: `#TypeAndExecute` currently is a no-op when the expected output stack is
+TODO: `#TypeCheck` currently is a no-op when the expected output stack is
 a failed stack --- but this means that we cannot execute tests fully when we
 expect failure. See note below.
 
-```k
-  syntax KItem ::= #TypeAndExecute(Block, Type, LiteralStack, OutputStack)
-  syntax KItem ::= #TypeAndExecuteAux(LiteralStack, LiteralStack, TypeSeq, TypedInstruction)
+TODO: Consider best way to introduce type-checks to pre/post conditions
 
-  rule <k> #TypeAndExecute(B,P,IS,OS:LiteralStack)
-        => #TypeAndExecuteAux(
+```k
+  syntax KItem ::= #TypeCheck(Block, Type, LiteralStack, OutputStack)
+  syntax KItem ::= #TypeCheckAux(LiteralStack, LiteralStack, TypeSeq, TypedInstruction)
+
+  rule <k> #TypeCheck(B,P,IS,OS:LiteralStack)
+        => #TypeCheckAux(
              IS,
              OS,
              #LiteralStackToTypes(OS, P),
@@ -228,28 +231,26 @@ expect failure. See note below.
        </k>
 
   // TODO: Implement a "partial" type check case
-  rule <k> #TypeAndExecute(B,P,IS,OS:FailedStack) => B ... </k>
+  rule <k> #TypeCheck(B,P,IS,OS:FailedStack) => . ... </k>
+       <script> B </script>
        <stack> _ => IS </stack>
        <stacktypes> _ => #LiteralStackToTypes(IS,P) </stacktypes>
 
-  rule <k> #TypeAndExecuteAux(IS, OS, OSTypes, #TI(B, ISTypes -> OSTypes))
-        => #Exec(#TI(B, ISTypes -> OSTypes)) ...
+  rule <k> #TypeCheckAux(IS, OS, OSTypes, #TI(B, ISTypes -> OSTypes))
+        => .
+           ...
        </k>
+       <script> _ => { #Exec(#TI(B, ISTypes -> OSTypes)) } </script>
        <stack> _ => IS </stack>
        <stacktypes> _ => ISTypes </stacktypes>
 ```
 
-### `#ExecuteTypedScript`
-
-This function executes a script in a typed fashion with an expected output
-stack. Currently, it just calls `#TypeAndExecute` with the appropriate
-arguments.
+This directive supplies all of the arguments to the `#TypeCheck` rule.
 
 ```k
-  syntax KItem ::= "#ExecuteTypedScript"
-
-  rule <k> #ExecuteTypedScript
-        => #TypeAndExecute(B,PT,IS,OS)
+  syntax KItem ::= "#TypeCheck"
+  rule <k> #TypeCheck
+        => #TypeCheck(B,PT,IS,OS)
         ...
        </k>
        <script> B </script>
