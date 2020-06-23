@@ -17,6 +17,7 @@ module UNIT-TEST-DRIVER
   imports UNIT-TEST
   rule <k> #Init
         => #UnitTestInit
+        ~> #LoadInputStack
         ~> #ExecuteScript
         ~> #ConvertOutputStackToNative
         ~> #VerifyOutput
@@ -37,7 +38,6 @@ module UNIT-TEST
   rule <k> #UnitTestInit
         => #BaseInit
         ~> #TypeCheck
-        ~> #ConvertStackToNative
            ...
        </k>
 ```
@@ -146,9 +146,11 @@ placing that KSeq in the main execution stack configuration cell.
 ```
 
 ```k
-  syntax KItem ::= "#ConvertStackToNative"
-  rule <k> #ConvertStackToNative => .K ... </k>
-       <inputstack> Actual => #LiteralStackToSemantics(Actual) </inputstack>
+  syntax KItem ::= "#LoadInputStack"
+  rule <k> #LoadInputStack => .K ... </k>
+       <stack> _ => #LiteralStackToSemantics(Actual) </stack>
+       <stacktypes> _ => #LiteralStackToTypes(Actual,PT) </stacktypes>
+       <inputstack> Actual </inputstack>
        <paramtype> PT </paramtype>
 ```
 
@@ -233,16 +235,12 @@ TODO: Consider best way to introduce type-checks to pre/post conditions
   // TODO: Implement a "partial" type check case
   rule <k> #TypeCheck(B,P,IS,OS:FailedStack) => . ... </k>
        <script> B </script>
-       <stack> _ => IS </stack>
-       <stacktypes> _ => #LiteralStackToTypes(IS,P) </stacktypes>
 
   rule <k> #TypeCheckAux(IS, OS, OSTypes, #TI(B, ISTypes -> OSTypes))
         => .
            ...
        </k>
        <script> _ => { #Exec(#TI(B, ISTypes -> OSTypes)) } </script>
-       <stack> _ => IS </stack>
-       <stacktypes> _ => ISTypes </stacktypes>
 ```
 
 This directive supplies all of the arguments to the `#TypeCheck` rule.
