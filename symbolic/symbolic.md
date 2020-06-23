@@ -172,6 +172,18 @@ Load symbolic variables into the `<symbols>` map.
    // Complex types..._
 ```
 
+`#LiteralStackToTypesAux` Extension
+-----------------------------------
+
+We extend this typing function to handle symbolic values.
+
+```k
+  rule #LiteralStackToTypesAux(Stack_elt T S:SymbolicData ; Gs:StackElementList, PT)
+    => T ; #LiteralStackToTypesAux(Gs, PT)
+
+  rule #LiteralStackToTypesAux(Stack_elt T S:SymbolicData, PT) => T
+```
+
 `#Assume`/`#Assert` instructions
 --------------------------------
 
