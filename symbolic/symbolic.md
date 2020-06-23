@@ -16,7 +16,7 @@ module SYMBOLIC-UNIT-TEST-DRIVER
 
   rule <k> #Init
         => #CreateSymbols
-        ~> #UnitTestInit
+        ~> #BaseInit
         ~> #ExecutePreConditions
         ~> #LoadInputStack
         ~> #ExecuteScript
