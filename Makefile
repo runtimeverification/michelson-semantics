@@ -160,8 +160,8 @@ $(llvm_kompiled): $(llvm_files)
 prove_dir           := $(DEFN_DIR)/prove
 prove_files         := $(ALL_FILES)
 prove_main_file     := unit-test/unit-test
-prove_main_module   := UNIT-TEST
-prove_syntax_module := $(prove_main_module)-SYNTAX
+prove_main_module   := UNIT-TEST-DRIVER
+prove_syntax_module := UNIT-TEST-SYNTAX
 prove_kompiled      := $(prove_dir)/$(notdir $(prove_main_file))-kompiled/definition.kore
 
 defn-prove:  $(prove_files)
