@@ -248,9 +248,9 @@ module OUTPUT-COMPARE
 
   syntax KItem ::= "#Failed"
 
-  rule <k> #CheckOutput( X:FailedStack , X:FailedStack ) => . </k>
+  rule <k> #CheckOutput( X:FailedStack , X:FailedStack ) => . ... </k>
 
-  rule <k> #CheckOutput( { } , { } ) => . </k>
+  rule <k> #CheckOutput( { } , { } ) => . ... </k>
 
   rule <k> #CheckOutput( { Stack_elt ET ED } , { Stack_elt AT AD } )
         => .
