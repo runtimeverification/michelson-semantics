@@ -3,8 +3,10 @@ requires "unit-test/unit-test.md"
 requires "michelson/types.md"
 requires "symbolic/configuration.md"
 requires "symbolic/syntax.md"
+```
 
-module SYMBOLIC-UNIT-TEST
+```k
+module SYMBOLIC-UNIT-TEST-DRIVER
   imports SYMBOLIC-UNIT-TEST-SYNTAX
   imports MICHELSON-TYPES
   imports SYMBOLIC-CONFIGURATION
@@ -12,10 +14,19 @@ module SYMBOLIC-UNIT-TEST
   imports UNIT-TEST
   imports COLLECTIONS
 
-  syntax Set ::= Set "|Set" Set [function, functional]
+  rule <k> #Init
+        => #CreateSymbols
+        ~> #BaseInit
+        ~> #ExecutePreConditions
+        ~> #LoadInputStack
+        ~> #ExecuteScript
+        ~> #CheckSymbolicOutput
+        ~> #ExecutePostConditions
+           ...
+       </k>
+
+  syntax Set ::= Set "|Set" Set [function, functional, left]
   rule S1 |Set S2 => S1 (S2 -Set S1)
-  rule #GroupOrder(_:PreconditionGroup) => -1
-  rule #GroupOrder(_:PostconditionGroup) => #GroupOrderMax +Int 2
 
   syntax Type ::= "#UnknownType"
 
@@ -27,13 +38,6 @@ module SYMBOLIC-UNIT-TEST
   syntax Set ::= #FindSymbolsIn(Data, Type) [function, functional]
   syntax Set ::= #FindSymbols(KItem) [function, functional]
 
-  rule #FindSymbols(G:Group ; Gs:Groups) => #FindSymbols(G) |Set #FindSymbols(Gs)
-
-  rule #FindSymbols(input S) => #FindSymbols(S)
-  rule #FindSymbols(output S) => .Set // #FindSymbols(S)
-  rule #FindSymbols(code B) => #FindSymbols(B)
-  rule #FindSymbols(precondition B) => #FindSymbols(B)
-  rule #FindSymbols(postcondition B) => .Set // #FindSymbols(B)
   rule #FindSymbols({ B:BlockList }) => #FindSymbols(B)
 
   rule #FindSymbols(B:Block ; Rs:BlockList) => #FindSymbols(B) #FindSymbols(Rs)
@@ -80,10 +84,12 @@ module SYMBOLIC-UNIT-TEST
 
   rule #FindSymbolsIn(_, _) => .Set [owise]
 
-  rule [[ #MichelineToNative(S:SymbolicData, T) => D ]]
+  rule [[ #MichelineToNative(S:SymbolicData, T, _, _) => D ]]
        <symbols> S |-> #TypedSymbol(T, D) ... </symbols>
 
-  rule #MichelineToNative(S:SymbolicData, T) => S [owise]
+  rule [[ #MichelineToNative(S:SymbolicData, T, _, _) => S ]]
+       <symbols> Syms:Map </symbols>
+    requires notBool (S in_keys(Syms))
 
   syntax Bool ::= #AllTypesKnown(Set) [function, functional]
   rule #AllTypesKnown(SetItem(#SymbolicElement(_, #UnknownType)) _) => false
@@ -109,22 +115,45 @@ module SYMBOLIC-UNIT-TEST
   rule #UnifiedSetToList(S:Set) => Set2List(S)
   rule #UnifiedSetToList(#UnificationFailure) => #UnificationFailure
 
+```
+
+`#CreateSymbol`
+--------------
+
+Load symbolic variables into the `<symbols>` map.
+
+```k
+  syntax KItem ::= "#CreateSymbols"
+  rule <k> #CreateSymbols
+        => #CreateSymbols(#UnifiedSetToList(#UnifyTypes( #FindSymbols(Stack)
+                                                    |Set #FindSymbols(Pre)
+                                                    |Set #FindSymbols(Script)
+                         )                )           )
+           ...
+       </k>
+       <inputstack> Stack </inputstack>
+       <pre> Pre </pre>
+       <script> Script </script>
+```
+
+```k
   syntax KItem ::= #CreateSymbols(UnifiedList)
-
-  syntax KItem ::= #CreateSymbol(SymbolicData, Type)
-
   rule <k> #CreateSymbols(.List) => . ... </k>
-  rule <k> #CreateSymbols(ListItem(#SymbolicElement(D, T)) S) => #CreateSymbol(D, T) ~> #CreateSymbols(S) ... </k>
+  rule <k> #CreateSymbols(ListItem(#SymbolicElement(D, T)) S)
+        => #CreateSymbol(D, T)
+        ~> #CreateSymbols(S)
+           ...
+       </k>
+```
 
-  syntax TypedSymbol ::= #TypedSymbol(Type, Data)
-
+```k
+  syntax KItem ::= #CreateSymbol(SymbolicData, Type)
   rule <michelsonTop>
          <k> #CreateSymbol(N, (nat _) #as T) => . ... </k>
          ...
        </michelsonTop>
        <symbols> M => M[N <- #TypedSymbol(T, ?V:Int)] </symbols>
        ensures ?V >=Int 0
-
   rule <michelsonTop>
          <k> #CreateSymbol(N, (int _) #as T) => . ... </k>
          ...
@@ -136,59 +165,95 @@ module SYMBOLIC-UNIT-TEST
          ...
        </michelsonTop>
        <symbols> M => M[N <- #TypedSymbol(T, ?V:String)] </symbols>
+```
 
+```k
+  syntax TypedSymbol ::= #TypedSymbol(Type, Data)
   rule [[ #TypeData(_, S:SymbolicData, T) => #Typed(S, T) ]]
        <symbols> ... S |-> #TypedSymbol(T, _) ... </symbols>
 
    // Complex types..._
+```
 
+`#LiteralStackToTypesAux` Extension
+-----------------------------------
 
-  syntax BinderGroup ::= "Binder" LiteralStack
-  syntax Group ::= BinderGroup
+We extend this typing function to handle symbolic values.
 
-  rule #GroupOrder(_:BinderGroup) => #GroupOrderMax +Int 1
+```k
+  rule #LiteralStackToTypesAux(Stack_elt T S:SymbolicData ; Gs:StackElementList, PT)
+    => T ; #LiteralStackToTypesAux(Gs, PT)
 
-  syntax Group ::= #DoReplace(Group) [function, functional]
+  rule #LiteralStackToTypesAux(Stack_elt T S:SymbolicData, PT) => T
+```
 
-  rule #DoReplace(output LS) => Binder LS
-  rule #DoReplace(G) => G [owise]
+`#Assume`/`#Assert` instructions
+--------------------------------
 
-  syntax Groups ::= #ReplaceOutputWithBinder(Groups) [function, functional]
-
-  rule #ReplaceOutputWithBinder(G ; Gs) => #DoReplace(G) ; #ReplaceOutputWithBinder(Gs)
-  rule #ReplaceOutputWithBinder(G:Group) => #DoReplace(G)
-  rule #ReplaceOutputWithBinder(G:Group;) => #DoReplace(G)
-
-  syntax KItem ::= Groups
-
-  rule <michelsonTop>
-         <k> Gs:Groups => #CreateSymbols(#UnifiedSetToList(#UnifyTypes(#FindSymbols(Gs)))) ~> #ReplaceOutputWithBinder(Gs) </k>
-         ...
-       </michelsonTop>
-       <symbolsLoaded> false => true </symbolsLoaded>
-
-  syntax KItem ::= "#AssumeTrue" | "#AssertTrue"
-
+```k
+  syntax KItem ::= "#AssumeTrue"
   rule <k> #AssumeTrue => . ... </k>
        <stack> true => . </stack> [transition]
-
   rule <k> #AssumeTrue ~> _:K => . </k>
        <stack> false => . </stack>
        <assumeFailed> _ => true </assumeFailed> [transition]
+```
 
+```k
+  syntax KItem ::= "#AssertTrue"
+  rule <k> #AssertTrue => . ... </k>
+       <stack> true => . </stack>
+  rule <k> #AssertTrue => #AssertFailed ... </k>
+       <stack> false => . </stack>
+  syntax KItem ::= "#AssertFailed" [klabel(#AssertFailed), symbol]
+```
 
-  rule <k> #LoadGroups(precondition { } ; Gs) => #LoadGroups(Gs) ... </k>
-  rule <k> #LoadGroups(precondition { B:Block } ; Gs) => B ~> #AssumeTrue ~> #LoadGroups(Gs) ... </k>
-  rule <k> #LoadGroups(precondition { B:Block ; Bs } ; Gs) =>
-       B ~> #AssumeTrue ~> #LoadGroups(precondition { Bs } ; Gs) ... </k>
+`#RestoreStack` utility function
+--------------------------------
 
+```k
+  syntax KItem ::= "#RestoreStack" "(" K ")"
+  rule <k> #RestoreStack(Stack) => .K ... </k>
+       <stack> _ => Stack </stack>
+```
+
+`precondition` Groups
+---------------------
+
+```k
+  rule <k> precondition Bs => .K ... </k>
+       <pre>  { } => Bs </pre>
+```
+
+```k
+  syntax KItem ::= "#ExecutePreConditions"
+                 | "#ExecutePreConditions" "(" Block ")"
+  rule <k> #ExecutePreConditions(B:Block)
+        => B ~> #AssumeTrue ~> #ExecutePreConditions
+           ...
+       </k>
+       <stack> Stack => .K </stack>
+
+  rule <k> #ExecutePreConditions => #ExecutePreConditions(B) ... </k>
+       <pre> { B ; Bs } => { Bs } </pre>
+  rule <k> #ExecutePreConditions => #ExecutePreConditions(B) ... </k>
+       <pre> { B } => { }  </pre>
+  rule <k> #ExecutePreConditions => .K ... </k>
+       <pre> { } </pre>
+```
+
+`#CheckSymbolicOutput`
+----------------------
+
+```k
+  syntax KItem ::= "#CheckSymbolicOutput"
+  rule <k> #CheckSymbolicOutput => #Bind(ExpectedStack) ... </k>
+       <expected> ExpectedStack </expected>
+```
+
+```k
   syntax KItem ::= #Bind(LiteralStack)
-
   syntax KItem ::= #BindSingle(StackElement)
-
-  rule <k> #LoadGroups(Binder LS ; Gs) => #Bind(LS) ~> #LoadGroups(Gs) ... </k>
-  rule <k> #LoadGroups(Binder LS) => #Bind(LS) ... </k>
-
   rule <k> #Bind({ }) => . ... </k>
        <stack> . </stack>
 
@@ -204,40 +269,57 @@ module SYMBOLIC-UNIT-TEST
 
   rule <k> #BindSingle(Stack_elt T D) => . ... </k>
        <stack> D => . ... </stack>
+```
 
-  syntax KItem ::= #DoPostConditions(BlockList)
+`postcondition` group
+---------------------
 
-  rule <k> #DoPostConditions(B ; Bs) => B ~> #AssertTrue ~> #DoPostConditions(Bs) ... </k>
-  rule <k> #DoPostConditions(B) => B ~> #AssertTrue ... </k>
+```k
+  rule <k> postcondition B => . ... </k>
+       <post> { } => B </post>
 
-  rule <k> #AssertTrue => . ... </k>
-       <stack> true => . </stack>
+  syntax KItem ::= "#ExecutePostConditions"
+                 | #ExecutePostConditions(Block)
+  rule <k> #ExecutePostConditions(B)
+        => B ~> #AssertTrue ~>  #ExecutePostConditions
+           ...
+       </k>
+       <stack> Stack => .K </stack>
 
-  syntax KItem ::= "#AssertFailed" [klabel(#AssertFailed), symbol]
+  rule <k> #ExecutePostConditions => #ExecutePostConditions(B) ... </k>
+       <post> { B ; Bs } => { Bs } </post>
+  rule <k> #ExecutePostConditions => #ExecutePostConditions(B) ... </k>
+       <post> { B } => { }  </post>
+  rule <k> #ExecutePostConditions => .K ... </k>
+       <post> { } </post>
+```
 
-  rule <k> #AssertTrue => #AssertFailed ... </k>
-       <stack> false => . </stack>
+`invariants` group
+---------------------
 
-  rule <k> #LoadGroups(postcondition { }) => . ... </k>
-  rule <k> #LoadGroups(postcondition { B }) => #DoPostConditions(B)  ... </k>
+TODO: This is not excersized by any tests.
 
+```k
   syntax KItem ::= #LoadInvariants(Invariants) | #LoadInvariant(Invariant)
+  rule <k> invariants { } => .K ... </k>
+  rule <k> invariants { I1 ; Is }
+        => invariants( { I1 } ) ~> #LoadInvariants({ Is })
+           ...
+       </k>
+  rule <k> invariants ({ I }) => .K ... </k>
+  rule <k> invariants ({ Annotation Blocks }) => . ... </k>
+       <invs> M => M[Annotation <- Blocks] </invs>
+```
 
-  rule #LoadGroups(invariants Invs ; Gs) => #LoadInvariants(Invs) ~> #LoadGroups(Gs)
-
-  rule #LoadInvariants({ }) => .
-  rule #LoadInvariants({ I }) => #LoadInvariant(I)
-  rule #LoadInvariants({ I1 ; Is }) => #LoadInvariant(I1) ~> #LoadInvariants({ Is })
-
-  rule <k> #LoadInvariant(V Bs) => . ... </k>
-       <invariants> M => M[V <- Bs] </invariants>
-
+```k
   rule #Ceil(#DoCompare(@A:Int, @B:Int)) => #Ceil(@A) #And #Ceil(@B)  [anywhere, simplification]
-
   rule #DoCompare(I1:Int, I2:Int) <Int 0 => I1 <Int I2 [simplification]
   rule #DoCompare(I1:Int, I2:Int) <=Int 0 => I1 <=Int I2 [simplification]
   rule #DoCompare(I1:Int, I2:Int) ==Int 0 => I1 ==Int I2 [simplification]
   rule #DoCompare(I1:Int, I2:Int) >=Int 0 => I1 >=Int I2 [simplification]
   rule #DoCompare(I1:Int, I2:Int) >Int 0 => I1 >Int I2 [simplification]
+```
+
+```k
 endmodule
 ```

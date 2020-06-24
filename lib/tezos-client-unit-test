@@ -21,10 +21,14 @@ interpret() {
     local backend=$1; shift
     local input=$1; shift
 
+    "$repo_dir/kmich" interpret --backend $backend $input "$@"
+}
+
+interpret_quiet() {
     # --output-file only controls where the final configuration is output.
     # --output-file /dev/null supresses that, without supressing output
     # from `stream="stdout"` cells.
-    "$repo_dir/kmich" interpret --backend $backend $input --output-file /dev/null "$@"
+    interpret "$@" --output-file /dev/null
 }
 
 start_tezos()
@@ -115,12 +119,12 @@ test_expanded="$test.expanded"
 test_extracted="$test.extracted"
 test_output="$test.output"
 
-interpret input-creator $test > $test_input
-interpret extractor $test > $test_extracted
+interpret_quiet input-creator $test > $test_input
+interpret_quiet extractor $test > $test_extracted
 
 start_tezos
 fix_address "$test"
-interpret contract-expander $test_address > $test_expanded
+interpret_quiet contract-expander $test_address > $test_expanded
 "$lib_dir/run-tezos.sh" "$test"
 stop_tezos
 interpret output-compare $test_output

@@ -15,162 +15,53 @@ module MICHELSON
   imports MICHELSON-CONFIG
   imports MICHELSON-INTERNAL-SYNTAX
   imports DOMAINS
-  imports COLLECTIONS
   imports BYTES
 ```
 
 Michelson Semantics Initialization
 ==================================
 
+The `#BaseInit` takes care of initialization common to the different semantics.
+This can be invoked by a rule similar to `rule <k> #Init => #Preprocess ~>
+#BaseInit ~> #Postprocess ... </k>`.
+
+```k
+  syntax KItem ::= "#BaseInit"
+  rule <k> #BaseInit
+        => #ConvertBigMapsToNative
+        ~> #ConvertParamToNative
+        ~> #ConvertStorageToNative
+           ...
+       </k>
+```
+
 Loading groups into the K configuration
 ---------------------------------------
 
-Groups must be loaded into configuration. This rule is marked with the owise
-attribute so that semantic extensions can override this behavior, and indeed
-many of the compatibility script extensions do so.
-
-```k
-  rule <k> G:Groups => #LoadGroups(#SortGroups(#ExtendGroups(G))) </k> [owise]
-```
-
-`#ExtendGroups`
----------------
-
-`#ExtendGroups` takes a loading group list and extends it with a Parameter and
-Storage group (determining the *type* of the contract's parameter and storage
-respectively) if a contract loading group exists.
-
-```k
-  syntax Groups ::= #ExtendGroups(Groups) [function]
-  rule #ExtendGroups(Gs) => #MakeParameterGroup(Gs) ; #MakeStorageGroup(Gs) ; Gs requires #HasContract(Gs)
-  rule #ExtendGroups(Gs) => Gs [owise]
-```
-
-These functions create Parameter and Storage loading groups respectively from
-the parameter and storage primitive applications in a contract.
-
-```k
-  syntax Group ::= #MakeParameterGroup(Groups) [function]
-  rule #MakeParameterGroup(G) => parameter #ParameterTypeFromContract(#FindContract(G))
-
-  syntax Group ::= #MakeStorageGroup(Groups) [function]
-  rule #MakeStorageGroup(G) => storage #StorageTypeFromContract(#FindContract(G))
-```
-
-This function determines whether or not a contract group exists in a loading group list.
-
-```k
-  syntax Bool ::= #HasContract(Groups) [function]
-  rule #HasContract(contract { C }) => true
-  rule #HasContract(contract { C } ; _) => true
-  rule #HasContract(G ;) => #HasContract(G)
-  rule #HasContract(_ ; Gs) => #HasContract(Gs) [owise]
-  rule #HasContract(_:Group) => false [owise]
-```
-
-`#SortGroups`
--------------
-
-Some groups can only be loaded after others. So, we sort the groups first and
-then load them. These are the default group orders. If a new extension semantics
-adds a new group, it should also define an order for that group with a rule like
-these.
-
-The `#GroupOrder` function maps groups onto integers to create a total order of
-groups. Groups will be loaded ascending order according to the Int this function
-maps them to.
-
-It is permitted, but not recommended, for two groups to have the same order
-(unless they are mutually exclusive, such as `code` and `contract`). It is
-imperative, however, that groups which depend on loaded information from other
-groups have a **strictly higher** order than their dependencies.
-
-```k
-  syntax Int ::= #GroupOrder(Group) [function]
-```
-
-In order to specify that a group should be loaded last, we map it on to
-`#GroupOrderMax` (subtracting an offset in the event we wish a group to be
-loaded second to last).
-
-The actual value returned by this function is immaterial, so long as it is
-larger than the number of groups.
-
-```k
-  syntax Int ::= "#GroupOrderMax" [function]
-  rule #GroupOrderMax => 1000
-```
-
-```k
-  rule #GroupOrder(_:ContractGroup) => #GroupOrderMax
-  rule #GroupOrder(_:ParameterValueGroup) => #GroupOrderMax -Int 1
-  rule #GroupOrder(_:StorageValueGroup) => #GroupOrderMax -Int 2
-
-  rule #GroupOrder(_:NowGroup) => 0
-  rule #GroupOrder(_:SenderGroup) => 1
-  rule #GroupOrder(_:SourceGroup) => 2
-  rule #GroupOrder(_:ChainGroup) => 3
-  rule #GroupOrder(_:SelfGroup) => 4
-  rule #GroupOrder(_:AmountGroup) => 5
-  rule #GroupOrder(_:BalanceGroup) => 6
-  rule #GroupOrder(_:BigMapGroup) => 7
-  rule #GroupOrder(_:ContractsGroup) => 8
-  rule #GroupOrder(_:ParameterDecl) => 9
-  rule #GroupOrder(_:StorageDecl) => 10
-```
-
-These rules implement an insertion sort of a loading groups list. This is, by
-far, the simplest sort to implement in K, and since no file will require more
-than 15 loading groups (and the vast majority require far fewer), its
-performance drawbacks should be unnoticable.
-
-```k
-  syntax Groups ::= #InsertInOrder(Groups, Group) [function]
-  rule #InsertInOrder(G1:Group, G2:Group) => G1 ; G2              requires #GroupOrder(G1) <Int #GroupOrder(G2)
-  rule #InsertInOrder(G1:Group, G2:Group) => G2 ; G1              requires #GroupOrder(G1) >=Int #GroupOrder(G2)
-  rule #InsertInOrder(G1 ; Gs, G2) => G1 ; #InsertInOrder(Gs, G2) requires #GroupOrder(G1) <Int #GroupOrder(G2)
-  rule #InsertInOrder(G1 ; Gs, G2) => G2 ; G1 ; Gs                requires #GroupOrder(G1) >=Int #GroupOrder(G2)
-
-  syntax Groups ::= #SortGroups(Groups) [function] // Note that this is a *stable* insertion sort.
-  rule #SortGroups(G:Group) => G
-  rule #SortGroups(G:Group;) => G
-  rule #SortGroups(G ; Gs) => #InsertInOrder(#SortGroups(Gs), G)
-```
-
-This function seeks out a contract loading group in a list of groups. It should
-be used only if `#HasContract` has already returned true.
-
-```k
-  syntax Contract ::= #FindContract(Groups) [function]
-  rule #FindContract(contract { C }) => C
-  rule #FindContract(contract { C } ;) => C
-  rule #FindContract(contract { C } ; _) => C
-  rule #FindContract(_ ; Gs) => #FindContract(Gs) [owise]
-```
-
-`#LoadGroups`
--------------
-
 Below are the rules for loading specific groups.
-
+Below are Map   rules for loading specific groups.
+ 
 Loading a `now` group simply involves setting the contents of the now timestamp
 to the contained integer. Similarly simple logic applies to sender, source,
 chain\_id and self.
 
 ```k
-  rule <k> #LoadGroups(now I ; Gs => Gs) </k>
+  rule <k> G ; Gs:Groups => G ~> Gs ... </k>
+  rule <k> G ; =>           G       ... </k>
+
+  rule <k> now I => .K ... </k>
        <mynow> #Timestamp(0 => I) </mynow>
 
-  rule <k> #LoadGroups(sender A ; Gs => Gs) </k>
+  rule <k> sender A => .K ... </k>
        <senderaddr> #Address("InvalidSenderAddr" => A) </senderaddr>
 
-  rule <k> #LoadGroups(source A ; Gs => Gs) </k>
+  rule <k> source A => .K ...  </k>
        <sourceaddr> #Address("InvalidSourceAddr" => A) </sourceaddr>
 
-  rule <k> #LoadGroups(chain_id M ; Gs => Gs) </k>
+  rule <k> chain_id M => .K ... </k>
        <mychainid> #ChainId(_ => M) </mychainid>
 
-  rule <k> #LoadGroups(self A ; Gs => Gs) </k>
+  rule <k> self A => .K ... </k>
        <myaddr> #Address("InvalidMyAddr" => A) </myaddr>
 ```
 
@@ -179,27 +70,20 @@ being set to is actually a legal mutez value, but are otherwise relatively
 simple.
 
 ```k
-  rule <k> #LoadGroups(amount I ; Gs => Gs) </k>
+  rule <k> amount I => .K ... </k>
        <myamount> #Mutez(0 => I) </myamount>
-       requires #IsLegalMutezValue(I)
+    requires #IsLegalMutezValue(I)
 
-  rule <k> #LoadGroups(balance I ; Gs => Gs) </k>
+  rule <k> balance I => .K ... </k>
        <mybalance> #Mutez(0 => I) </mybalance>
-       requires #IsLegalMutezValue(I)
+    requires #IsLegalMutezValue(I)
 ```
 
 Loading the other contracts map involves transforming its map entry list style
 concrete representation to a K-Michelson map.
 
 ```k
-  syntax Map ::= #OtherContractsMapToKMap(OtherContractsMap) [function]
-  syntax Map ::= #OtherContractsMapEntryListToKMap(OtherContractsMapEntryList) [function]
-  rule #OtherContractsMapToKMap({ }) => .Map
-  rule #OtherContractsMapToKMap({ EL }) => #OtherContractsMapEntryListToKMap(EL)
-  rule #OtherContractsMapEntryListToKMap( Elt A T ) => #Address(A) |-> #Contract(#Address(A), T)
-  rule #OtherContractsMapEntryListToKMap( Elt A T ; Rs ) => #Address(A) |-> #Contract(#Address(A), T) #OtherContractsMapEntryListToKMap(Rs)
-
-  rule <k> #LoadGroups(other_contracts M ; Gs => Gs) </k>
+  rule <k> other_contracts M => .K ... </k>
        <knownaddrs> .Map => #OtherContractsMapToKMap(M) </knownaddrs>
 ```
 
@@ -212,10 +96,10 @@ execute with the appropriate starting state. Extracting these groups solves the
 cyclical ordering problem.
 
 ```k
-  rule <k> #LoadGroups(parameter T ; Gs => Gs) </k>
+  rule <k> parameter T => .K ... </k>
        <paramtype> #NotSet => T </paramtype>
 
-  rule <k> #LoadGroups(storage T ; Gs => Gs) </k>
+  rule <k> storage T => .K ... </k>
        <storagetype> #NotSet => T </storagetype>
 ```
 
@@ -223,6 +107,9 @@ Similar to the `other_contracts` rule, we need to transform BigMaps into the
 appropriate K-Michelson type.
 
 ```k
+  rule <k> big_maps M => .K ... </k>
+       <bigmaps> .Map => #BigMapsToKMap(M) </bigmaps>
+
   syntax Map ::= #BigMapsToKMap(BigMapMap) [function]
   syntax Map ::= #BigMapsEntryListToKMap(BigMapEntryList) [function]
   syntax Map ::= #BigMapsEntryToKMap(BigMapEntry) [function]
@@ -233,37 +120,9 @@ appropriate K-Michelson type.
   rule #BigMapsEntryListToKMap(E) => #BigMapsEntryToKMap(E)
   rule #BigMapsEntryListToKMap(E ; Es) => #BigMapsEntryToKMap(E) #BigMapsEntryListToKMap(Es)
 
-  rule #BigMapsEntryToKMap(Big_map I T1 T2 { }) =>
-    I |-> #MichelineToNative({ }, big_map .AnnotationList T1 T2)
-
-  rule #BigMapsEntryToKMap(Big_map I T1 T2 ML:MapLiteral) =>
-    I |-> #MichelineToNative(ML, big_map .AnnotationList T1 T2)
-
-  rule <k> #LoadGroups(big_maps M ; Gs => Gs) </k>
-       <bigmaps> .Map => #BigMapsToKMap(M) </bigmaps>
-```
-
-These groups contain the actual parameter and storage values passed to the
-contract, they must be loaded after their respective type is set so that the
-`#MichelineToNative` function can determine what type it should be parsing.
-
-```k
-  rule <k> #LoadGroups(parameter_value D ; Gs => Gs) </k>
-       <paramtype> T </paramtype>
-       <paramvalue> #NoData => #MichelineToNative(D, T) </paramvalue>
-
-  rule <k> #LoadGroups(storage_value D ; Gs => Gs) </k>
-       <storagetype> T </storagetype>
-       <storagevalue> #NoData => #MichelineToNative(D, T) </storagevalue>
-```
-
-This rule tolerates multiple contract groups in the same file by selecting one
-of them to execute. Strictly speaking such a file would be malformed, but
-allowing the external parser to give us such malformed files allows us to avoid
-to parse the given script *three* times.
-
-```k
-  rule <k> #LoadGroups(C:ContractGroup ; Cs) => #LoadGroups(C) </k>
+  syntax KItem ::= "#BigMap" "(" SequenceData "," Type ")"
+  rule #BigMapsEntryToKMap(Big_map I T1 T2 { }          ) => I |-> #BigMap({ }, big_map .AnnotationList T1 T2)
+  rule #BigMapsEntryToKMap(Big_map I T1 T2 ML:MapLiteral) => I |-> #BigMap(ML,  big_map .AnnotationList T1 T2)
 ```
 
 The final loading group in this file is the contract group. The storage and
@@ -271,288 +130,62 @@ parameter values are combined and the stack is initialized, and then the code is
 extracted so that we can move on to the execution semantics.
 
 ```k
-  rule <k> #LoadGroups(contract { code C ; storage _ ; parameter _ ; }) => C </k>
-       <stack> . => Pair P S </stack>
-       <paramvalue> P </paramvalue>
-       <storagevalue> S </storagevalue>
+  rule <k> contract { code C ; storage S ; parameter P ; } ; Cs => .K ... </k>
+       <script> #NoData => C </script>
+       <paramtype> #NotSet => P </paramtype>
+       <storagetype> #NotSet => S </storagetype>
 ```
 
 From Micheline to K-Michelson Internal Representation
 -----------------------------------------------------
 
-The internal representation of Michelson sets, lists and maps are simply K sets,
-lists and maps respectively.
-
 ```k
-  syntax Data ::= Set | Map | List
+  syntax KItem ::= "#ConvertBigMapsToNative"
+  rule <k> #ConvertBigMapsToNative => .K ... </k>
+       <knownaddrs> KnownAddrs </knownaddrs>
+       <bigmaps> BigMaps => #ConvertBigMapsToNative(BigMaps) </bigmaps> 
+
+  syntax Map ::= "#ConvertBigMapsToNative" "(" Map ")" [function]
+
+  rule #ConvertBigMapsToNative(.Map) => .Map
+  rule #ConvertBigMapsToNative(I |-> #BigMap(D, T) BigMaps)
+   => I |-> #MichelineToNative(D, T, .Map, .Map) #ConvertBigMapsToNative(BigMaps)
 ```
 
-This function transforms a Michelson data element from its Micheline
-representation to its internal K representation given the data and its real
-Michelson type. It performs some basic sanity checks on the data passed (that it
-is of the correct sort, for example). but otherwise does not attempt to do a
-real typecheck.
-
 ```k
-  syntax DataOrSeq ::= Data | DataList | MapEntryList // Can't subsort DataList to Data, as that would form a cycle.
-  syntax Data ::= #MichelineToNative(DataOrSeq, Type) [function]
+  syntax KItem ::= "#ConvertParamToNative"
+  rule <k> #ConvertParamToNative => .K ... </k>
+       <paramtype>  T                                            </paramtype>
+       <paramvalue> D => #MichelineToNative(D, T, .Map, BigMaps) </paramvalue>
+       <bigmaps> BigMaps </bigmaps>
+    requires D =/=K #NoData
+  rule <k> #ConvertParamToNative => .K ... </k>
+       <paramvalue> #NoData </paramvalue> [owise]
+
+  syntax KItem ::= "#ConvertStorageToNative"
+  rule <k> #ConvertStorageToNative => .K ... </k>
+       <storagetype>  T                                            </storagetype>
+       <storagevalue> D => #MichelineToNative(D, T, .Map, BigMaps) </storagevalue>
+       <bigmaps> BigMaps </bigmaps>
+    requires D =/=K #NoData
+  rule <k> #ConvertStorageToNative => .K ... </k>
+       <storagevalue> #NoData </storagevalue> [owise]
 ```
-
-### Converting String-Based Datatypes
-
-Michelson has several datatypes whose values are given as Micheline Strings.
-These include:
-
-- address
-- key
-- key_hash
-- signature
-- string
-- timestamp (in its human-readable form)
-
-We delegate these datatypes validations to their own functions.
-
-```k
-  rule #MichelineToNative(S:String, key_hash _) => #ParseKeyHash(S)
-  rule #MichelineToNative(S:String, address _) => #ParseAddress(S)
-  rule #MichelineToNative(S:String, key _) => #ParseKey(S)
-  rule #MichelineToNative(S:String, signature _) => #ParseSignature(S)
-  rule #MichelineToNative(S:String, timestamp _) => #ParseTimestamp(S)
-```
-
-A simple hook to return the Unix epoch representation of a timestamp passed to
-the semantics in an ISO8601 format string. See time.cpp for its implementation.
-The semantics accept timestamps in one of two formats:
-
-1. An ISO-8601 string.
-2. A unix timestamp
-
-```k
-  syntax Int ::= #ISO2Epoch(String) [function, hook(TIME.ISO2Epoch)]
-  syntax Timestamp ::= #ParseTimestamp(String) [function]
-  rule #ParseTimestamp(S) => #Timestamp(#ISO2Epoch(S)) requires findString(S, "Z", 0) >=Int 0
-  rule #ParseTimestamp(S) => #Timestamp(String2Int(S)) requires findString(S, "Z", 0) <Int 0
-```
-
-The other string based datatypes have stubs for their validation functions.
-
-```k
-  syntax KeyHash ::= #ParseKeyHash(String) [function]
-  rule #ParseKeyHash(S) => #KeyHash(S)
-
-  syntax Address ::= #ParseAddress(String) [function]
-  rule #ParseAddress(S) => #Address(S)
-
-  syntax Key ::= #ParseKey(String) [function]
-  rule #ParseKey(S) => #Key(S)
-
-  syntax Signature ::= #ParseSignature(String) [function]
-  rule #ParseSignature(S) => #Signature(S)
-```
-
-Note that timestamps have an optimized form based on integers.
-We convert that form here.
-
-```k
-  rule #MichelineToNative(I:Int, timestamp _) => #Timestamp(I)
-```
-
-### Converting Simple Datatypes
-
-A ChainId is simply a specially tagged MBytes.
-
-```k
-  rule #MichelineToNative(H:MBytes, chain_id _) => #ChainId(H)
-```
-
-An int can simply be represented directly as a K int. Nats get an additional
-sanity check to avoid negative nats.
-
-```k
-  rule #MichelineToNative(I:Int, int _) => I
-  rule #MichelineToNative(I:Int, nat _) => I requires I >=Int 0
-```
-
-Strings, like ints, represent themselves.
-
-```k
-  rule #MichelineToNative(S:String, string _) => S
-```
-
-MBytes conversion is done by the function rule.
-
-```k
-  rule #MichelineToNative(B:MBytes, bytes _) => B
-```
-
-Mutez is simply a specially tagged int - we also sanity check the int to ensure
-that it is in bounds.
-
-```k
-  rule #MichelineToNative(I:Int, mutez _) => #Mutez(I) requires #IsLegalMutezValue(I)
-```
-
-K's function expansion step has already handled converting Michelsons
-"True/False" booleans into "true/false" K bools, so we don't need to do anything
-special with them here.
-
-```k
-  rule #MichelineToNative(B:Bool, bool _) => B
-```
-
-The Unit token represents itself.
-
-```k
-  rule #MichelineToNative(Unit, unit _) => Unit
-```
-
-### Converting Complex Datatypes
-
-We recursively convert the contents of pairs, ors and options, if applicable.
-
-```k
-  rule #MichelineToNative(Pair A B, pair _ T1:Type T2:Type) =>
-       Pair #MichelineToNative(A, T1) #MichelineToNative(B, T2)
-
-  rule #MichelineToNative(Some V, option _ T) => Some #MichelineToNative(V, T)
-  rule #MichelineToNative(None, option _:AnnotationList _) => None
-
-  rule #MichelineToNative(Left V, or _:AnnotationList TL:Type _:Type) => Left #MichelineToNative(V, TL)
-  rule #MichelineToNative(Right V, or _:AnnotationList _:Type TR:Type) => Right #MichelineToNative(V, TR)
-```
-
-We wrap Lambdas appropriately and save their type information.  Note that we do *not* recurse into the Block.
-
-```k
-  rule #MichelineToNative(B:Block, lambda _:AnnotationList T1 T2) => #Lambda(T1, T2, B)
-```
-
-Collections are converted one element at a time. We need to handle the cases of
-0 and 1 length lists separately due to parsing ambiguities between a size 1
-element list, and another embedded list.
-
-```k
-  rule #MichelineToNative({ }, list _ _) => .List
-  rule #MichelineToNative({ D1:Data }, list _ T) => ListItem(#MichelineToNative(D1, T))
-  rule #MichelineToNative({ D1 ; DL:DataList }, list _ T) => #MichelineToNative(D1 ; DL, list .AnnotationList T)
-
-  rule #MichelineToNative(D1:Data ; D2:Data, list _ T) =>
-       ListItem(#MichelineToNative(D1, T)) ListItem(#MichelineToNative(D2, T))
-
-  rule #MichelineToNative(D1:Data ; D2:Data ; DL:DataList, list _ T) =>
-       ListItem(#MichelineToNative(D1, T)) {#MichelineToNative(D2 ; DL, list .AnnotationList T)}:>List
-```
-
-Sets are handled essentially the same way as lists, with the same caveat about
-needing to handle 3 cases (0-Size sets, 1-Size sets, and otherwise).
-
-```k
-  rule #MichelineToNative({ }, set _ _) => .Set
-  rule #MichelineToNative({ D:Data }, set _ T) => SetItem(#MichelineToNative(D, T))
-  rule #MichelineToNative({ D1 ; DL:DataList }, set _ T) => #MichelineToNative(D1 ; DL, set .AnnotationList T)
-
-  rule #MichelineToNative(D1:Data ; D2:Data, set _ T) =>
-       SetItem(#MichelineToNative(D1, T)) SetItem(#MichelineToNative(D2, T))
-
-  rule #MichelineToNative(D1:Data ; D2:Data ; DL:DataList, set _ T) =>
-       SetItem(#MichelineToNative(D1, T)) {#MichelineToNative(D2 ; DL, set .AnnotationList T)}:>Set
-```
-
-Maps and `big_map`s do not have the same parsing ambiguity, so we do not need to
-handle the case of size 1 maps separately. Note that, internally, no difference
-exists between maps and `big_map`s in K-Michelson.
-
-```k
-  rule #MichelineToNative({ }, map _ _ _) => .Map
-  rule #MichelineToNative({ M:MapEntryList }, map _:AnnotationList KT VT) =>
-       #MichelineToNative(M, map .AnnotationList KT VT)
-
-  rule #MichelineToNative(Elt K V ; ML, map _:AnnotationList KT VT) =>
-       ({#MichelineToNative(ML, map .AnnotationList KT VT)}:>Map)[#MichelineToNative(K, KT) <- #MichelineToNative(V, VT)]
-
-  rule #MichelineToNative(Elt K V, map _:AnnotationList KT VT) =>
-       #MichelineToNative(K, KT) |-> #MichelineToNative(V, VT)
-
-  rule #MichelineToNative({ }, big_map _:AnnotationList K V) => .Map
-
-  rule #MichelineToNative({ M:MapEntryList }, big_map _:AnnotationList K V) =>
-       #MichelineToNative({ M:MapEntryList }, map .AnnotationList K V)  // We handle big_map literals as maps.
-```
-
-We construct a contract datatype from its string address and type. Note that,
-for convenience, we do not enforce that this address exists in the
-`other_contracts` map!
-
-```k
-  rule #MichelineToNative(S:String, contract _ T) => #Contract(#ParseAddress(S), T)
-
-  rule #MichelineToNative(#Typed(D, T), T) => #MichelineToNative(D, T)
-```
-
-These two helper functions extract type information from a Contract. Note that
-by using more complex K syntax their existence could be avoided, but we feel
-this is more readable.
-
-```k
-  syntax Type ::= #ParameterTypeFromContract(Contract) [function]
-  rule #ParameterTypeFromContract(code _ ; storage _ ; parameter P ;) => P
-
-  syntax Type ::= #StorageTypeFromContract(Contract) [function]
-  rule #StorageTypeFromContract(code _ ; storage P ; parameter _ ;) => P
-```
-
-These rules exists for the unit testing semantics - operations are not legal
-data literals in normal Michelson. Note that we need to recurse into the data
-elements.
-
-```k
-  rule #MichelineToNative(Create_contract(N, C, O, M, S), operation _) =>
-       Create_contract(
-           N,
-           C,
-           {#MichelineToNative(O, (option .AnnotationList  key_hash .AnnotationList))}:>OptionData,
-           {#MichelineToNative(M, mutez .AnnotationList)}:>Mutez,
-           #MichelineToNative(S, #StorageTypeFromContract(C))
-       )
-
-  rule #MichelineToNative(Set_delegate(N, K), operation _) =>
-       Set_delegate(N, {#MichelineToNative(K, (option .AnnotationList key_hash .AnnotationList))}:>OptionData)
-```
-
-These rules use the K syntax for a `withConfig` function. This attribute allows
-a function read-only access to the K configuration, and is necessary here to
-avoid needing an explicit configuration argument in all other rules. We need the
-configuration because we need to be able to construct a `contract` value from an
-address specified in the `Transfer_tokens` production, and thus need to perform
-a contract lookup.
-
-```k
-  syntax Type ::= #TypeFromOtherContract(ContractData) [function]
-  rule #TypeFromOtherContract(#Contract(_, T)) => T
-
-  rule [[ #MichelineToNative(Transfer_tokens(N, P, M, A), operation _)
-          => Transfer_tokens(N,
-              #MichelineToNative(
-                  P,
-                  #TypeFromOtherContract({Known[#MichelineToNative(A, address .AnnotationList)]}:>ContractData)
-              ),
-              {#MichelineToNative(M, mutez .AnnotationList)}:>Mutez,
-              {#MichelineToNative(A, address .AnnotationList)}:>Address
-          ) ]]
-       <knownaddrs> Known </knownaddrs>
-       requires #MichelineToNative(A, address .AnnotationList) in_keys(Known)
-```
-
-We extract a `big_map` by index from the bigmaps map. Note that these have
-already been converted to K-internal form, so there is no need to recurse here.
-
-```k
-  rule [[ #MichelineToNative(I:Int, big_map _:AnnotationList K V) => {M[I]}:>Data ]]
-       <bigmaps> M:Map </bigmaps>
-``` 
 
 Execution Semantics
 ===================
+
+```k
+  syntax KItem ::= "#LoadStack"
+  rule <k> #LoadStack ... </k>
+       <stack> .K => Pair P S </stack>
+       <paramvalue> P </paramvalue>
+       <storagevalue> S </storagevalue>
+
+  syntax KItem ::= "#ExecuteScript"
+  rule <k> #ExecuteScript => Script ... </k>
+       <script> Script </script>
+```
 
 These rules split apart blocks into KItems so that the main semantic rules can
 use idiomatic K.
@@ -593,7 +226,6 @@ arguments are:
   //// Control Structures
   rule <k> FAILWITH A ~> Rk => #HandleAnnotations(A) ~> Aborted("FAILWITH instruction reached", D, Rk, Rs) </k>
        <stack> D ~> Rs => ( Failed D ) </stack>
-       <returncode> _ => 1 </returncode>
 ```
 
 The control flow instruction's implementations in K should look extremely
@@ -753,7 +385,7 @@ documentation directly.
 
 ```k
   rule <k> PUSH A T X => #HandleAnnotations(A) ... </k>
-       <stack> . => #MichelineToNative(X, T) ... </stack>
+       <stack> . => #MichelineToNative(X, T, .Map, .Map) ... </stack>
 ```
 
 UNIT and LAMBDA are implemented almost exactly as specified in the documentation.
@@ -1518,9 +1150,13 @@ identical to those defined over integers.
   rule #DoCompare(#Mutez(I1), #Mutez(I2)) => #DoCompare(I1, I2)
 ```
 
-This rule simply clears the returncode if the k cell empties properly.
+When the `<k>` cell is empty, we consider execution successful
 
 ```k
-  rule <k> . </k> <returncode> 1 => 0 </returncode>
+  rule <k> . </k>
+       <returncode> 1 => 0 </returncode>
+```
+
+```k
 endmodule
 ```
