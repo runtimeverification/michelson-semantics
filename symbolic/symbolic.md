@@ -84,10 +84,12 @@ module SYMBOLIC-UNIT-TEST-DRIVER
 
   rule #FindSymbolsIn(_, _) => .Set [owise]
 
-  rule [[ #MichelineToNative(S:SymbolicData, T) => D ]]
+  rule [[ #MichelineToNative(S:SymbolicData, T, _, _) => D ]]
        <symbols> S |-> #TypedSymbol(T, D) ... </symbols>
 
-  rule #MichelineToNative(S:SymbolicData, T) => S [owise]
+  rule [[ #MichelineToNative(S:SymbolicData, T, _, _) => S ]]
+       <symbols> Syms:Map </symbols>
+    requires notBool (S in_keys(Syms))
 
   syntax Bool ::= #AllTypesKnown(Set) [function, functional]
   rule #AllTypesKnown(SetItem(#SymbolicElement(_, #UnknownType)) _) => false

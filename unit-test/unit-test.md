@@ -31,6 +31,7 @@ module UNIT-TEST
   imports UNIT-TEST-SYNTAX
   imports MICHELSON
   imports MICHELSON-TYPES
+  imports MATCHER
 ```
 
 ```k
@@ -51,76 +52,31 @@ lists.
   syntax Data ::= List
 ```
 
-This function implements a relaxed equality check between two data elements. In
-particular, it handles the wildcard matching behavior described in the .tzt
-format proposal and discards list type information as discussed earlier.
-
-```k
-  syntax Bool ::= #Matches(Data, Data) [function] // Expected, Actual
-
-  rule #TypeData(_, #Any, T) => #Typed(#Any, T)
-
-  rule #Matches(#Any, _) => true
-
-  rule #Matches(D1, D2) => D1 ==K D2 [owise]
-  // This also covers any structurally different data. (e.g. (Left 1) vs (Right 1))
-
-  rule #Matches(.List, .List) => true
-  rule #Matches(ListItem(L1) Ls1:List, ListItem(L2) Ls2:List) => #Matches(L1, L2) andBool #Matches(Ls1, Ls2)
-
-  rule #Matches(.Set, .Set) => true
-  rule #Matches(SetItem(S1) Ss1, SetItem(S2) Ss2) => #Matches(S1, S2) andBool #Matches(Ss1, Ss2)
-
-  rule #Matches(.Map, .Map) => true
-  rule #Matches((K |-> V1) M1, (K |-> V2) M2) => #Matches(V1, V2) andBool #Matches(M1, M2)
-
-  syntax Data ::= FailedStack
-
-  rule #Matches(Create_contract(I1, C, O1, M1, D1), Create_contract(I2, C, O2, M2, D2)) =>
-    #Matches(I1, I2) andBool
-    #Matches(O1, O2) andBool
-    #Matches(M1, M2) andBool
-    #Matches(D1, D2)
-
-  rule #Matches(Transfer_tokens(I1, D1, M1, A1), Transfer_tokens(I2, D2, M2, A2)) =>
-    #Matches(I1, I2) andBool
-    #Matches(D1, D2) andBool
-    #Matches(M1, M2) andBool
-    #Matches(A1, A2)
-
-  rule #Matches(Set_delegate(I1, O1), Set_delegate(I2, O2)) =>
-    #Matches(I1, I2) andBool #Matches(O1, O2)
-
-  rule #Matches(Pair L1 R1, Pair L2 R2) => #Matches(L1, L2) andBool #Matches(R1, R2)
-
-  rule #Matches(Some D1, Some D2) => #Matches(D1, D2)
-
-  rule #Matches(Left D1, Left D2) => #Matches(D1, D2)
-  rule #Matches(Right D1, Right D2) => #Matches(D1, D2)
-```
 
 The representation of \#Any is the same in the semantics and the concrete
 syntax.
 
 ```k
-  rule #MichelineToNative(#Any, _) => #Any
+  rule #MichelineToNative(#Any, _, _, _) => #Any
+  rule #TypeData(_, #Any, T) => #Typed(#Any, T)
 ```
+
 
 This function transforms a LiteralStack (e.g. a sequence of `Stack_elt`
 productions) into a KSequence (the same format as the execution stack).
 
 ```k
-  syntax K ::= #LiteralStackToSemantics(LiteralStack) [function]
-  rule #LiteralStackToSemantics( { } ) => .
-  rule #LiteralStackToSemantics( { L } ) => #LiteralStackToSemanticsAux(L)
+  syntax K ::= #LiteralStackToSemantics(LiteralStack, Map, Map) [function]
+  rule #LiteralStackToSemantics( { },   KnownAddrs, BigMaps) => .
+  rule #LiteralStackToSemantics( { L }, KnownAddrs, BigMaps) => #LiteralStackToSemanticsAux(L, KnownAddrs, BigMaps)
 
-  syntax K ::= #LiteralStackToSemanticsAux(StackElementList) [function]
+  syntax K ::= #LiteralStackToSemanticsAux(StackElementList, Map, Map) [function]
 
-  rule #LiteralStackToSemanticsAux( Stack_elt T D ; Gs:StackElementList) =>
-       #MichelineToNative(D, T) ~> #LiteralStackToSemanticsAux(Gs)
+  rule #LiteralStackToSemanticsAux( Stack_elt T D ; Gs:StackElementList, KnownAddrs, BigMaps) =>
+       #MichelineToNative(D, T, KnownAddrs, BigMaps) ~> #LiteralStackToSemanticsAux(Gs, KnownAddrs, BigMaps)
 
-  rule #LiteralStackToSemanticsAux(Stack_elt T D) =>
-       #MichelineToNative(D, T)
+  rule #LiteralStackToSemanticsAux(Stack_elt T D, KnownAddrs, BigMaps) =>
+       #MichelineToNative(D, T, KnownAddrs, BigMaps)
 ```
 
 This function transforms an expected output stack to its internal representation
@@ -128,9 +84,9 @@ This function transforms an expected output stack to its internal representation
 transformed as in the input group).
 
 ```k
-  syntax K ::= #OutputStackToSemantics(OutputStack) [function]
-  rule #OutputStackToSemantics(L:LiteralStack) => #LiteralStackToSemantics(L)
-  rule #OutputStackToSemantics(X:FailedStack) => X
+  syntax K ::= #OutputStackToSemantics(OutputStack, Map, Map) [function]
+  rule #OutputStackToSemantics(L:LiteralStack, KnownAddrs, BigMaps) => #LiteralStackToSemantics(L, KnownAddrs, BigMaps)
+  rule #OutputStackToSemantics(X:FailedStack,  _,          _      ) => X
 ```
 
 Loading the input or expected output stack involves simply converting it to a
@@ -148,10 +104,12 @@ placing that KSeq in the main execution stack configuration cell.
 ```k
   syntax KItem ::= "#LoadInputStack"
   rule <k> #LoadInputStack => .K ... </k>
-       <stack> _ => #LiteralStackToSemantics(Actual) </stack>
+       <stack> _ => #LiteralStackToSemantics(Actual, KnownAddrs, BigMaps) </stack>
        <stacktypes> _ => #LiteralStackToTypes(Actual,PT) </stacktypes>
        <inputstack> Actual </inputstack>
        <paramtype> PT </paramtype>
+       <knownaddrs> KnownAddrs </knownaddrs>
+       <bigmaps> BigMaps </bigmaps>
 ```
 
 As in the case of the contract group, loading the code group is trivial --
@@ -268,7 +226,9 @@ production and stack cells being the expected and actual outputs respectively.
 ```k
   syntax KItem ::= "#ConvertOutputStackToNative"
   rule <k> #ConvertOutputStackToNative => . ... </k>
-       <expected> Expected => #OutputStackToSemantics(Expected) </expected>
+       <expected> Expected => #OutputStackToSemantics(Expected, KnownAddrs, BigMaps) </expected>
+       <knownaddrs> KnownAddrs </knownaddrs>
+       <bigmaps> BigMaps </bigmaps>
 ```
 
 ```k
@@ -306,5 +266,57 @@ K cell will be empty when the main semantics abort. However, we know that the
   rule <k> #FindVerifyOutput(_:KItem ~> Rs => Rs, _) ... </k> [owise]
 
   rule <k> Aborted(_, _, Rk, _) #as V => #FindVerifyOutput(Rk, V) ... </k>
+endmodule
+```
+
+This function implements a relaxed equality check between two data elements. In
+particular, it handles the wildcard matching behavior described in the .tzt
+format proposal and discards list type information as discussed earlier.
+
+```k
+module MATCHER
+  imports MICHELSON-COMMON
+  imports UNIT-TEST-SYNTAX
+
+  syntax Bool ::= #Matches(Data, Data) [function] // Expected, Actual
+
+  rule #Matches(#Any, _) => true
+
+  rule #Matches(D1, D2) => D1 ==K D2 [owise]
+  // This also covers any structurally different data. (e.g. (Left 1) vs (Right 1))
+
+  rule #Matches(.List, .List) => true
+  rule #Matches(ListItem(L1) Ls1:List, ListItem(L2) Ls2:List) => #Matches(L1, L2) andBool #Matches(Ls1, Ls2)
+
+  rule #Matches(.Set, .Set) => true
+  rule #Matches(SetItem(S1) Ss1, SetItem(S2) Ss2) => #Matches(S1, S2) andBool #Matches(Ss1, Ss2)
+
+  rule #Matches(.Map, .Map) => true
+  rule #Matches((K |-> V1) M1, (K |-> V2) M2) => #Matches(V1, V2) andBool #Matches(M1, M2)
+
+  syntax Data ::= FailedStack
+
+  rule #Matches(Create_contract(I1, C, O1, M1, D1), Create_contract(I2, C, O2, M2, D2)) =>
+    #Matches(I1, I2) andBool
+    #Matches(O1, O2) andBool
+    #Matches(M1, M2) andBool
+    #Matches(D1, D2)
+
+  rule #Matches(Transfer_tokens(I1, D1, M1, A1), Transfer_tokens(I2, D2, M2, A2)) =>
+    #Matches(I1, I2) andBool
+    #Matches(D1, D2) andBool
+    #Matches(M1, M2) andBool
+    #Matches(A1, A2)
+
+  rule #Matches(Set_delegate(I1, O1), Set_delegate(I2, O2)) =>
+    #Matches(I1, I2) andBool #Matches(O1, O2)
+
+  rule #Matches(Pair L1 R1, Pair L2 R2) => #Matches(L1, L2) andBool #Matches(R1, R2)
+
+  rule #Matches(Some D1, Some D2) => #Matches(D1, D2)
+
+  rule #Matches(Left D1, Left D2) => #Matches(D1, D2)
+  rule #Matches(Right D1, Right D2) => #Matches(D1, D2)
+
 endmodule
 ```
