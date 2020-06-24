@@ -5,6 +5,7 @@ requires "michelson/syntax.md"
 
 module MICHELSON-INTERNAL-SYNTAX
   imports MICHELSON-SYNTAX
+
 ```
 
 This BlockchainOperation describes a contract origination operation.  Its arguments are:
@@ -71,8 +72,5 @@ All blockchain operations are data.  This line is necessary so that BlockchainOp
 
 ```k
   syntax Data ::= BlockchainOperation
-```
-
-```k
 endmodule
 ```
