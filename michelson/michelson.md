@@ -22,17 +22,9 @@ module MICHELSON
 Michelson Semantics Initialization
 ==================================
 
-Loading groups into the K configuration
----------------------------------------
-
 The `#BaseInit` takes care of initialization common to the different semantics.
 This can be invoked by a rule similar to `rule <k> #Init => #Preprocess ~>
 #BaseInit ~> #Postprocess ... </k>`.
-
-The base initialization consists of adding the `parameter` and `storage` groups
-(`#ExtendGroups`), sorting the groups into the order they need to be processed
-in (`#SortGroups`), and finally loading the groups into the appropriate
-configuration cell (`#LoadGroups`s).
 
 ```k
   syntax KItem ::= "#BaseInit"
@@ -44,7 +36,8 @@ configuration cell (`#LoadGroups`s).
        </k>
 ```
 
---------------------------------------------------------------------------------
+Loading groups into the K configuration
+---------------------------------------
 
 Below are the rules for loading specific groups.
 Below are Map   rules for loading specific groups.
