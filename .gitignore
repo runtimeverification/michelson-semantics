@@ -1,3 +1,11 @@
+# Temporary files for developers
+# ------------------------------
+
+/tmp
+
+# Build products
+# --------------
+
 *.address
 /.build
 *.cross
