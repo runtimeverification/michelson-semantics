@@ -186,27 +186,6 @@ We extend this typing function to handle symbolic values.
   rule #LiteralStackToTypesAux(Stack_elt T S:SymbolicData, PT) => T
 ```
 
-`#Assume`/`#Assert` instructions
---------------------------------
-
-```k
-  syntax KItem ::= "#AssumeTrue"
-  rule <k> #AssumeTrue => . ... </k>
-       <stack> true => . </stack> [transition]
-  rule <k> #AssumeTrue ~> _:K => . </k>
-       <stack> false => . </stack>
-       <assumeFailed> _ => true </assumeFailed> [transition]
-```
-
-```k
-  syntax KItem ::= "#AssertTrue"
-  rule <k> #AssertTrue => . ... </k>
-       <stack> true => . </stack>
-  rule <k> #AssertTrue => #AssertFailed ... </k>
-       <stack> false => . </stack>
-  syntax KItem ::= "#AssertFailed" [klabel(#AssertFailed), symbol]
-```
-
 `#RestoreStack` utility function
 --------------------------------
 
@@ -239,35 +218,6 @@ We extend this typing function to handle symbolic values.
        <pre> { B } => { }  </pre>
   rule <k> #ExecutePreConditions => .K ... </k>
        <pre> { } </pre>
-```
-
-`#CheckSymbolicOutput`
-----------------------
-
-```k
-  syntax KItem ::= "#CheckSymbolicOutput"
-  rule <k> #CheckSymbolicOutput => #Bind(ExpectedStack) ... </k>
-       <expected> ExpectedStack </expected>
-```
-
-```k
-  syntax KItem ::= #Bind(LiteralStack)
-  syntax KItem ::= #BindSingle(StackElement)
-  rule <k> #Bind({ }) => . ... </k>
-       <stack> . </stack>
-
-  rule <k> #Bind({ S }) => #BindSingle(S) ... </k>
-  rule <k> #Bind({ S ; Ss }) => #BindSingle(S) ~> #Bind({ Ss }) ... </k>
-
-  rule <michelsonTop>
-         <k> #BindSingle(Stack_elt T S:SymbolicData) => . ... </k>
-         <stack> D => . ... </stack>
-         ...
-       </michelsonTop>
-       <symbols> M => M[ S <- #TypedSymbol(T, D) ] </symbols>
-
-  rule <k> #BindSingle(Stack_elt T D) => . ... </k>
-       <stack> D => . ... </stack>
 ```
 
 `postcondition` group

@@ -211,6 +211,22 @@ krun will match the final contents of this cell.
 
 ```k
                   <returncode exit=""> 1 </returncode>
+```
+
+The following cell is a debugging aid, indicating whether a `#Assume` statement
+failed.
+
+```k
+                  <assumeFailed> false </assumeFailed>
+```
+
+This cell lists the bindings between symbolic variables and their values.
+
+```k
+                  <symbols> .Map </symbols>
+```
+
+```k
                 </michelsonTop>
 endmodule
 ```

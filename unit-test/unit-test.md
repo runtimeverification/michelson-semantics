@@ -19,8 +19,7 @@ module UNIT-TEST-DRIVER
         => #UnitTestInit
         ~> #LoadInputStack
         ~> #ExecuteScript
-        ~> #ConvertOutputStackToNative
-        ~> #VerifyOutput
+        ~> #CheckOutput
            ...
        </k>
 endmodule
@@ -28,7 +27,7 @@ endmodule
 
 ```k
 module UNIT-TEST
-  imports UNIT-TEST-SYNTAX
+  imports SYMBOLIC-UNIT-TEST-SYNTAX
   imports MICHELSON
   imports MICHELSON-TYPES
   imports MATCHER
@@ -215,57 +214,84 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
        <expected> OS </expected>
 ```
 
-`#VerifyOutput`
----------------
-
-Once execution finishes, the output verification is simply stepping through the
-KSequence and removing any elements that `#Match`. An unsuccessful unit test
-will get stuck during this step, with the first sequence in the `#VerifyOutput`
-production and stack cells being the expected and actual outputs respectively.
+`#Assume`/`#Assert` instructions
+--------------------------------
 
 ```k
-  syntax KItem ::= "#ConvertOutputStackToNative"
-  rule <k> #ConvertOutputStackToNative => . ... </k>
-       <expected> Expected => #OutputStackToSemantics(Expected, KnownAddrs, BigMaps) </expected>
-       <knownaddrs> KnownAddrs </knownaddrs>
-       <bigmaps> BigMaps </bigmaps>
+  syntax KItem ::= "#AssumeTrue"
+  rule <k> #AssumeTrue => . ... </k>
+       <stack> true => . </stack> [transition]
+  rule <k> #AssumeTrue ~> _:K => . </k>
+       <stack> false => . </stack>
+       <assumeFailed> _ => true </assumeFailed> [transition]
 ```
 
 ```k
-  syntax KItem ::= "#VerifyOutput"
-  rule <k> #VerifyOutput ... </k>
-       <stack>    S2 => . ... </stack>
-       <expected> S1 => . ... </expected>
-    requires #Matches(S1, S2)
+  syntax KItem ::= "#AssertTrue"
+  rule <k> #AssertTrue => #Assert(B) ... </k>
+       <stack> B:Bool => . </stack>
 ```
 
-The final step when all elements of the KSequences have been exhausted is to set
-the process' exit code as appropriate to indicate a successful test execution,
-and then empty the k cell. In a successful unit test execution (except expected
-failures), this rule is where the semantics will halt. Implicitly, this rule
-also checks that `#VerifyOutput` is the last remaining production in the k cell
-by excluding the normal '...' variable at the end of the K cell.
+```k
+  syntax KItem ::= #Assert(Bool)
+  rule <k> #Assert(true)  => .             ... </k>
+  rule <k> #Assert(false) => #AssertFailed ... </k>
+  syntax KItem ::= "#AssertFailed" [klabel(#AssertFailed), symbol]
+```
+
+`#CheckOutput`
+--------------
 
 ```k
-  rule <k> #VerifyOutput => . ... </k>
-       <stack>    . </stack>
-       <expected> . </expected>
+  syntax TypedSymbol ::= #TypedSymbol(Type, Data)
+```
+
+```k
+  syntax KItem ::= "#CheckOutput"
+  rule <k> #CheckOutput => #Bind(ExpectedStack) ... </k>
+       <expected> ExpectedStack </expected>
+```
+
+```k
+  syntax KItem ::= #Bind(OutputStack)
+  syntax KItem ::= #BindSingle(StackElement)
+  rule <k> #Bind({ }) => .K ... </k>
+       <stack> .K </stack>
+  rule <k> #Bind({ S }) => #BindSingle(S) ... </k>
+  rule <k> #Bind({ S ; Ss }) => #BindSingle(S) ~> #Bind({ Ss }) ... </k>
+
+  rule <k> #Bind(S1:FailedStack) => .K ... </k>
+       <stack> S2:FailedStack => .K ... </stack>
+	requires #Matches(S1, S2)
+
+  rule <k> #BindSingle(Stack_elt T S:SymbolicData) => .K ...
+	   </k>
+	   <paramtype> PT </paramtype>
+       <stack> D => .K ... </stack>
+       <symbols> M => M[ S <- #TypedSymbol(T, D) ] </symbols>
+    requires isTypedData(#TypeData(PT,D,T)) 
+
+  rule <k> #BindSingle(Stack_elt T ED) => .K ... </k>
+	   <knownaddrs> KnownAddrs </knownaddrs>
+	   <bigmaps> BigMaps </bigmaps>
+       <stack> AD => .K ... </stack>
+    requires #Matches(#MichelineToNative(ED,T,KnownAddrs,BigMaps),AD)
 ```
 
 In the case of an expected failure, we cannot guarantee that the contents of the
 K cell will be empty when the main semantics abort. However, we know that the
-`#VerifyOutput` will still be in the k cell. Hence, if the main semantics abort
+`#CheckOutput` will still be in the k cell. Hence, if the main semantics abort
 (by placing the Aborted production on the top of the k cell), we should find the
-`#VerifyOutput` production in the K cell and pull it out.
+`#CheckOutput` production in the K cell and pull it out.
 
 ```k
-  syntax KItem ::= #FindVerifyOutput(K, KItem)
-  syntax KItem ::= #NoVerifyOutput(KItem)
+  syntax KItem ::= #FindCheckOutput(K, KItem)
+  syntax KItem ::= #NoCheckOutput(KItem)
 
-  rule <k> #FindVerifyOutput(#VerifyOutput ~> _, _) => #VerifyOutput ... </k>
-  rule <k> #FindVerifyOutput(_:KItem ~> Rs => Rs, _) ... </k> [owise]
+  rule <k> #FindCheckOutput(#CheckOutput ~> _, _) => #CheckOutput ... </k>
+  rule <k> #FindCheckOutput(_:KItem ~> Rs => Rs, _) ... </k> [owise]
 
-  rule <k> Aborted(_, _, Rk, _) #as V => #FindVerifyOutput(Rk, V) ... </k>
+  rule <k> Aborted(_, _, Rk, _) #as V => #FindCheckOutput(Rk, V) ... </k>
 endmodule
 ```
 
