@@ -6,8 +6,6 @@ module SYMBOLIC-CONFIGURATION
   imports SYMBOLIC-UNIT-TEST-SYNTAX
 
   configuration <michelsonTop/>
-                <pre> {}:Blocks </pre>
-                <post> {}:Blocks </post>
                 <invs> .Map </invs>
 endmodule
 ```

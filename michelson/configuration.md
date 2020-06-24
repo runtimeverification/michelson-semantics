@@ -67,6 +67,14 @@ TODO: Move this to unit-test only configuration:
                   <expected> .K </expected>
 ```
 
+Pre- and post-conditions:
+
+```k
+                <pre> {}:Blocks </pre>
+                <post> {}:Blocks </post>
+```
+
+
 The `<inputstack>` cell contains the initial input stack for unit tests. Storing
 this separately from the `<stack>` cell lets us rewrite the stack as much as we
 want during program evaluation without having to worry about restoring it later.

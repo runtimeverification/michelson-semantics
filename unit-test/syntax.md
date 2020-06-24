@@ -130,8 +130,6 @@ contains a well-typed Michelson expression that consumes an empty input stack
 and produces an output stack of type `Stack_elt bool _`.
 
 ```k
-  syntax BlockList ::= Block | Block ";" BlockList
-  syntax Blocks ::= EmptyBlock | "{" BlockList "}"
   syntax PreconditionGroup ::= "precondition" Blocks
   syntax PostconditionGroup ::= "postcondition" Blocks
   syntax Group ::= PreconditionGroup | PostconditionGroup
@@ -152,4 +150,3 @@ correspond.
 ```k
 endmodule
 ```
-
