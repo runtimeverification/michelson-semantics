@@ -152,6 +152,17 @@ eleven 'anywhere' rules here.
   rule parameter Pt ; storage St ; code B ; => code B ; storage St ; parameter Pt ; [anywhere]
 ```
 
+This function is similar to `#MichelineToNative` but for contract maps.
+
+```k
+  syntax Map ::= #OtherContractsMapToKMap(OtherContractsMap) [function]
+  syntax Map ::= #OtherContractsMapEntryListToKMap(OtherContractsMapEntryList) [function]
+  rule #OtherContractsMapToKMap({ }) => .Map
+  rule #OtherContractsMapToKMap({ EL }) => #OtherContractsMapEntryListToKMap(EL)
+  rule #OtherContractsMapEntryListToKMap( Elt A T ) => #Address(A) |-> #Contract(#Address(A), T)
+  rule #OtherContractsMapEntryListToKMap( Elt A T ; Rs ) => #Address(A) |-> #Contract(#Address(A), T) #OtherContractsMapEntryListToKMap(Rs)
+```
+
 This function transforms a Michelson data element from its Micheline
 representation to its internal K representation given the data and its real
 Michelson type. It performs some basic sanity checks on the data passed (that it

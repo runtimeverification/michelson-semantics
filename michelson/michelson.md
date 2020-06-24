@@ -85,13 +85,6 @@ concrete representation to a K-Michelson map.
 ```k
   rule <k> other_contracts M => .K ... </k>
        <knownaddrs> .Map => #OtherContractsMapToKMap(M) </knownaddrs>
-
-  syntax Map ::= #OtherContractsMapToKMap(OtherContractsMap) [function]
-  syntax Map ::= #OtherContractsMapEntryListToKMap(OtherContractsMapEntryList) [function]
-  rule #OtherContractsMapToKMap({ }) => .Map
-  rule #OtherContractsMapToKMap({ EL }) => #OtherContractsMapEntryListToKMap(EL)
-  rule #OtherContractsMapEntryListToKMap( Elt A T ) => #Address(A) |-> #Contract(#Address(A), T)
-  rule #OtherContractsMapEntryListToKMap( Elt A T ; Rs ) => #Address(A) |-> #Contract(#Address(A), T) #OtherContractsMapEntryListToKMap(Rs)
 ```
 
 These two groups contain information from the contract itself, but they are
