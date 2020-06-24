@@ -295,17 +295,18 @@ We extend this typing function to handle symbolic values.
 `invariants` group
 ---------------------
 
+TODO: This is not excersized by any tests.
+
 ```k
   syntax KItem ::= #LoadInvariants(Invariants) | #LoadInvariant(Invariant)
-
-//  rule #LoadGroups(invariants Invs ; Gs) => #LoadInvariants(Invs) ~> #LoadGroups(Gs)
-
-  rule #LoadInvariants({ }) => .
-  rule #LoadInvariants({ I }) => #LoadInvariant(I)
-  rule #LoadInvariants({ I1 ; Is }) => #LoadInvariant(I1) ~> #LoadInvariants({ Is })
-
-  rule <k> #LoadInvariant(V Bs) => . ... </k>
-       <invs> M => M[V <- Bs] </invs>
+  rule <k> invariants { } => .K ... </k>
+  rule <k> invariants { I1 ; Is }
+        => invariants( { I1 } ) ~> #LoadInvariants({ Is })
+           ...
+       </k>
+  rule <k> invariants ({ I }) => .K ... </k>
+  rule <k> invariants ({ Annotation Blocks }) => . ... </k>
+       <invs> M => M[Annotation <- Blocks] </invs>
 ```
 
 ```k
