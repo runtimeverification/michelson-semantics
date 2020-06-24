@@ -19,7 +19,7 @@ module SYMBOLIC-UNIT-TEST-DRIVER
         ~> #ExecutePreConditions
         ~> #LoadInputStack
         ~> #ExecuteScript
-        ~> #CheckSymbolicOutput
+        ~> #CheckOutput
         ~> #ExecutePostConditions
            ...
        </k>

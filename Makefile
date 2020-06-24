@@ -98,7 +98,8 @@ SOURCE_FILES       := compat                    \
 EXTRA_SOURCE_FILES :=
 ALL_FILES          := $(patsubst %, %.md, $(SOURCE_FILES) $(EXTRA_SOURCE_FILES))
 
-tangle_selector := k
+tangle_haskell := k | symbolic
+tangle_llvm    := k | concrete
 
 HOOK_NAMESPACES := TIME MICHELSON
 
@@ -118,13 +119,13 @@ ifeq (,$(RELEASE))
     LLVM_KOMPILE_OPTS += -g
 endif
 
-KOMPILE_LLVM := kompile --debug --backend llvm --md-selector "$(tangle_selector)" \
+KOMPILE_LLVM := kompile --debug --backend llvm --md-selector "$(tangle_llvm)" \
                 $(KOMPILE_OPTS)                                                   \
                 $(addprefix -ccopt ,$(LLVM_KOMPILE_OPTS))
 
 HASKELL_KOMPILE_OPTS +=
 
-KOMPILE_HASKELL := kompile --debug --backend haskell --md-selector "$(tangle_selector)" \
+KOMPILE_HASKELL := kompile --debug --backend haskell --md-selector "$(tangle_haskell)" \
                    $(KOMPILE_OPTS)                                                      \
                    $(HASKELL_KOMPILE_OPTS)
 
