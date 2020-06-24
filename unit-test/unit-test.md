@@ -20,6 +20,7 @@ module UNIT-TEST-DRIVER
         => #CreateSymbols
         ~> #BaseInit
         ~> #ExecutePreConditions
+        ~> #TypeCheck
         ~> #LoadInputStack
         ~> #ExecuteScript
         ~> #CheckOutput
@@ -35,15 +36,6 @@ module UNIT-TEST
   imports MICHELSON
   imports MICHELSON-TYPES
   imports MATCHER
-```
-
-```k
-  syntax KItem ::= "#UnitTestInit"
-  rule <k> #UnitTestInit
-        => #BaseInit
-        ~> #TypeCheck
-           ...
-       </k>
 ```
 
 `#CreateSymbol`
