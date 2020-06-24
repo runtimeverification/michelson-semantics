@@ -10,6 +10,9 @@ requires "michelson/internal-syntax.md"
 requires "michelson/syntax.md"
 ```
 
+Concrete Unit Test Syntax
+=========================
+
 In order to test Michelson code at a finer level than a full smart
 contract script, the following extension of the Michelson language can
 be used. It adds syntax to specify an instruction (or sequence of
@@ -104,24 +107,48 @@ Besides these, the `now`, `sender`, `source`, `chain_id`, `self`, `amount`, and
 endmodule
 ```
 
+Symbolic Unit Test Syntax
+=========================
+
+We further extend the unit-test syntax with additional groups for representing
+pre- and post-conditions as well as invariants to enable verification.
+
 ```k
 module SYMBOLIC-UNIT-TEST-SYNTAX
   imports UNIT-TEST-SYNTAX
+```
 
+We extend `Data` to allow symbolic variables.
+
+```k
+  syntax SymbolicData ::= r"$[_a-zA-Z][_0-9a-zA-Z]*" [token]
+  syntax Data ::= SymbolicData
+```
+
+We represent pre- and post-conditions as lists of blocks, where each block
+contains a well-typed Michelson expression that consumes an empty input stack
+and produces an output stack of type `Stack_elt bool _`.
+
+```k
   syntax BlockList ::= Block | Block ";" BlockList
   syntax Blocks ::= EmptyBlock | "{" BlockList "}"
+  syntax PreconditionGroup ::= "precondition" Blocks
+  syntax PostconditionGroup ::= "postcondition" Blocks
+  syntax Group ::= PreconditionGroup | PostconditionGroup
+```
 
+Invariants are lists of blocks annotated with a name so that we know to which
+looping instruction sequence (i.e. `LOOP`, `LOOP_LEFT`, or `ITER`) they
+correspond.
+
+```k
   syntax Invariants ::= EmptyBlock | "{" InvariantList "}"
   syntax InvariantList ::= Invariant | Invariant ";" InvariantList
   syntax Invariant ::= VariableAnnotation Blocks
-
-  syntax PreconditionGroup ::= "precondition" Blocks
-  syntax PostconditionGroup ::= "postcondition" Blocks
   syntax InvariantsGroup ::= "invariants" Invariants
+  syntax Group ::= InvariantsGroup
+```
 
-  syntax Group ::= PreconditionGroup | PostconditionGroup | InvariantsGroup
-  syntax SymbolicData ::= r"$[_a-zA-Z][_0-9a-zA-Z]*" [token]
-
-  syntax Data ::= SymbolicData
+```k
 endmodule
 ```
