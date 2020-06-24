@@ -388,7 +388,6 @@ These sorts define the *Loading Groups* for the contract.  Loading groups specif
 - StorageValue specifies the data passed to this execution as its last storage value.
 - BigMap specifies the big\_map data stored at each big\_map index.
 
-Programs consist of sequences of these groups, potentially with an extra semicolon on the end.  Contract, ParameterValue and StorageValue are required, and all other groups are optional.  Accordingly, no empty sequence of groups exists in the parser, since at least three groups must be present for an execution to work.
 
 [//]: # (Are ParameterValue and StorageValue ever used?)
 
@@ -420,6 +419,17 @@ Programs consist of sequences of these groups, potentially with an extra semicol
                  | BigMapGroup
 
   syntax Groups ::= Group | Group ";" Groups | Group ";"
+```
+
+Programs consist of sequences of these groups, potentially with an extra
+semicolon on the end.
+
+Note that for the default semantics, the `contract`, `parameter`, and `storage`
+groups are required; all other groups are optional.  Accordingly, no empty
+sequence of groups exists in the parser, since at least three groups must be
+present for an execution to work.
+
+```k
   syntax Pgm ::= Groups
 endmodule
 ```

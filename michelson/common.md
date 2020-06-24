@@ -85,13 +85,6 @@ We specify that both `parameter T` and `storage T` productions are also groups
   syntax Group ::= StorageDecl
 ```
 
-The `#LoadGroups` production is used during contract loading. See `michelson.k`
-for a full description of its behavior.
-
-```k
-  syntax KItem ::= #LoadGroups(Groups)
-```
-
 Michelson bools are of the form (True/False), but K bools are of the form
 (true/false). We convert them here so we can define rewrite rules over the K
 bool sort.

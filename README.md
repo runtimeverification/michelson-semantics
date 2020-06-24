@@ -197,3 +197,43 @@ Similarly, [symbolic/symbolic.md](./symbolic/symbolic.md) and [symbolic/syntax.m
 
 `hooks/time.cpp` and `hooks/hex.cpp` implement backend hooks to perform timestamp translation (i.e. from an ISO-8601 human readable timestamp to a Unix timestamp) and print binary blobs as hexadecimal strings.
 They are used by the K semantics internally.
+
+Miscellaneous Documentation
+---------------------------
+
+We store bits and pieces of useful information here that. These are primarily
+of interest to developers.
+
+### Semantics Initializatation
+
+As is the case with other languages, the K-Michelson semantics needs different
+drivers to support its use in different tools. Currently, we have the following
+drivers:
+
+- a driver that executes Michelson contracts extended with inputs
+- a driver that executes Michelson unit tests
+- a driver that executes symbolic Michelson unit tests
+
+Each of these drivers must perform slightly different initialization routines.
+However, these initialization routines have a common structure:
+
+1. Parse the input file and put it into the `<k>` cell
+2. Load each of the input file groups into a specific configuration cell
+3. Apply the driver `#Init` rule
+
+We give an overview of the steps performed by each driver:
+
+1. Create fresh variables for any symbolic inputs (symbolic semantics only)
+2. Execute the precondition blocks
+3. Execute the main program block
+4. Bind the symbolic variables in the expected output stack against the
+   actual output stack (symbolic semantics only)
+4. Execute the postcondition blocks
+
+In particular, it is worth considering the steps necessary to execute a block:
+
+1. Load the block input stack and expected output stack
+2. Type-check the block against the input stack and expected output stack
+3. Convert the input/output stacks into internal forms used for execution
+4. Run the block with the converted input stack
+5. Check that our actual output stack matches the expected output stack
