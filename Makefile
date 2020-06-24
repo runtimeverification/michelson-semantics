@@ -93,7 +93,6 @@ SOURCE_FILES       := compat                    \
                       michelson-unparser        \
                       symbolic/configuration    \
                       symbolic/symbolic         \
-                      symbolic/syntax           \
                       unit-test/unit-test       \
                       unit-test/syntax
 EXTRA_SOURCE_FILES :=

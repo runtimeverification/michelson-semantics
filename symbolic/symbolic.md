@@ -2,7 +2,6 @@
 requires "unit-test/unit-test.md"
 requires "michelson/types.md"
 requires "symbolic/configuration.md"
-requires "symbolic/syntax.md"
 ```
 
 ```k
