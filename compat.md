@@ -234,18 +234,17 @@ module OUTPUT-COMPARE
   imports K-REFLECTION
   imports MATCHER
 
-  configuration <k> $PGM:Pgm </k>
-                <knownaddrs> .Map </knownaddrs>
-                <out stream="stdout"> .List </out>
-                <returncode exit=""> 1 </returncode>
-
   syntax String ::= #decodeBinaryRepresentation(Bytes) [function, hook(MICHELSON.decode)]
   syntax BlockchainOperation ::= #parseOperation(String) [function]
   rule #parseOperation(S) => #parseKORE(S)
 
   syntax KItem ::= #CheckOutput(OutputStack, OutputStack) // Expected, Actual
 
-  rule #MichelineToNative(B:Bytes, operation _) => #MichelineToNative(#parseOperation(#decodeBinaryRepresentation(B)), operation .AnnotationList)
+  rule #MichelineToNative(B:Bytes, operation _, KnownAddrs, BigMaps)
+    => #MichelineToNative(#parseOperation(#decodeBinaryRepresentation(B)),
+                          operation .AnnotationList,
+                          KnownAddrs,
+                          BigMaps)
 
   syntax KItem ::= "#Failed"
 
@@ -257,16 +256,19 @@ module OUTPUT-COMPARE
         => .
            ...
        </k>
-    requires #Matches(#MichelineToNative(ED, ET), #MichelineToNative(AD, AT))
+       <knownaddrs> KnownAddrs </knownaddrs>
+    requires #Matches(#MichelineToNative(ED, ET, KnownAddrs, .Map),
+                      #MichelineToNative(AD, AT, KnownAddrs, .Map))
 
   rule <k> #CheckOutput( { Stack_elt ET ED } , { Stack_elt AT AD } )
         => #Failed
            ...
        </k>
+       <knownaddrs> KnownAddrs </knownaddrs>
        <out> ...
              .List
-          => ListItem("Mismatch - Expected: " +String #unparse(#MichelineToNative(ED, ET)) +String
-                                  " Actual: " +String #unparse(#MichelineToNative(AD, AT))
+          => ListItem("Mismatch - Expected: " +String #unparse(#MichelineToNative(ED, ET, KnownAddrs, .Map)) +String
+                                  " Actual: " +String #unparse(#MichelineToNative(AD, AT, KnownAddrs, .Map))
                      )
        </out> [owise]
 
@@ -274,16 +276,18 @@ module OUTPUT-COMPARE
         => #CheckOutput( { Es } , { As } )
            ...
        </k>
-    requires #Matches(#MichelineToNative(ED, ET), #MichelineToNative(AD, AT))
+       <knownaddrs> KnownAddrs </knownaddrs>
+    requires #Matches(#MichelineToNative(ED, ET, KnownAddrs, .Map), #MichelineToNative(AD, AT, KnownAddrs, .Map))
 
   rule <k> #CheckOutput( { Stack_elt ET ED ; Es } , { Stack_elt AT AD ; As } )
         => #Failed
            ...
        </k>
+       <knownaddrs> KnownAddrs </knownaddrs>
        <out> ...
              .List
-          => ListItem("Mismatch - Expected: " +String #unparse(#MichelineToNative(ED, ET))
-                          +String " Actual: " +String #unparse(#MichelineToNative(AD, AT))
+          => ListItem("Mismatch - Expected: " +String #unparse(#MichelineToNative(ED, ET, KnownAddrs, .Map))
+                          +String " Actual: " +String #unparse(#MichelineToNative(AD, AT, KnownAddrs, .Map))
                      )
        </out> [owise]
 
@@ -291,7 +295,5 @@ module OUTPUT-COMPARE
        <knownaddrs> _ => #OtherContractsMapToKMap(M) </knownaddrs>
 
   rule <k> real_output AOS ~> output EOS ; => #CheckOutput(EOS, AOS) ... </k>
-
-  rule <k> #Init => .K ... </k>
 endmodule
 ```
