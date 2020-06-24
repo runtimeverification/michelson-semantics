@@ -49,11 +49,7 @@ module MICHELSON-TYPES
   syntax TypeError ::= #MistypedData(Data, Type)
   rule #TypeData(C, D, T) => #MistypedData(D, T) [owise]
 
-  syntax TypedData ::= #Typed(Data, Type)
-
   syntax MaybeData ::= TypedData | TypeError
-
-  syntax Data ::= TypedData
 
   rule #TypeData(_, Unit, unit _) => #Typed(Unit, unit .AnnotationList)
 

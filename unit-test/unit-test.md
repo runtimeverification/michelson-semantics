@@ -103,24 +103,24 @@ The representation of \#Any is the same in the semantics and the concrete
 syntax.
 
 ```k
-  rule #MichelineToNative(#Any, _) => #Any
+  rule #MichelineToNative(#Any, _, _, _) => #Any
 ```
 
 This function transforms a LiteralStack (e.g. a sequence of `Stack_elt`
 productions) into a KSequence (the same format as the execution stack).
 
 ```k
-  syntax K ::= #LiteralStackToSemantics(LiteralStack) [function]
-  rule #LiteralStackToSemantics( { } ) => .
-  rule #LiteralStackToSemantics( { L } ) => #LiteralStackToSemanticsAux(L)
+  syntax K ::= #LiteralStackToSemantics(LiteralStack, Map, Map) [function]
+  rule #LiteralStackToSemantics( { },   KnownAddrs, BigMaps) => .
+  rule #LiteralStackToSemantics( { L }, KnownAddrs, BigMaps) => #LiteralStackToSemanticsAux(L, KnownAddrs, BigMaps)
 
-  syntax K ::= #LiteralStackToSemanticsAux(StackElementList) [function]
+  syntax K ::= #LiteralStackToSemanticsAux(StackElementList, Map, Map) [function]
 
-  rule #LiteralStackToSemanticsAux( Stack_elt T D ; Gs:StackElementList) =>
-       #MichelineToNative(D, T) ~> #LiteralStackToSemanticsAux(Gs)
+  rule #LiteralStackToSemanticsAux( Stack_elt T D ; Gs:StackElementList, KnownAddrs, BigMaps) =>
+       #MichelineToNative(D, T, KnownAddrs, BigMaps) ~> #LiteralStackToSemanticsAux(Gs, KnownAddrs, BigMaps)
 
-  rule #LiteralStackToSemanticsAux(Stack_elt T D) =>
-       #MichelineToNative(D, T)
+  rule #LiteralStackToSemanticsAux(Stack_elt T D, KnownAddrs, BigMaps) =>
+       #MichelineToNative(D, T, KnownAddrs, BigMaps)
 ```
 
 This function transforms an expected output stack to its internal representation
@@ -128,9 +128,9 @@ This function transforms an expected output stack to its internal representation
 transformed as in the input group).
 
 ```k
-  syntax K ::= #OutputStackToSemantics(OutputStack) [function]
-  rule #OutputStackToSemantics(L:LiteralStack) => #LiteralStackToSemantics(L)
-  rule #OutputStackToSemantics(X:FailedStack) => X
+  syntax K ::= #OutputStackToSemantics(OutputStack, Map, Map) [function]
+  rule #OutputStackToSemantics(L:LiteralStack, KnownAddrs, BigMaps) => #LiteralStackToSemantics(L, KnownAddrs, BigMaps)
+  rule #OutputStackToSemantics(X:FailedStack,  _,          _      ) => X
 ```
 
 Loading the input or expected output stack involves simply converting it to a
@@ -148,10 +148,12 @@ placing that KSeq in the main execution stack configuration cell.
 ```k
   syntax KItem ::= "#LoadInputStack"
   rule <k> #LoadInputStack => .K ... </k>
-       <stack> _ => #LiteralStackToSemantics(Actual) </stack>
+       <stack> _ => #LiteralStackToSemantics(Actual, KnownAddrs, BigMaps) </stack>
        <stacktypes> _ => #LiteralStackToTypes(Actual,PT) </stacktypes>
        <inputstack> Actual </inputstack>
        <paramtype> PT </paramtype>
+       <knownaddrs> KnownAddrs </knownaddrs>
+       <bigmaps> BigMaps </bigmaps>
 ```
 
 As in the case of the contract group, loading the code group is trivial --
@@ -268,7 +270,9 @@ production and stack cells being the expected and actual outputs respectively.
 ```k
   syntax KItem ::= "#ConvertOutputStackToNative"
   rule <k> #ConvertOutputStackToNative => . ... </k>
-       <expected> Expected => #OutputStackToSemantics(Expected) </expected>
+       <expected> Expected => #OutputStackToSemantics(Expected, KnownAddrs, BigMaps) </expected>
+       <knownaddrs> KnownAddrs </knownaddrs>
+       <bigmaps> BigMaps </bigmaps>
 ```
 
 ```k
