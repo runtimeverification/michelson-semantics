@@ -91,8 +91,6 @@ SOURCE_FILES       := compat                    \
                       michelson/syntax          \
                       michelson/types           \
                       michelson-unparser        \
-                      symbolic/configuration    \
-                      symbolic/symbolic         \
                       unit-test/unit-test       \
                       unit-test/syntax
 EXTRA_SOURCE_FILES :=
@@ -177,8 +175,8 @@ $(prove_kompiled): $(prove_files)
 
 symbolic_dir           := $(DEFN_DIR)/symbolic
 symbolic_files         := $(ALL_FILES)
-symbolic_main_file     := symbolic/symbolic
-symbolic_main_module   := SYMBOLIC-UNIT-TEST-DRIVER
+symbolic_main_file     := unit-test/unit-test
+symbolic_main_module   := UNIT-TEST-DRIVER
 symbolic_syntax_module := SYMBOLIC-UNIT-TEST-SYNTAX
 symbolic_kompiled      := $(symbolic_dir)/$(notdir $(symbolic_main_file))-kompiled/definition.kore
 

@@ -15,11 +15,15 @@ The unit-test semantics does not need any processing in addition to the base ini
 ```k
 module UNIT-TEST-DRIVER
   imports UNIT-TEST
+
   rule <k> #Init
-        => #UnitTestInit
+        => #CreateSymbols
+        ~> #BaseInit
+        ~> #ExecutePreConditions
         ~> #LoadInputStack
         ~> #ExecuteScript
         ~> #CheckOutput
+        ~> #ExecutePostConditions
            ...
        </k>
 endmodule
@@ -470,6 +474,41 @@ K cell will be empty when the main semantics abort. However, we know that the
   rule <k> #FindCheckOutput(_:KItem ~> Rs => Rs, _) ... </k> [owise]
 
   rule <k> Aborted(_, _, Rk, _) #as V => #FindCheckOutput(Rk, V) ... </k>
+```
+
+Extending functions to `SymbolicData`
+-------------------------------------
+
+```symbolic
+  rule [[ #MichelineToNative(S:SymbolicData, T, _, _) => D ]]
+       <symbols> S |-> #TypedSymbol(T, D) ... </symbols>
+
+  rule [[ #MichelineToNative(S:SymbolicData, T, _, _) => S ]]
+       <symbols> Syms:Map </symbols>
+    requires notBool (S in_keys(Syms))
+
+  rule [[ #TypeData(_, S:SymbolicData, T) => #Typed(S, T) ]]
+       <symbols> ... S |-> #TypedSymbol(T, _) ... </symbols>
+```
+
+```symbolic
+  rule #LiteralStackToTypesAux(Stack_elt T S:SymbolicData ; Gs:StackElementList, PT)
+    => T ; #LiteralStackToTypesAux(Gs, PT)
+
+  rule #LiteralStackToTypesAux(Stack_elt T S:SymbolicData, PT) => T
+```
+
+```symbolic
+  rule #Ceil(#DoCompare(@A:Int, @B:Int)) => #Ceil(@A) #And #Ceil(@B)  [anywhere, simplification]
+  rule #DoCompare(I1:Int, I2:Int) <Int 0 => I1 <Int I2 [simplification]
+  rule #DoCompare(I1:Int, I2:Int) <=Int 0 => I1 <=Int I2 [simplification]
+  rule #DoCompare(I1:Int, I2:Int) ==Int 0 => I1 ==Int I2 [simplification]
+  rule #DoCompare(I1:Int, I2:Int) >=Int 0 => I1 >=Int I2 [simplification]
+  rule #DoCompare(I1:Int, I2:Int) >Int 0 => I1 >Int I2 [simplification]
+```
+
+
+```k
 endmodule
 ```
 
