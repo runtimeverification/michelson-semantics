@@ -12,6 +12,7 @@ RUN    apt-get update               \
                 cargo               \
                 cmake               \
                 jq                  \
+                kninja              \
                 libcrypto++-dev     \
                 libev-dev           \
                 libhidapi-dev       \

@@ -13,18 +13,18 @@ pipeline {
     }
     stage('Build') {
       parallel {
-        stage('Tezos')  { steps { sh 'make deps-tezos'                    } }
-        stage('K')      { steps { sh 'make build-k      -j8 RELEASE=true' } }
-        stage('Compat') { steps { sh 'make build-compat -j8 RELEASE=true' } }
+        stage('Tezos')  { steps { sh 'KNINJA_USE_SYSTEM_K=true ./build deps-tezos'       } }
+        stage('K')      { steps { sh 'KNINJA_USE_SYSTEM_K=true ./build build-k      -j8' } }
+        stage('Compat') { steps { sh 'KNINJA_USE_SYSTEM_K=true ./build build-compat -j8' } }
       }
     }
     stage('Test') {
       options { timeout(time: 10, unit: 'MINUTES') }
       parallel {
-        stage('Unit')             { steps { sh 'make test-unit     -j8' } }
-        stage('Symbolic')         { steps { sh 'make test-symbolic -j2' } }
-        stage('Prove')            { steps { sh 'make test-prove    -j2' } }
-        stage('Cross-Validation') { steps { sh 'make test-cross    -j8' } }
+        stage('Unit')             { steps { sh 'KNINJA_USE_SYSTEM_K=true ./build test-unit     -j8' } }
+        stage('Symbolic')         { steps { sh 'KNINJA_USE_SYSTEM_K=true ./build test-symbolic -j2' } }
+        stage('Prove')            { steps { sh 'KNINJA_USE_SYSTEM_K=true ./build test-prove    -j2' } }
+        stage('Cross-Validation') { steps { sh 'KNINJA_USE_SYSTEM_K=true ./build test-cross    -j8' } }
       }
     }
     stage('Deploy') {
