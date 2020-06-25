@@ -104,9 +104,21 @@ def kmich(defn, mode, suffix, flags = []):
                .variable('flags', flags)             \
                .implicit([defn.target])              \
                .ext(suffix)
-    def r(input):
+    def runner(input):
         return proj.source(input).then(rule)
-    return r
+    return runner
+
+def cross_test_runner(input):
+    rule = proj.rule( 'cross'
+                    , description = 'cross: $in'
+                    , command = 'lib/tezos-client-unit-test $in > $out'
+                    ) \
+                    .implicit([ contract_expander.target, extractor.target
+                              , input_creator.target, output_compare.target
+                             ]) \
+                    .ext('cross')
+    return proj.source(input).then(rule)
+
 
 # Unit
 # ----
@@ -150,6 +162,16 @@ prove_runner = kmich(prove, 'prove', suffix = 'prove', flags = 'VERIFICATION')
 
 proj.suite('test-prove',         prove_tests_passing, prove_runner)
 proj.suite('test-prove-failing', prove_tests_failing, prove_runner, default = False)
+
+# Cross
+# -----
+
+cross_tests_all     = glob('tests/unit/*.tzt')
+cross_tests_failing = readlines('tests/failing.cross')
+cross_tests_passing = filter_out(cross_tests_all, cross_tests_failing)
+
+proj.suite('test-cross',         cross_tests_passing, cross_test_runner)
+proj.suite('test-cross-failing', cross_tests_failing, cross_test_runner, default = False)
 
 # Main
 # ====
