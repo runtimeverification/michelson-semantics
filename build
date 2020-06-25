@@ -78,7 +78,7 @@ coverage          = defn('llvm',    'coverage',          'unit-test/unit-test.md
 prove             = defn('haskell', 'prove',             'unit-test/unit-test.md',  []                                                             )
 symbolic          = defn('haskell', 'symbolic',          'symbolic/symbolic.md',    ['--emit-json']            , main_module = 'SYMBOLIC-UNIT-TEST-DRIVER', syntax_module = 'SYMBOLIC-UNIT-TEST-SYNTAX')
 
-proj.default([unit_test.target, contract_expander.target, extractor.target, input_creator.target, output_compare.target])
+proj.alias('defns', [unit_test.target, contract_expander.target, extractor.target, input_creator.target, output_compare.target])
 
 # Test
 # ====
