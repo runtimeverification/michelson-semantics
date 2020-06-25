@@ -79,13 +79,6 @@ proj.default([unit_test.target, contract_expander.target, extractor.target, inpu
 # Test
 # ====
 
-def readlines(file):
-    with open(file) as f_in:
-        lines = list(filter(None, (line.rstrip() for line in f_in)))
-    return lines
-
-def list_diff(l1, l2): return list(set(l1) - set(l2))
-
 def kmich_rule(defn, mode, suffix, flags):
     return proj.rule( 'kmich'
                     , description = 'kmich: $in'
@@ -113,32 +106,24 @@ def kmich(defn, mode, suffix, flags = []):
         return proj.source(input).then(kmich_rule(defn, mode, suffix, flags))
     return r
 
-def suite(name, inputs, runner, default = True):
-    tests = []
-    for input in inputs:
-        tests += [runner(input)]
-    alias = proj.alias(name, tests)
-    if default: proj.default([alias])
-    return alias
-
 # Unit
 # ----
 
 unit_tests_all     = glob('tests/unit/*.tzt')
 unit_tests_failing = readlines('tests/failing.unit')
-unit_tests_passing = list_diff(unit_tests_all, unit_tests_failing)
+unit_tests_passing = filter_out(unit_tests_all, unit_tests_failing)
 
 unit_test_runner = kmich(unit_test, 'interpret', suffix = 'unit')
 
-suite('test-unit',         unit_tests_passing, unit_test_runner)
-suite('test-unit-failing', unit_tests_failing, unit_test_runner, default = False)
+proj.suite('test-unit',         unit_tests_passing, unit_test_runner)
+proj.suite('test-unit-failing', unit_tests_failing, unit_test_runner, default = False)
 
 # Symbolic
 # --------
 
 symbolic_tests_all     = glob('tests/symbolic/*.tzt')
 symbolic_tests_failing = readlines('tests/failing.symbolic')
-symbolic_tests_passing = list_diff(symbolic_tests_all, symbolic_tests_failing)
+symbolic_tests_passing = filter_out(symbolic_tests_all, symbolic_tests_failing)
 
 def symbolic_test_runner(input):
     json_output = kmich(symbolic, 'run', 'symbolic-json', '--search-final --output json')(input)
@@ -149,20 +134,20 @@ def symbolic_test_runner(input):
     check = check_unit_test(exit_code, symbolic, json_output)
     return check
 
-suite('test-symbolic',         symbolic_tests_passing, symbolic_test_runner)
-suite('test-symbolic-failing', symbolic_tests_failing, symbolic_test_runner, default = False)
+proj.suite('test-symbolic',         symbolic_tests_passing, symbolic_test_runner)
+proj.suite('test-symbolic-failing', symbolic_tests_failing, symbolic_test_runner, default = False)
 
 # Prove
 # -----
 
 prove_tests_all     = glob('tests/proofs/*-spec.k')
 prove_tests_failing = readlines('tests/failing.prove')
-prove_tests_passing = list_diff(prove_tests_all, prove_tests_failing)
+prove_tests_passing = filter_out(prove_tests_all, prove_tests_failing)
 
 prove_runner = kmich(prove, 'prove', suffix = 'prove', flags = 'VERIFICATION')
 
-suite('test-prove',         prove_tests_passing, prove_runner)
-suite('test-prove-failing', prove_tests_failing, prove_runner, default = False)
+proj.suite('test-prove',         prove_tests_passing, prove_runner)
+proj.suite('test-prove-failing', prove_tests_failing, prove_runner, default = False)
 
 # Main
 # ====
