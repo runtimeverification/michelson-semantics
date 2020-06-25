@@ -52,10 +52,11 @@ llvm_flags = [ # This needs to be an absolute path because the kompile chdirs be
              , '--hook-namespaces', 'MICHELSON'
              ]
 
-def defn(backend, alias, main, flags, main_module = None):
+def defn(backend, alias, main, flags, main_module = None, syntax_module = None):
     flags = [] + flags # Don't modify parameters passed by reference
     flags += ['-I', topdir()]
     if main_module: flags += ['--main-module', main_module]
+    if syntax_module: flags += ['--syntax-module', syntax_module]
     return proj.definition( alias = alias
                           , main = main
                           , other = all_sources
@@ -66,7 +67,7 @@ def defn(backend, alias, main, flags, main_module = None):
 # Build
 # =====
 
-unit_test         = defn('llvm',    'llvm',              'unit-test/unit-test.md',  llvm_flags                                                     )
+unit_test         = defn('llvm',    'llvm',              'unit-test/unit-test.md',  llvm_flags                 , main_module = 'UNIT-TEST-DRIVER'         , syntax_module = 'UNIT-TEST-SYNTAX'         )
 contract_expander = defn('llvm',    'contract-expander', 'compat.md',               llvm_flags                 , main_module = 'CONTRACT-EXPANDER' )
 extractor         = defn('llvm',    'extractor',         'compat.md',               llvm_flags                 , main_module = 'EXTRACTOR'         )
 input_creator     = defn('llvm',    'input-creator',     'compat.md',               llvm_flags                 , main_module = 'INPUT-CREATOR'     )
@@ -75,7 +76,7 @@ output_compare    = defn('llvm',    'output-compare',    'compat.md',           
 coverage          = defn('llvm',    'coverage',          'unit-test/unit-test.md',  llvm_flags + ['--coverage']                                    )
 
 prove             = defn('haskell', 'prove',             'unit-test/unit-test.md',  []                                                             )
-symbolic          = defn('haskell', 'symbolic',          'symbolic/symbolic.md',    ['--emit-json']            , main_module = 'SYMBOLIC-UNIT-TEST')
+symbolic          = defn('haskell', 'symbolic',          'symbolic/symbolic.md',    ['--emit-json']            , main_module = 'SYMBOLIC-UNIT-TEST-DRIVER', syntax_module = 'SYMBOLIC-UNIT-TEST-SYNTAX')
 
 proj.default([unit_test.target, contract_expander.target, extractor.target, input_creator.target, output_compare.target])
 
