@@ -17,7 +17,7 @@ code { DUP ;            // #             I1 I1 I2
            LT ;         // #      (I1-I2)<0 I1 I2
        } ;
        DIP { DROP }
-       ; 
+} ;
 input { Stack_elt nat $I1 ; Stack_elt nat $I2 } ;
 output { Stack_elt nat $I3 } ;
 invariants { @I { PUSH bool True } } ;
