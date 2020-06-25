@@ -79,17 +79,6 @@ proj.default([unit_test.target, contract_expander.target, extractor.target, inpu
 # Test
 # ====
 
-def kmich_rule(defn, mode, suffix, flags):
-    return proj.rule( 'kmich'
-                    , description = 'kmich: $in'
-                    , command = './kmich $mode --backend $defn_name $in > $out $flags'
-                    )                                \
-               .variable('mode', mode)               \
-               .variable('defn_name', defn._alias)   \
-               .variable('flags', flags)             \
-               .implicit([defn.target])              \
-               .ext(suffix)
-
 def check_unit_test(exit_code, defn, input):
     rule = proj.rule( 'check-unit-test'
                     , description = 'check-unit-test: $in'
@@ -102,8 +91,17 @@ def check_unit_test(exit_code, defn, input):
     return input.then(rule)
 
 def kmich(defn, mode, suffix, flags = []):
+    rule = proj.rule( 'kmich'
+                    , description = 'kmich: $in'
+                    , command = './kmich $mode --backend $defn_name $in > $out $flags'
+                    )                                \
+               .variable('mode', mode)               \
+               .variable('defn_name', defn._alias)   \
+               .variable('flags', flags)             \
+               .implicit([defn.target])              \
+               .ext(suffix)
     def r(input):
-        return proj.source(input).then(kmich_rule(defn, mode, suffix, flags))
+        return proj.source(input).then(rule)
     return r
 
 # Unit
