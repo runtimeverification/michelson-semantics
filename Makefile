@@ -118,13 +118,13 @@ ifeq (,$(RELEASE))
 endif
 
 KOMPILE_LLVM := kompile --debug --backend llvm --md-selector "$(tangle_llvm)" \
-                $(KOMPILE_OPTS)                                                   \
+                $(KOMPILE_OPTS)                                               \
                 $(addprefix -ccopt ,$(LLVM_KOMPILE_OPTS))
 
 HASKELL_KOMPILE_OPTS +=
 
 KOMPILE_HASKELL := kompile --debug --backend haskell --md-selector "$(tangle_haskell)" \
-                   $(KOMPILE_OPTS)                                                      \
+                   $(KOMPILE_OPTS)                                                     \
                    $(HASKELL_KOMPILE_OPTS)
 
 defn:        defn-k defn-compat
