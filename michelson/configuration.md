@@ -67,6 +67,14 @@ TODO: Move this to unit-test only configuration:
                   <expected> .K </expected>
 ```
 
+Pre- and post-conditions:
+
+```k
+                <pre> {}:Blocks </pre>
+                <post> {}:Blocks </post>
+```
+
+
 The `<inputstack>` cell contains the initial input stack for unit tests. Storing
 this separately from the `<stack>` cell lets us rewrite the stack as much as we
 want during program evaluation without having to worry about restoring it later.
@@ -211,6 +219,22 @@ krun will match the final contents of this cell.
 
 ```k
                   <returncode exit=""> 1 </returncode>
+```
+
+The following cell is a debugging aid, indicating whether a `#Assume` statement
+failed.
+
+```k
+                  <assumeFailed> false </assumeFailed>
+```
+
+This cell lists the bindings between symbolic variables and their values.
+
+```k
+                  <symbols> .Map </symbols>
+```
+
+```k
                 </michelsonTop>
 endmodule
 ```

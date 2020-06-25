@@ -91,15 +91,13 @@ SOURCE_FILES       := compat                    \
                       michelson/syntax          \
                       michelson/types           \
                       michelson-unparser        \
-                      symbolic/configuration    \
-                      symbolic/symbolic         \
-                      symbolic/syntax           \
                       unit-test/unit-test       \
                       unit-test/syntax
 EXTRA_SOURCE_FILES :=
 ALL_FILES          := $(patsubst %, %.md, $(SOURCE_FILES) $(EXTRA_SOURCE_FILES))
 
-tangle_selector := k
+tangle_haskell := k | symbolic
+tangle_llvm    := k | concrete
 
 HOOK_NAMESPACES := TIME MICHELSON
 
@@ -119,14 +117,14 @@ ifeq (,$(RELEASE))
     LLVM_KOMPILE_OPTS += -g
 endif
 
-KOMPILE_LLVM := kompile --debug --backend llvm --md-selector "$(tangle_selector)" \
-                $(KOMPILE_OPTS)                                                   \
+KOMPILE_LLVM := kompile --debug --backend llvm --md-selector "$(tangle_llvm)" \
+                $(KOMPILE_OPTS)                                               \
                 $(addprefix -ccopt ,$(LLVM_KOMPILE_OPTS))
 
 HASKELL_KOMPILE_OPTS +=
 
-KOMPILE_HASKELL := kompile --debug --backend haskell --md-selector "$(tangle_selector)" \
-                   $(KOMPILE_OPTS)                                                      \
+KOMPILE_HASKELL := kompile --debug --backend haskell --md-selector "$(tangle_haskell)" \
+                   $(KOMPILE_OPTS)                                                     \
                    $(HASKELL_KOMPILE_OPTS)
 
 defn:        defn-k defn-compat
@@ -177,8 +175,8 @@ $(prove_kompiled): $(prove_files)
 
 symbolic_dir           := $(DEFN_DIR)/symbolic
 symbolic_files         := $(ALL_FILES)
-symbolic_main_file     := symbolic/symbolic
-symbolic_main_module   := SYMBOLIC-UNIT-TEST-DRIVER
+symbolic_main_file     := unit-test/unit-test
+symbolic_main_module   := UNIT-TEST-DRIVER
 symbolic_syntax_module := SYMBOLIC-UNIT-TEST-SYNTAX
 symbolic_kompiled      := $(symbolic_dir)/$(notdir $(symbolic_main_file))-kompiled/definition.kore
 

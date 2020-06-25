@@ -72,5 +72,15 @@ All blockchain operations are data.  This line is necessary so that BlockchainOp
 
 ```k
   syntax Data ::= BlockchainOperation
+```
+
+For representing pre- and post-conditions, we use this syntax:
+
+```k
+  syntax BlockList ::= Block | Block ";" BlockList
+  syntax Blocks ::= EmptyBlock | "{" BlockList "}"
+```
+
+```k
 endmodule
 ```

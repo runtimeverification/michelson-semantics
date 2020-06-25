@@ -287,7 +287,7 @@ module MICHELSON-TYPES
   rule #TypeInstruction(C, (EMPTY_MAP _ KT VT) #as I, Ts) => #TI(I, Ts -> map .AnnotationList KT VT ; Ts)
   rule #TypeInstruction(C, (EMPTY_BIG_MAP _ KT VT) #as I, Ts) => #TI(I, Ts -> big_map .AnnotationList KT VT ; Ts)
 
-  rule #TypeInstruction(C, I, T) => #TI(I, #InvalidTypeForInstruction(I, T)) [owise]
+ // rule #TypeInstruction(C, I, T) => #TI(I, #InvalidTypeForInstruction(I, T)) [owise]
 
   syntax TypeError ::= #InvalidPostIterationStack(Instruction, TypeSeq, TypeSeq)
 
