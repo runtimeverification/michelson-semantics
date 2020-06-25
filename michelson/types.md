@@ -32,24 +32,23 @@ Type Check Constructors
                      | #IncompatibleTypesForBranch(Instruction, TypeInput, TypeInput)
                      | #UnexpectedMacro(Macro, TypeSeq)
                      | "#UnexpectedFailureType"
-
-  syntax TypeError ::= "#InternalError"
-  syntax TypeError ::= #MistypedData(Data, Type)
-  syntax TypeError ::= #MistypedInnerData(List)
-  syntax TypeError ::= #IllTypedLambda(TypedInstruction, Type, Type)
-  syntax TypeError ::= #SequenceError(TypeInput)
-  syntax TypeError ::= #CreateContractError(TypedInstruction, TypeSeq)
-  syntax TypeError ::= #DIPError(TypedInstruction, TypeSeq)
-  syntax TypeError ::= #InvalidDIP(Int)
-  syntax TypeError ::= #LambdaError(Instruction, TypedInstruction, TypeSeq)
-  syntax TypeError ::= #IllTypedLambdaInst(TypedInstruction, Type, Type, Bool, Bool)
-  syntax TypeError ::= #InvalidPostIterationStack(Instruction, TypeSeq, TypeSeq)
-  syntax TypeError ::= #IllegalBranchInstruction(Instruction) // Internal error.
-  syntax TypeError ::= #MultipleTypeErrors(TypeError, TypeError)
-  syntax TypeError ::= #InvalidPush(Instruction, TypeError)
-  syntax TypeError ::= #InvalidDropCount(TypeSeq, Int)
-  syntax TypeError ::= #InvalidDigCount(TypeSeq, Int)
-  syntax TypeError ::= #InvalidDugCount(TypeSeq, Int)
+                     | "#InternalError"
+                     | #MistypedData(Data, Type)
+                     | #MistypedInnerData(List)
+                     | #IllTypedLambda(TypedInstruction, Type, Type)
+                     | #SequenceError(TypeInput)
+                     | #CreateContractError(TypedInstruction, TypeSeq)
+                     | #DIPError(TypedInstruction, TypeSeq)
+                     | #InvalidDIP(Int)
+                     | #LambdaError(Instruction, TypedInstruction, TypeSeq)
+                     | #IllTypedLambdaInst(TypedInstruction, Type, Type, Bool, Bool)
+                     | #InvalidPostIterationStack(Instruction, TypeSeq, TypeSeq)
+                     | #IllegalBranchInstruction(Instruction) // Internal error.
+                     | #MultipleTypeErrors(TypeError, TypeError)
+                     | #InvalidPush(Instruction, TypeError)
+                     | #InvalidDropCount(TypeSeq, Int)
+                     | #InvalidDigCount(TypeSeq, Int)
+                     | #InvalidDugCount(TypeSeq, Int)
 
   syntax Instruction ::= #InvalidBranchInstruction(Instruction)
 
