@@ -443,7 +443,7 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
 	   <paramtype> PT </paramtype>
        <stack> D => .K ... </stack>
        <symbols> M => M[ S <- #TypedSymbol(T, D) ] </symbols>
-    requires isTypedData(#TypeData(PT,D,T)) 
+    requires isTypedData(#TypeData(PT,D,T))
 
   rule <k> #BindSingle(Stack_elt T ED) => .K ... </k>
 	   <knownaddrs> KnownAddrs </knownaddrs>

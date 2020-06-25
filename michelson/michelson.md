@@ -39,8 +39,7 @@ Loading groups into the K configuration
 ---------------------------------------
 
 Below are the rules for loading specific groups.
-Below are Map   rules for loading specific groups.
- 
+
 Loading a `now` group simply involves setting the contents of the now timestamp
 to the contained integer. Similarly simple logic applies to sender, source,
 chain\_id and self.
@@ -143,7 +142,7 @@ From Micheline to K-Michelson Internal Representation
   syntax KItem ::= "#ConvertBigMapsToNative"
   rule <k> #ConvertBigMapsToNative => .K ... </k>
        <knownaddrs> KnownAddrs </knownaddrs>
-       <bigmaps> BigMaps => #ConvertBigMapsToNative(BigMaps) </bigmaps> 
+       <bigmaps> BigMaps => #ConvertBigMapsToNative(BigMaps) </bigmaps>
 
   syntax Map ::= "#ConvertBigMapsToNative" "(" Map ")" [function]
 
