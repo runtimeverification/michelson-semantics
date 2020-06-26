@@ -314,8 +314,8 @@ of Michelson code. We list these configuration cells here:
    verification of Michelson expressions with symbolic input and output values.
 
 ```k
-                <pre> {}:Blocks </pre>
-                <post> {}:Blocks </post>
+                  <pre> {}:Blocks </pre>
+                  <post> {}:Blocks </post>
 ```
 
 4. This cell lists the bindings between symbolic variables and their values. It
