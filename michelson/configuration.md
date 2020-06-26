@@ -89,6 +89,12 @@ module MICHELSON-CONFIG
   imports DOMAINS
 ```
 
+We first define a special directive `#Init` which we will describe later.
+
+```k
+syntax KItem ::= "#Init"
+```
+
 Here we declare our K-Michelson state configuration. We separate it into type
 (1)-(3) configuration cells as listed above. By convention, we nest all state
 cells inside a topmost cell, which we call `<michelsonTop>`.
@@ -258,7 +264,6 @@ state. We list the configuration cells storing this kind of state below.
    to perform different pre-processing tasks.
 
 ```k
-                  syntax KItem ::= "#Init"
                   <k> $PGM:Pgm ~> #Init </k>
 ```
 
@@ -337,8 +342,6 @@ of Michelson code. We list these configuration cells here:
 ```k
                   <assumeFailed> false </assumeFailed>
 ```
-
-### Configuration Finalization
 
 Here we finalize the configuration declaration by closing the topmost
 configuration cell.
