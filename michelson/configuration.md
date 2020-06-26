@@ -346,9 +346,9 @@ of Michelson code. We list these configuration cells here:
 Here we finalize the configuration declaration by closing the topmost
 configuration cell.
 
-    ```k
+```k
                 </michelsonTop>
-    ```
+```
 
 ```k
 endmodule
