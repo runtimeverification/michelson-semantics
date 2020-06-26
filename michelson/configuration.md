@@ -113,42 +113,42 @@ all _write-once_, i.e. after initialization, they are never changed.
    to know the parameter value that was passed in so we can properly initialize
    the Michelson input stack.
 
-```k
+    ```k
                   <paramtype> #NotSet </paramtype>
                   <paramvalue> #NoData </paramvalue>
-```
+    ```
 
 2. We also need to store the storage type of the contract containing the
    Michelson code to be executed as well as the contracts current storage
    value.
 
-```k
+    ```k
                   <storagetype> #NotSet </storagetype>
                   <storagevalue> #NoData </storagevalue>
-```
+    ```
 
 3. Each contract has a remaining balance of mutez. The `BALANCE` instruction
    pushes this value on the stack.
 
-```k
+    ```k
                   <mybalance> #Mutez(0) </mybalance>
-```
+    ```
 
 4. Each contract is given a certain quantity of mutez when it is first
    executed.  The `AMOUNT` instruction pushes this value to the stack.
 
-```k
+    ```k
                   <myamount> #Mutez(0) </myamount>
-```
+    ```
 
 5. Each Michelson block has an associated creation timestamp. Blocks also
    contain a list of transactions, including contract executions. Each
    Michelson contract execution can access the timestamp of the block which
    invoked it.  The `NOW` instruction pushes this value on the stack.
 
-```k
+    ```k
                   <mynow> #Timestamp(0) </mynow>
-```
+    ```
 
 6. Each Michelson contract has an address. The `SELF` instruction combines this
    value with the `<paramtype>` cell to produce a `contract` value that is
@@ -157,9 +157,9 @@ all _write-once_, i.e. after initialization, they are never changed.
    `SELF_ADDRESS` instruction that would allow this value to be accessed
    directly.
 
-```k
+    ```k
                   <myaddr> #Address("InvalidMyAddr") </myaddr>
-```
+    ```
 
 7. At any given moment, the Tezos current block has a certain number of
    accounts with various parameter types. This cell stores the addresses and
@@ -170,34 +170,34 @@ all _write-once_, i.e. after initialization, they are never changed.
    required to be in this map. If they are not, then looking them up with the
    `CONTRACT` instruction will return `None`.
 
-```k
+    ```k
                   <knownaddrs> .Map </knownaddrs>
-```
+    ```
 
 8. Each contract has a source contract (the one which initiated the entire
    transaction and paid its fees). The`SOURCE` instruction pushes this address
    on the stack.
 
-```k
+    ```k
                   <sourceaddr> #Address("InvalidSourceAddr") </sourceaddr>
-```
+    ```
 
 9. Each contract has a sender contract (the one which transferred tokens to
    this one and directly caused its execution). The `SENDER` instruction pushes
    this value on the stack.
 
-```k
+    ```k
                   <senderaddr> #Address("InvalidSenderAddr") </senderaddr>
-```
+    ```
 
 10. Each Tezos network (the global main network, global testing network, as
     well as any local sandboxed networks for development) have their own
     blockchain. A chain identifier identifies this execution context. The
     `CHAIN_ID` instruction pushes the current chain identifier on the stack.
 
-```k
+    ```k
                   <mychainid> #ChainId(0x) </mychainid>
-```
+    ```
 
 11. Each contract account contains a nonce which will be attached to any new
     `operation` that this contract forges such that no two `operation`s will
@@ -205,9 +205,9 @@ all _write-once_, i.e. after initialization, they are never changed.
     that was copied via `DUP`). The operation nonce is not directly observable
     by Michelson.
 
-```k
+    ```k
                   <nonce> #Nonce(0) </nonce>
-```
+    ```
 
 12. Tezos provides two kinds of map-like data structures, `map` and `big_map`.
     As maps, they are functionally equivalent --- the difference is that
@@ -226,18 +226,18 @@ all _write-once_, i.e. after initialization, they are never changed.
     N.B. The semantics behavior is undefined if a `big_map` index occurs in a
     Michelson code expression that is not set in this cell.
 
-```k
+    ```k
                   <bigmaps> .Map </bigmaps>
-```
+    ```
 
 13. The `<script>` cell stores the code of the smart contract to be executed.
     However, since K-Michelson is a general semantics, the script cell may
     include any valid Michelson expression, including expressions that
     represent fragments of contracts and which are not complete contracts.
 
-```k
+    ```k
                   <script> #NoData </script>
-```
+    ```
 
 ### Michelson Runtime State
 
@@ -263,9 +263,9 @@ state. We list the configuration cells storing this kind of state below.
    form: `rule #Init => ...`. This is needed because different drivers may need
    to perform different pre-processing tasks.
 
-```k
+    ```k
                   <k> $PGM:Pgm ~> #Init </k>
-```
+    ```
 
 
 2. The `<stack>` cell contains the data on the stack of the current Michelson
@@ -281,10 +281,10 @@ state. We list the configuration cells storing this kind of state below.
    some type information, we have an additional cell to capture type
    information precisely.
 
-```k
+    ```k
                   <stack> .K </stack>
                   <stacktypes> .TypeSeq </stacktypes>
-```
+    ```
 
 ### Additional Test State
 
@@ -298,32 +298,32 @@ of Michelson code. We list these configuration cells here:
    information without worry that it will be clobbered during code execution.
    It is useful for test execution, type-checking, and debugging purposes.
 
-```k
+    ```k
                   <inputstack> .K </inputstack>
-```
+    ```
 
 2. The `<expected>` cell contains the expected output stack for the given
    Michelson execution as prescribed by the Michelson unit test format. It is
    used for test validation, type-checking, and debugging purposes.
 
-```k
+    ```k
                   <expected> .K </expected>
-```
+    ```
 
 3. Theese cells contain pre- and post-conditions, which are useful when doing
    verification of Michelson expressions with symbolic input and output values.
 
-```k
+    ```k
                   <pre> {}:Blocks </pre>
                   <post> {}:Blocks </post>
-```
+    ```
 
 4. This cell lists the bindings between symbolic variables and their values. It
    is only used when symbolically executing/verifying Michelson scripts.
 
-```k
+    ```k
                   <symbols> .Map </symbols>
-```
+    ```
 
 5. This cell stores the return code of the K-Michelson interpreter. It tracks
    whether the Michelson code in question terminated properly as opposed to
@@ -331,22 +331,25 @@ of Michelson code. We list these configuration cells here:
    semantics. It is initially set to `1` and changes to `0` when the script
    executes successfully.
 
-```k
+    ```k
                   <returncode exit=""> 1 </returncode>
-```
+    ```
 
 
 6. The following cell is a debugging aid, indicating whether an `#Assume`
    statement failed. It is primarily used during Michelson code verification.
 
-```k
+    ```k
                   <assumeFailed> false </assumeFailed>
-```
+    ```
 
 Here we finalize the configuration declaration by closing the topmost
 configuration cell.
 
-```k
+    ```k
                 </michelsonTop>
+    ```
+
+```k
 endmodule
 ```
