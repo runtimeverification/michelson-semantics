@@ -206,11 +206,14 @@ Project Structure
 
 ### Michelson Semantics Definition
 
-The [michelson/](./michelson/) directory contains files related to the
-Michelson language, contracts and input data
+The `michelson/` directory contains files related to the Michelson language,
+contracts, and input data
 
 - [michelson/syntax.md](./michelson/syntax.md) contains the specification for
   the syntax of a Michelson contract and the other input data.
+- [michelson/internal-syntax.md](./michelson/internal-syntax.md) contains the
+  additional syntax used by the core Michelson semantics as well as the unit
+  test semantics.
 - [michelson/configuration.md](./michelson/configuration.md) describes the
   template state of a Michelson contract.
 - [michelson/common.md](./michelson/common.md) specifies most of the
@@ -219,11 +222,12 @@ Michelson language, contracts and input data
   the Michelson language as rewrite rules over the syntax, configuration and
   datatypes defined in the previous files.
 
-[unit-test/unit-test.md](./unit-test/unit-test.md) and
-[unit-test/syntax.md](./unit-test/syntax.md) extend the semantics and syntax of
-the Michelson language to include unit testing facilities, such as the ability
-to specify an initial and final stack, and to check that the final stack
-matches the expected result.
+[unit-test/syntax.md](./unit-test/syntax.md) and
+[unit-test/unit-test.md](./unit-test/unit-test.md) extend the syntax and
+semantics of the Michelson language to include unit testing facilities, such as
+the ability to specify an initial and final stack, to check that the final
+stack matches the expected result, to make assertions about the Michelson
+code for verification purposes, and to represent symbolic values in tests.
 
 [compat.md](./compat.md) is a compatability layer between KMichelson and the
 Tezon Reference client used for doing cross-validation between the two.
