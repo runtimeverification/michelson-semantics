@@ -433,18 +433,17 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
 `invariants` group
 ---------------------
 
-`LOOP`s may be annotated with invariants.
-
 ```k
-  syntax KItem ::= #LoadInvariants(Invariants) | #LoadInvariant(Invariant)
   rule <k> invariants { } => .K ... </k>
   rule <k> invariants { I1 ; Is }
-        => invariants( { I1 } ) ~> #LoadInvariants({ Is })
+        => invariants( { I1 } ) ~> invariants ({ Is })
            ...
        </k>
   rule <k> invariants ({ Annotation:VariableAnnotation Blocks:Blocks }) => . ... </k>
        <invs> .Map => (Annotation |-> Blocks)  ... </invs>
 ```
+
+Annotated in`LOOP`s may be annotated with invariants.
 
 ```symbolic
   syntax Instruction ::= CUTPOINT( id: Int, localStackDepth: Int )
