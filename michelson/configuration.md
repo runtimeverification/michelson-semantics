@@ -310,22 +310,31 @@ of Michelson code. We list these configuration cells here:
                   <expected> .K </expected>
     ```
 
-3. Theese cells contain pre- and post-conditions, which are useful when doing
-   verification of Michelson expressions with symbolic input and output values.
+3. These cells contain pre- and post-conditions, as well as loop invariants.
+   These are useful when doing verification of Michelson expressions with
+   symbolic input and output values.
 
     ```k
                   <pre> {}:Blocks </pre>
                   <post> {}:Blocks </post>
+                  <invs> .Map </invs>
     ```
 
-4. This cell lists the bindings between symbolic variables and their values. It
+4. In the symbolic semantics, the cutpoint cell contains a list of cutpoints
+   that have been visited.
+
+    ```symbolic
+                  <cutpoints> .Set </cutpoints>
+    ```
+
+5. This cell lists the bindings between symbolic variables and their values. It
    is only used when symbolically executing/verifying Michelson scripts.
 
     ```k
                   <symbols> .Map </symbols>
     ```
 
-5. This cell stores the return code of the K-Michelson interpreter. It tracks
+6. This cell stores the return code of the K-Michelson interpreter. It tracks
    whether the Michelson code in question terminated properly as opposed to
    getting stuck due to a type-error, ill-formed input, or a bug in the
    semantics. It is initially set to `1` and changes to `0` when the script
@@ -335,8 +344,7 @@ of Michelson code. We list these configuration cells here:
                   <returncode exit=""> 1 </returncode>
     ```
 
-
-6. The following cell is a debugging aid, indicating whether an `#Assume`
+7. The following cell is a debugging aid, indicating whether an `#Assume`
    statement failed. It is primarily used during Michelson code verification.
 
     ```k

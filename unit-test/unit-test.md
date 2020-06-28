@@ -331,12 +331,36 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
 --------------------------------
 
 ```k
-  syntax InternalInstruction ::= "#AssumeTrue"
-  rule <k> #AssumeTrue => . ... </k>
-       <stack> true => . </stack> [transition]
-  rule <k> #AssumeTrue ~> _:K => . </k>
-       <stack> false => . </stack>
-       <assumeFailed> _ => true </assumeFailed> [transition]
+  syntax Instruction ::= "ASSERT" Blocks
+                       | "ASSUME" Blocks
+```
+
+```k
+  rule <k> ASSERT { }:EmptyBlock => .K ... </k>
+  rule <k> ASSERT { { } } => .K ... </k>
+  rule <k> ASSERT { B } => ASSERT { B ; { } } ... </k> requires B =/=K { }
+  rule <k> ASSERT { B; Bs }
+        => B ~> #AssertTrue ~> ASSERT { Bs } ~> #RestoreStack(Stack)
+           ...
+       </k>
+       <stack> Stack </stack>
+```
+
+```k
+  rule <k> ASSUME { }:EmptyBlock => .K ... </k>
+  rule <k> ASSUME { { } } => .K ... </k>
+  rule <k> ASSUME { B } => ASSUME { B ; { } } ... </k> requires B =/=K { }
+  rule <k> ASSUME { B; Bs }
+        => B ~> #AssumeTrue ~> ASSUME { Bs } ~> #RestoreStack(Stack)
+           ...
+       </k>
+       <stack> Stack </stack>
+```
+
+```k
+  syntax KItem ::= #RestoreStack(K)
+  rule <k> #RestoreStack(Stack) => .K ... </k>
+       <stack> _ => Stack </stack>
 ```
 
 ```k
@@ -346,10 +370,23 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
 ```
 
 ```k
-  syntax InternalInstruction ::= #Assert(Bool)
+  syntax KItem ::= "#AssumeTrue"
+  rule <k> #AssumeTrue => #Assume(B) ... </k>
+       <stack> B:Bool => . </stack>
+```
+
+```k
+  syntax KItem ::= #Assert(Bool)
   rule <k> #Assert(true)  => .             ... </k>
   rule <k> #Assert(false) => #AssertFailed ... </k>
   syntax KItem ::= "#AssertFailed" [klabel(#AssertFailed), symbol]
+```
+
+```k
+  syntax KItem ::= #Assume(Bool)
+  rule <k> #Assume(true)  => .             ... </k>
+  rule <k> #Assume(false) ~> _:K => . </k>
+       <assumeFailed> _ => true </assumeFailed> [transition]
 ```
 
 `precondition` Groups
@@ -362,42 +399,78 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
 
 ```k
   syntax KItem ::= "#ExecutePreConditions"
-                 | "#ExecutePreConditions" "(" Block ")"
-  rule <k> #ExecutePreConditions(B:Block)
-        => B ~> #AssumeTrue ~> #ExecutePreConditions
-           ...
-       </k>
-       <stack> Stack => .K </stack>
-
-  rule <k> #ExecutePreConditions => #ExecutePreConditions(B) ... </k>
-       <pre> { B ; Bs } => { Bs } </pre>
-  rule <k> #ExecutePreConditions => #ExecutePreConditions(B) ... </k>
-       <pre> { B } => { }  </pre>
-  rule <k> #ExecutePreConditions => .K ... </k>
-       <pre> { } </pre>
+  rule <k> #ExecutePreConditions => ASSUME Preconditions ... </k>
+       <pre> Preconditions </pre>
 ```
 
 `postcondition` group
 ---------------------
 
 ```k
-  rule <k> postcondition B => . ... </k>
-       <post> { } => B </post>
+  rule <k> postcondition Bs => .K ... </k>
+       <post>  { } => Bs </post>
+```
 
+```k
   syntax KItem ::= "#ExecutePostConditions"
-                 | #ExecutePostConditions(Block)
-  rule <k> #ExecutePostConditions(B)
-        => B ~> #AssertTrue ~>  #ExecutePostConditions
+  rule <k> #ExecutePostConditions => ASSERT Postconditions ... </k>
+       <post> Postconditions </post>
+```
+
+`invariants` group
+---------------------
+
+```k
+  rule <k> invariants { } => .K ... </k>
+  rule <k> invariants { I1 ; Is }
+        => invariants( { I1 } ) ~> invariants ({ Is })
            ...
        </k>
-       <stack> Stack => .K </stack>
+  rule <k> invariants ({ Annotation:VariableAnnotation Blocks:Blocks }) => . ... </k>
+       <invs> .Map => (Annotation |-> Blocks)  ... </invs>
+```
 
-  rule <k> #ExecutePostConditions => #ExecutePostConditions(B) ... </k>
-       <post> { B ; Bs } => { Bs } </post>
-  rule <k> #ExecutePostConditions => #ExecutePostConditions(B) ... </k>
-       <post> { B } => { }  </post>
-  rule <k> #ExecutePostConditions => .K ... </k>
-       <post> { } </post>
+Annotated in`LOOP`s may be annotated with invariants.
+
+```symbolic
+  syntax Instruction ::= CUTPOINT( id: Int, localStackDepth: Int )
+  rule <k> LOOP A .AnnotationList { #Exec ( B ) }
+        => LOOP .AnnotationList {
+             ASSERT Invariant  ;  // Subsumption check
+             CUTPOINT(!Int, #GetLocalStackDepth(B)) ;
+             ASSUME Invariant  ;
+             { #Exec ( B ) }
+           }
+           ...
+       </k>
+       <invs> A:VariableAnnotation |-> Invariant:Blocks ... </invs>
+
+  rule <k> CUTPOINT(I, LocalStackDepth) => #GeneralizeStack(LocalStackDepth) ... </k>
+       <cutpoints> (.Set => SetItem(I)) VisitedCutpoints </cutpoints>
+    requires notBool I in VisitedCutpoints
+  rule <k> CUTPOINT(I, _) => #Assume(false) ... </k>
+       <cutpoints> VisitedCutpoints </cutpoints>
+    requires I in VisitedCutpoints
+
+  syntax KItem ::= #GeneralizeStack(Int)
+  rule <k> #GeneralizeStack(I) => #GeneralizeStackAux(I, #ReverseKSeq(Ds), #ReverseTypeSeq(Ts), .K, .TypeSeq) ... </k>
+       <stack> Ds => . </stack>
+       <stacktypes> Ts => .TypeSeq </stacktypes>
+
+  syntax KItem ::= #GeneralizeStackAux(Int, K, TypeSeq, K, TypeSeq)
+  rule <k> #GeneralizeStackAux(I, V:KItem ~> Vs1, T ; Ts1, Vs2, Ts2) => #GeneralizeStackAux(I -Int 1, Vs1, Ts1, V ~> Vs2, T ; Ts2) ... </k> requires I >Int 0
+  rule <k> #GeneralizeStackAux(0, _:Int ~> Vs1, int A ; Ts1, Vs2, Ts2) => #GeneralizeStackAux(0, Vs1, Ts1, ?_:Int ~> Vs2, int A ; Ts2) ... </k>
+  rule <k> #GeneralizeStackAux(0, _:Int ~> Vs1, nat A ; Ts1, Vs2, Ts2) => #GeneralizeStackAux(0, Vs1, Ts1, ?V:Int ~> Vs2, nat A ; Ts2) ... </k> requires ?V:Int >=Int 0
+  rule <k> #GeneralizeStackAux(0, _:String ~> Vs1, string A ; Ts1, Vs2, Ts2) => #GeneralizeStackAux(0, Vs1, Ts1, ?V:String ~> Vs2, string A ; Ts2) ... </k>
+  rule <k> #GeneralizeStackAux(0, .K, _, Vs2, Ts2) => . ... </k>
+       <stack> _ => Vs2 </stack>
+       <stacktypes> _ => Ts2 </stacktypes>
+
+  syntax K ::= #ReverseKSeq(K) [function, functional]
+  syntax K ::= #ReverseKSeqAux(K, K) [function, functional]
+  rule #ReverseKSeq(V) => #ReverseKSeqAux(V, .K)
+  rule #ReverseKSeqAux(V:KItem ~> Vs1, Vs2) => #ReverseKSeqAux(Vs1, V ~> Vs2)
+  rule #ReverseKSeqAux(.K, Vs) => Vs
 ```
 
 `#CheckOutput`
