@@ -227,6 +227,9 @@ arguments are:
        <stack> D ~> Rs => ( Failed D ) </stack>
 ```
 
+Conditionals
+------------
+
 The control flow instruction's implementations in K should look extremely
 similar to their formal description in the [Michelson
 documentation](https://tezos.gitlab.io/whitedoc/michelson.html#control-structures).
@@ -239,16 +242,24 @@ reasons, was a major design goal of the semantics.
 
   rule <k> IF A BT BF => #HandleAnnotations(A) ~> BF ... </k>
        <stack> false => . ... </stack>
+```
 
-  rule <k> LOOP A B => #HandleAnnotations(A) ~> B ~> LOOP .AnnotationList B ... </k>
+Loops
+-----
+
+```k
+  rule <k> LOOP .AnnotationList B
+        => B ~> LOOP .AnnotationList B
+           ...
+       </k>
        <stack> true => . ... </stack>
-
-  rule <k> LOOP A B => #HandleAnnotations(A) ... </k>
+  rule <k> LOOP .AnnotationList B => .K ... </k>
        <stack> false => . ... </stack>
+```
 
+```k
   rule <k> LOOP_LEFT A B => #HandleAnnotations(A) ~> B ~> LOOP_LEFT .AnnotationList B ... </k>
        <stack> Left D => D ... </stack>
-
   rule <k> LOOP_LEFT A B => #HandleAnnotations(A) ... </k>
        <stack> Right D => D ... </stack>
 ```
