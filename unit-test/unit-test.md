@@ -426,7 +426,7 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
 
 ```k
   syntax KItem ::= "#ExecutePostConditions"
-  rule <k> #ExecutePostConditions => ASSUME Postconditions ... </k>
+  rule <k> #ExecutePostConditions => ASSERT Postconditions ... </k>
        <post> Postconditions </post>
 ```
 
