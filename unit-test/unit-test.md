@@ -447,22 +447,22 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
 ```
 
 ```symbolic
-  syntax Instruction ::= "CUTPOINT" "(" Int ")"
-  rule <k> LOOP A .AnnotationList B
+  syntax Instruction ::= CUTPOINT( id: Int, localStackDepth: Int )
+  rule <k> LOOP A .AnnotationList { #Exec ( B ) }
         => LOOP .AnnotationList {
              ASSERT Invariant  ;  // Subsumption check
-             CUTPOINT(!Int) ;
+             CUTPOINT(!Int, #GetLocalStackDepth(B)) ;
              ASSUME Invariant  ;
-             B
+             { #Exec ( B ) }
            }
            ...
        </k>
        <invs> A:VariableAnnotation |-> Invariant:Blocks ... </invs>
 
-  rule <k> CUTPOINT(I) => #GeneralizeStack(2) ... </k>
+  rule <k> CUTPOINT(I, LocalStackDepth) => #GeneralizeStack(LocalStackDepth) ... </k>
        <cutpoints> (.Set => SetItem(I)) VisitedCutpoints </cutpoints>
     requires notBool I in VisitedCutpoints
-  rule <k> CUTPOINT(I) => #Assume(false) ... </k>
+  rule <k> CUTPOINT(I, _) => #Assume(false) ... </k>
        <cutpoints> VisitedCutpoints </cutpoints>
     requires I in VisitedCutpoints
 
@@ -485,6 +485,103 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
   rule #ReverseKSeq(V) => #ReverseKSeqAux(V, .K)
   rule #ReverseKSeqAux(V:KItem ~> Vs1, Vs2) => #ReverseKSeqAux(Vs1, V ~> Vs2)
   rule #ReverseKSeqAux(.K, Vs) => Vs
+```
+
+#### `#GetLocalStackDepth`
+
+```k
+  syntax Int ::= #GetLocalStackDepth(TypedInstructionList) [function]
+// ------------------------------------------------------------------
+  rule #GetLocalStackDepth(T ; Ts) => minInt(#GetLocalStackDepth(T), #GetLocalStackDepth(Ts))
+  rule #GetLocalStackDepth(#TI({ #Exec(Ts) }, _)) => #GetLocalStackDepth(Ts)
+  rule #GetLocalStackDepth(#TI({ }, Ts1 -> Ts1)) => #LengthTypeSeq(Ts1)
+  rule #GetLocalStackDepth(#TI(DROP _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetLocalStackDepth(#TI(DROP _ N, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int N
+  rule #GetLocalStackDepth(#TI(DIG _ N, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int N
+  rule #GetLocalStackDepth(#TI(DUG _ N, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int N
+  rule #GetLocalStackDepth(#TI(DUP _, Ts1 -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetLocalStackDepth(#TI(SWAP _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 2
+  rule #GetLocalStackDepth(#TI(PUSH _ _ _, Ts1 -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetLocalStackDepth(#TI(SOME _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetLocalStackDepth(#TI(NONE _ _, Ts1 -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetLocalStackDepth(#TI(UNIT _, Ts1 -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetLocalStackDepth(#TI(IF_NONE _ { #Exec(B1) } { #Exec(B2) }, Ts1 -> _)) => minInt(#LengthTypeSeq(Ts1) -Int 1, minInt(#GetLocalStackDepth(B1), #GetLocalStackDepth(B2)))
+  rule #GetLocalStackDepth(#TI(PAIR _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 2
+  rule #GetLocalStackDepth(#TI(UNPAIR _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetLocalStackDepth(#TI(CAR _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetLocalStackDepth(#TI(CDR _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetLocalStackDepth(#TI(LEFT _ _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetLocalStackDepth(#TI(RIGHT _ _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetLocalStackDepth(#TI(IF_LEFT _ { #Exec(B1) } { #Exec(B2) }, Ts1 -> _)) => minInt(#LengthTypeSeq(Ts1) -Int 1, minInt(#GetLocalStackDepth(B1), #GetLocalStackDepth(B2)))
+  rule #GetLocalStackDepth(#TI(IF_RIGHT _ { #Exec(B1) } { #Exec(B2) }, Ts1 -> _)) => minInt(#LengthTypeSeq(Ts1) -Int 1, minInt(#GetLocalStackDepth(B1), #GetLocalStackDepth(B2)))
+  rule #GetLocalStackDepth(#TI(NIL _ _, Ts1 -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetLocalStackDepth(#TI(CONS _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 2
+  rule #GetLocalStackDepth(#TI(IF_CONS _ { #Exec(B1) } { #Exec(B2) }, Ts1 -> _)) => minInt(#LengthTypeSeq(Ts1) -Int 1, minInt(#GetLocalStackDepth(B1), #GetLocalStackDepth(B2)))
+  rule #GetLocalStackDepth(#TI(SIZE _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetLocalStackDepth(#TI(EMPTY_SET _ _, Ts1 -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetLocalStackDepth(#TI(EMPTY_MAP _ _ _, Ts1 -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetLocalStackDepth(#TI(EMPTY_BIG_MAP _ _ _, Ts1 -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetLocalStackDepth(#TI(MAP _ { #Exec(B1) }, Ts1 -> _)) => minInt(#LengthTypeSeq(Ts1) -Int 1, #GetLocalStackDepth(B1))
+  rule #GetLocalStackDepth(#TI(ITER _ { #Exec(B1) }, Ts1 -> _)) => minInt(#LengthTypeSeq(Ts1) -Int 1, #GetLocalStackDepth(B1))
+  rule #GetLocalStackDepth(#TI(MEM _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 2
+  rule #GetLocalStackDepth(#TI(GET _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 2
+  rule #GetLocalStackDepth(#TI(UPDATE _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 3
+  rule #GetLocalStackDepth(#TI(IF _ { #Exec(B1) } { #Exec(B2) }, Ts1 -> _)) => minInt(#LengthTypeSeq(Ts1) -Int 1, minInt(#GetLocalStackDepth(B1), #GetLocalStackDepth(B2)))
+  rule #GetLocalStackDepth(#TI(LOOP _ { #Exec(B1) }, Ts1 -> _)) => minInt(#LengthTypeSeq(Ts1) -Int 1, #GetLocalStackDepth(B1))
+  rule #GetLocalStackDepth(#TI(LOOP_LEFT _ { #Exec(B1) }, Ts1 -> _)) => minInt(#LengthTypeSeq(Ts1) -Int 1, #GetLocalStackDepth(B1))
+  rule #GetLocalStackDepth(#TI(LAMBDA _ _ _ _, Ts1 -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetLocalStackDepth(#TI(EXEC _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 2
+  rule #GetLocalStackDepth(#TI(APPLY _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 2
+  rule #GetLocalStackDepth(#TI(DIP _ { #Exec(B1) }, Ts1 -> _)) => #GetLocalStackDepth(B1)
+  rule #GetLocalStackDepth(#TI(DIP _ _:Int { #Exec(B1) }, Ts1 -> _)) => #GetLocalStackDepth(B1)
+  rule #GetLocalStackDepth(#TI(FAILWITH _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetLocalStackDepth(#TI(CAST _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetLocalStackDepth(#TI(RENAME _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetLocalStackDepth(#TI(CONCAT _, (string _ ; string _ ; Ts1) -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetLocalStackDepth(#TI(CONCAT _, (bytes _ ; bytes _ ; Ts1) -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetLocalStackDepth(#TI(CONCAT _, (list _ _ ; Ts1) -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetLocalStackDepth(#TI(SLICE _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 3
+  rule #GetLocalStackDepth(#TI(PACK _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetLocalStackDepth(#TI(UNPACK _ _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetLocalStackDepth(#TI(ADD _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 2
+  rule #GetLocalStackDepth(#TI(SUB _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 2
+  rule #GetLocalStackDepth(#TI(MUL _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 2
+  rule #GetLocalStackDepth(#TI(EDIV _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 2
+  rule #GetLocalStackDepth(#TI(ABS _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetLocalStackDepth(#TI(ISNAT _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetLocalStackDepth(#TI(INT _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetLocalStackDepth(#TI(NEG _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetLocalStackDepth(#TI(LSL _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetLocalStackDepth(#TI(LSR _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetLocalStackDepth(#TI(OR _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 2
+  rule #GetLocalStackDepth(#TI(AND _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 2
+  rule #GetLocalStackDepth(#TI(XOR _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 2
+  rule #GetLocalStackDepth(#TI(NOT _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetLocalStackDepth(#TI(COMPARE _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 2
+  rule #GetLocalStackDepth(#TI(EQ _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetLocalStackDepth(#TI(NEQ _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetLocalStackDepth(#TI(LT _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetLocalStackDepth(#TI(GT _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetLocalStackDepth(#TI(LE _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetLocalStackDepth(#TI(GE _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetLocalStackDepth(#TI(SELF _, Ts1 -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetLocalStackDepth(#TI(CONTRACT _ _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetLocalStackDepth(#TI(TRANSFER_TOKENS _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 3
+  rule #GetLocalStackDepth(#TI(SET_DELEGATE _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 2
+  rule #GetLocalStackDepth(#TI(NOW _, Ts1 -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetLocalStackDepth(#TI(CHAIN_ID _, Ts1 -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetLocalStackDepth(#TI(AMOUNT _, Ts1 -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetLocalStackDepth(#TI(BALANCE _, Ts1 -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetLocalStackDepth(#TI(CHECK_SIGNATURE _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 3
+  rule #GetLocalStackDepth(#TI(BLAKE2B _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetLocalStackDepth(#TI(SHA256 _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetLocalStackDepth(#TI(SHA512 _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetLocalStackDepth(#TI(HASH_KEY _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
+  rule #GetLocalStackDepth(#TI(SOURCE _, Ts1 -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetLocalStackDepth(#TI(SENDER _, Ts1 -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetLocalStackDepth(#TI(ADDRESS _, Ts1 -> _)) => #LengthTypeSeq(Ts1)
+  rule #GetLocalStackDepth(#TI(CREATE_CONTRACT _ { _ }, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 3
+  rule #GetLocalStackDepth(#TI(IMPLICIT_ACCOUNT _, Ts1 -> _)) => #LengthTypeSeq(Ts1) -Int 1
 ```
 
 `#CheckOutput`
