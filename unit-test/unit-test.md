@@ -508,7 +508,7 @@ Annotated in`LOOP`s may be annotated with invariants.
 
   syntax StackInfo ::= #InstDepthInfo(TypedInstruction) [function]
 // ------------------------------------------------------------------
-  rule #InstDepthInfo(#TI({ #Exec(Ts) }, _)) => #GetLocalStackDepth(Ts, (0,0)) // is this sound?
+  rule #InstDepthInfo(#TI({ #Exec(Ts) }, _)) => #GetLocalStackDepth(Ts, instrShape(0,0)) // is this sound?
 
   rule #InstDepthInfo(#TI({ }, _)) => instrShape(0, 0)
   rule #InstDepthInfo(#TI(DROP _, _)) => instrShape(1, 0)
