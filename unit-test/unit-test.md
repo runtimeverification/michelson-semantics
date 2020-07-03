@@ -407,6 +407,12 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
   syntax TypedSymbol ::= #TypedSymbol(Type, Data)
 ```
 
+If a program aborts due to the FAILWITH instruction, we throw away the abortion debug info:
+
+```k
+  rule <k> (Aborted(_, _, _, _) => .K) ~> #CheckOutput ... </k>
+```
+
 ```k
   syntax KItem ::= "#CheckOutput"
   rule <k> #CheckOutput => #Bind(ExpectedStack) ... </k>
@@ -438,22 +444,6 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
     requires #Matches(#MichelineToNative(ED,T,KnownAddrs,BigMaps),AD)
 ```
 
-In the case of an expected failure, we cannot guarantee that the contents of the
-K cell will be empty when the main semantics abort. However, we know that the
-`#CheckOutput` will still be in the k cell. Hence, if the main semantics abort
-(by placing the Aborted production on the top of the k cell), we should find the
-`#CheckOutput` production in the K cell and pull it out.
-
-```k
-  syntax KItem ::= #FindCheckOutput(K, KItem)
-  syntax KItem ::= #NoCheckOutput(KItem)
-
-  rule <k> #FindCheckOutput(#CheckOutput ~> _, _) => #CheckOutput ... </k>
-  rule <k> #FindCheckOutput(_:KItem ~> Rs => Rs, _) ... </k> [owise]
-
-  rule <k> Aborted(_, _, Rk, _) #as V => #FindCheckOutput(Rk, V) ... </k>
-```
-
 Extending functions to `SymbolicData`
 -------------------------------------
 
@@ -482,7 +472,6 @@ Extending functions to `SymbolicData`
   rule #DoCompare(I1:Int, I2:Int) >=Int 0 => I1 >=Int I2 [simplification]
   rule #DoCompare(I1:Int, I2:Int) >Int 0 => I1 >Int I2 [simplification]
 ```
-
 
 ```k
 endmodule

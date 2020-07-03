@@ -227,6 +227,17 @@ arguments are:
        <stack> D ~> Rs => ( Failed D ) </stack>
 ```
 
+It then consumes the rest of the program:
+
+```k
+  rule <k> Aborted(_, _, _, _) ~> (_:TypedInstruction => .K) ... </k>
+  rule <k> Aborted(_, _, _, _) ~> (_:DataList => .K) ... </k>
+  rule <k> Aborted(_, _, _, _) ~> (_:Data => .K) ... </k>
+```
+
+Conditionals
+------------
+
 The control flow instruction's implementations in K should look extremely
 similar to their formal description in the [Michelson
 documentation](https://tezos.gitlab.io/whitedoc/michelson.html#control-structures).
