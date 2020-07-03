@@ -48,7 +48,7 @@ module CONTRACT-EXPANDER
   rule #StackEltToPush(Stack_elt T D) => { PUSH .AnnotationList T D } [owise]
 
   syntax Block ::= #StackToPush(LiteralStack) [function]
-  rule #StackToPush( { } ) => { }
+  rule #StackToPush( { .StackElementList } ) => { }
 
   syntax Block ::= #StackToPushAux(StackElementList, Block) [function]
   rule #StackToPush( { Se } ) => #StackToPushAux(Se, { DROP .AnnotationList 0 })
@@ -250,7 +250,7 @@ module OUTPUT-COMPARE
 
   rule <k> #CheckOutput( X:FailedStack , X:FailedStack ) => . ... </k>
 
-  rule <k> #CheckOutput( { } , { } ) => . ... </k>
+  rule <k> #CheckOutput( { .StackElementList } , { .StackElementList } ) => . ... </k>
 
   rule <k> #CheckOutput( { Stack_elt ET ED } , { Stack_elt AT AD } )
         => .

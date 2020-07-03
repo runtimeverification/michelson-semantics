@@ -192,16 +192,10 @@ productions) into a KSequence (the same format as the execution stack).
 
 ```k
   syntax K ::= #LiteralStackToSemantics(LiteralStack, Map, Map) [function]
-  rule #LiteralStackToSemantics( { },   KnownAddrs, BigMaps) => .
-  rule #LiteralStackToSemantics( { L }, KnownAddrs, BigMaps) => #LiteralStackToSemanticsAux(L, KnownAddrs, BigMaps)
-
-  syntax K ::= #LiteralStackToSemanticsAux(StackElementList, Map, Map) [function]
-
-  rule #LiteralStackToSemanticsAux( Stack_elt T D ; Gs:StackElementList, KnownAddrs, BigMaps) =>
-       #MichelineToNative(D, T, KnownAddrs, BigMaps) ~> #LiteralStackToSemanticsAux(Gs, KnownAddrs, BigMaps)
-
-  rule #LiteralStackToSemanticsAux(Stack_elt T D, KnownAddrs, BigMaps) =>
-       #MichelineToNative(D, T, KnownAddrs, BigMaps)
+  rule #LiteralStackToSemantics({ .StackElementList }, KnownAddrs, BigMaps) => . 
+  rule #LiteralStackToSemantics({ Stack_elt T D ; Gs:StackElementList }, KnownAddrs, BigMaps)
+  	=> #MichelineToNative(D, T, KnownAddrs, BigMaps)
+	~> #LiteralStackToSemantics({ Gs }, KnownAddrs, BigMaps)
 ```
 
 This function transforms an expected output stack to its internal representation
@@ -210,8 +204,9 @@ transformed as in the input group).
 
 ```k
   syntax K ::= #OutputStackToSemantics(OutputStack, Map, Map) [function]
-  rule #OutputStackToSemantics(L:LiteralStack, KnownAddrs, BigMaps) => #LiteralStackToSemantics(L, KnownAddrs, BigMaps)
-  rule #OutputStackToSemantics(X:FailedStack,  _,          _      ) => X
+  rule #OutputStackToSemantics(L, KnownAddrs, BigMaps)
+  	=> #LiteralStackToSemantics(L, KnownAddrs, BigMaps)
+  rule #OutputStackToSemantics(X:FailedStack, _, _) => X
 ```
 
 Loading the input or expected output stack involves simply converting it to a
@@ -253,17 +248,9 @@ know what types are on the stack.
 
 ```k
   syntax TypeSeq ::= #LiteralStackToTypes(LiteralStack, Type) [function]
-
-  rule #LiteralStackToTypes( { } , _) => .TypeSeq
-  rule #LiteralStackToTypes( { L } , T ) => #LiteralStackToTypesAux(L, T)
-
-  syntax TypeSeq ::= #LiteralStackToTypesAux(StackElementList, Type) [function]
-
-  rule #LiteralStackToTypesAux( Stack_elt T D ; Gs:StackElementList, PT)
-    => T ; #LiteralStackToTypesAux(Gs, PT)
-    requires #Typed(D, T) :=K #TypeData(PT, D, T)
-
-  rule #LiteralStackToTypesAux(Stack_elt T D, PT) => T
+  rule #LiteralStackToTypes( { .StackElementList }, _) => .TypeSeq
+  rule #LiteralStackToTypes( { Stack_elt T D ; Gs:StackElementList }, PT)
+  	=> T ; #LiteralStackToTypes({ Gs }, PT)
     requires #Typed(D, T) :=K #TypeData(PT, D, T)
 ```
 
@@ -429,9 +416,8 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
 ```k
   syntax KItem ::= #Bind(OutputStack)
   syntax KItem ::= #BindSingle(StackElement)
-  rule <k> #Bind({ }) => .K ... </k>
+  rule <k> #Bind({ .StackElementList }) => .K ... </k>
        <stack> .K </stack>
-  rule <k> #Bind({ S }) => #BindSingle(S) ... </k>
   rule <k> #Bind({ S ; Ss }) => #BindSingle(S) ~> #Bind({ Ss }) ... </k>
 
   rule <k> #Bind(S1:FailedStack) => .K ... </k>
@@ -484,10 +470,8 @@ Extending functions to `SymbolicData`
 ```
 
 ```symbolic
-  rule #LiteralStackToTypesAux(Stack_elt T S:SymbolicData ; Gs:StackElementList, PT)
-    => T ; #LiteralStackToTypesAux(Gs, PT)
-
-  rule #LiteralStackToTypesAux(Stack_elt T S:SymbolicData, PT) => T
+  rule #LiteralStackToTypes({ Stack_elt T S:SymbolicData ; Gs:StackElementList }, PT)
+    => T ; #LiteralStackToTypes({ Gs }, PT)
 ```
 
 ```symbolic
