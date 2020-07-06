@@ -23,7 +23,6 @@ module UNIT-TEST-DRIVER
         ~> #TypeCheck
         ~> #LoadInputStack
         ~> #ExecuteScript
-        ~> #CheckOutput
         ~> #ExecutePostConditions
            ...
        </k>
@@ -413,7 +412,11 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
 
 ```k
   syntax KItem ::= "#ExecutePostConditions"
-  rule <k> #ExecutePostConditions => ASSERT Postconditions ... </k>
+  rule <k> #ExecutePostConditions
+        => BIND Expected { ASSERT Postconditions }
+           ...
+       </k>
+       <expected> Expected </expected>
        <post> Postconditions </post>
 ```
 
@@ -488,33 +491,68 @@ If a program aborts due to the FAILWITH instruction, we throw away the abortion 
 
 ```k
   syntax KItem ::= "#CheckOutput"
-  rule <k> #CheckOutput => #Bind(ExpectedStack) ... </k>
+  rule <k> #CheckOutput => #Bind(ExpectedStack, Stack) ... </k>
+       <stack> Stack </stack>
        <expected> ExpectedStack </expected>
 ```
 
+The `BIND` instruction
+----------------------
+
 ```k
-  syntax KItem ::= #Bind(OutputStack)
-  syntax KItem ::= #BindSingle(StackElement)
-  rule <k> #Bind({ .StackElementList }) => .K ... </k>
-       <stack> .K </stack>
-  rule <k> #Bind({ S ; Ss }) => #BindSingle(S) ~> #Bind({ Ss }) ... </k>
+  syntax Instruction ::= "BIND" LiteralStack Block
+  rule <k> BIND Shape Block
+        => #Bind(Shape, Stack)
+        ~> Block
+        ~> #RestoreSymbols(Symbols)
+           ...
+       </k>
+       <symbols> Symbols </symbols>
+       <stack> Stack </stack>
+```
 
-  rule <k> #Bind(S1:FailedStack) => .K ... </k>
-       <stack> S2:FailedStack => .K ... </stack>
-	requires #Matches(S1, S2)
+```k
+  syntax KItem ::= #Bind(OutputStack, K)
 
-  rule <k> #BindSingle(Stack_elt T S:SymbolicData) => .K ...
-	   </k>
-	   <paramtype> PT </paramtype>
-       <stack> D => .K ... </stack>
-       <symbols> M => M[ S <- #TypedSymbol(T, D) ] </symbols>
+  rule <k> #Bind({ .StackElementList }, .K) => .K ... </k>
+
+  rule <k> #Bind(S1:FailedStack, S2:FailedStack) => .K ... </k>
+    requires #Matches(S1, S2)
+
+  rule <k> #Bind( { Stack_elt T S:SymbolicData ; Ss } => { Ss }
+                , ( (D ~> K:K)                        => K )
+                )
+           ...
+       </k>
+       <paramtype> PT </paramtype>
+       <symbols> .Map => S |-> #TypedSymbol(T, D) ... </symbols>
     requires isTypedData(#TypeData(PT,D,T))
 
-  rule <k> #BindSingle(Stack_elt T ED) => .K ... </k>
-	   <knownaddrs> KnownAddrs </knownaddrs>
-	   <bigmaps> BigMaps </bigmaps>
+  rule <k> #Bind( { Stack_elt T S:SymbolicData ; Ss } => { Ss }
+                , ( (D ~> K:K)                        => K )
+                )
+           ...
+       </k>
+       <paramtype> PT </paramtype>
+       <symbols> S |-> #TypedSymbol(T, D) ... </symbols>
+    requires isTypedData(#TypeData(PT,D,T))
+
+  rule <k> #Bind( { Stack_elt T ED ; Ss } => { Ss }
+                , ( (AD ~> K:K)             => K )
+                )
+           ...
+       </k>
+       <knownaddrs> KnownAddrs </knownaddrs>
+       <bigmaps> BigMaps </bigmaps>
        <stack> AD => .K ... </stack>
     requires #Matches(#MichelineToNative(ED,T,KnownAddrs,BigMaps),AD)
+     andBool notBool isSymbolicData(ED)
+```
+
+```k
+  syntax KItem ::= #RestoreSymbols(Map)
+  rule <k> #RestoreSymbols(Symbols) => .K ... </k>
+       <symbols> _ => Symbols </symbols>
 ```
 
 Extending functions to `SymbolicData`
