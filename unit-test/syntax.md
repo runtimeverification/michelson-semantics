@@ -135,15 +135,21 @@ and produces an output stack of type `Stack_elt bool _`.
   syntax Group ::= PreconditionGroup | PostconditionGroup
 ```
 
-Invariants are lists of blocks annotated with a name so that we know to which
-looping instruction sequence (i.e. `LOOP`, `LOOP_LEFT`, or `ITER`) they
-correspond.
+An invariant is an annotated pair of a stack shape (represented as a
+`LiteralStack`) and a list of predicates (represented as `Blocks`).
+The annotation determines to which looping instruction sequence (i.e. `LOOP`,
+`LOOP_LEFT`, or `ITER`) an invariant corresponds.
+When the program reaches the head of an annotated loop, we check that the actual
+stack matches the specified stack shape.
+Any symbolic variables in the stack shape are bound to the corresponding values
+in the actual stack.
+The predicate list represents invariants that must hold over all bound symbolic
+variables.
+
 
 ```k
-  syntax Invariants ::= EmptyBlock | "{" InvariantList "}"
-  syntax InvariantList ::= Invariant | Invariant ";" InvariantList
-  syntax Invariant ::= VariableAnnotation Blocks
-  syntax InvariantsGroup ::= "invariants" Invariants
+  syntax InvariantsGroup ::= "invariant" VariableAnnotation Invariant
+  syntax Invariant ::= LiteralStack Blocks
   syntax Group ::= InvariantsGroup
 ```
 

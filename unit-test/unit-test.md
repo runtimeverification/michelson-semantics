@@ -424,56 +424,90 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
 ---------------------
 
 ```k
-  rule <k> invariants { } => .K ... </k>
-  rule <k> invariants { I1 ; Is }
-        => invariants( { I1 } ) ~> invariants ({ Is })
-           ...
-       </k>
-  rule <k> invariants ({ Annotation:VariableAnnotation Blocks:Blocks }) => . ... </k>
-       <invs> .Map => (Annotation |-> Blocks)  ... </invs>
+  rule <k> invariant Annot { Stack } Blocks => . ... </k>
+       <invs> .Map
+       => (Annot |-> { Stack } Blocks)
+          ...
+       </invs>
 ```
 
-Annotated in`LOOP`s may be annotated with invariants.
+We need stack concatentation for invariant preprocessing.
+Note that `#AnyStack` on the lefthand side is currently unhandled.
+
+```k
+  syntax StackElementList ::= StackElementList "++StackElementList" StackElementList [function, left, avoid]
+  rule .StackElementList ++StackElementList S2 => S2
+  rule E1 ; S1           ++StackElementList S2 => E1 ; (S1 ++StackElementList S2)
+```
 
 ```symbolic
-  syntax Instruction ::= CUTPOINT( id: Int, localStackDepth: Int )
-  rule <k> LOOP A .AnnotationList { #Exec ( B ) }
-        => LOOP .AnnotationList {
-             ASSERT Invariant  ;  // Subsumption check
-             CUTPOINT(!Int, #GetLocalStackDepth(B)) ;
-             ASSUME Invariant  ;
-             { #Exec ( B ) }
+  syntax Instruction ::= CUTPOINT( id: Int, shape: StackElementList )
+  rule <k> LOOP A .AnnotationList Body
+        => BIND { Shape } { ASSERT Predicates } ;
+           LOOP .AnnotationList {
+             Body ;
+             BIND { Shape } { ASSERT Predicates } ;
+             CUTPOINT(!Int, Shape) ;
+             BIND { Shape } { ASSUME Predicates }
            }
            ...
        </k>
-       <invs> A:VariableAnnotation |-> Invariant:Blocks ... </invs>
+       <invs> A |-> { Shape:StackElementList } Predicates:Blocks ... </invs>
+```
 
-  rule <k> CUTPOINT(I, LocalStackDepth) => #GeneralizeStack(LocalStackDepth) ... </k>
+### `CUTPOINT`s and stack generalization
+
+A cutpoint is a semantic construct that internalizes the notion of a
+reachability logic circularity (or claim).
+When we reach a cutpoint, we need to generalize our current state into one which
+corresponds to the reachability logic circularity that we wish to use.
+
+```k
+  rule <k> CUTPOINT(I,Shape) => #GeneralizeStack(Shape,.K) ... </k>
        <cutpoints> (.Set => SetItem(I)) VisitedCutpoints </cutpoints>
     requires notBool I in VisitedCutpoints
+
   rule <k> CUTPOINT(I, _) => #Assume(false) ... </k>
        <cutpoints> VisitedCutpoints </cutpoints>
     requires I in VisitedCutpoints
+```
 
-  syntax KItem ::= #GeneralizeStack(Int)
-  rule <k> #GeneralizeStack(I) => #GeneralizeStackAux(I, #ReverseKSeq(Ds), #ReverseTypeSeq(Ts), .K, .TypeSeq) ... </k>
-       <stack> Ds => . </stack>
-       <stacktypes> Ts => .TypeSeq </stacktypes>
+In stack-based languages like Michelson, state generalization means that we
+abstract out pieces of the stack which are non-invariant during loop execution.
 
-  syntax KItem ::= #GeneralizeStackAux(Int, K, TypeSeq, K, TypeSeq)
-  rule <k> #GeneralizeStackAux(I, V:KItem ~> Vs1, T ; Ts1, Vs2, Ts2) => #GeneralizeStackAux(I -Int 1, Vs1, Ts1, V ~> Vs2, T ; Ts2) ... </k> requires I >Int 0
-  rule <k> #GeneralizeStackAux(0, _:Int ~> Vs1, int A ; Ts1, Vs2, Ts2) => #GeneralizeStackAux(0, Vs1, Ts1, ?_:Int ~> Vs2, int A ; Ts2) ... </k>
-  rule <k> #GeneralizeStackAux(0, _:Int ~> Vs1, nat A ; Ts1, Vs2, Ts2) => #GeneralizeStackAux(0, Vs1, Ts1, ?V:Int ~> Vs2, nat A ; Ts2) ... </k> requires ?V:Int >=Int 0
-  rule <k> #GeneralizeStackAux(0, _:String ~> Vs1, string A ; Ts1, Vs2, Ts2) => #GeneralizeStackAux(0, Vs1, Ts1, ?V:String ~> Vs2, string A ; Ts2) ... </k>
-  rule <k> #GeneralizeStackAux(0, .K, _, Vs2, Ts2) => . ... </k>
-       <stack> _ => Vs2 </stack>
-       <stacktypes> _ => Ts2 </stacktypes>
+```k
+  syntax KItem ::= #GeneralizeStack(StackElementList, K)
+  rule <k> #GeneralizeStack(.StackElementList, Stack) => . ... </k>
+       <stack> .K => Stack </stack>
 
-  syntax K ::= #ReverseKSeq(K) [function, functional]
-  syntax K ::= #ReverseKSeqAux(K, K) [function, functional]
-  rule #ReverseKSeq(V) => #ReverseKSeqAux(V, .K)
-  rule #ReverseKSeqAux(V:KItem ~> Vs1, Vs2) => #ReverseKSeqAux(Vs1, V ~> Vs2)
-  rule #ReverseKSeqAux(.K, Vs) => Vs
+  rule <k> #GeneralizeStack(Stack_elt T D ; Stack, KSeq:K)
+        => #GeneralizeStack(Stack, KSeq ~> D)
+           ...
+       </k>
+       <stack> _:Data => . ... </stack>
+    requires notBool isSymbolicData(D)
+
+  rule <k> (.K => #MakeFresh(T))
+        ~> #GeneralizeStack(Stack_elt T D:SymbolicData ; Stack, KSeq)
+           ...
+       </k>
+
+  rule <k> ( #Fresh(V)
+          ~> #GeneralizeStack(Stack_elt T D:SymbolicData ; Stack, KSeq)
+           )
+        =>   #GeneralizeStack(Stack_elt T V ; Stack, KSeq)
+           ...
+       </k>
+```
+
+Here `#MakeFresh` is responsible for generating a fresh value of a given type.
+
+```k
+  syntax KItem ::= #MakeFresh(Type) | #Fresh(Data)
+  rule <k> #MakeFresh(bool   _:AnnotationList) =>                       #Fresh(?_:Bool)   ... </k>
+  rule <k> #MakeFresh(int    _:AnnotationList) =>                       #Fresh(?_:Int)    ... </k>
+  rule <k> #MakeFresh(nat    _:AnnotationList) => #Assume(?V >Int 0) ~> #Fresh(?V:Int)    ... </k>
+  rule <k> #MakeFresh(string _:AnnotationList) =>                       #Fresh(?_:String) ... </k>
 ```
 
 `#CheckOutput`
