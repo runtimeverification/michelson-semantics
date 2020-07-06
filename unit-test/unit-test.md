@@ -192,10 +192,10 @@ productions) into a KSequence (the same format as the execution stack).
 
 ```k
   syntax K ::= #LiteralStackToSemantics(LiteralStack, Map, Map) [function]
-  rule #LiteralStackToSemantics({ .StackElementList }, KnownAddrs, BigMaps) => . 
+  rule #LiteralStackToSemantics({ .StackElementList }, KnownAddrs, BigMaps) => .
   rule #LiteralStackToSemantics({ Stack_elt T D ; Gs:StackElementList }, KnownAddrs, BigMaps)
-  	=> #MichelineToNative(D, T, KnownAddrs, BigMaps)
-	~> #LiteralStackToSemantics({ Gs }, KnownAddrs, BigMaps)
+    => #MichelineToNative(D, T, KnownAddrs, BigMaps)
+    ~> #LiteralStackToSemantics({ Gs }, KnownAddrs, BigMaps)
 ```
 
 This function transforms an expected output stack to its internal representation
@@ -205,7 +205,7 @@ transformed as in the input group).
 ```k
   syntax K ::= #OutputStackToSemantics(OutputStack, Map, Map) [function]
   rule #OutputStackToSemantics(L, KnownAddrs, BigMaps)
-  	=> #LiteralStackToSemantics(L, KnownAddrs, BigMaps)
+    => #LiteralStackToSemantics(L, KnownAddrs, BigMaps)
   rule #OutputStackToSemantics(X:FailedStack, _, _) => X
 ```
 
@@ -250,7 +250,7 @@ know what types are on the stack.
   syntax TypeSeq ::= #LiteralStackToTypes(LiteralStack, Type) [function]
   rule #LiteralStackToTypes( { .StackElementList }, _) => .TypeSeq
   rule #LiteralStackToTypes( { Stack_elt T D ; Gs:StackElementList }, PT)
-  	=> T ; #LiteralStackToTypes({ Gs }, PT)
+  => T ; #LiteralStackToTypes({ Gs }, PT)
     requires #Typed(D, T) :=K #TypeData(PT, D, T)
 ```
 
