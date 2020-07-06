@@ -343,7 +343,7 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
         => B ~> #AssertTrue ~> ASSERT { Bs } ~> #RestoreStack(Stack)
            ...
        </k>
-       <stack> Stack </stack>
+       <stack> Stack => .K </stack>
 ```
 
 ```k
@@ -354,7 +354,7 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
         => B ~> #AssumeTrue ~> ASSUME { Bs } ~> #RestoreStack(Stack)
            ...
        </k>
-       <stack> Stack </stack>
+       <stack> Stack => .K </stack>
 ```
 
 ```k
