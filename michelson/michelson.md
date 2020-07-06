@@ -157,7 +157,6 @@ From Micheline to K-Michelson Internal Representation
        <paramtype>  T                                            </paramtype>
        <paramvalue> D => #MichelineToNative(D, T, .Map, BigMaps) </paramvalue>
        <bigmaps> BigMaps </bigmaps>
-    requires D =/=K #NoData
   rule <k> #ConvertParamToNative => .K ... </k>
        <paramvalue> #NoData </paramvalue> [owise]
 
@@ -166,7 +165,6 @@ From Micheline to K-Michelson Internal Representation
        <storagetype>  T                                            </storagetype>
        <storagevalue> D => #MichelineToNative(D, T, .Map, BigMaps) </storagevalue>
        <bigmaps> BigMaps </bigmaps>
-    requires D =/=K #NoData
   rule <k> #ConvertStorageToNative => .K ... </k>
        <storagevalue> #NoData </storagevalue> [owise]
 ```
