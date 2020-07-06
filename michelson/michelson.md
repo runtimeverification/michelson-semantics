@@ -439,6 +439,11 @@ Comparisons map directly onto K Int functions.
        <stack> I => I >=Int 0 ... </stack>
 ```
 
+```k
+    rule A  >Int B => notBool( A <=Int B ) [simplification]
+    rule A >=Int B => notBool( A  <Int B ) [simplification]
+```
+
 As do basic boolean functions.
 
 ```k
@@ -555,7 +560,7 @@ We lift the COMPARE operation to a function over Data, allowing many different
 instantiations of the COMPARE operation to be implemented in fewer rules.
 
 ```k
-  syntax Int ::= #DoCompare(Data, Data) [function]
+  syntax Int ::= #DoCompare(Data, Data) [function, functional]
 
   rule #DoCompare(true, true) => 0
   rule #DoCompare(false, false) => 0
@@ -576,6 +581,18 @@ instantiations of the COMPARE operation to be implemented in fewer rules.
 
   rule <k> COMPARE A => #HandleAnnotations(A) ... </k>
        <stack> V1 ~> V2 => #DoCompare(V1, V2) ... </stack>
+```
+
+TODO: If we define `DoCompare` as a macro for `#ite` we can avoid this.
+
+```symbolic
+  rule #DoCompare(B1:Bool, B2:Bool) ==Int 0 => B1 ==Bool B2 [simplification]
+
+  rule #DoCompare(I1:Int, I2:Int) <Int 0 => I1 <Int I2 [simplification]
+  rule #DoCompare(I1:Int, I2:Int) <=Int 0 => I1 <=Int I2 [simplification]
+  rule #DoCompare(I1:Int, I2:Int) ==Int 0 => I1 ==Int I2 [simplification]
+  rule #DoCompare(I1:Int, I2:Int) >=Int 0 => I1 >=Int I2 [simplification]
+  rule #DoCompare(I1:Int, I2:Int) >Int 0 => I1 >Int I2 [simplification]
 ```
 
 CONCAT is complicated by the fact that it is defined differently over strings

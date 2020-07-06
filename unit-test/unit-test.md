@@ -537,15 +537,6 @@ Extending functions to `SymbolicData`
     => T ; #LiteralStackToTypes({ Gs }, PT)
 ```
 
-```symbolic
-  rule #Ceil(#DoCompare(@A:Int, @B:Int)) => #Ceil(@A) #And #Ceil(@B)  [anywhere, simplification]
-  rule #DoCompare(I1:Int, I2:Int) <Int 0 => I1 <Int I2 [simplification]
-  rule #DoCompare(I1:Int, I2:Int) <=Int 0 => I1 <=Int I2 [simplification]
-  rule #DoCompare(I1:Int, I2:Int) ==Int 0 => I1 ==Int I2 [simplification]
-  rule #DoCompare(I1:Int, I2:Int) >=Int 0 => I1 >=Int I2 [simplification]
-  rule #DoCompare(I1:Int, I2:Int) >Int 0 => I1 >Int I2 [simplification]
-```
-
 ```k
 endmodule
 ```
