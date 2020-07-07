@@ -223,7 +223,7 @@ arguments are:
 
   // Core Instructioons
   //// Control Structures
-  rule <k> FAILWITH A ~> Rk => #HandleAnnotations(A) ~> Aborted("FAILWITH instruction reached", D, Rk, Rs) </k>
+  rule <k> FAILWITH A ~> Rk => #HandleAnnotations(A) ~> Aborted("FAILWITH instruction reached", D, Rk, Rs) ~> Rk </k>
        <stack> D ~> Rs => ( Failed D ) </stack>
 ```
 
@@ -531,7 +531,7 @@ cell to an Aborted production.
        <stack> X ~> S => X <<Int S ... </stack>
        requires S <=Int 256
 
-  rule <k> LSL A ~> Rk => #HandleAnnotations(A) ~> Aborted("LSL out of range", S, Rk, Rs) </k>
+  rule <k> LSL A ~> Rk => #HandleAnnotations(A) ~> Aborted("LSL out of range", S, Rk, Rs) ~> Rk </k>
        <stack> C:Int ~> S:Int ~> Rs => ( GeneralOverflow C S )  </stack>
        requires S >Int 256
 
@@ -539,7 +539,7 @@ cell to an Aborted production.
        <stack> X ~> S => X >>Int S ... </stack>
        requires S <=Int 256
 
-  rule <k> LSR A ~> Rk => #HandleAnnotations(A) ~> Aborted("LSR out of range", S, Rk, Rs) </k>
+  rule <k> LSR A ~> Rk => #HandleAnnotations(A) ~> Aborted("LSR out of range", S, Rk, Rs) ~> Rk </k>
        <stack> X ~> S ~> Rs => ( GeneralOverflow X S ) </stack>
        requires S >Int 256
 ```
@@ -1122,7 +1122,7 @@ value is invalid.
        <stack> . => #Mutez(I) ... </stack>
        requires #IsLegalMutezValue(I)
 
-  rule <k> #ValidateMutezAndPush(#Mutez(I), I1, I2) ~> Rk => Aborted("Mutez out of bounds", I, Rk, Rs) </k>
+  rule <k> #ValidateMutezAndPush(#Mutez(I), I1, I2) ~> Rk => Aborted("Mutez out of bounds", I, Rk, Rs) ~> Rk </k>
        <stack> Rs => #FailureFromMutezValue(#Mutez(I), I1, I2) </stack>
        requires notBool #IsLegalMutezValue(I)
 ```
