@@ -462,7 +462,7 @@ reachability logic circularity (or claim).
 When we reach a cutpoint, we need to generalize our current state into one which
 corresponds to the reachability logic circularity that we wish to use.
 
-```k
+```symbolic
   rule <k> CUTPOINT(I,Shape) => #GeneralizeStack(Shape,.K) ... </k>
        <cutpoints> (.Set => SetItem(I)) VisitedCutpoints </cutpoints>
     requires notBool I in VisitedCutpoints
