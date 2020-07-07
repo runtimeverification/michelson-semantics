@@ -331,7 +331,7 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
 --------------------------------
 
 ```k
-  syntax KItem ::= "#AssumeTrue"
+  syntax InternalInstruction ::= "#AssumeTrue"
   rule <k> #AssumeTrue => . ... </k>
        <stack> true => . </stack> [transition]
   rule <k> #AssumeTrue ~> _:K => . </k>
@@ -340,13 +340,13 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
 ```
 
 ```k
-  syntax KItem ::= "#AssertTrue"
+  syntax InternalInstruction ::= "#AssertTrue"
   rule <k> #AssertTrue => #Assert(B) ... </k>
        <stack> B:Bool => . </stack>
 ```
 
 ```k
-  syntax KItem ::= #Assert(Bool)
+  syntax InternalInstruction ::= #Assert(Bool)
   rule <k> #Assert(true)  => .             ... </k>
   rule <k> #Assert(false) => #AssertFailed ... </k>
   syntax KItem ::= "#AssertFailed" [klabel(#AssertFailed), symbol]
