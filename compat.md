@@ -54,6 +54,7 @@ module CONTRACT-EXPANDER
   rule #StackToPush( { Se } ) => #StackToPushAux(Se, { DROP .AnnotationList 0 })
   rule #StackToPushAux(Se ; Ls, { I:DataList })  => #StackToPushAux(Ls, { #StackEltToPush(Se) ; I }) requires notBool Ls ==K .StackElementList
   rule #StackToPushAux(Se, { I:DataList })  => { #StackEltToPush(Se) ; I }
+  rule #StackToPushAux(.StackElementList, { I:DataList }) => { I }
 
   syntax Contract ::= #FillTemplateContract(Block, Block, Type) [function]
 
