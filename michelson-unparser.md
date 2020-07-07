@@ -408,6 +408,11 @@ module MICHELSON-UNPARSER
     #doUnparse(S, false) +String
     "; " +String
     #doUnparse(Ss, false)
+    requires notBool Ss ==K .StackElementList
+
+  rule #doUnparse(S:StackElement ; .StackElementList, _) => #doUnparse(S, false)
+
+  rule #doUnparse(.StackElementList, _) => ""
 
   rule #doUnparse({ S:StackElementList }, _) =>
     "{" +String

@@ -206,7 +206,7 @@ use idiomatic K.
 For now, annotations are simply ignored.
 
 ```k
-  syntax KItem ::= #HandleAnnotations(AnnotationList)
+  syntax InternalInstruction ::= #HandleAnnotations(AnnotationList)
   rule #HandleAnnotations(_) => .
 ```
 
@@ -223,9 +223,21 @@ arguments are:
 
   // Core Instructioons
   //// Control Structures
-  rule <k> FAILWITH A ~> Rk => #HandleAnnotations(A) ~> Aborted("FAILWITH instruction reached", D, Rk, Rs) </k>
+  rule <k> FAILWITH A ~> Rk => #HandleAnnotations(A) ~> Aborted("FAILWITH instruction reached", D, Rk, Rs) ~> Rk </k>
        <stack> D ~> Rs => ( Failed D ) </stack>
 ```
+
+It then consumes the rest of the program:
+
+```k
+  rule <k> Aborted(_, _, _, _) ~> (_:TypedInstruction => .K) ... </k>
+  rule <k> Aborted(_, _, _, _) ~> (_:DataList => .K) ... </k>
+  rule <k> Aborted(_, _, _, _) ~> (_:Data => .K) ... </k>
+  rule <k> Aborted(_, _, _, _) ~> (_:InternalInstruction => .K) ... </k>
+```
+
+Conditionals
+------------
 
 The control flow instruction's implementations in K should look extremely
 similar to their formal description in the [Michelson
@@ -257,7 +269,7 @@ It is sometimes useful to create "pseudo-instructions" like this to schedule
 operations to happen in the future.
 
 ```k
-  syntax KItem ::= #Push(Data)
+  syntax InternalInstruction ::= #Push(Data)
   rule <k> #Push(D) => . ... </k>
        <stack> . => D ... </stack>
 ```
@@ -282,7 +294,7 @@ This pseudo-instruction implements the behavior of restoring the previous stack
 when a lambda completes execution.
 
 ```k
-  syntax KItem ::= #ReturnStack(K)
+  syntax InternalInstruction ::= #ReturnStack(K)
 
   rule <k> #ReturnStack(Ls) => . ... </k>
        <stack> R:Data => R ~> Ls </stack>
@@ -338,7 +350,7 @@ and can save it. When `I = -1`, we need to start unwinding the inner stack and
 restoring the elements under the selected one.
 
 ```k
-  syntax KItem ::= #DoDig(Int, K, OptionData)
+  syntax InternalInstruction ::= #DoDig(Int, K, OptionData)
 
   rule <k> DIG A I => #HandleAnnotations(A) ~> #DoDig(I, .K, None) ... </k>
        <stack> S </stack>
@@ -361,7 +373,7 @@ Dug is implemented similar to Dig, except the element to move is saved
 immediately rather than waiting for `I = 0`. Instead it is placed when `I = 0`.
 
 ```k
-  syntax KItem ::= #DoDug(Int, K, Data)
+  syntax InternalInstruction ::= #DoDug(Int, K, Data)
 
   rule <k> DUG A I => #HandleAnnotations(A) ~> #DoDug(I, .K, T) ... </k>
        <stack> T => .K ... </stack>
@@ -520,7 +532,7 @@ cell to an Aborted production.
        <stack> X ~> S => X <<Int S ... </stack>
        requires S <=Int 256
 
-  rule <k> LSL A ~> Rk => #HandleAnnotations(A) ~> Aborted("LSL out of range", S, Rk, Rs) </k>
+  rule <k> LSL A ~> Rk => #HandleAnnotations(A) ~> Aborted("LSL out of range", S, Rk, Rs) ~> Rk </k>
        <stack> C:Int ~> S:Int ~> Rs => ( GeneralOverflow C S )  </stack>
        requires S >Int 256
 
@@ -528,7 +540,7 @@ cell to an Aborted production.
        <stack> X ~> S => X >>Int S ... </stack>
        requires S <=Int 256
 
-  rule <k> LSR A ~> Rk => #HandleAnnotations(A) ~> Aborted("LSR out of range", S, Rk, Rs) </k>
+  rule <k> LSR A ~> Rk => #HandleAnnotations(A) ~> Aborted("LSR out of range", S, Rk, Rs) ~> Rk </k>
        <stack> X ~> S ~> Rs => ( GeneralOverflow X S ) </stack>
        requires S >Int 256
 ```
@@ -711,12 +723,12 @@ argument. Like Sets, iteration order is actually defined, and we implement it by
 repeatedly selecting the minimal element in the list of keys in the map.
 
 ```k
-  syntax KItem ::= #PerformMap(Map, Map, Block)
+  syntax InternalInstruction ::= #PerformMap(Map, Map, Block)
 
   rule <k> MAP A B => #HandleAnnotations(A) ~> #PerformMap(M, .Map, B) ... </k>
        <stack> M => . ... </stack>
 
-  syntax KItem ::= #PopNewVal(Data)
+  syntax InternalInstruction ::= #PopNewVal(Data)
 
   rule <k> #PopNewVal(K) ~> #PerformMap(M1, M2, B) => #PerformMap(M1, M2[K <- V], B) ... </k>
        <stack> V => . ... </stack>
@@ -830,7 +842,7 @@ during a `MAP` operation. We cannot currently determine the type of the result
 list as we do not have a static type system.
 
 ```k
-  syntax KItem ::= #PerformMapList(List, List, Block)
+  syntax InternalInstruction ::= #PerformMapList(List, List, Block)
 
   rule <k> MAP A B => #HandleAnnotations(A) ~> #PerformMapList(Ls, .List, B) ... </k>
        <stack> Ls => . ... </stack>
@@ -855,7 +867,7 @@ the input list to the stack and schedule an `#AddToList` to pop the result off
 the stack.
 
 ```k
-  syntax KItem ::= #AddToList(List, List, Block)
+  syntax InternalInstruction ::= #AddToList(List, List, Block)
   rule <k> #PerformMapList(ListItem(L) Ls, Acc, B) => B ~> #AddToList(Ls, Acc, B) ... </k>
        <stack> . => L ... </stack>
 
@@ -1095,12 +1107,12 @@ The cryptographic operations are simply stubbed for now.
 ```
 
 Mutez operations need to check their results since Mutez is not an unlimited
-precision type. This KItem checks and produces the appropriate error case if the
+precision type. This internal instruction checks and produces the appropriate error case if the
 value is invalid.
 
 ```k
   //// Operations on Mutez
-  syntax KItem ::= #ValidateMutezAndPush(Mutez, Int, Int)
+  syntax InternalInstruction ::= #ValidateMutezAndPush(Mutez, Int, Int)
 
   syntax FailedStack ::= #FailureFromMutezValue(Mutez, Int, Int) [function]
   rule #FailureFromMutezValue(#Mutez(I), I1, I2) => ( MutezOverflow I1 I2 ) requires I >=Int #MutezOverflowLimit
@@ -1111,7 +1123,7 @@ value is invalid.
        <stack> . => #Mutez(I) ... </stack>
        requires #IsLegalMutezValue(I)
 
-  rule <k> #ValidateMutezAndPush(#Mutez(I), I1, I2) ~> Rk => Aborted("Mutez out of bounds", I, Rk, Rs) </k>
+  rule <k> #ValidateMutezAndPush(#Mutez(I), I1, I2) ~> Rk => Aborted("Mutez out of bounds", I, Rk, Rs) ~> Rk </k>
        <stack> Rs => #FailureFromMutezValue(#Mutez(I), I1, I2) </stack>
        requires notBool #IsLegalMutezValue(I)
 ```

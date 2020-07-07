@@ -42,8 +42,8 @@ boolean ``True`` and the bottom element is the natural number ``42``.
 
 ```k
   syntax StackElement ::= "Stack_elt" Type Data
-  syntax StackElementList ::= StackElement | StackElement ";" StackElementList
-  syntax LiteralStack ::= EmptyBlock | "{" StackElementList "}"
+  syntax StackElementList ::= List{ StackElement, ";" } [klabel(StackElementList)]
+  syntax LiteralStack ::= "{" StackElementList "}"
 ```
 
 While the input stack must be a full literal, the output stack may be either a
