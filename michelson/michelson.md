@@ -154,19 +154,27 @@ From Micheline to K-Michelson Internal Representation
 ```k
   syntax KItem ::= "#ConvertParamToNative"
   rule <k> #ConvertParamToNative => .K ... </k>
-       <paramtype>  T                                            </paramtype>
-       <paramvalue> D => #MichelineToNative(D, T, .Map, BigMaps) </paramvalue>
+       <paramvalue> D:Data => #MichelineToNative(D, #ConvertToType(T), .Map, BigMaps) </paramvalue>
+       <paramtype>  T      => #ConvertToType(T)                                       </paramtype>
        <bigmaps> BigMaps </bigmaps>
+
   rule <k> #ConvertParamToNative => .K ... </k>
-       <paramvalue> #NoData </paramvalue> [owise]
+       <paramvalue> #NoData                </paramvalue>
+       <paramtype>  T => #ConvertToType(T) </paramtype>
 
   syntax KItem ::= "#ConvertStorageToNative"
   rule <k> #ConvertStorageToNative => .K ... </k>
-       <storagetype>  T                                            </storagetype>
-       <storagevalue> D => #MichelineToNative(D, T, .Map, BigMaps) </storagevalue>
+       <storagevalue> D:Data => #MichelineToNative(D, #ConvertToType(T), .Map, BigMaps) </storagevalue>
+       <storagetype>  T      => #ConvertToType(T)                                       </storagetype>
        <bigmaps> BigMaps </bigmaps>
+
   rule <k> #ConvertStorageToNative => .K ... </k>
-       <storagevalue> #NoData </storagevalue> [owise]
+       <storagevalue> #NoData                </storagevalue>
+       <storagetype>  T => #ConvertToType(T) </storagetype>
+
+  syntax Type ::= #ConvertToType(PreType) [function]
+  rule #ConvertToType(#NotSet) => unit .AnnotationList
+  rule #ConvertToType(T:Type)  => T
 ```
 
 Execution Semantics
