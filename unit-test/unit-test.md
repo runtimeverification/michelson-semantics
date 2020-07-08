@@ -249,7 +249,7 @@ know what types are on the stack.
   syntax TypeSeq ::= #LiteralStackToTypes(LiteralStack, Type) [function]
   rule #LiteralStackToTypes( { .StackElementList }, _) => .TypeSeq
   rule #LiteralStackToTypes( { Stack_elt T D ; Gs:StackElementList }, PT)
-  => T ; #LiteralStackToTypes({ Gs }, PT)
+    => T ; #LiteralStackToTypes({ Gs }, PT)
     requires #Typed(D, T) :=K #TypeData(PT, D, T)
 ```
 
@@ -426,8 +426,8 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
 ```k
   rule <k> invariant Annot { Stack } Blocks => . ... </k>
        <invs> .Map
-       => (Annot |-> { Stack } Blocks)
-          ...
+           => (Annot |-> { Stack } Blocks)
+              ...
        </invs>
 ```
 
