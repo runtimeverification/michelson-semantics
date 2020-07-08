@@ -38,8 +38,8 @@ should never occur on the Michelson stack, the latter is perfectly legitimate
 Michelson data representing an `option` type which happens to be empty.**
 
 ```k
-  syntax Type ::= "#NotSet"
-  syntax Data ::= "#NoData"
+  syntax PreType ::= "#NotSet" | Type
+  syntax PreData ::= "#NoData" | Data
 ```
 
 These productions wrap the literal data of certain Michelson types, attaching a

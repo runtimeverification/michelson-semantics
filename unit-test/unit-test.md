@@ -23,7 +23,6 @@ module UNIT-TEST-DRIVER
         ~> #TypeCheck
         ~> #LoadInputStack
         ~> #ExecuteScript
-        ~> #CheckOutput
         ~> #ExecutePostConditions
            ...
        </k>
@@ -192,10 +191,10 @@ productions) into a KSequence (the same format as the execution stack).
 
 ```k
   syntax K ::= #LiteralStackToSemantics(LiteralStack, Map, Map) [function]
-  rule #LiteralStackToSemantics({ .StackElementList }, KnownAddrs, BigMaps) => . 
+  rule #LiteralStackToSemantics({ .StackElementList }, KnownAddrs, BigMaps) => .
   rule #LiteralStackToSemantics({ Stack_elt T D ; Gs:StackElementList }, KnownAddrs, BigMaps)
-  	=> #MichelineToNative(D, T, KnownAddrs, BigMaps)
-	~> #LiteralStackToSemantics({ Gs }, KnownAddrs, BigMaps)
+    => #MichelineToNative(D, T, KnownAddrs, BigMaps)
+    ~> #LiteralStackToSemantics({ Gs }, KnownAddrs, BigMaps)
 ```
 
 This function transforms an expected output stack to its internal representation
@@ -205,7 +204,7 @@ transformed as in the input group).
 ```k
   syntax K ::= #OutputStackToSemantics(OutputStack, Map, Map) [function]
   rule #OutputStackToSemantics(L, KnownAddrs, BigMaps)
-  	=> #LiteralStackToSemantics(L, KnownAddrs, BigMaps)
+    => #LiteralStackToSemantics(L, KnownAddrs, BigMaps)
   rule #OutputStackToSemantics(X:FailedStack, _, _) => X
 ```
 
@@ -250,7 +249,7 @@ know what types are on the stack.
   syntax TypeSeq ::= #LiteralStackToTypes(LiteralStack, Type) [function]
   rule #LiteralStackToTypes( { .StackElementList }, _) => .TypeSeq
   rule #LiteralStackToTypes( { Stack_elt T D ; Gs:StackElementList }, PT)
-  	=> T ; #LiteralStackToTypes({ Gs }, PT)
+    => T ; #LiteralStackToTypes({ Gs }, PT)
     requires #Typed(D, T) :=K #TypeData(PT, D, T)
 ```
 
@@ -331,25 +330,62 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
 --------------------------------
 
 ```k
-  syntax InternalInstruction ::= "#AssumeTrue"
-  rule <k> #AssumeTrue => . ... </k>
-       <stack> true => . </stack> [transition]
-  rule <k> #AssumeTrue ~> _:K => . </k>
-       <stack> false => . </stack>
-       <assumeFailed> _ => true </assumeFailed> [transition]
+  syntax Instruction ::= "ASSERT" Blocks
+                       | "ASSUME" Blocks
 ```
 
 ```k
-  syntax InternalInstruction ::= "#AssertTrue"
+  rule <k> ASSERT { }:EmptyBlock => .K ... </k>
+  rule <k> ASSERT { { } } => .K ... </k>
+  rule <k> ASSERT { B } => ASSERT { B ; { } } ... </k> requires B =/=K { }
+  rule <k> ASSERT { B; Bs }
+        => B ~> #AssertTrue ~> ASSERT { Bs } ~> #RestoreStack(Stack)
+           ...
+       </k>
+       <stack> Stack => .K </stack>
+```
+
+```k
+  rule <k> ASSUME { }:EmptyBlock => .K ... </k>
+  rule <k> ASSUME { { } } => .K ... </k>
+  rule <k> ASSUME { B } => ASSUME { B ; { } } ... </k> requires B =/=K { }
+  rule <k> ASSUME { B; Bs }
+        => B ~> #AssumeTrue ~> ASSUME { Bs } ~> #RestoreStack(Stack)
+           ...
+       </k>
+       <stack> Stack => .K </stack>
+```
+
+```k
+  syntax Instruction ::= #RestoreStack(K)
+  rule <k> #RestoreStack(Stack) => .K ... </k>
+       <stack> _ => Stack </stack>
+```
+
+```k
+  syntax Instruction ::= "#AssertTrue"
   rule <k> #AssertTrue => #Assert(B) ... </k>
        <stack> B:Bool => . </stack>
 ```
 
 ```k
-  syntax InternalInstruction ::= #Assert(Bool)
+  syntax Instruction ::= "#AssumeTrue"
+  rule <k> #AssumeTrue => #Assume(B) ... </k>
+       <stack> B:Bool => . </stack>
+```
+
+```k
+  syntax KItem ::= #Assert(Bool)
   rule <k> #Assert(true)  => .             ... </k>
   rule <k> #Assert(false) => #AssertFailed ... </k>
   syntax KItem ::= "#AssertFailed" [klabel(#AssertFailed), symbol]
+```
+
+```k
+  syntax KItem ::= #Assume(Bool)
+  rule <k> #Assume(true)  => .             ... </k>
+  rule <k> #Assume(false) ~> _:K => . </k>
+       <assumeFailed> _ => true </assumeFailed> [transition]
 ```
 
 `precondition` Groups
@@ -362,46 +398,120 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
 
 ```k
   syntax KItem ::= "#ExecutePreConditions"
-                 | "#ExecutePreConditions" "(" Block ")"
-  rule <k> #ExecutePreConditions(B:Block)
-        => B ~> #AssumeTrue ~> #ExecutePreConditions
-           ...
-       </k>
-       <stack> Stack => .K </stack>
-
-  rule <k> #ExecutePreConditions => #ExecutePreConditions(B) ... </k>
-       <pre> { B ; Bs } => { Bs } </pre>
-  rule <k> #ExecutePreConditions => #ExecutePreConditions(B) ... </k>
-       <pre> { B } => { }  </pre>
-  rule <k> #ExecutePreConditions => .K ... </k>
-       <pre> { } </pre>
+  rule <k> #ExecutePreConditions => ASSUME Preconditions ... </k>
+       <pre> Preconditions </pre>
 ```
 
 `postcondition` group
 ---------------------
 
 ```k
-  rule <k> postcondition B => . ... </k>
-       <post> { } => B </post>
-
-  syntax KItem ::= "#ExecutePostConditions"
-                 | #ExecutePostConditions(Block)
-  rule <k> #ExecutePostConditions(B)
-        => B ~> #AssertTrue ~>  #ExecutePostConditions
-           ...
-       </k>
-       <stack> Stack => .K </stack>
-
-  rule <k> #ExecutePostConditions => #ExecutePostConditions(B) ... </k>
-       <post> { B ; Bs } => { Bs } </post>
-  rule <k> #ExecutePostConditions => #ExecutePostConditions(B) ... </k>
-       <post> { B } => { }  </post>
-  rule <k> #ExecutePostConditions => .K ... </k>
-       <post> { } </post>
+  rule <k> postcondition Bs => .K ... </k>
+       <post>  { } => Bs </post>
 ```
 
-`#CheckOutput`
---------------
+```k
+  syntax KItem ::= "#ExecutePostConditions"
+  rule <k> #ExecutePostConditions
+        => BIND Expected { ASSERT Postconditions }
+           ...
+       </k>
+       <expected> Expected </expected>
+       <post> Postconditions </post>
+```
+
+`invariants` group
+---------------------
+
+```k
+  rule <k> invariant Annot { Stack } Blocks => . ... </k>
+       <invs> .Map
+           => (Annot |-> { Stack } Blocks)
+              ...
+       </invs>
+```
+
+We need stack concatentation for invariant preprocessing.
+Note that `#AnyStack` on the lefthand side is currently unhandled.
+
+```k
+  syntax StackElementList ::= StackElementList "++StackElementList" StackElementList [function, left, avoid]
+  rule .StackElementList ++StackElementList S2 => S2
+  rule (E1 ; S1)         ++StackElementList S2 => E1 ; (S1 ++StackElementList S2)
+```
+
+```symbolic
+  syntax Instruction ::= CUTPOINT( id: Int, shape: StackElementList )
+  rule <k> LOOP A .AnnotationList Body
+        => BIND { Shape } { ASSERT Predicates } ;
+           LOOP .AnnotationList {
+             Body ;
+             BIND { Shape } { ASSERT Predicates } ;
+             CUTPOINT(!Int, Shape) ;
+             BIND { Shape } { ASSUME Predicates }
+           }
+           ...
+       </k>
+       <invs> A |-> { Shape:StackElementList } Predicates:Blocks ... </invs>
+```
+
+### `CUTPOINT`s and stack generalization
+
+A cutpoint is a semantic construct that internalizes the notion of a
+reachability logic circularity (or claim).
+When we reach a cutpoint, we need to generalize our current state into one which
+corresponds to the reachability logic circularity that we wish to use.
+
+```symbolic
+  rule <k> CUTPOINT(I,Shape) => #GeneralizeStack(Shape,.K) ... </k>
+       <cutpoints> (.Set => SetItem(I)) VisitedCutpoints </cutpoints>
+    requires notBool I in VisitedCutpoints
+
+  rule <k> CUTPOINT(I, _) => #Assume(false) ... </k>
+       <cutpoints> VisitedCutpoints </cutpoints>
+    requires I in VisitedCutpoints
+```
+
+In stack-based languages like Michelson, state generalization means that we
+abstract out pieces of the stack which are non-invariant during loop execution.
+
+```symbolic
+  syntax KItem ::= #GeneralizeStack(StackElementList, K)
+  rule <k> #GeneralizeStack(.StackElementList, Stack) => . ... </k>
+       <stack> .K => Stack </stack>
+
+  rule <k> #GeneralizeStack(Stack_elt T D ; Stack, KSeq:K)
+        => #GeneralizeStack(Stack, KSeq ~> D)
+           ...
+       </k>
+       <stack> _:Data => . ... </stack>
+    requires notBool isSymbolicData(D)
+
+  rule <k> (.K => #MakeFresh(T))
+        ~> #GeneralizeStack(Stack_elt T D:SymbolicData ; Stack, KSeq)
+           ...
+       </k>
+
+  rule <k> ( #Fresh(V)
+          ~> #GeneralizeStack(Stack_elt T D:SymbolicData ; Stack, KSeq)
+           )
+        =>   #GeneralizeStack(Stack_elt T V ; Stack, KSeq)
+           ...
+       </k>
+```
+
+Here `#MakeFresh` is responsible for generating a fresh value of a given type.
+
+```symbolic
+  syntax KItem ::= #MakeFresh(Type) | #Fresh(Data)
+  rule <k> #MakeFresh(bool   _:AnnotationList) =>                       #Fresh(?_:Bool)   ... </k>
+  rule <k> #MakeFresh(int    _:AnnotationList) =>                       #Fresh(?_:Int)    ... </k>
+  rule <k> #MakeFresh(nat    _:AnnotationList) => #Assume(?V >Int 0) ~> #Fresh(?V:Int)    ... </k>
+  rule <k> #MakeFresh(string _:AnnotationList) =>                       #Fresh(?_:String) ... </k>
+```
+
+Handle `Aborted`
+----------------
 
 ```k
   syntax TypedSymbol ::= #TypedSymbol(Type, Data)
@@ -410,38 +520,66 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
 If a program aborts due to the FAILWITH instruction, we throw away the abortion debug info:
 
 ```k
-  rule <k> (Aborted(_, _, _, _) => .K) ~> #CheckOutput ... </k>
+  rule <k> (Aborted(_, _, _, _) => .K) ~> #ExecutePostConditions ... </k>
+```
+
+The `BIND` instruction
+----------------------
+
+```k
+  syntax Instruction ::= "BIND" OutputStack Block
+  rule <k> BIND Shape Block
+        => #Bind(Shape, Stack)
+        ~> Block
+        ~> #RestoreSymbols(Symbols)
+           ...
+       </k>
+       <symbols> Symbols </symbols>
+       <stack> Stack </stack>
 ```
 
 ```k
-  syntax KItem ::= "#CheckOutput"
-  rule <k> #CheckOutput => #Bind(ExpectedStack) ... </k>
-       <expected> ExpectedStack </expected>
-```
+  syntax KItem ::= #Bind(OutputStack, K)
 
-```k
-  syntax KItem ::= #Bind(OutputStack)
-  syntax KItem ::= #BindSingle(StackElement)
-  rule <k> #Bind({ .StackElementList }) => .K ... </k>
-       <stack> .K </stack>
-  rule <k> #Bind({ S ; Ss }) => #BindSingle(S) ~> #Bind({ Ss }) ... </k>
+  rule <k> #Bind({ .StackElementList }, .K) => .K ... </k>
 
-  rule <k> #Bind(S1:FailedStack) => .K ... </k>
-       <stack> S2:FailedStack => .K ... </stack>
-	requires #Matches(S1, S2)
+  rule <k> #Bind(S1:FailedStack, S2:FailedStack) => .K ... </k>
+    requires #Matches(S1, S2)
 
-  rule <k> #BindSingle(Stack_elt T S:SymbolicData) => .K ...
-	   </k>
-	   <paramtype> PT </paramtype>
-       <stack> D => .K ... </stack>
-       <symbols> M => M[ S <- #TypedSymbol(T, D) ] </symbols>
+  rule <k> #Bind( { Stack_elt T S:SymbolicData ; Ss } => { Ss }
+                , ( (D ~> K:K)                        => K )
+                )
+           ...
+       </k>
+       <paramtype> PT </paramtype>
+       <symbols> .Map => S |-> #TypedSymbol(T, D) ... </symbols>
     requires isTypedData(#TypeData(PT,D,T))
 
-  rule <k> #BindSingle(Stack_elt T ED) => .K ... </k>
-	   <knownaddrs> KnownAddrs </knownaddrs>
-	   <bigmaps> BigMaps </bigmaps>
+  rule <k> #Bind( { Stack_elt T S:SymbolicData ; Ss } => { Ss }
+                , ( (D ~> K:K)                        => K )
+                )
+           ...
+       </k>
+       <paramtype> PT </paramtype>
+       <symbols> S |-> #TypedSymbol(T, D) ... </symbols>
+    requires isTypedData(#TypeData(PT,D,T))
+
+  rule <k> #Bind( { Stack_elt T ED ; Ss } => { Ss }
+                , ( (AD ~> K:K)             => K )
+                )
+           ...
+       </k>
+       <knownaddrs> KnownAddrs </knownaddrs>
+       <bigmaps> BigMaps </bigmaps>
        <stack> AD => .K ... </stack>
     requires #Matches(#MichelineToNative(ED,T,KnownAddrs,BigMaps),AD)
+     andBool notBool isSymbolicData(ED)
+```
+
+```k
+  syntax KItem ::= #RestoreSymbols(Map)
+  rule <k> #RestoreSymbols(Symbols) => .K ... </k>
+       <symbols> _ => Symbols </symbols>
 ```
 
 Extending functions to `SymbolicData`
@@ -462,15 +600,6 @@ Extending functions to `SymbolicData`
 ```symbolic
   rule #LiteralStackToTypes({ Stack_elt T S:SymbolicData ; Gs:StackElementList }, PT)
     => T ; #LiteralStackToTypes({ Gs }, PT)
-```
-
-```symbolic
-  rule #Ceil(#DoCompare(@A:Int, @B:Int)) => #Ceil(@A) #And #Ceil(@B)  [anywhere, simplification]
-  rule #DoCompare(I1:Int, I2:Int) <Int 0 => I1 <Int I2 [simplification]
-  rule #DoCompare(I1:Int, I2:Int) <=Int 0 => I1 <=Int I2 [simplification]
-  rule #DoCompare(I1:Int, I2:Int) ==Int 0 => I1 ==Int I2 [simplification]
-  rule #DoCompare(I1:Int, I2:Int) >=Int 0 => I1 >=Int I2 [simplification]
-  rule #DoCompare(I1:Int, I2:Int) >Int 0 => I1 >Int I2 [simplification]
 ```
 
 ```k

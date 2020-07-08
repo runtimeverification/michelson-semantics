@@ -332,7 +332,8 @@ module MICHELSON-TYPES
 
   syntax TypedInstruction ::= #LoopAux(Instruction, TypedInstruction, TypeSeq) [function, functional]
 
-  rule #LoopAux(LOOP _ _, #TI(_, Ts -> (bool _) ; Ts) #as B, ((bool _) ; Ts) #as OS) => #TI((LOOP .AnnotationList { #Exec(B) }), OS -> Ts)
+  rule #LoopAux( LOOP A _ , #TI(_, Ts -> (bool _) ; Ts) #as B, ((bool _) ; Ts) #as OS)
+    => #TI((LOOP A { #Exec(B) }), OS -> Ts)
   rule #LoopAux(I, #TI(_, _ -> Ts1), Ts2) => #TI(I, #InvalidPostIterationStack(I, Ts1, Ts2)) requires Ts1 =/=K Ts2
   rule #LoopAux(I, #TI(_, #ContractFailed) #as B, ((bool _) ; Ts) #as OS) => #TI((LOOP .AnnotationList { #Exec(B) }), OS -> Ts)
   rule #LoopAux(I, #TI(_, TE:TypeError),  _) => #TI(I, TE)
