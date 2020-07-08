@@ -1,3 +1,0 @@
-code { CDDAR } ; 
-input { Stack_elt (pair int (pair int (pair int int))) (Pair 5 (Pair 4 (Pair 3 -5))) } ;
-output { Stack_elt int 3 }
