@@ -475,7 +475,7 @@ corresponds to the reachability logic circularity that we wish to use.
 In stack-based languages like Michelson, state generalization means that we
 abstract out pieces of the stack which are non-invariant during loop execution.
 
-```k
+```symbolic
   syntax KItem ::= #GeneralizeStack(StackElementList, K)
   rule <k> #GeneralizeStack(.StackElementList, Stack) => . ... </k>
        <stack> .K => Stack </stack>
@@ -502,7 +502,7 @@ abstract out pieces of the stack which are non-invariant during loop execution.
 
 Here `#MakeFresh` is responsible for generating a fresh value of a given type.
 
-```k
+```symbolic
   syntax KItem ::= #MakeFresh(Type) | #Fresh(Data)
   rule <k> #MakeFresh(bool   _:AnnotationList) =>                       #Fresh(?_:Bool)   ... </k>
   rule <k> #MakeFresh(int    _:AnnotationList) =>                       #Fresh(?_:Int)    ... </k>
