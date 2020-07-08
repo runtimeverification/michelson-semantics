@@ -510,8 +510,8 @@ Here `#MakeFresh` is responsible for generating a fresh value of a given type.
   rule <k> #MakeFresh(string _:AnnotationList) =>                       #Fresh(?_:String) ... </k>
 ```
 
-`#CheckOutput`
---------------
+Handle `Aborted`
+----------------
 
 ```k
   syntax TypedSymbol ::= #TypedSymbol(Type, Data)
@@ -520,14 +520,7 @@ Here `#MakeFresh` is responsible for generating a fresh value of a given type.
 If a program aborts due to the FAILWITH instruction, we throw away the abortion debug info:
 
 ```k
-  rule <k> (Aborted(_, _, _, _) => .K) ~> #CheckOutput ... </k>
-```
-
-```k
-  syntax KItem ::= "#CheckOutput"
-  rule <k> #CheckOutput => #Bind(ExpectedStack, Stack) ... </k>
-       <stack> Stack </stack>
-       <expected> ExpectedStack </expected>
+  rule <k> (Aborted(_, _, _, _) => .K) ~> #ExecutePostConditions ... </k>
 ```
 
 The `BIND` instruction
