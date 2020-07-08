@@ -357,19 +357,19 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
 ```
 
 ```k
-  syntax KItem ::= #RestoreStack(K)
+  syntax Instruction ::= #RestoreStack(K)
   rule <k> #RestoreStack(Stack) => .K ... </k>
        <stack> _ => Stack </stack>
 ```
 
 ```k
-  syntax InternalInstruction ::= "#AssertTrue"
+  syntax Instruction ::= "#AssertTrue"
   rule <k> #AssertTrue => #Assert(B) ... </k>
        <stack> B:Bool => . </stack>
 ```
 
 ```k
-  syntax KItem ::= "#AssumeTrue"
+  syntax Instruction ::= "#AssumeTrue"
   rule <k> #AssumeTrue => #Assume(B) ... </k>
        <stack> B:Bool => . </stack>
 ```

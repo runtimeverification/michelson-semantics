@@ -204,7 +204,7 @@ use idiomatic K.
 For now, annotations are simply ignored.
 
 ```k
-  syntax InternalInstruction ::= #HandleAnnotations(AnnotationList)
+  syntax Instruction ::= #HandleAnnotations(AnnotationList)
   rule #HandleAnnotations(_) => .
 ```
 
@@ -231,7 +231,6 @@ It then consumes the rest of the program:
   rule <k> Aborted(_, _, _, _) ~> (_:TypedInstruction => .K) ... </k>
   rule <k> Aborted(_, _, _, _) ~> (_:DataList => .K) ... </k>
   rule <k> Aborted(_, _, _, _) ~> (_:Data => .K) ... </k>
-  rule <k> Aborted(_, _, _, _) ~> (_:InternalInstruction => .K) ... </k>
 ```
 
 Conditionals
@@ -275,7 +274,7 @@ It is sometimes useful to create "pseudo-instructions" like this to schedule
 operations to happen in the future.
 
 ```k
-  syntax InternalInstruction ::= #Push(Data)
+  syntax Instruction ::= #Push(Data)
   rule <k> #Push(D) => . ... </k>
        <stack> . => D ... </stack>
 ```
@@ -300,7 +299,7 @@ This pseudo-instruction implements the behavior of restoring the previous stack
 when a lambda completes execution.
 
 ```k
-  syntax InternalInstruction ::= #ReturnStack(K)
+  syntax Instruction ::= #ReturnStack(K)
 
   rule <k> #ReturnStack(Ls) => . ... </k>
        <stack> R:Data => R ~> Ls </stack>
@@ -356,7 +355,7 @@ and can save it. When `I = -1`, we need to start unwinding the inner stack and
 restoring the elements under the selected one.
 
 ```k
-  syntax InternalInstruction ::= #DoDig(Int, K, OptionData)
+  syntax Instruction ::= #DoDig(Int, K, OptionData)
 
   rule <k> DIG A I => #HandleAnnotations(A) ~> #DoDig(I, .K, None) ... </k>
        <stack> S </stack>
@@ -379,7 +378,7 @@ Dug is implemented similar to Dig, except the element to move is saved
 immediately rather than waiting for `I = 0`. Instead it is placed when `I = 0`.
 
 ```k
-  syntax InternalInstruction ::= #DoDug(Int, K, Data)
+  syntax Instruction ::= #DoDug(Int, K, Data)
 
   rule <k> DUG A I => #HandleAnnotations(A) ~> #DoDug(I, .K, T) ... </k>
        <stack> T => .K ... </stack>
@@ -746,12 +745,12 @@ argument. Like Sets, iteration order is actually defined, and we implement it by
 repeatedly selecting the minimal element in the list of keys in the map.
 
 ```k
-  syntax InternalInstruction ::= #PerformMap(Map, Map, Block)
+  syntax Instruction ::= #PerformMap(Map, Map, Block)
 
   rule <k> MAP A B => #HandleAnnotations(A) ~> #PerformMap(M, .Map, B) ... </k>
        <stack> M => . ... </stack>
 
-  syntax InternalInstruction ::= #PopNewVal(Data)
+  syntax Instruction ::= #PopNewVal(Data)
 
   rule <k> #PopNewVal(K) ~> #PerformMap(M1, M2, B) => #PerformMap(M1, M2[K <- V], B) ... </k>
        <stack> V => . ... </stack>
@@ -865,7 +864,7 @@ during a `MAP` operation. We cannot currently determine the type of the result
 list as we do not have a static type system.
 
 ```k
-  syntax InternalInstruction ::= #PerformMapList(List, List, Block)
+  syntax Instruction ::= #PerformMapList(List, List, Block)
 
   rule <k> MAP A B => #HandleAnnotations(A) ~> #PerformMapList(Ls, .List, B) ... </k>
        <stack> Ls => . ... </stack>
@@ -890,7 +889,7 @@ the input list to the stack and schedule an `#AddToList` to pop the result off
 the stack.
 
 ```k
-  syntax InternalInstruction ::= #AddToList(List, List, Block)
+  syntax Instruction ::= #AddToList(List, List, Block)
   rule <k> #PerformMapList(ListItem(L) Ls, Acc, B) => B ~> #AddToList(Ls, Acc, B) ... </k>
        <stack> . => L ... </stack>
 
@@ -1135,7 +1134,7 @@ value is invalid.
 
 ```k
   //// Operations on Mutez
-  syntax InternalInstruction ::= #ValidateMutezAndPush(Mutez, Int, Int)
+  syntax Instruction ::= #ValidateMutezAndPush(Mutez, Int, Int)
 
   syntax FailedStack ::= #FailureFromMutezValue(Mutez, Int, Int) [function]
   rule #FailureFromMutezValue(#Mutez(I), I1, I2) => ( MutezOverflow I1 I2 ) requires I >=Int #MutezOverflowLimit
