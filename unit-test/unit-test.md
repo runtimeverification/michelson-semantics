@@ -527,7 +527,7 @@ The `BIND` instruction
 ----------------------
 
 ```k
-  syntax Instruction ::= "BIND" LiteralStack Block
+  syntax Instruction ::= "BIND" OutputStack Block
   rule <k> BIND Shape Block
         => #Bind(Shape, Stack)
         ~> Block
