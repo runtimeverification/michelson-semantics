@@ -437,7 +437,7 @@ Note that `#AnyStack` on the lefthand side is currently unhandled.
 ```k
   syntax StackElementList ::= StackElementList "++StackElementList" StackElementList [function, left, avoid]
   rule .StackElementList ++StackElementList S2 => S2
-  rule E1 ; S1           ++StackElementList S2 => E1 ; (S1 ++StackElementList S2)
+  rule (E1 ; S1)         ++StackElementList S2 => E1 ; (S1 ++StackElementList S2)
 ```
 
 ```symbolic
