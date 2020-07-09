@@ -20,6 +20,17 @@ def findSubtermsByLabel(label, term):
         return ret
     return []
 
+def findImmediateSubtermsByLabel(labels,term):
+    if not pyk.isKApply(term): return dict()
+    ret = dict()
+    for label in labels:
+        for subterm in term['args']:
+            if subterm['label'] == label:
+                ret[label] = subterm
+                break
+        if not label in ret.keys(): raise ValueError("Subterm " + label + " not found")
+    return ret
+
 def parseKastTerm(jsonString):
     return json.loads(jsonString)['term']
 
@@ -27,15 +38,36 @@ def findFailingBranches(term):
     success_count = 0
     failures = []
     stucks = []
-    for kCell in findSubtermsByLabel('<k>', term):
-        assert(kCell['arity'] == 1)
-        kSeq = kCell['args'][0]
-        assert(pyk.isKSequence(kSeq))
+    for branchTop in findSubtermsByLabel('#And', term):
 
-        if   kSeq['items'] == []:                          success_count += 1
-        elif kSeq['items'][0]['label'] != '#AssertFailed': stucks += [kSeq]
-        else:                                              failures += [kSeq]
+        constraints = filter(lambda x: findSubtermsByLabel('<michelsonTop>',x) == [], findSubtermsByLabel('#Equals', branchTop))
+
+        topCells = findSubtermsByLabel('<michelsonTop>', branchTop)
+        assert(len(topCells) == 1)
+        topCell = topCells[0]
+
+        cells = findImmediateSubtermsByLabel(['<k>','<stack>','<symbols>'], topCell)
+
+        assert(cells['<k>']['arity'] == 1)
+        kcell = cells['<k>']['args'][0]
+        assert(pyk.isKSequence(kcell))
+
+        if   kcell['items'] == []:                          success_count += 1
+        elif kcell['items'][0]['label'] != '#AssertFailed': stucks += [(constraints,cells)]
+        else:                                               failures += [(constraints,cells)]
     return success_count, failures, stucks
+
+def printStates(statetype,states):
+    if len(states) == 0: return
+    print(statetype + "s:")
+    for i,(constraints,state) in enumerate(states):
+        statenum = " " + statetype + ": " + str(i)
+        print(">" * abs(80 - len(statenum)) + statenum)
+        for constraint in constraints: print("  " + pyk.prettyPrintKast(constraint, symbolTable))
+        for name, term in state.items():
+            print(pyk.prettyPrintKast(term, symbolTable))
+    print()
+    sys.stdout.flush()
 
 assert(len(sys.argv) == 2)
 pathToDefinition = sys.argv[1]
@@ -43,20 +75,8 @@ definition = pyk.readKastTerm(os.path.join(pathToDefinition, 'compiled.json'))
 symbolTable = pyk.buildSymbolTable(definition)
 outputTerm = parseKastTerm(sys.stdin.read())
 success_count, failures, stucks = findFailingBranches(outputTerm)
-
-if len(stucks) != 0: print("Stucks:")
-for term in stucks:
-    print(pyk.prettyPrintKast(term, symbolTable))
-    print()
-print()
-sys.stdout.flush()
-
-if len(failures) != 0: print("Failures:")
-for term in failures:
-    print(pyk.prettyPrintKast(term, symbolTable))
-    print()
-print()
-sys.stdout.flush()
+printStates("Stuck",stucks)
+printStates("Failure",failures)
 
 print("%d branches succeeded; %d branches failed; %d branches stuck." % (success_count, len(failures), len(stucks)))
 if len(stucks) != 0: sys.exit(127)
