@@ -166,8 +166,8 @@ Note that our loop rule only implicitly mentions the loop CC by referring to
 the boolean element at the top of stack.
 Said differently, line `(α)` amounts to a progress requirement on invariant.
 
-*Progress Requirement*: from all states where the CC is `True` and `Inv` holds
-and we execute `DROP ; Body`, we reach a state where the invariant still holds.
+**Progress Requirement**: from all states where the CC is `True` and `Inv`
+holds and we execute `DROP ; Body`, we reach a state where `Inv` still holds.
 
 <!--
 
