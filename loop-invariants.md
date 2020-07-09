@@ -97,11 +97,12 @@ Michelson `LOOP`s are different from C while loops. Let us define it with small
 step style semantic rules:
 
 ```
-LOOP { Body } / (bool False) ..S => {}                   / ..S
-LOOP { Body } / (bool True)  ..S => Body ; LOOP { Body } / ..S
+LOOP { Body } / (bool False) ..S => {}                          / ..S
+LOOP { Body } / (bool True)  ..S => DROP ; Body ; LOOP { Body } / ..S
 ```
 
-where `{}` is the empty/terminal program (sometimes denoted `skip`).
+where `{}` is the empty/terminal program (sometimes denoted `skip`) and `DROP`
+is the Michelson instruction which drops the top stack element.
 
 Note that Michelson loops have an implicit loop continuation condition, i.e.
 the loop continuation condition is always that the stack top equals `True`.
@@ -126,11 +127,15 @@ while (assert(stack->top->type == BOOL_TYPE), stack->top->val) {
 stack->pop();
 ```
 
-Note that, if we view our loop this way, the actual continuation condition check
-is side-effect free. This means it is enough to consider checkpoints:
+Note that, if we view our loop this way, the actual continuation condition
+check is side-effect free. This means it is enough to consider checkpoints:
 
 - before loop execution at point (1)
 - symbolically after loop iteration at point (2)
+
+Note that, by abuse of notation, before we execut the next iteration of a
+Michelson `LOOP` instruction, we will refer to the boolean element that appears
+at the top of stack as its continuation condition (CC).
 
 ### Invariant Checkpoints for Michelson
 
@@ -147,17 +152,17 @@ Naturally, this means it is sufficient to check the invariant when:
 This corresponds to the follwing Hoare logic rule:
 
 ```
-        [ ..S ∧ Inv ] Body [ (bool B) ..S' ∧ Inv ]
-----------------------------------------------------------
- [ (bool E) ..S ∧ Inv ] LOOP { Body } [ ..S' ∧ Inv ∧ ¬CC ]
+(α)    [ (bool True) ..S ∧ Inv ] DROP ; Body [ (bool B) ..S' ∧ Inv ]
+    ------------------------------------------------------------------
+     [ (bool E) ..S ∧ Inv ] LOOP { Body } [ (bool False) ..S' ∧ Inv ]
 ```
 
-where `CC` is the weakest constraint `CC₀` needed to make the following Hoare
-claim satisfiable:
+Note that our loop rule only implicitly mentions the loop CC by referring to
+the boolean element at the top of stack.
+Said differently, line `(α)` amounts to a progress requirement on invariant.
 
-```
-[ ..S ∧ CC₀ ] Body [ (bool True) ..S' ]
-```
+*Progress Requirement*: from all states where the CC is `True` and `Inv` holds
+and we execute `DROP ; Body`, we reach a state where the invariant still holds.
 
 <!--
 
