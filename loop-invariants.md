@@ -5,8 +5,8 @@ Introduction and Preliminaries
 ------------------------------
 
 We would like to define Hoare logic rules for Michelson loops, to help us ensure
-that we have the proper `LOOP` invariant semantics. Let us recall the standard
-C "while" loop Hoare rule:
+that we have the proper `LOOP` invariant semantics.
+Let us recall the standard C "while" loop Hoare rule:
 
 ```
       [Invariant ∧ CC ] Body [ Invariant ]
@@ -19,7 +19,8 @@ A few things to note:
   loop invariant is undecidable.
 
 2. The invariant formula is only required to hold at designated invariant
-  checkpoints. For C-style loops, those checkpoints should be:
+  checkpoints.
+  For C-style loops, those checkpoints should be:
 
   - (a) before loop execution
   - (b) after the initial execution of CC
@@ -36,19 +37,21 @@ A few things to note:
   hold _after_ CC evaluation.
 
   However, if the CC is side-effect free, then the program state before and
-  after CC evaluation is identical. This allows for additional flexibility
-  when picking checkpoint locations. In particular, the distinction between
-  (a) and (b) evaporates.
+  after CC evaluation is identical.
+  This allows for additional flexibility when picking checkpoint locations.
+  In particular, the distinction between (a) and (b) evaporates.
 
 3. In this notation, we generally assume that the loop continuation guard is
-  side-effect free. If it is not, the meaning of `¬CC` as a predicate should
-  be understood only in terms of its boolean result without any side-effects.
+  side-effect free.
+  If it is not, the meaning of `¬CC` as a predicate should be understood only
+  in terms of its boolean result without any side-effects.
 
 ### Stack Notation
 
 Since we are dealing with a stack-based language, we need a way to specify
-stack shapes in our Hoare rules. Thus, we have developed a typed stack notation.
-The expression below:
+stack shapes in our Hoare rules.
+Thus, we have developed a typed stack notation.
+For example, the expression below:
 
 ```
 (T₁ E₁) ... (Tₖ Eₖ)
@@ -60,9 +63,10 @@ prefixed with two dots, e.g. `..S` represent an arbitrary stack. Thus,
 
 `(T₁ E₁) (T₂ E₂) ..S`
 
-represent any stack with _at least_ two elements on top. By convention, for
-a stack variable `..S`, we let `..S'` represent a stack variable of the sames
-shape (i.e. elements have the same type) but with different values.
+represent any stack with _at least_ two elements on top.
+By convention, for a stack variable `..S`, we let `..S'` represent a stack
+variable of the sames shape (i.e. elements have the same type) but with
+different values.
 
 ### Constraint Language
 
@@ -83,7 +87,8 @@ greater than or equal to 5.
 ### Program Notation
 
 We represent program states as pairs of programs and constraints separated by
-a forward slash `/`. Thus, the following expression:
+a forward slash `/`.
+Thus, the following expression:
 
 `LOOP { Body } / (bool False) ..S`
 
@@ -93,8 +98,8 @@ executing the program `LOOP { Body }`.
 Michelson `LOOP` Semantics
 --------------------------
 
-Michelson `LOOP`s are different from C while loops. Let us define it with small
-step style semantic rules:
+Michelson `LOOP`s are different from C while loops.
+Let us define it with small step style semantic rules:
 
 ```
 LOOP { Body } / (bool False) ..S => {}                          / ..S
