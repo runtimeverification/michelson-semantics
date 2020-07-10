@@ -293,8 +293,8 @@ test-symbolic:         $(symbolic_tests_passing:=.symbolic)
 test-symbolic-failing: $(symbolic_tests_failing:=.symbolic)
 
 EXPECTED_EXITCODE = 0
-tests/symbolic/%.stuck.tzt.symbolic: EXPECTED_EXITCODE = 127
 tests/symbolic/%.fail.tzt.symbolic:  EXPECTED_EXITCODE = 1
+tests/symbolic/%.stuck.tzt.symbolic: EXPECTED_EXITCODE = 2
 
 tests/%.symbolic: tests/% $(symbolic_kompiled)
 	$(LIB_DIR)/check-exit-code $(EXPECTED_EXITCODE) $(TEST) symbtest --backend symbolic $< > /dev/null
