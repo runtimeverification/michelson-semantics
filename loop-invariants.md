@@ -15,12 +15,13 @@ Let us recall the standard C "while" loop Hoare rule:
 ```
 
 A few things to note:
-1. The invariant formula must be provided by the user; in general, inferring a
-  loop invariant is undecidable.
+
+1.  The invariant formula must be provided by the user; in general, inferring a
+    loop invariant is undecidable.
 
 2. The invariant formula is only required to hold at designated invariant
-  checkpoints.
-  For C-style loops, those checkpoints should be:
+   checkpoints.
+   For C-style loops, those checkpoints should be:
 
   - (a) before loop execution
   - (b) after the initial execution of CC
@@ -154,12 +155,12 @@ Naturally, this means it is sufficient to check the invariant when:
   descending into loop:
 - in the subproof, after we have symbolically executed the loop body
 
-This corresponds to the follwing Hoare logic rule:
+This corresponds to the following Hoare logic rule:
 
 ```
-(α)    [ (bool True) ..S ∧ Inv ] DROP ; Body [ (bool B) ..S' ∧ Inv ]
-    ------------------------------------------------------------------
-     [ (bool E) ..S ∧ Inv ] LOOP { Body } [ (bool False) ..S' ∧ Inv ]
+(α)  [ (bool True) ..S1 ∧ Inv(True, S1) ] DROP ; Body [ (bool B1') ..S1' ∧ Inv(B1', S1') ]
+    ---------------------------------------------------------------------------------------
+           [ (bool B) ..S ∧ Inv(B, S) ] LOOP { Body } [ ..S' ∧ Inv(False, S') ]
 ```
 
 Note that our loop rule only implicitly mentions the loop CC by referring to
@@ -169,129 +170,9 @@ Said differently, line `(α)` amounts to a progress requirement on invariant.
 **Progress Requirement**: from all states where the CC is `True` and `Inv`
 holds and we execute `DROP ; Body`, we reach a state where `Inv` still holds.
 
-<!--
+TODO:
 
-Deprecated
-----------
-
-```
------------------------------------------------------------
-{! EG } if (EG) { do { Body } while(CG) } { !EG }
-
-       {Invariant /\ C } Body { Invariant }
------------------------------------------------------------
-{ EG } if (EG) { do { Body } while(CG) } { Invariant and !CG }
-
-(1) if (EG) { (2) Body ; (3) while(CG) { Body } }
-
-< (bool T) : (EG S) /\ Pre > LOOP { Body } < T : S' /\ Invariant /\ (!CG \/ !EG) >
-
-< (bool T) : (EG S) /\ Pre > LOOP { Body } < T : S' /\ Post >
-
-1. assert(Invariant)
-   if (EG) {
-       Body ;
-       assert(Invariant)
-       while(CG) {
-         Body
-         assert(Invariant)
-       }
-   }
-   //    Invaraint /\ !CG
-   // || Invariant /\ !EG
-   Remaining
-
-    //  Shape of the invariant can include bool at top of stack
-    1.  Pre => Invariant
-    2.  < T : S /\ Pre /\ Invariant /\ EG > Body < (bool T) : (B S) /\ Invariant >
-    3.  < T : S        /\ Invariant /\ CG > Body < (bool T) : (B S) /\ Invariant >
-    ------------------------------------------------------------------------------
-    < (bool T) : (EG S) /\ Pre > LOOP { Body } < T : S' /\ Invariant /\ (!CG \/ !EG) >
-
-    CG === ??? inside < T : S /\ ??? > Body < (bool T) : True S' >
-
-    rule <k> LOOP A .AnnotationList Body
-          => /* (1) */
-             BIND { Shape } { ASSERT Predicates } ;
-             LOOP .AnnotationList {
-               Body
-               BIND { Shape } { ASSERT Predicates } ;
-               /* (2) */
-               CUTPOINT(!Int, Shape) ;
-               BIND { Shape } { ASSUME Predicates } ;
-               /* (3) */
-            }
-            /* (4) */
-
-            // (1)     // Pre => Invariant
-            // (1, 2)  // < Pre /\ EG > Body < Invariant >
-            // (3, 2)  // < Invariant /\ ??? >li
-
-1'. if (EG) {
-       assert(Invariant)
-       Body ;
-       while(CG) {
-         assert(Invariant);
-         Body
-       }
-   }
-   assert(Invariant)
-   //    Invaraint /\ !CG
-   // || Invariant /\ !EG
-
-
-    //  Shape of the invariant does not include bool at top of stack
-    1.  Pre /\ EG => Invariant
-    2.  < T : S /\ Pre /\ Invariant /\ EG > Body < (bool T) : (B S) /\ Invariant >
-    3.  < T : S        /\ Invariant /\ CG > Body < (bool T) : (B S) /\ Invariant >
-    ------------------------------------------------------------------------------
-    < (bool T) : (EG S) /\ Pre > LOOP { Body } < T : S' /\ Invariant /\ (!CG \/ !EG) >
-
-    rule <k> LOOP A .AnnotationList Body
-          => /* (1) */
-             LOOP .AnnotationList {
-               /* (2) */
-               BIND { Shape } { ASSERT Predicates } ;   // (1, 2) < Pre /\ EG > noop < Invariant >
-               // Body
-               // BIND { Shape } { ASSERT Predicates } ;
-               //
-               CUTPOINT(!Int, Shape) ;
-               BIND { Shape } { ASSUME Predicates } ;   // (3, 2) < Invariant /\  CG > Body < Invariant >
-               /* (3) */
-               Body
-             }
-             /* (4) */
-             BIND { Shape } { ASSERT Predicates } ;     // (1, 4) Pre /\ !EG => Inv
-                                                        // (3, 4) < Invariant /\ !CG > Body < Invariant >
-             ...                                        // (1, 4, ...) (3, 4, ...) < (Pre /\ !EG)  || (Invariant /\ ! CG) >
-
-2. if (EG) {
-       assert(Invariant)
-       Body ;
-       while(CG) {
-         assert(Invariant);
-         Body
-       }
-       assert(Invariant)
-   }
-   // !EG || (Invaraint /\ !CG)
-   Remaining
-
-    <Invariant /\ EG> Body <Invariant>          <Invariant /\ CG> Body <Invariant>
-    -------------------------------------------------------------------------------
-             LOOP { Body }     <!EG || Invariant /\ !CG>
-
-    And then prove:
-    * <!EG>              Remaining <Post>
-    * <Invariant /\ !CG> Remaining <Post>
-
-3. if (EG) {
-       Body ;
-       assert(Invariant)
-       while(CG) {
-         Body
-         assert(Invariant)
-       }
-   }
-```
--->
+1. Note that C-style loops with side-effects in conditions can be trivially 
+   transformed into standard loops
+2. We can view the Michelson loop rule in that way --- as an instance of such
+   a transformed loop
