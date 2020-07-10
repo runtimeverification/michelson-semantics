@@ -1,3 +1,4 @@
 tests/symbolic/sum-to-n.tzt
 tests/symbolic/small-loop.tzt
 tests/symbolic/illtyped.stuck.tzt
+tests/symbolic/pair-deconstruct.tzt
