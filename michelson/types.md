@@ -287,7 +287,7 @@ module MICHELSON-TYPES
   rule #TypeInstruction(C, (EMPTY_MAP _ KT VT) #as I, Ts) => #TI(I, Ts -> map .AnnotationList KT VT ; Ts)
   rule #TypeInstruction(C, (EMPTY_BIG_MAP _ KT VT) #as I, Ts) => #TI(I, Ts -> big_map .AnnotationList KT VT ; Ts)
 
-  rule #TypeInstruction(C, I, T) => #TI(I, #InvalidTypeForInstruction(I, T)) [owise]
+ // rule #TypeInstruction(C, I, T) => #TI(I, #InvalidTypeForInstruction(I, T)) [owise]
 
   syntax TypeError ::= #InvalidPostIterationStack(Instruction, TypeSeq, TypeSeq)
 
@@ -332,7 +332,8 @@ module MICHELSON-TYPES
 
   syntax TypedInstruction ::= #LoopAux(Instruction, TypedInstruction, TypeSeq) [function, functional]
 
-  rule #LoopAux(LOOP _ _, #TI(_, Ts -> (bool _) ; Ts) #as B, ((bool _) ; Ts) #as OS) => #TI((LOOP .AnnotationList { #Exec(B) }), OS -> Ts)
+  rule #LoopAux( LOOP A _ , #TI(_, Ts -> (bool _) ; Ts) #as B, ((bool _) ; Ts) #as OS)
+    => #TI((LOOP A { #Exec(B) }), OS -> Ts)
   rule #LoopAux(I, #TI(_, _ -> Ts1), Ts2) => #TI(I, #InvalidPostIterationStack(I, Ts1, Ts2)) requires Ts1 =/=K Ts2
   rule #LoopAux(I, #TI(_, #ContractFailed) #as B, ((bool _) ; Ts) #as OS) => #TI((LOOP .AnnotationList { #Exec(B) }), OS -> Ts)
   rule #LoopAux(I, #TI(_, TE:TypeError),  _) => #TI(I, TE)

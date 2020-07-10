@@ -15,12 +15,15 @@ The unit-test semantics does not need any processing in addition to the base ini
 ```k
 module UNIT-TEST-DRIVER
   imports UNIT-TEST
+
   rule <k> #Init
-        => #UnitTestInit
+        => #CreateSymbols
+        ~> #BaseInit
+        ~> #ExecutePreConditions
+        ~> #TypeCheck
         ~> #LoadInputStack
         ~> #ExecuteScript
-        ~> #ConvertOutputStackToNative
-        ~> #VerifyOutput
+        ~> #ExecutePostConditions
            ...
        </k>
 endmodule
@@ -28,19 +31,140 @@ endmodule
 
 ```k
 module UNIT-TEST
-  imports UNIT-TEST-SYNTAX
+  imports SYMBOLIC-UNIT-TEST-SYNTAX
   imports MICHELSON
   imports MICHELSON-TYPES
   imports MATCHER
 ```
 
+`#CreateSymbol`
+--------------
+
 ```k
-  syntax KItem ::= "#UnitTestInit"
-  rule <k> #UnitTestInit
-        => #BaseInit
-        ~> #TypeCheck
+  syntax Set ::= Set "|Set" Set [function, functional, left]
+  rule S1 |Set S2 => S1 (S2 -Set S1)
+
+  syntax Type ::= "#UnknownType"
+
+  syntax KItem ::= SymbolicElement
+
+  syntax SymbolicElement ::= #SymbolicElement(SymbolicData, Type)
+  syntax SymbolicElement ::= "#DummyElement"
+
+  syntax Set ::= #FindSymbolsIn(Data, Type) [function, functional]
+  syntax Set ::= #FindSymbols(KItem) [function, functional]
+
+  rule #FindSymbols({ B:BlockList }) => #FindSymbols(B)
+
+  rule #FindSymbols(B:Block ; Rs:BlockList) => #FindSymbols(B) #FindSymbols(Rs)
+
+  rule #FindSymbols({ }) => .Set
+  rule #FindSymbols( { I:Instruction }) => #FindSymbols(I)
+  rule #FindSymbols({ I:Instruction ; Is:DataList }) => #FindSymbols(I) |Set #FindSymbols(Is)
+
+  rule #FindSymbols(PUSH _ T D) => #FindSymbolsIn(D, T)
+
+
+  rule #FindSymbols( ( Failed S:SymbolicData ) ) => SetItem(#SymbolicElement(S, #UnknownType))
+
+  rule #FindSymbols( { S:StackElementList } ) => #FindSymbols(S)
+  rule #FindSymbols( S:StackElement ; Ss:StackElementList) => #FindSymbols(S) |Set #FindSymbols(Ss)
+
+  rule #FindSymbols( Stack_elt T D ) => #FindSymbolsIn(D, T)
+
+  rule #FindSymbols(_) => .Set [owise]
+
+  rule #FindSymbolsIn(S:SymbolicData, T) => SetItem(#SymbolicElement(S, T)) // ???
+
+  rule #FindSymbolsIn(Pair V1 V2, pair _ T1 T2) => #FindSymbolsIn(V1, T1) |Set #FindSymbolsIn(V2, T2)
+  rule #FindSymbolsIn(Some V, option _ T) => #FindSymbolsIn(V, T)
+  rule #FindSymbolsIn(Left V, or _ T _) => #FindSymbolsIn(V, T)
+  rule #FindSymbolsIn(Right V, or _ _ T) => #FindSymbolsIn(V, T)
+
+  rule #FindSymbolsIn(B:Block, lambda _ _ _) => #FindSymbols(B)
+
+  rule #FindSymbolsIn({ }, list _ _) => .Set
+  rule #FindSymbolsIn({ D:Data }, list _ T) => #FindSymbolsIn(D, T)
+  rule #FindSymbolsIn({ D:Data ; DL }, list _ T) => #FindSymbolsIn(D, T) |Set #FindSymbolsIn({ DL }, T)
+
+  rule #FindSymbolsIn({ }, set _ _) => .Set
+  rule #FindSymbolsIn({ D:Data }, set _ T) => #FindSymbolsIn(D, T)
+  rule #FindSymbolsIn({ D:Data ; DL }, set _ T) => #FindSymbolsIn(D, T) |Set #FindSymbolsIn({ DL }, T)
+
+  rule #FindSymbolsIn({ }, map _ _ _) => .Set
+  rule #FindSymbolsIn({ Elt K V }, map _ KT VT) => #FindSymbolsIn(K, KT) |Set #FindSymbolsIn(V, VT)
+  rule #FindSymbolsIn({ M:MapEntry ; ML:MapEntryList }, (map _ K V) #as MT) =>
+       #FindSymbolsIn({ M }, MT) |Set #FindSymbolsIn({ ML }, MT)
+
+  rule #FindSymbolsIn(M:MapLiteral, big_map A KT VT) => #FindSymbolsIn(M, map A KT VT)
+
+  rule #FindSymbolsIn(_, _) => .Set [owise]
+
+  syntax Bool ::= #AllTypesKnown(Set) [function, functional]
+  rule #AllTypesKnown(SetItem(#SymbolicElement(_, #UnknownType)) _) => false
+  rule #AllTypesKnown(_) => true [owise]
+
+  syntax UnificationFailure ::= "#UnificationFailure"
+
+  syntax UnifiedSet ::= Set | UnificationFailure
+
+  syntax UnifiedSet ::= #UnifyTypes(Set) [function, functional]
+
+  rule #UnifyTypes(SetItem(#SymbolicElement(S, #UnknownType)) SetItem(#SymbolicElement(S, T)) Ss) => #UnifyTypes(SetItem(#SymbolicElement(S, T)) Ss)
+
+  rule #UnifyTypes(SetItem(#SymbolicElement(S, T1)) SetItem(#SymbolicElement(S, T2)) _) => #UnificationFailure
+       requires T1 =/=K T2 andBool T1 =/=K #UnknownType andBool T2 =/=K #UnknownType
+
+  rule #UnifyTypes(S) => S requires #AllTypesKnown(S) [owise]
+  rule #UnifyTypes(S) => #UnificationFailure requires notBool(#AllTypesKnown(S)) [owise]
+
+  syntax UnifiedList ::= List | UnificationFailure
+  syntax UnifiedList ::= #UnifiedSetToList(UnifiedSet) [function, functional]
+
+  rule #UnifiedSetToList(S:Set) => Set2List(S)
+  rule #UnifiedSetToList(#UnificationFailure) => #UnificationFailure
+```
+
+Load symbolic variables into the `<symbols>` map.
+
+```k
+  syntax KItem ::= "#CreateSymbols"
+  rule <k> #CreateSymbols
+        => #CreateSymbols(#UnifiedSetToList(#UnifyTypes( #FindSymbols(Stack)
+                                                    |Set #FindSymbols(Pre)
+                                                    |Set #FindSymbols(Script)
+                         )                )           )
            ...
        </k>
+       <inputstack> Stack </inputstack>
+       <pre> Pre </pre>
+       <script> Script </script>
+```
+
+```k
+  syntax KItem ::= #CreateSymbols(UnifiedList)
+  rule <k> #CreateSymbols(.List) => . ... </k>
+  rule <k> #CreateSymbols(ListItem(#SymbolicElement(D, T)) S)
+        => #CreateSymbol(D, T)
+        ~> #CreateSymbols(S)
+           ...
+       </k>
+```
+
+```k
+  syntax KItem ::= #CreateSymbol(SymbolicData, Type)
+```
+
+```symbolic
+  rule <k> #CreateSymbol(N, (nat _) #as T) => . ... </k>
+       <symbols> M => M[N <- #TypedSymbol(T, ?V:Int)] </symbols>
+    ensures ?V >=Int 0
+
+  rule <k> #CreateSymbol(N, (int _) #as T) => . ... </k>
+       <symbols> M => M[N <- #TypedSymbol(T, ?V:Int)] </symbols>
+
+  rule <k> #CreateSymbol(N, (string _) #as T) => . ... </k>
+       <symbols> M => M[N <- #TypedSymbol(T, ?V:String)] </symbols>
 ```
 
 During the final output comparison step we discard the type information retained
@@ -67,16 +191,10 @@ productions) into a KSequence (the same format as the execution stack).
 
 ```k
   syntax K ::= #LiteralStackToSemantics(LiteralStack, Map, Map) [function]
-  rule #LiteralStackToSemantics( { },   KnownAddrs, BigMaps) => .
-  rule #LiteralStackToSemantics( { L }, KnownAddrs, BigMaps) => #LiteralStackToSemanticsAux(L, KnownAddrs, BigMaps)
-
-  syntax K ::= #LiteralStackToSemanticsAux(StackElementList, Map, Map) [function]
-
-  rule #LiteralStackToSemanticsAux( Stack_elt T D ; Gs:StackElementList, KnownAddrs, BigMaps) =>
-       #MichelineToNative(D, T, KnownAddrs, BigMaps) ~> #LiteralStackToSemanticsAux(Gs, KnownAddrs, BigMaps)
-
-  rule #LiteralStackToSemanticsAux(Stack_elt T D, KnownAddrs, BigMaps) =>
-       #MichelineToNative(D, T, KnownAddrs, BigMaps)
+  rule #LiteralStackToSemantics({ .StackElementList }, KnownAddrs, BigMaps) => .
+  rule #LiteralStackToSemantics({ Stack_elt T D ; Gs:StackElementList }, KnownAddrs, BigMaps)
+    => #MichelineToNative(D, T, KnownAddrs, BigMaps)
+    ~> #LiteralStackToSemantics({ Gs }, KnownAddrs, BigMaps)
 ```
 
 This function transforms an expected output stack to its internal representation
@@ -85,8 +203,9 @@ transformed as in the input group).
 
 ```k
   syntax K ::= #OutputStackToSemantics(OutputStack, Map, Map) [function]
-  rule #OutputStackToSemantics(L:LiteralStack, KnownAddrs, BigMaps) => #LiteralStackToSemantics(L, KnownAddrs, BigMaps)
-  rule #OutputStackToSemantics(X:FailedStack,  _,          _      ) => X
+  rule #OutputStackToSemantics(L, KnownAddrs, BigMaps)
+    => #LiteralStackToSemantics(L, KnownAddrs, BigMaps)
+  rule #OutputStackToSemantics(X:FailedStack, _, _) => X
 ```
 
 Loading the input or expected output stack involves simply converting it to a
@@ -128,17 +247,9 @@ know what types are on the stack.
 
 ```k
   syntax TypeSeq ::= #LiteralStackToTypes(LiteralStack, Type) [function]
-
-  rule #LiteralStackToTypes( { } , _) => .TypeSeq
-  rule #LiteralStackToTypes( { L } , T ) => #LiteralStackToTypesAux(L, T)
-
-  syntax TypeSeq ::= #LiteralStackToTypesAux(StackElementList, Type) [function]
-
-  rule #LiteralStackToTypesAux( Stack_elt T D ; Gs:StackElementList, PT)
-    => T ; #LiteralStackToTypesAux(Gs, PT)
-    requires #Typed(D, T) :=K #TypeData(PT, D, T)
-
-  rule #LiteralStackToTypesAux(Stack_elt T D, PT) => T
+  rule #LiteralStackToTypes( { .StackElementList }, _) => .TypeSeq
+  rule #LiteralStackToTypes( { Stack_elt T D ; Gs:StackElementList }, PT)
+    => T ; #LiteralStackToTypes({ Gs }, PT)
     requires #Typed(D, T) :=K #TypeData(PT, D, T)
 ```
 
@@ -215,57 +326,283 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
        <expected> OS </expected>
 ```
 
-`#VerifyOutput`
----------------
-
-Once execution finishes, the output verification is simply stepping through the
-KSequence and removing any elements that `#Match`. An unsuccessful unit test
-will get stuck during this step, with the first sequence in the `#VerifyOutput`
-production and stack cells being the expected and actual outputs respectively.
+`#Assume`/`#Assert` instructions
+--------------------------------
 
 ```k
-  syntax KItem ::= "#ConvertOutputStackToNative"
-  rule <k> #ConvertOutputStackToNative => . ... </k>
-       <expected> Expected => #OutputStackToSemantics(Expected, KnownAddrs, BigMaps) </expected>
+  syntax Instruction ::= "ASSERT" Blocks
+                       | "ASSUME" Blocks
+```
+
+```k
+  rule <k> ASSERT { }:EmptyBlock => .K ... </k>
+  rule <k> ASSERT { { } } => .K ... </k>
+  rule <k> ASSERT { B } => ASSERT { B ; { } } ... </k> requires B =/=K { }
+  rule <k> ASSERT { B; Bs }
+        => B ~> #AssertTrue ~> ASSERT { Bs } ~> #RestoreStack(Stack)
+           ...
+       </k>
+       <stack> Stack => .K </stack>
+```
+
+```k
+  rule <k> ASSUME { }:EmptyBlock => .K ... </k>
+  rule <k> ASSUME { { } } => .K ... </k>
+  rule <k> ASSUME { B } => ASSUME { B ; { } } ... </k> requires B =/=K { }
+  rule <k> ASSUME { B; Bs }
+        => B ~> #AssumeTrue ~> ASSUME { Bs } ~> #RestoreStack(Stack)
+           ...
+       </k>
+       <stack> Stack => .K </stack>
+```
+
+```k
+  syntax Instruction ::= #RestoreStack(K)
+  rule <k> #RestoreStack(Stack) => .K ... </k>
+       <stack> _ => Stack </stack>
+```
+
+```k
+  syntax Instruction ::= "#AssertTrue"
+  rule <k> #AssertTrue => #Assert(B) ... </k>
+       <stack> B:Bool => . </stack>
+```
+
+```k
+  syntax Instruction ::= "#AssumeTrue"
+  rule <k> #AssumeTrue => #Assume(B) ... </k>
+       <stack> B:Bool => . </stack>
+```
+
+```k
+  syntax KItem ::= #Assert(Bool)
+  rule <k> #Assert(true)  => .             ... </k>
+  rule <k> #Assert(false) => #AssertFailed ... </k>
+  syntax KItem ::= "#AssertFailed" [klabel(#AssertFailed), symbol]
+```
+
+```k
+  syntax KItem ::= #Assume(Bool)
+  rule <k> #Assume(true)  => .             ... </k>
+  rule <k> #Assume(false) ~> _:K => . </k>
+       <assumeFailed> _ => true </assumeFailed> [transition]
+```
+
+`precondition` Groups
+---------------------
+
+```k
+  rule <k> precondition Bs => .K ... </k>
+       <pre>  { } => Bs </pre>
+```
+
+```k
+  syntax KItem ::= "#ExecutePreConditions"
+  rule <k> #ExecutePreConditions => ASSUME Preconditions ... </k>
+       <pre> Preconditions </pre>
+```
+
+`postcondition` group
+---------------------
+
+```k
+  rule <k> postcondition Bs => .K ... </k>
+       <post>  { } => Bs </post>
+```
+
+```k
+  syntax KItem ::= "#ExecutePostConditions"
+  rule <k> #ExecutePostConditions
+        => BIND Expected { ASSERT Postconditions }
+           ...
+       </k>
+       <expected> Expected </expected>
+       <post> Postconditions </post>
+```
+
+`invariants` group
+---------------------
+
+```k
+  rule <k> invariant Annot { Stack } Blocks => . ... </k>
+       <invs> .Map
+           => (Annot |-> { Stack } Blocks)
+              ...
+       </invs>
+```
+
+We need stack concatentation for invariant preprocessing.
+Note that `#AnyStack` on the lefthand side is currently unhandled.
+
+```k
+  syntax StackElementList ::= StackElementList "++StackElementList" StackElementList [function, left, avoid]
+  rule .StackElementList ++StackElementList S2 => S2
+  rule (E1 ; S1)         ++StackElementList S2 => E1 ; (S1 ++StackElementList S2)
+```
+
+```symbolic
+  syntax Instruction ::= CUTPOINT( id: Int, shape: StackElementList )
+  rule <k> LOOP A .AnnotationList Body
+        => BIND { Shape } { ASSERT Predicates } ;
+           LOOP .AnnotationList {
+             Body ;
+             BIND { Shape } { ASSERT Predicates } ;
+             CUTPOINT(!Int, Shape) ;
+             BIND { Shape } { ASSUME Predicates }
+           }
+           ...
+       </k>
+       <invs> A |-> { Shape:StackElementList } Predicates:Blocks ... </invs>
+```
+
+### `CUTPOINT`s and stack generalization
+
+A cutpoint is a semantic construct that internalizes the notion of a
+reachability logic circularity (or claim).
+When we reach a cutpoint, we need to generalize our current state into one which
+corresponds to the reachability logic circularity that we wish to use.
+
+```symbolic
+  rule <k> CUTPOINT(I,Shape) => #GeneralizeStack(Shape,.K) ... </k>
+       <cutpoints> (.Set => SetItem(I)) VisitedCutpoints </cutpoints>
+    requires notBool I in VisitedCutpoints
+
+  rule <k> CUTPOINT(I, _) => #Assume(false) ... </k>
+       <cutpoints> VisitedCutpoints </cutpoints>
+    requires I in VisitedCutpoints
+```
+
+In stack-based languages like Michelson, state generalization means that we
+abstract out pieces of the stack which are non-invariant during loop execution.
+
+```symbolic
+  syntax KItem ::= #GeneralizeStack(StackElementList, K)
+  rule <k> #GeneralizeStack(.StackElementList, Stack) => . ... </k>
+       <stack> .K => Stack </stack>
+
+  rule <k> #GeneralizeStack(Stack_elt T D ; Stack, KSeq:K)
+        => #GeneralizeStack(Stack, KSeq ~> D)
+           ...
+       </k>
+       <stack> _:Data => . ... </stack>
+    requires notBool isSymbolicData(D)
+
+  rule <k> (.K => #MakeFresh(T))
+        ~> #GeneralizeStack(Stack_elt T D:SymbolicData ; Stack, KSeq)
+           ...
+       </k>
+
+  rule <k> ( #Fresh(V)
+          ~> #GeneralizeStack(Stack_elt T D:SymbolicData ; Stack, KSeq)
+           )
+        =>   #GeneralizeStack(Stack_elt T V ; Stack, KSeq)
+           ...
+       </k>
+```
+
+Here `#MakeFresh` is responsible for generating a fresh value of a given type.
+
+```symbolic
+  syntax KItem ::= #MakeFresh(Type) | #Fresh(Data)
+  rule <k> #MakeFresh(bool   _:AnnotationList) =>                       #Fresh(?_:Bool)   ... </k>
+  rule <k> #MakeFresh(int    _:AnnotationList) =>                       #Fresh(?_:Int)    ... </k>
+  rule <k> #MakeFresh(nat    _:AnnotationList) => #Assume(?V >Int 0) ~> #Fresh(?V:Int)    ... </k>
+  rule <k> #MakeFresh(string _:AnnotationList) =>                       #Fresh(?_:String) ... </k>
+```
+
+Handle `Aborted`
+----------------
+
+```k
+  syntax TypedSymbol ::= #TypedSymbol(Type, Data)
+```
+
+If a program aborts due to the FAILWITH instruction, we throw away the abortion debug info:
+
+```k
+  rule <k> (Aborted(_, _, _, _) => .K) ~> #ExecutePostConditions ... </k>
+```
+
+The `BIND` instruction
+----------------------
+
+```k
+  syntax Instruction ::= "BIND" OutputStack Block
+  rule <k> BIND Shape Block
+        => #Bind(Shape, Stack)
+        ~> Block
+        ~> #RestoreSymbols(Symbols)
+           ...
+       </k>
+       <symbols> Symbols </symbols>
+       <stack> Stack </stack>
+```
+
+```k
+  syntax KItem ::= #Bind(OutputStack, K)
+
+  rule <k> #Bind({ .StackElementList }, .K) => .K ... </k>
+
+  rule <k> #Bind(S1:FailedStack, S2:FailedStack) => .K ... </k>
+    requires #Matches(S1, S2)
+
+  rule <k> #Bind( { Stack_elt T S:SymbolicData ; Ss } => { Ss }
+                , ( (D ~> K:K)                        => K )
+                )
+           ...
+       </k>
+       <paramtype> PT </paramtype>
+       <symbols> .Map => S |-> #TypedSymbol(T, D) ... </symbols>
+    requires isTypedData(#TypeData(PT,D,T))
+
+  rule <k> #Bind( { Stack_elt T S:SymbolicData ; Ss } => { Ss }
+                , ( (D ~> K:K)                        => K )
+                )
+           ...
+       </k>
+       <paramtype> PT </paramtype>
+       <symbols> S |-> #TypedSymbol(T, D) ... </symbols>
+    requires isTypedData(#TypeData(PT,D,T))
+
+  rule <k> #Bind( { Stack_elt T ED ; Ss } => { Ss }
+                , ( (AD ~> K:K)             => K )
+                )
+           ...
+       </k>
        <knownaddrs> KnownAddrs </knownaddrs>
        <bigmaps> BigMaps </bigmaps>
+       <stack> AD => .K ... </stack>
+    requires #Matches(#MichelineToNative(ED,T,KnownAddrs,BigMaps),AD)
+     andBool notBool isSymbolicData(ED)
 ```
 
 ```k
-  syntax KItem ::= "#VerifyOutput"
-  rule <k> #VerifyOutput ... </k>
-       <stack>    S2 => . ... </stack>
-       <expected> S1 => . ... </expected>
-    requires #Matches(S1, S2)
+  syntax KItem ::= #RestoreSymbols(Map)
+  rule <k> #RestoreSymbols(Symbols) => .K ... </k>
+       <symbols> _ => Symbols </symbols>
 ```
 
-The final step when all elements of the KSequences have been exhausted is to set
-the process' exit code as appropriate to indicate a successful test execution,
-and then empty the k cell. In a successful unit test execution (except expected
-failures), this rule is where the semantics will halt. Implicitly, this rule
-also checks that `#VerifyOutput` is the last remaining production in the k cell
-by excluding the normal '...' variable at the end of the K cell.
+Extending functions to `SymbolicData`
+-------------------------------------
 
-```k
-  rule <k> #VerifyOutput => . ... </k>
-       <stack>    . </stack>
-       <expected> . </expected>
+```symbolic
+  rule [[ #MichelineToNative(S:SymbolicData, T, _, _) => D ]]
+       <symbols> S |-> #TypedSymbol(T, D) ... </symbols>
+
+  rule [[ #MichelineToNative(S:SymbolicData, T, _, _) => S ]]
+       <symbols> Syms:Map </symbols>
+    requires notBool (S in_keys(Syms))
+
+  rule [[ #TypeData(_, S:SymbolicData, T) => #Typed(S, T) ]]
+       <symbols> ... S |-> #TypedSymbol(T, _) ... </symbols>
 ```
 
-In the case of an expected failure, we cannot guarantee that the contents of the
-K cell will be empty when the main semantics abort. However, we know that the
-`#VerifyOutput` will still be in the k cell. Hence, if the main semantics abort
-(by placing the Aborted production on the top of the k cell), we should find the
-`#VerifyOutput` production in the K cell and pull it out.
+```symbolic
+  rule #LiteralStackToTypes({ Stack_elt T S:SymbolicData ; Gs:StackElementList }, PT)
+    => T ; #LiteralStackToTypes({ Gs }, PT)
+```
 
 ```k
-  syntax KItem ::= #FindVerifyOutput(K, KItem)
-  syntax KItem ::= #NoVerifyOutput(KItem)
-
-  rule <k> #FindVerifyOutput(#VerifyOutput ~> _, _) => #VerifyOutput ... </k>
-  rule <k> #FindVerifyOutput(_:KItem ~> Rs => Rs, _) ... </k> [owise]
-
-  rule <k> Aborted(_, _, Rk, _) #as V => #FindVerifyOutput(Rk, V) ... </k>
 endmodule
 ```
 
