@@ -248,6 +248,8 @@ know what types are on the stack.
   rule #LiteralStackToTypes( { Stack_elt T D ; Gs:StackElementList }, PT)
     => T ; #LiteralStackToTypes({ Gs }, PT)
     requires #Typed(D, T) :=K #TypeData(PT, D, T)
+  rule #LiteralStackToTypes({ Stack_elt T S:SymbolicData ; Gs:StackElementList }, PT)
+    => T ; #LiteralStackToTypes({ Gs }, PT)
 ```
 
 ### `#TypeCheck` function
@@ -599,11 +601,6 @@ Extending functions to `SymbolicData`
 
   rule [[ #TypeData(_, S:SymbolicData, T) => #Typed(S, T) ]]
        <symbols> ... S |-> #TypedSymbol(T, _) ... </symbols>
-```
-
-```symbolic
-  rule #LiteralStackToTypes({ Stack_elt T S:SymbolicData ; Gs:StackElementList }, PT)
-    => T ; #LiteralStackToTypes({ Gs }, PT)
 ```
 
 ```k
