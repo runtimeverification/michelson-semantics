@@ -5,8 +5,8 @@ Introduction and Preliminaries
 ------------------------------
 
 We would like to define Hoare logic rules for Michelson loops, to help us ensure
-that we have the proper `LOOP` invariant semantics.
-Let us recall the standard C "while" loop Hoare rule:
+that we have the proper `LOOP` invariant semantics. Let us recall the standard C
+"while" loop Hoare rule:
 
 ```
       [Invariant ∧ CC ] Body [ Invariant ]
@@ -19,40 +19,37 @@ A few things to note:
 1.  The invariant formula must be provided by the user; in general, inferring a
     loop invariant is undecidable.
 
-2. The invariant formula is only required to hold at designated invariant
-   checkpoints.
-   For C-style loops, those checkpoints should be:
+2.  The invariant formula is only required to hold at designated invariant
+    checkpoints. For C-style loops, those checkpoints should be:
 
-  - (a) before loop execution
-  - (b) after the initial execution of CC
-  - (c) after each loop body iteration and CC completes
+    a. before loop execution
+    b. after the initial execution of CC
+    c. after each loop body iteration and CC completes
 
-  In particular, the loop invariant is _not_ required to hold inside the loop
-  body.
+In particular, the loop invariant is *not* required to hold inside the loop
+body.
 
-  Also note that the checkpoint occurring _after_ the loop CC is executed only
-  matters when the CC is _effectful_, i.e. _not side-effect free_.
+Also note that the checkpoint occurring *after* the loop CC is executed only
+matters when the CC is *effectful*, i.e. *not side-effect free*.
 
-  Why? The invariant must hold after the loop terminates --- which can only
-  happen when the CC evaluates to false --- which implies the invariant must
-  hold _after_ CC evaluation.
+Why? The invariant must hold after the loop terminates --- which can only happen
+when the CC evaluates to false --- which implies the invariant must hold *after*
+CC evaluation.
 
-  However, if the CC is side-effect free, then the program state before and
-  after CC evaluation is identical.
-  This allows for additional flexibility when picking checkpoint locations.
-  In particular, the distinction between (a) and (b) evaporates.
+However, if the CC is side-effect free, then the program state before and after
+CC evaluation is identical. This allows for additional flexibility when picking
+checkpoint locations. In particular, the distinction between (a) and (b)
+evaporates.
 
-3. In this notation, we generally assume that the loop continuation guard is
-  side-effect free.
-  If it is not, the meaning of `¬CC` as a predicate should be understood only
-  in terms of its boolean result without any side-effects.
+3.  In this notation, we generally assume that the loop continuation guard is
+    side-effect free. If it is not, the meaning of `¬CC` as a predicate should
+    be understood only in terms of its boolean result without any side-effects.
 
 ### Stack Notation
 
-Since we are dealing with a stack-based language, we need a way to specify
-stack shapes in our Hoare rules.
-Thus, we have developed a typed stack notation.
-For example, the expression below:
+Since we are dealing with a stack-based language, we need a way to specify stack
+shapes in our Hoare rules. Thus, we have developed a typed stack notation. For
+example, the expression below:
 
 ```
 (T₁ E₁) ... (Tₖ Eₖ)
@@ -73,10 +70,10 @@ different values.
 
 We need to represent constraints on Michelson program states. We will use:
 
-- standard logical notation from first-order logic (FOL), i.e. `∧`,`∨`,`¬`,
-  etc...
-- typed stacks are understood as _predicates_ representing the actual Michelson
-  program stack has the same shape as typed stack
+-   standard logical notation from first-order logic (FOL), i.e. `∧`,`∨`,`¬`,
+    etc...
+-   typed stacks are understood as *predicates* representing the actual
+    Michelson program stack has the same shape as typed stack
 
 Thus, the following would be a valid constraint:
 
@@ -136,8 +133,8 @@ stack->pop();
 Note that, if we view our loop this way, the actual continuation condition
 check is side-effect free. This means it is enough to consider checkpoints:
 
-- before loop execution at point (1)
-- symbolically after loop iteration at point (2)
+-   before loop execution at point (1)
+-   symbolically after loop iteration at point (2)
 
 Note that, by abuse of notation, before we execut the next iteration of a
 Michelson `LOOP` instruction, we will refer to the boolean element that appears
@@ -151,9 +148,9 @@ Michelson code.
 
 Naturally, this means it is sufficient to check the invariant when:
 
-- in the top-level proof, when we encounter the `LOOP` instruction but _before_
-  descending into loop:
-- in the subproof, after we have symbolically executed the loop body
+-   in the top-level proof, when we encounter the `LOOP` instruction but
+    *before* descending into loop:
+-   in the subproof, after we have symbolically executed the loop body
 
 This corresponds to the following Hoare logic rule:
 
@@ -172,7 +169,8 @@ holds and we execute `DROP ; Body`, we reach a state where `Inv` still holds.
 
 TODO:
 
-1. Note that C-style loops with side-effects in conditions can be trivially 
-   transformed into standard loops
-2. We can view the Michelson loop rule in that way --- as an instance of such
-   a transformed loop
+1.  Note that C-style loops with side-effects in conditions can be trivially
+    transformed into standard loops
+2.  We can view the Michelson loop rule in that way --- as an instance of such a
+    transformed loop
+
