@@ -101,5 +101,6 @@ printStates("Stuck",stucks)
 printStates("Failure",failures)
 
 print("%d branch(es) succeeded; %d branch(es) failed; %d branch(es) stuck." % (success_count, len(failures), len(stucks)))
-if len(stucks) != 0: sys.exit(127)
-sys.exit(min(len(failures), 126))
+if stucks:   sys.exit(2)
+if failures: sys.exit(1)
+
