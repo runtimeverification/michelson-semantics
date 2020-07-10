@@ -49,8 +49,8 @@ A few things to note:
     checkpoints. When the expression CC is side-effect free, those checkpoints
     should be:
 
-    a. before loop execution
-    b. after each loop body iteration
+    - before loop execution
+    - after each loop body iteration
 
     In particular, the loop invariant is *not* required to hold inside the loop
     body.
