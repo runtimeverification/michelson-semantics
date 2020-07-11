@@ -441,18 +441,16 @@ Note that `#AnyStack` on the lefthand side is currently unhandled.
 ```
 
 ```symbolic
-  syntax Instruction ::= CUTPOINT( id: Int, shape: StackElementList )
+  syntax Instruction ::= CUTPOINT( id: Int, invariant: Invariant)
   rule <k> LOOP A .AnnotationList Body
-        => BIND { Shape } { ASSERT Predicates } ;
+        => CUTPOINT(!Id, Invariant) ;
            LOOP .AnnotationList {
              Body ;
-             BIND { Shape } { ASSERT Predicates } ;
-             CUTPOINT(!Int, Shape) ;
-             BIND { Shape } { ASSUME Predicates }
+             CUTPOINT(!Id, Invariant)
            }
            ...
        </k>
-       <invs> A |-> { Shape:StackElementList } Predicates:Blocks ... </invs>
+       <invs> A |-> Invariant ... </invs>
 ```
 
 ### `CUTPOINT`s and stack generalization
@@ -463,11 +461,20 @@ When we reach a cutpoint, we need to generalize our current state into one which
 corresponds to the reachability logic circularity that we wish to use.
 
 ```symbolic
-  rule <k> CUTPOINT(I,Shape) => #GeneralizeStack(Shape,.K) ... </k>
+  rule <k> CUTPOINT(I, { Shape } Predicates)
+        => BIND { Shape } { ASSERT Predicates }
+        ~> #GeneralizeStack(Shape, .K)
+        ~> BIND { Shape } { ASSUME Predicates }
+           ...
+       </k>
        <cutpoints> (.Set => SetItem(I)) VisitedCutpoints </cutpoints>
     requires notBool I in VisitedCutpoints
 
-  rule <k> CUTPOINT(I, _) => #Assume(false) ... </k>
+  rule <k> CUTPOINT(I, { Shape } Predicates)
+        => BIND { Shape } { ASSERT Predicates }
+        ~> #Assume(false)
+           ...
+       </k>
        <cutpoints> VisitedCutpoints </cutpoints>
     requires I in VisitedCutpoints
 ```

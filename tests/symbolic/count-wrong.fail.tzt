@@ -31,7 +31,7 @@ code { // DUP ;                                     // #                   N N
 precondition       { } ;
 invariant       @I { Stack_elt bool $GUARD ; Stack_elt nat $C ; Stack_elt nat $N  }
                    { { PUSH nat $N ; PUSH nat $C ; COMPARE ; LE }
-                   ; { PUSH nat $N ; PUSH nat $C ; COMPARE ; LT ; PUSH bool $GUARD ; COMPARE ; EQ }
+                   ; { PUSH nat $N ; PUSH nat $C ; COMPARE ; LE ; PUSH bool $GUARD ; COMPARE ; EQ } // Should be LT, not LE
                    } ;
 output { Stack_elt nat $C } ;
 postcondition { { PUSH nat $N ; PUSH nat $C ; COMPARE ; EQ } }
