@@ -148,18 +148,9 @@ Load symbolic variables into the `<symbols>` map.
 
 ```k
   syntax KItem ::= #CreateSymbol(SymbolicData, Type)
-```
-
-```symbolic
-  rule <k> #CreateSymbol(N, (nat _) #as T) => . ... </k>
-       <symbols> M => M[N <- #TypedSymbol(T, ?V:Int)] </symbols>
-    ensures ?V >=Int 0
-
-  rule <k> #CreateSymbol(N, (int _) #as T) => . ... </k>
-       <symbols> M => M[N <- #TypedSymbol(T, ?V:Int)] </symbols>
-
-  rule <k> #CreateSymbol(N, (string _) #as T) => . ... </k>
-       <symbols> M => M[N <- #TypedSymbol(T, ?V:String)] </symbols>
+  rule <k> (.K => #MakeFresh(T)) ~>  #CreateSymbol(_, T) ... </k>
+  rule <k> #Fresh(V) ~> #CreateSymbol(N, T) => . ... </k>
+       <symbols> M => M[N <- #TypedSymbol(T, V)] </symbols>
 ```
 
 During the final output comparison step we discard the type information retained
