@@ -375,6 +375,13 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
   rule <k> D1:Data == D2:Data => D1 ==K D2 ... </k>
 ```
 
+```symbolic
+ rule <k> GET A => #Assume(M[K] ==K ?V:Int) ... </k>
+     <stack> (K:SimpleData ~> M:Map) => Some ?V ... </stack>
+     // <stacktypes> KT ; map A KT VT </stacktypes>
+   requires K in_keys(M)
+```
+
 `precondition` Groups
 ---------------------
 
