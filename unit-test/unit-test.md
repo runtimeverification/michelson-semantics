@@ -373,6 +373,25 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
   rule <k> D1:Data == D2:Data => D1 ==K D2 ... </k>
 ```
 
+```k
+  syntax OptionData ::= lookupMap(Map, Data) [function]
+  rule lookupMap(M, Key) => Some {M[Key]}:>Data requires         Key in_keys(M) [concrete, simplification]
+  rule lookupMap(M, Key) => None               requires notBool Key in_keys(M) [concrete, simplification]
+
+  rule <k> GET A
+        => #HandleAnnotations(A)
+        ~> #Assume(lookupMap(M,X) == #MakeFresh((option .AnnotationList (int .AnnotationList))))
+           ...
+       </k>
+       <stack> (X ~> M) => lookupMap(M,X) ... </stack>
+//       <stacktypes> (KT _) ; map _ (KT _) VT ; _ </stacktypes>
+
+  rule K1 in_keys(_:Map[ K2 <- _ ]) => true          requires         K1 ==K K2 [simplification]
+  rule K1 in_keys(M:Map[ K2 <- _ ]) => K1 in_keys(M) requires notBool K1 ==K K2 [simplification]
+  rule _:Map[ K1 <- V ][K2] => V                     requires         K1 ==K K2 [simplification]
+  rule M:Map[ K1 <- V ][K2] => M:Map[K2]             requires notBool K1 ==K K2 [simplification]
+```
+
 `precondition` Groups
 ---------------------
 
