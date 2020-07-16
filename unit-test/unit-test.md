@@ -41,9 +41,6 @@ module UNIT-TEST
 --------------
 
 ```k
-  syntax Set ::= Set "|Set" Set [function, functional, left]
-  rule S1 |Set S2 => S1 (S2 -Set S1)
-
   syntax Type ::= "#UnknownType"
 
   syntax KItem ::= SymbolicElement
