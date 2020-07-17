@@ -370,8 +370,7 @@ These sorts construct a mapping from Addresses to Types which will specify which
 
 ```k
   syntax OtherContractsMapEntry ::= "Elt" String Type
-  syntax OtherContractsMapEntryList ::= OtherContractsMapEntry | OtherContractsMapEntry ";" OtherContractsMapEntryList
-  syntax OtherContractsMap ::= EmptyBlock | "{" OtherContractsMapEntryList "}"
+  syntax OtherContractsMapEntryList ::= List{OtherContractsMapEntry, ";"} [klabel(OtherContractsMapEntryList)]
 ```
 
 These sorts construct a mapping from Ints to big\_maps and specify the contents of any big\_maps identified by their index in the storage field.
@@ -379,8 +378,7 @@ These sorts construct a mapping from Ints to big\_maps and specify the contents 
 ```k
   syntax BigMapEntry ::= "Big_map" Int Type Type MapLiteral
                        | "Big_map" Int Type Type EmptyBlock
-  syntax BigMapEntryList ::= BigMapEntry | BigMapEntry ";" BigMapEntryList
-  syntax BigMapMap ::= EmptyBlock | "{" BigMapEntryList "}"
+  syntax BigMapEntryList ::= List{BigMapEntry, ";"} [klabel(BigMapEntryList)]
 ```
 
 These sorts define the *Loading Groups* for the contract.  Loading groups specify information about the contract execution.  They intentionally look like Micheline primitive applications.  A program in the Michelson semantics consists of a sequence of loading groups separated by semicolons.  The order of these groups does not matter as the sequence is sorted before loading occurs.
@@ -410,10 +408,10 @@ These sorts define the *Loading Groups* for the contract.  Loading groups specif
   syntax SelfGroup ::= "self" String
   syntax AmountGroup ::= "amount" Int
   syntax BalanceGroup ::= "balance" Int
-  syntax ContractsGroup ::= "other_contracts" OtherContractsMap
+  syntax ContractsGroup ::= "other_contracts" "{" OtherContractsMapEntryList "}"
   syntax ParameterValueGroup ::= "parameter_value" Data
   syntax StorageValueGroup ::= "storage_value" Data
-  syntax BigMapGroup ::= "big_maps" BigMapMap
+  syntax BigMapGroup ::= "big_maps" "{" BigMapEntryList "}"
 
   syntax Group ::= ContractGroup
                  | ParameterValueGroup

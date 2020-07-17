@@ -82,8 +82,8 @@ Loading the other contracts map involves transforming its map entry list style
 concrete representation to a K-Michelson map.
 
 ```k
-  rule <k> other_contracts M => .K ... </k>
-       <knownaddrs> .Map => #OtherContractsMapToKMap(M) </knownaddrs>
+  rule <k> other_contracts { M } => .K ... </k>
+       <knownaddrs> .Map => #OtherContractsMapEntryListToKMap(M) </knownaddrs>
 ```
 
 These two groups contain information from the contract itself, but they are
@@ -106,15 +106,11 @@ Similar to the `other_contracts` rule, we need to transform BigMaps into the
 appropriate K-Michelson type.
 
 ```k
-  rule <k> big_maps M => .K ... </k>
-       <bigmaps> .Map => #BigMapsToKMap(M) </bigmaps>
+  rule <k> big_maps { M } => .K ... </k>
+       <bigmaps> .Map => #BigMapsEntryListToKMap(M) </bigmaps>
 
-  syntax Map ::= #BigMapsToKMap(BigMapMap) [function]
   syntax Map ::= #BigMapsEntryListToKMap(BigMapEntryList) [function]
   syntax Map ::= #BigMapsEntryToKMap(BigMapEntry) [function]
-
-  rule #BigMapsToKMap({ }) => .Map
-  rule #BigMapsToKMap({ EL }) => #BigMapsEntryListToKMap(EL)
 
   rule #BigMapsEntryListToKMap(E) => #BigMapsEntryToKMap(E)
   rule #BigMapsEntryListToKMap(E ; Es) => #BigMapsEntryToKMap(E) #BigMapsEntryListToKMap(Es)

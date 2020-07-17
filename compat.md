@@ -292,8 +292,8 @@ module OUTPUT-COMPARE
                      )
        </out> [owise]
 
-  rule <k> other_contracts M ; Gs => Gs </k>
-       <knownaddrs> _ => #OtherContractsMapToKMap(M) </knownaddrs>
+  rule <k> other_contracts { M }; Gs => Gs </k>
+       <knownaddrs> _ => #OtherContractsMapEntryListToKMap(M) </knownaddrs>
 
   rule <k> real_output AOS ; output EOS ; => #CheckOutput(EOS, AOS) ... </k>
 endmodule
