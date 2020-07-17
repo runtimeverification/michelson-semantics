@@ -51,8 +51,7 @@ module UNIT-TEST
   syntax Set ::= #FindSymbolsIn(Data, Type) [function, functional]
   syntax Set ::= #FindSymbols(KItem) [function, functional]
 
-  rule #FindSymbols({ B:BlockList }) => #FindSymbols(B)
-
+  rule #FindSymbols(.BlockList) => .Set
   rule #FindSymbols(B:Block ; Rs:BlockList) => #FindSymbols(B) #FindSymbols(Rs)
 
   rule #FindSymbols({ }) => .Set
@@ -329,14 +328,12 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
 --------------------------------
 
 ```k
-  syntax Instruction ::= "ASSERT" Blocks
-                       | "ASSUME" Blocks
+  syntax Instruction ::= "ASSERT" "{" BlockList "}"
+                       | "ASSUME" "{" BlockList "}"
 ```
 
 ```k
-  rule <k> ASSERT { }:EmptyBlock => .K ... </k>
-  rule <k> ASSERT { { } } => .K ... </k>
-  rule <k> ASSERT { B } => ASSERT { B ; { } } ... </k> requires B =/=K { }
+  rule <k> ASSERT { .BlockList } => .K ... </k>
   rule <k> ASSERT { B; Bs }
         => B ~> #AssertTrue ~> ASSERT { Bs } ~> #RestoreStack(Stack)
            ...
@@ -345,9 +342,7 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
 ```
 
 ```k
-  rule <k> ASSUME { }:EmptyBlock => .K ... </k>
-  rule <k> ASSUME { { } } => .K ... </k>
-  rule <k> ASSUME { B } => ASSUME { B ; { } } ... </k> requires B =/=K { }
+  rule <k> ASSUME { .BlockList } => .K ... </k>
   rule <k> ASSUME { B; Bs }
         => B ~> #AssumeTrue ~> ASSUME { Bs } ~> #RestoreStack(Stack)
            ...
@@ -391,13 +386,13 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
 ---------------------
 
 ```k
-  rule <k> precondition Bs => .K ... </k>
-       <pre>  { } => Bs </pre>
+  rule <k> precondition { Bs } => .K ... </k>
+       <pre> .BlockList => Bs </pre>
 ```
 
 ```k
   syntax KItem ::= "#ExecutePreConditions"
-  rule <k> #ExecutePreConditions => ASSUME Preconditions ... </k>
+  rule <k> #ExecutePreConditions => ASSUME { Preconditions } ... </k>
        <pre> Preconditions </pre>
 ```
 
@@ -405,14 +400,14 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
 ---------------------
 
 ```k
-  rule <k> postcondition Bs => .K ... </k>
-       <post>  { } => Bs </post>
+  rule <k> postcondition { Bs } => .K ... </k>
+       <post> .BlockList => Bs </post>
 ```
 
 ```k
   syntax KItem ::= "#ExecutePostConditions"
   rule <k> #ExecutePostConditions
-        => BIND Expected { ASSERT Postconditions }
+        => BIND Expected { ASSERT { Postconditions } }
            ...
        </k>
        <expected> Expected </expected>
@@ -423,9 +418,9 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
 ---------------------
 
 ```k
-  rule <k> invariant Annot { Stack } Blocks => . ... </k>
+  rule <k> invariant Annot { Stack } { Blocks } => . ... </k>
        <invs> .Map
-           => (Annot |-> { Stack } Blocks)
+           => (Annot |-> { Stack } { Blocks })
               ...
        </invs>
 ```
@@ -460,17 +455,17 @@ When we reach a cutpoint, we need to generalize our current state into one which
 corresponds to the reachability logic circularity that we wish to use.
 
 ```symbolic
-  rule <k> CUTPOINT(I, { Shape } Predicates)
-        => BIND { Shape } { ASSERT Predicates }
+  rule <k> CUTPOINT(I, { Shape } { Predicates })
+        => BIND { Shape } { ASSERT { Predicates }}
         ~> #GeneralizeStack(Shape, .K)
-        ~> BIND { Shape } { ASSUME Predicates }
+        ~> BIND { Shape } { ASSUME { Predicates }}
            ...
        </k>
        <cutpoints> (.Set => SetItem(I)) VisitedCutpoints </cutpoints>
     requires notBool I in VisitedCutpoints
 
-  rule <k> CUTPOINT(I, { Shape } Predicates)
-        => BIND { Shape } { ASSERT Predicates }
+  rule <k> CUTPOINT(I, { Shape } { Predicates })
+        => BIND { Shape } { ASSERT { Predicates }}
         ~> #Assume(false)
            ...
        </k>
