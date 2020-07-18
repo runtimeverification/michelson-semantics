@@ -48,36 +48,33 @@ module UNIT-TEST
   syntax SymbolicElement ::= #SymbolicElement(SymbolicData, Type)
   syntax SymbolicElement ::= "#DummyElement"
 
+  syntax Set ::= #FindSymbolsBL(BlockList) [function, functional]
+  rule #FindSymbolsBL(.BlockList) => .Set
+  rule #FindSymbolsBL(B:Block ; Rs:BlockList) => #FindSymbolsB(B) #FindSymbolsBL(Rs)
+
+  syntax Set ::= #FindSymbolsB(Block) [function, functional]
+  rule #FindSymbolsB({ }) => .Set
+  rule #FindSymbolsB({ I:Instruction }) => #FindSymbolsI(I)
+  rule #FindSymbolsB({ I:Instruction ; Is:DataList }:Block) => #FindSymbolsI(I) |Set #FindSymbolsB({ Is })
+
+  syntax Set ::= #FindSymbolsI(Instruction) [function, functional]
+  rule #FindSymbolsI(PUSH _ T D) => #FindSymbolsIn(D, T)
+  rule #FindSymbolsI(_)          => .Set [owise]
+
+  syntax Set ::= #FindSymbolsS(StackElementList) [function, functional]
+  rule #FindSymbolsS(.StackElementList) => .Set
+  rule #FindSymbolsS((Stack_elt T D ); Ss:StackElementList)
+    => #FindSymbolsIn(D, T) |Set #FindSymbolsS(Ss)
+```
+
+```k
   syntax Set ::= #FindSymbolsIn(Data, Type) [function, functional]
-  syntax Set ::= #FindSymbols(KItem) [function, functional]
-
-  rule #FindSymbols(.BlockList) => .Set
-  rule #FindSymbols(B:Block ; Rs:BlockList) => #FindSymbols(B) #FindSymbols(Rs)
-
-  rule #FindSymbols({ }) => .Set
-  rule #FindSymbols( { I:Instruction }) => #FindSymbols(I)
-  rule #FindSymbols({ I:Instruction ; Is:DataList }) => #FindSymbols(I) |Set #FindSymbols(Is)
-
-  rule #FindSymbols(PUSH _ T D) => #FindSymbolsIn(D, T)
-
-
-  rule #FindSymbols( ( Failed S:SymbolicData ) ) => SetItem(#SymbolicElement(S, #UnknownType))
-
-  rule #FindSymbols( { S:StackElementList } ) => #FindSymbols(S)
-  rule #FindSymbols( S:StackElement ; Ss:StackElementList) => #FindSymbols(S) |Set #FindSymbols(Ss)
-
-  rule #FindSymbols( Stack_elt T D ) => #FindSymbolsIn(D, T)
-
-  rule #FindSymbols(_) => .Set [owise]
-
   rule #FindSymbolsIn(S:SymbolicData, T) => SetItem(#SymbolicElement(S, T)) // ???
-
   rule #FindSymbolsIn(Pair V1 V2, pair _ T1 T2) => #FindSymbolsIn(V1, T1) |Set #FindSymbolsIn(V2, T2)
   rule #FindSymbolsIn(Some V, option _ T) => #FindSymbolsIn(V, T)
   rule #FindSymbolsIn(Left V, or _ T _) => #FindSymbolsIn(V, T)
   rule #FindSymbolsIn(Right V, or _ _ T) => #FindSymbolsIn(V, T)
-
-  rule #FindSymbolsIn(B:Block, lambda _ _ _) => #FindSymbols(B)
+  rule #FindSymbolsIn(B:Block, lambda _ _ _) => #FindSymbolsB(B)
 
   rule #FindSymbolsIn({ }, list _ _) => .Set
   rule #FindSymbolsIn({ D:Data }, list _ T) => #FindSymbolsIn(D, T)
@@ -95,7 +92,9 @@ module UNIT-TEST
   rule #FindSymbolsIn(M:MapLiteral, big_map A KT VT) => #FindSymbolsIn(M, map A KT VT)
 
   rule #FindSymbolsIn(_, _) => .Set [owise]
+```
 
+```k
   syntax Bool ::= #AllTypesKnown(Set) [function, functional]
   rule #AllTypesKnown(SetItem(#SymbolicElement(_, #UnknownType)) _) => false
   rule #AllTypesKnown(_) => true [owise]
@@ -126,15 +125,15 @@ Load symbolic variables into the `<symbols>` map.
 ```k
   syntax KItem ::= "#CreateSymbols"
   rule <k> #CreateSymbols
-        => #CreateSymbols(#UnifiedSetToList(#UnifyTypes( #FindSymbols(Stack)
-                                                    |Set #FindSymbols(Pre)
-                                                    |Set #FindSymbols(Script)
+        => #CreateSymbols(#UnifiedSetToList(#UnifyTypes( #FindSymbolsS(Stack)
+                                                    |Set #FindSymbolsBL(Pre)
+                                                    |Set #FindSymbolsB({ Script })
                          )                )           )
            ...
        </k>
-       <inputstack> Stack </inputstack>
-       <pre> Pre </pre>
-       <script> Script </script>
+       <inputstack> { Stack }:LiteralStack </inputstack>
+       <pre> Pre:BlockList </pre>
+       <script> Script:Data </script>
 ```
 
 ```k
