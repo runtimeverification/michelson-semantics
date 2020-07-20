@@ -182,13 +182,14 @@ We now specify the MICHELSON instruction set.
 ```k
   syntax Instruction ::= Block
 
+  syntax Instruction ::= "PUSH" AnnotationList Type Data
+
   syntax Instruction ::= "DROP" AnnotationList
   syntax Instruction ::= "DROP" AnnotationList Int
   syntax Instruction ::= "DIG" AnnotationList Int
   syntax Instruction ::= "DUG" AnnotationList Int
   syntax Instruction ::= "DUP" AnnotationList
   syntax Instruction ::= "SWAP" AnnotationList
-  syntax Instruction ::= "PUSH" AnnotationList Type Data
   syntax Instruction ::= "SOME" AnnotationList
   syntax Instruction ::= "NONE" AnnotationList Type
   syntax Instruction ::= "UNIT" AnnotationList

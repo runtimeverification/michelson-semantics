@@ -404,6 +404,14 @@ immediately rather than waiting for `I = 0`. Instead it is placed when `I = 0`.
   rule <k> #DoDug(-1, .K, _) => .K ... </k>
 ```
 
+Before we push values on to the stack, they must be first converted to the
+native format:
+
+```k
+    rule <k> PUSH A T D => #MichelineToNative(T, D) ~> PUSH A T #hole ... </k> requires notBool isValue(D)
+    rule <k> V:Value ~> PUSH A T #hole => PUSH A T V:Value ... </k>
+```
+
 PUSH needs to convert its argument to semantics form, but otherwise matches the
 documentation directly.
 

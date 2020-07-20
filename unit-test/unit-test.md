@@ -17,8 +17,7 @@ module UNIT-TEST-DRIVER
   imports UNIT-TEST
 
   rule <k> #Init
-        => #CreateSymbols
-        ~> #BaseInit
+        => #BaseInit
         ~> #ExecutePreConditions
         ~> #TypeCheck
         ~> #LoadInputStack
@@ -40,113 +39,7 @@ module UNIT-TEST
 `#CreateSymbol`
 --------------
 
-```k
-  syntax Type ::= "#UnknownType"
-
-  syntax KItem ::= SymbolicElement
-
-  syntax SymbolicElement ::= #SymbolicElement(SymbolicData, Type)
-  syntax SymbolicElement ::= "#DummyElement"
-
-  syntax Set ::= #FindSymbolsIn(Data, Type) [function, functional]
-  syntax Set ::= #FindSymbols(KItem) [function, functional]
-
-  rule #FindSymbols({ B:BlockList }) => #FindSymbols(B)
-
-  rule #FindSymbols(B:Block ; Rs:BlockList) => #FindSymbols(B) #FindSymbols(Rs)
-
-  rule #FindSymbols({ }) => .Set
-  rule #FindSymbols( { I:Instruction }) => #FindSymbols(I)
-  rule #FindSymbols({ I:Instruction ; Is:DataList }) => #FindSymbols(I) |Set #FindSymbols(Is)
-
-  rule #FindSymbols(PUSH _ T D) => #FindSymbolsIn(D, T)
-
-
-  rule #FindSymbols( ( Failed S:SymbolicData ) ) => SetItem(#SymbolicElement(S, #UnknownType))
-
-  rule #FindSymbols( { S:StackElementList } ) => #FindSymbols(S)
-  rule #FindSymbols( S:StackElement ; Ss:StackElementList) => #FindSymbols(S) |Set #FindSymbols(Ss)
-
-  rule #FindSymbols( Stack_elt T D ) => #FindSymbolsIn(D, T)
-
-  rule #FindSymbols(_) => .Set [owise]
-
-  rule #FindSymbolsIn(S:SymbolicData, T) => SetItem(#SymbolicElement(S, T)) // ???
-
-  rule #FindSymbolsIn(Pair V1 V2, pair _ T1 T2) => #FindSymbolsIn(V1, T1) |Set #FindSymbolsIn(V2, T2)
-  rule #FindSymbolsIn(Some V, option _ T) => #FindSymbolsIn(V, T)
-  rule #FindSymbolsIn(Left V, or _ T _) => #FindSymbolsIn(V, T)
-  rule #FindSymbolsIn(Right V, or _ _ T) => #FindSymbolsIn(V, T)
-
-  rule #FindSymbolsIn(B:Block, lambda _ _ _) => #FindSymbols(B)
-
-  rule #FindSymbolsIn({ }, list _ _) => .Set
-  rule #FindSymbolsIn({ D:Data }, list _ T) => #FindSymbolsIn(D, T)
-  rule #FindSymbolsIn({ D:Data ; DL }, list _ T) => #FindSymbolsIn(D, T) |Set #FindSymbolsIn({ DL }, T)
-
-  rule #FindSymbolsIn({ }, set _ _) => .Set
-  rule #FindSymbolsIn({ D:Data }, set _ T) => #FindSymbolsIn(D, T)
-  rule #FindSymbolsIn({ D:Data ; DL }, set _ T) => #FindSymbolsIn(D, T) |Set #FindSymbolsIn({ DL }, T)
-
-  rule #FindSymbolsIn({ }, map _ _ _) => .Set
-  rule #FindSymbolsIn({ Elt K V }, map _ KT VT) => #FindSymbolsIn(K, KT) |Set #FindSymbolsIn(V, VT)
-  rule #FindSymbolsIn({ M:MapEntry ; ML:MapEntryList }, (map _ K V) #as MT) =>
-       #FindSymbolsIn({ M }, MT) |Set #FindSymbolsIn({ ML }, MT)
-
-  rule #FindSymbolsIn(M:MapLiteral, big_map A KT VT) => #FindSymbolsIn(M, map A KT VT)
-
-  rule #FindSymbolsIn(_, _) => .Set [owise]
-
-  syntax Bool ::= #AllTypesKnown(Set) [function, functional]
-  rule #AllTypesKnown(SetItem(#SymbolicElement(_, #UnknownType)) _) => false
-  rule #AllTypesKnown(_) => true [owise]
-
-  syntax UnificationFailure ::= "#UnificationFailure"
-
-  syntax UnifiedSet ::= Set | UnificationFailure
-
-  syntax UnifiedSet ::= #UnifyTypes(Set) [function, functional]
-
-  rule #UnifyTypes(SetItem(#SymbolicElement(S, #UnknownType)) SetItem(#SymbolicElement(S, T)) Ss) => #UnifyTypes(SetItem(#SymbolicElement(S, T)) Ss)
-
-  rule #UnifyTypes(SetItem(#SymbolicElement(S, T1)) SetItem(#SymbolicElement(S, T2)) _) => #UnificationFailure
-       requires T1 =/=K T2 andBool T1 =/=K #UnknownType andBool T2 =/=K #UnknownType
-
-  rule #UnifyTypes(S) => S requires #AllTypesKnown(S) [owise]
-  rule #UnifyTypes(S) => #UnificationFailure requires notBool(#AllTypesKnown(S)) [owise]
-
-  syntax UnifiedList ::= List | UnificationFailure
-  syntax UnifiedList ::= #UnifiedSetToList(UnifiedSet) [function, functional]
-
-  rule #UnifiedSetToList(S:Set) => Set2List(S)
-  rule #UnifiedSetToList(#UnificationFailure) => #UnificationFailure
-```
-
 Load symbolic variables into the `<symbols>` map.
-
-```k
-  syntax KItem ::= "#CreateSymbols"
-  rule <k> #CreateSymbols
-        => #CreateSymbols(#UnifiedSetToList(#UnifyTypes( #FindSymbols(Stack)
-                                                    |Set #FindSymbols(Pre)
-                                                    |Set #FindSymbols(Script)
-                         )                )           )
-           ...
-       </k>
-       <inputstack> Stack </inputstack>
-       <pre> Pre </pre>
-       <script> Script </script>
-```
-
-```k
-  syntax KItem ::= #CreateSymbols(UnifiedList)
-  rule <k> #CreateSymbols(.List) => . ... </k>
-  rule <k> #CreateSymbols(ListItem(#SymbolicElement(D, T)) S)
-        => #CreateSymbol(D, T)
-        ~> #CreateSymbols(S)
-           ...
-       </k>
-```
 
 ```k
   syntax KItem ::= #CreateSymbol(SymbolicData, Type)
