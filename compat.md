@@ -138,12 +138,12 @@ module EXTRACTOR
   rule #GroupContent(self C) => C
   rule #GroupContent(amount C) => C
   rule #GroupContent(balance C) => C
-  rule #GroupContent(other_contracts C) => C
+  rule #GroupContent(other_contracts { C }) => C
   rule #GroupContent(code C) => C
   rule #GroupContent(input C) => C
   rule #GroupContent(output C) => C
   rule #GroupContent(parameter C) => C
-  rule #GroupContent(big_maps C) => C
+  rule #GroupContent(big_maps { C }) => C
   rule #GroupContent(parameter_value C) => C
   rule #GroupContent(storage_value C) => C
 

@@ -344,11 +344,6 @@ module MICHELSON-UNPARSER
     "; " +String
     #doUnparse(Os, false)
 
-  rule #doUnparse({ Os:OtherContractsMapEntryList }, _) =>
-    "{" +String
-    #doUnparse(Os, false) +String
-    "}"
-
   rule #doUnparse(Big_map I T1 T2 { }, _) =>
     "Big_map" +String
     #doUnparse(I, false) +String
@@ -373,11 +368,6 @@ module MICHELSON-UNPARSER
     "; " +String
     #doUnparse(Os, false)
 
-  rule #doUnparse({ Os:BigMapEntryList }, _) =>
-    "{" +String
-    #doUnparse(Os, false) +String
-    "}"
-
   rule #doUnparse(contract { C }, _) => "contract { " +String #doUnparse(C, false) +String "}"
   rule #doUnparse(now I, _) => "now " +String #doUnparse(I, false)
   rule #doUnparse(sender S, _) => "sender " +String #doUnparse(S, false)
@@ -386,10 +376,10 @@ module MICHELSON-UNPARSER
   rule #doUnparse(self S, _) => "self " +String #doUnparse(S, false)
   rule #doUnparse(amount S, _) => "amount " +String #doUnparse(S, false)
   rule #doUnparse(balance S, _) => "balance " +String #doUnparse(S, false)
-  rule #doUnparse(other_contracts S, _) => "other_contracts " +String #doUnparse(S, false)
+  rule #doUnparse(other_contracts { S }, _) => "other_contracts {" +String #doUnparse(S, false) +String "}"
   rule #doUnparse(parameter_value S, _) => "parameter_value " +String #doUnparse(S, false)
   rule #doUnparse(storage_value S, _) => "storage_value " +String #doUnparse(S, false)
-  rule #doUnparse(big_maps S, _) => "big_maps " +String #doUnparse(S, false)
+  rule #doUnparse(big_maps { S }, _) => "big_maps {" +String #doUnparse(S, false) +String "}"
 
   rule #doUnparse(G:Group ; Gs:Groups, _) =>
     #doUnparse(G, false) +String
