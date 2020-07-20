@@ -75,7 +75,8 @@ def findFailingBranches(term):
         assert(pyk.isKSequence(kcell))
 
         if   kcell['items'] == []:                          success_count += 1
-        elif kcell['items'][0]['label'] != '#AssertFailed': stucks += [(constraints,cells)]
+        elif not(pyk.isKApply(kcell['items'][0])) \
+          or kcell['items'][0]['label'] != '#AssertFailed': stucks += [(constraints,cells)]
         else:                                               failures += [(constraints,cells)]
     return success_count, failures, stucks
 
