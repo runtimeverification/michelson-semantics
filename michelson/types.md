@@ -27,9 +27,9 @@ module MICHELSON-TYPES
   syntax TypedInstructionList ::= TypedInstruction ";" TypedInstructionList | TypedInstruction
                                 | #Remaining(DataList)
 
-  syntax TypeError ::= #InvalidTypeForInstruction(Instruction, TypeSeq)
+  syntax TypeError ::= #InvalidTypeForInstruction(Instruction, TypeSeq)                 [unused]
                      | #IncompatibleTypesForBranch(Instruction, TypeInput, TypeInput)
-                     | #UnexpectedMacro(Macro, TypeSeq)
+                     | #UnexpectedMacro(Macro, TypeSeq)                                 [unused]
                      | "#UnexpectedFailureType"
 
   syntax TypeInput ::= #EndType(TypeResult) [function, functional]

@@ -1125,13 +1125,15 @@ The cryptographic operations are simply stubbed for now.
   rule <k> SHA512 A => #HandleAnnotations(A) ... </k>
        <stack> B:MBytes => #SHA512(B) ... </stack>
 
+/*
   syntax MBytes ::= #SignedMBytes(Key, Signature, MBytes)
 
-/*  rule <k> CHECK_SIGNATURE A => #HandleAnnotations(A) ... </k>
+  rule <k> CHECK_SIGNATURE A => #HandleAnnotations(A) ... </k>
        <stack> #Key(K) ~> #Signature(S) ~> #SignedMBytes(#Key(K), #Signature(S), _) => true ... </stack>
 
   rule <k> CHECK_SIGNATURE A => #HandleAnnotations(A) ... </k>
-       <stack> #Key(_) ~> #Signature(_) ~> _:MBytes => false ... </stack> [owise] // TODO: Bug - The haskell backend does not support distinguishing these rules.*/
+       <stack> #Key(_) ~> #Signature(_) ~> _:MBytes => false ... </stack> [owise] // TODO: Bug - The haskell backend does not support distinguishing these rules.
+*/
 
   rule #DoCompare(#KeyHash(S1), #KeyHash(S2)) => #DoCompare(S1, S2)
 ```
