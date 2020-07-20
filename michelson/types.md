@@ -532,6 +532,11 @@ module MICHELSON-TYPES
   rule #TypeInstruction(C, (SENDER _) #as I, OS) => #TI(I, OS -> (address .AnnotationList) ; OS)
   rule #TypeInstruction(C, (ADDRESS _) #as I, (contract _ _ ; Ts) #as OS) => #TI(I, OS -> (address .AnnotationList) ; Ts)
 
+  rule #TypeInstruction(C, (TRACE(S)) #as I, OS) => #TI(I, OS -> OS)
+  rule #TypeInstruction(C, STOP       #as I, OS) => #TI(I, OS -> OS)
+  rule #TypeInstruction(C, PAUSE      #as I, OS) => #TI(I, OS -> OS)
+  rule #TypeInstruction(C, (PAUSE(S)) #as I, OS) => #TI(I, OS -> OS)
+
   syntax TypedInstruction ::= #CreateContractAux(Instruction, TypedInstruction, TypeSeq) [function, functional]
 
   syntax TypeError ::= #CreateContractError(TypedInstruction, TypeSeq)

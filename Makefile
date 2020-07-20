@@ -101,7 +101,7 @@ tangle_llvm    := k | concrete
 
 HOOK_NAMESPACES := TIME MICHELSON
 
-KOMPILE_OPTS += --hook-namespaces "$(HOOK_NAMESPACES)" --gen-bison-parser --emit-json
+KOMPILE_OPTS += --hook-namespaces "$(HOOK_NAMESPACES)" --gen-bison-parser --emit-json -w all -Wno unused-var -Wno unused-symbol
 
 ifneq (,$(RELEASE))
     KOMPILE_OPTS += -O3

@@ -1191,6 +1191,24 @@ identical to those defined over integers.
   rule #DoCompare(#Mutez(I1), #Mutez(I2)) => #DoCompare(I1, I2)
 ```
 
+We introduce several pseudo-instructions that are used for debugging:
+
+-   `TRACE` appends its string content to the `<trace>` cell as a debugging aid
+    for complex programs.
+-   `STOP` is an instruction that cannot be evaluated and causes the program to
+    get stuck
+-   `PAUSE` non-determinstically chooses to either do nothing or else `STOP`;
+    it optionally traces at its pause point.
+
+```k
+  rule <k> TRACE(S) => .K ... </k>
+       <trace> K:K => (K ~> S) </trace>
+
+  rule <k> PAUSE    => .K                ... </k>
+  rule <k> PAUSE    => STOP              ... </k>
+  rule <k> PAUSE(S) => TRACE(S) ~> PAUSE ... </k>
+```
+
 When the `<k>` cell is empty, we consider execution successful
 
 ```k

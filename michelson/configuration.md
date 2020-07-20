@@ -351,6 +351,13 @@ of Michelson code. We list these configuration cells here:
                   <assumeFailed> false </assumeFailed>
     ```
 
+8. The following cell is a debugging aid. It stores a sequence of strings
+   corresponding to all `TRACE` instructions reached during program execution.
+
+    ```k
+                  <trace> .K </trace>
+    ```
+
 Here we finalize the configuration declaration by closing the topmost
 configuration cell.
 

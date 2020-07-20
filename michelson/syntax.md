@@ -270,6 +270,16 @@ We now specify the MICHELSON instruction set.
   syntax Instruction ::= "CREATE_CONTRACT" AnnotationList "{" Contract "}"
 ```
 
+The following instructions are an extension of the core Michelson instruction
+set used for debugging purposes.
+
+```k
+  syntax Instruction ::= "STOP"
+  syntax Instruction ::= "PAUSE"
+  syntax Instruction ::= PAUSE(String)
+  syntax Instruction ::= TRACE(String)
+```
+
 We list Macros separately, although in practice macros should not exist by this point (since the external parser eliminates them), we keep them in the grammar for future work.
 
 ```k
