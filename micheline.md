@@ -48,7 +48,7 @@ We now give the syntactic definition of each node type individually.
 
     ```k
     syntax BytesToken
-    syntax MichelineBytes ::= BytesToken [klabel(BytesToInternal), symbol, function, avoid]
+    syntax MichelineBytes ::= BytesToken // [klabel(BytesToInternal), symbol, function, avoid]
     ```
 
 4.  Primitives applications---which are primtives (unquoted alphanumeric strings
@@ -57,14 +57,14 @@ We now give the syntactic definition of each node type individually.
 
     ```k
     syntax PrimitiveToken
-    syntax Primitive ::= PrimitiveToken [klabel(PrimitiveToInternal), symbol, function, avoid]
+    syntax Primitive ::= PrimitiveToken // [klabel(PrimitiveToInternal), symbol, function, avoid]
     ```
 
     ```k
     syntax PrimitiveNode ::= Primitive
                            | PrimitiveApplication
-    syntax PrimitiveApplication ::= Primitive PrimitiveArgList
-    syntax PrimitiveArgList ::= NeList{PrimitiveArg, ""}
+    syntax PrimitiveApplication ::= Primitive Primitive PrimitiveArgs
+    syntax PrimitiveArgs ::= List{PrimitiveArg, ""}
     ```
 
 5.  Sequences of nodes surrounded by curly braces (`{` and `}`) and
@@ -72,10 +72,9 @@ We now give the syntactic definition of each node type individually.
     optionally followed by a semi-colon
 
     ```k
+    syntax SequenceNode ::= "{" MichelineNodes "}"
     syntax SequenceNode ::= "{" MichelineNodes ";" "}"
-                          | "{" MichelineNodes     "}"
-                          | "{" "}"
-    syntax MichelineNodes ::= NeList{MichelineNode, ";" }
+    syntax MichelineNodes ::= List{MichelineNode, ";"}
     ```
 
 ## Primitive Arguments
@@ -109,7 +108,7 @@ periods (`.`), percent signs (`%`), and at-signs (`@`).
 
 ```k
   syntax AnnotationToken
-  syntax Annotation ::= AnnotationToken [klabel(AnnotationToInternal), symbol, function, avoid]
+  syntax Annotation ::= AnnotationToken // [klabel(AnnotationToInternal), symbol, function, avoid]
 ```
 
 This concludes the definition of the Micheline data serialization format.
@@ -134,9 +133,16 @@ module MICHELINE-INTERNAL-SYNTAX
   imports BYTES
 
   syntax MichelineBytes   ::= Bytes
-  syntax Annotation       ::= Annot(String)
-  syntax Primitive        ::= Prim(String)
+  syntax Annotation       ::= Annot( String )
+  syntax PrimitiveNode    ::= Prim( String, PrimitiveArgs )
 
+
+  syntax MichelineNodes ::= NodesToInternal ( MichelineNodes )
+  syntax MichelineNode  ::= NodeToInternal  ( MichelineNode )
+  syntax PrimitiveArgs  ::= ArgsToInternal  ( PrimitiveArgs )
+  syntax PrimitiveArg   ::= ArgToInternal   ( PrimitiveArg )
+
+  // configuration <k> NodeToInternal($PGM:MichelineNode) </k>
   configuration <k> $PGM:MichelineNode </k>
 endmodule
 ```
@@ -167,16 +173,43 @@ module MICHELINE-PARSER
   imports MICHELINE-INTERNAL-SYNTAX
 ```
 
+<!--
 ```k
   rule `BytesToInternal`(B)      => ConvertBytesAux(BytesTokenToString(B))
   rule `AnnotationToInternal`(A) => Annot(AnnotTokenToString(A))
   rule `PrimitiveToInternal`(P)  => Prim(PrimTokenToString(P))
 ```
+-->
 
 ```k
   syntax String ::= BytesTokenToString ( BytesToken )      [function, functional, hook(STRING.token2string)]
   syntax String ::= AnnotTokenToString ( AnnotationToken ) [function, functional, hook(STRING.token2string)]
   syntax String ::= PrimTokenToString ( PrimitiveToken )   [function, functional, hook(STRING.token2string)]
+```
+
+```k
+  rule NodeToInternal( I:Int ) => I
+  rule NodeToInternal( S:String ) => S
+  rule NodeToInternal( B:BytesToken ) => ConvertBytesAux( BytesTokenToString( B ) )
+  rule NodeToInternal( P:PrimitiveToken ) => Prim( PrimTokenToString( P ), .PrimitiveArgs )
+  rule NodeToInternal( P:PrimitiveToken P':PrimitiveToken Args:PrimitiveArgs)
+    => Prim( PrimTokenToString( P ), ArgsToInternal( P' Args ))
+  rule NodeToInternal( { Nodes:MichelineNodes ; } ) => { NodesToInternal(Nodes) }
+  rule NodeToInternal( { Nodes:MichelineNodes   } ) => { NodesToInternal(Nodes) }
+
+  rule NodesToInternal( Node:MichelineNode ; Nodes:MichelineNodes ) => NodeToInternal( Node ) ; NodesToInternal( Nodes )
+  rule NodesToInternal( .MichelineNodes )                           => .MichelineNodes
+
+  rule ArgsToInternal( P:PrimitiveArg Rest:PrimitiveArgs ) => ArgToInternal( P ) ArgsToInternal( Rest )
+  rule ArgsToInternal( .PrimitiveArgs )                    => .PrimitiveArgs
+
+  rule ArgToInternal( I:Int ) => I
+  rule ArgToInternal( S:String ) => S
+  rule ArgToInternal( B:BytesToken ) => NodeToInternal( B )
+  rule ArgToInternal( S:SequenceNode ) => NodeToInternal( S )
+  rule ArgToInternal( P:PrimitiveToken ) => NodeToInternal( P )
+  rule ArgToInternal( ( App:PrimitiveApplication ) ) => NodeToInternal( App )
+  rule ArgToInternal( A:AnnotationToken ) => Annot( AnnotTokenToString( A ) )
 ```
 
 ```k
