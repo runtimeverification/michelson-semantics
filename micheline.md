@@ -160,7 +160,7 @@ We use an auxiliary rule to simplify our definition:
   syntax Bytes ::= ConvertBytesAux ( String ) [function]
 
   rule ConvertBytesAux(ByteStr) =>
-         Int2Bytes(64,                                                // byte sequence length
+         Int2Bytes(((lengthString(ByteStr) -Int 2) /Int 2),           // byte sequence length
                    String2Base(                                       // integer to convert
                      substrString(ByteStr, 2, lengthString(ByteStr)),
                      16),
