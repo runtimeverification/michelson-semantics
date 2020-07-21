@@ -28,43 +28,43 @@ and sequences.
 
 We now give the syntactic definition of each node type individually.
 
-1. Integers - we import the K builtin --- this is slightly incorrect, because K
-   admits an initial `+` which Micheline rejects
+1.  Integers - we import the K builtin --- this is slightly incorrect, because K
+    admits an initial `+` which Micheline rejects
 
-2. Double-quoted strings - we import K builtin --- this is also slightly
-   incorrect, because K's escape sequences differ in two ways:
-   - K accepts escape `\b` and rejects escape `\f`; Micheline is opposite
-   - K accepts numerical escape codes for arbitrary Unicode codepoints
+2.  Double-quoted strings - we import K builtin --- this is also slightly
+    incorrect, because K's escape sequences differ in two ways:
+    - K accepts escape `\b` and rejects escape `\f`; Micheline is opposite
+    - K accepts numerical escape codes for arbitrary Unicode codepoints
 
-3. Byte strings using hexadecimal notation with the prefix `0x`
+3.  Byte strings using hexadecimal notation with the prefix `0x`
 
-```k
-  syntax MichelineBytes        ::= MichelineBytesLiteral  [klabel(BytesLiteral2Bytes), symbol, function, avoid]
-  syntax MichelineBytesLiteral ::= r"0x([0-9a-fA-F]{2})*" [token]
-```
+    ```k
+    syntax MichelineBytes        ::= MichelineBytesLiteral  [klabel(BytesLiteral2Bytes), symbol, function, avoid]
+    syntax MichelineBytesLiteral ::= r"0x([0-9a-fA-F]{2})*" [token]
+    ```
 
-4. Primitives applications---which are primtives (unquoted alphanumeric strings
- with underscores) followed by a possibly empty primitive arguemnt list (we
- will come back to define primtive arguments later)
+4.  Primitives applications---which are primtives (unquoted alphanumeric strings
+    with underscores) followed by a possibly empty primitive arguemnt list (we
+    will come back to define primtive arguments later)
 
-```k
-  syntax PrimitiveNode ::= Primitive
-                         | Primitive PrimitiveArgList
-  syntax Primitive ::= r"[a-zA-Z_0-9]+" [token]
-  syntax PrimitiveArgList ::= PrimitiveArg
-                            | PrimitiveArg PrimitiveArgList
-```
+    ```k
+    syntax PrimitiveNode ::= Primitive
+                           | Primitive PrimitiveArgList
+    syntax Primitive ::= r"[a-zA-Z_0-9]+" [token]
+    syntax PrimitiveArgList ::= PrimitiveArg
+                              | PrimitiveArg PrimitiveArgList
+    ```
 
-5. Sequences of nodes surrounded by curly braces (`{` and `}`) and
- delimited by semi-colons (`;`) where the last element may be
- optionally followed by a semi-colon
+5.  Sequences of nodes surrounded by curly braces (`{` and `}`) and
+    delimited by semi-colons (`;`) where the last element may be
+    optionally followed by a semi-colon
 
-```k
-  syntax SequenceNode ::= "{" MichelineNodes "}"
-  syntax MichelineNodes ::= MichelineNode
-                          | MichelineNode ";"
-                          | MichelineNode ";" MichelineNodes
-```
+    ```k
+    syntax SequenceNode ::= "{" MichelineNodes "}"
+    syntax MichelineNodes ::= MichelineNode
+                            | MichelineNode ";"
+                            | MichelineNode ";" MichelineNodes
+    ```
 
 ## Primitive Arguments
 
@@ -177,14 +177,14 @@ endmodule
 
 The Michelson language can be viewed as schema applied to Micheline where:
 
-- Micheline primitives are used for types (e.g. `int`) and instructions
-  (e.g. `ADD`)
-- Micheline sequences describe instruction blocks (e.g. `{ ADD ; MUL }`)
-- Primitive applications are used to define:
-  1. type constructors (`option`, `list`, `set`, `map`, `big_map`)
-  2. compound instructions (e.g. `IF <true-branch> <false-branch>`)
-- Annotations are used as type and value decorators
-- Only expressions that satisfy a typing relation are permitted.
+-   Micheline primitives are used for types (e.g. `int`) and instructions
+    (e.g. `ADD`)
+-   Micheline sequences describe instruction blocks (e.g. `{ ADD ; MUL }`)
+-   Primitive applications are used to define:
+    1. type constructors (`option`, `list`, `set`, `map`, `big_map`)
+    2. compound instructions (e.g. `IF <true-branch> <false-branch>`)
+-   Annotations are used as type and value decorators
+-   Only expressions that satisfy a typing relation are permitted.
 
 Given their similarity, one possible approach to parse Michelson is to first
 parse using the program as a Micheline expression and then apply a type
