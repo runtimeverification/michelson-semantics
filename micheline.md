@@ -4,11 +4,19 @@ Micheline is a data serialization format similar to JSON or XML. Like other
 formats, various sub-languages may be constructed on top of Micheline by
 applying a schema which restricts the set of well-formed expressions.
 
+The syntax of the programming language Michelson can be defined as a
+sublanguage of Micheline.
+Using the markdown selectors feature of K, we define two syntaxes:
+
+1.  we define the Michelson syntax using the selector `k`.
+2.  we define the Micheline syntax using the `k` selector and additionally the
+    `micheline` selector.
+
 Micheline expressions (called nodes) have an extremely sinmple syntax that we
 define below.
 
 ```k
-module MICHELINE-SYNTAX
+module MICHELINE-COMMON-SYNTAX
   imports INT
   imports STRING
 ```
@@ -39,8 +47,8 @@ We now give the syntactic definition of each node type individually.
 3.  Byte strings using hexadecimal notation with the prefix `0x`
 
     ```k
-    syntax MichelineBytes        ::= MichelineBytesLiteral  [klabel(BytesLiteral2Bytes), symbol, function, avoid]
-    syntax MichelineBytesLiteral ::= r"0x([0-9a-fA-F]{2})*" [token]
+    syntax BytesToken
+    syntax MichelineBytes ::= BytesToken // [klabel(BytesToInternal), symbol, function, avoid]
     ```
 
 4.  Primitives applications---which are primtives (unquoted alphanumeric strings
@@ -48,11 +56,15 @@ We now give the syntactic definition of each node type individually.
     will come back to define primtive arguments later)
 
     ```k
+    syntax PrimitiveToken
+    syntax Primitive ::= PrimitiveToken // [klabel(PrimitiveToInternal), symbol, function, avoid]
+    ```
+
+    ```k
     syntax PrimitiveNode ::= Primitive
-                           | Primitive PrimitiveArgList
-    syntax Primitive ::= r"[a-zA-Z_0-9]+" [token]
-    syntax PrimitiveArgList ::= PrimitiveArg
-                              | PrimitiveArg PrimitiveArgList
+                           | PrimitiveApplication
+    syntax PrimitiveApplication ::= Primitive Primitive PrimitiveArgs
+    syntax PrimitiveArgs ::= List{PrimitiveArg, ""}
     ```
 
 5.  Sequences of nodes surrounded by curly braces (`{` and `}`) and
@@ -61,9 +73,8 @@ We now give the syntactic definition of each node type individually.
 
     ```k
     syntax SequenceNode ::= "{" MichelineNodes "}"
-    syntax MichelineNodes ::= MichelineNode
-                            | MichelineNode ";"
-                            | MichelineNode ";" MichelineNodes
+    syntax SequenceNode ::= "{" MichelineNodes ";" "}"
+    syntax MichelineNodes ::= List{MichelineNode, ";"}
     ```
 
 ## Primitive Arguments
@@ -74,7 +85,7 @@ respect to literals and sequences, they are identical.
 ```k
   syntax PrimitiveArg ::= Int
                         | String
-			| MichelineBytes
+                        | MichelineBytes
                         | SequenceNode
 ```
 
@@ -84,8 +95,8 @@ Here we see there are two distinctions:
 
 ```k
   syntax PrimitiveArg ::= Primitive
-                        | "(" Primitive PrimitiveArgList ")"
-                        | MichelineAnnotation
+                        | "(" PrimitiveApplication ")"
+                        | Annotation
 ```
 
 ### Micheline Annotations
@@ -96,12 +107,43 @@ application. They are defined as a special character (`@`, `:`, `$`, `&`, `%`,
 periods (`.`), percent signs (`%`), and at-signs (`@`).
 
 ```k
-  syntax MichelineAnnotation ::= r"[@:$&%!?][_0-9a-zA-Z.%@]*" [token]
+  syntax AnnotationToken
+  syntax Annotation ::= AnnotationToken // [klabel(AnnotationToInternal), symbol, function, avoid]
 ```
 
 This concludes the definition of the Micheline data serialization format.
 
 ```k
+endmodule
+```
+
+```k
+module MICHELINE-SYNTAX
+  imports MICHELINE-COMMON-SYNTAX
+
+  syntax BytesToken      ::= r"0x([0-9a-fA-F]{2})*"       [token]
+  syntax AnnotationToken ::= r"[@:$&%!?][_0-9a-zA-Z.%@]*" [token]
+  syntax PrimitiveToken  ::= r"[a-zA-Z_0-9]+"             [token]
+endmodule
+```
+
+```k
+module MICHELINE-INTERNAL-SYNTAX
+  imports MICHELINE-COMMON-SYNTAX
+  imports BYTES
+
+  syntax MichelineBytes   ::= Bytes
+  syntax Annotation       ::= Annot( String )
+  syntax PrimitiveNode    ::= Prim( String, PrimitiveArgs )
+
+
+  syntax MichelineNodes ::= NodesToInternal ( MichelineNodes )
+  syntax MichelineNode  ::= NodeToInternal  ( MichelineNode )
+  syntax PrimitiveArgs  ::= ArgsToInternal  ( PrimitiveArgs )
+  syntax PrimitiveArg   ::= ArgToInternal   ( PrimitiveArg )
+
+  // configuration <k> NodeToInternal($PGM:MichelineNode) </k>
+  configuration <k> $PGM:MichelineNode </k>
 endmodule
 ```
 
@@ -126,39 +168,52 @@ to convert the surface representation into the K internal representation.
 Here we import our syntax module as well as builtin depdencies.
 
 ```k
-module MICHELINE
+module MICHELINE-PARSER
   imports MICHELINE-SYNTAX
-  imports BYTES
+  imports MICHELINE-INTERNAL-SYNTAX
 ```
 
-We enrich our syntactic categories with the builtin sorts.
+<!--
+```k
+  rule `BytesToInternal`(B)      => ConvertBytesAux(BytesTokenToString(B))
+  rule `AnnotationToInternal`(A) => Annot(AnnotTokenToString(A))
+  rule `PrimitiveToInternal`(P)  => Prim(PrimTokenToString(P))
+```
+-->
 
 ```k
-  syntax MichelineBytes ::= Bytes
+  syntax String ::= BytesTokenToString ( BytesToken )      [function, functional, hook(STRING.token2string)]
+  syntax String ::= AnnotTokenToString ( AnnotationToken ) [function, functional, hook(STRING.token2string)]
+  syntax String ::= PrimTokenToString ( PrimitiveToken )   [function, functional, hook(STRING.token2string)]
 ```
-
-K provides a builtin which can convert a token into a string. We will use this
-feature to parse LiteralNode tokens into strings and then convert those strings
-into the appropriate datatype inside K.
 
 ```k
-  syntax String ::= BytesLiteral2String ( MichelineBytesLiteral ) [function, functional, hook(STRING.token2string)]
+  rule NodeToInternal( I:Int ) => I
+  rule NodeToInternal( S:String ) => S
+  rule NodeToInternal( B:BytesToken ) => ConvertBytesAux( BytesTokenToString( B ) )
+  rule NodeToInternal( P:PrimitiveToken ) => Prim( PrimTokenToString( P ), .PrimitiveArgs )
+  rule NodeToInternal( P:PrimitiveToken P':PrimitiveToken Args:PrimitiveArgs)
+    => Prim( PrimTokenToString( P ), ArgsToInternal( P' Args ))
+  rule NodeToInternal( { Nodes:MichelineNodes ; } ) => { NodesToInternal(Nodes) }
+  rule NodeToInternal( { Nodes:MichelineNodes   } ) => { NodesToInternal(Nodes) }
+
+  rule NodesToInternal( Node:MichelineNode ; Nodes:MichelineNodes ) => NodeToInternal( Node ) ; NodesToInternal( Nodes )
+  rule NodesToInternal( .MichelineNodes )                           => .MichelineNodes
+
+  rule ArgsToInternal( P:PrimitiveArg Rest:PrimitiveArgs ) => ArgToInternal( P ) ArgsToInternal( Rest )
+  rule ArgsToInternal( .PrimitiveArgs )                    => .PrimitiveArgs
+
+  rule ArgToInternal( I:Int ) => I
+  rule ArgToInternal( S:String ) => S
+  rule ArgToInternal( B:BytesToken ) => NodeToInternal( B )
+  rule ArgToInternal( S:SequenceNode ) => NodeToInternal( S )
+  rule ArgToInternal( P:PrimitiveToken ) => NodeToInternal( P )
+  rule ArgToInternal( ( App:PrimitiveApplication ) ) => NodeToInternal( App )
+  rule ArgToInternal( A:AnnotationToken ) => Annot( AnnotTokenToString( A ) )
 ```
-
-We now fulfill our promise to explain the implementation details referenced in
-the original `LiteralNode` syntax declaration. The `klabel` attributes are used
-to define custom sort injections from `Int/String/BytesNode` into `LiteralNode`
-which are actually conversion functions. We define their rules here:
-
-```k
-  rule `BytesLiteral2Bytes`(B) => ConvertBytesAux(BytesLiteral2String(B))
-```
-
-We use an auxiliary rule to simplify our definition:
 
 ```k
   syntax Bytes ::= ConvertBytesAux ( String ) [function]
-
   rule ConvertBytesAux(ByteStr) =>
          Int2Bytes(((lengthString(ByteStr) -Int 2) /Int 2),           // byte sequence length
                    String2Base(                                       // integer to convert
@@ -167,9 +222,13 @@ We use an auxiliary rule to simplify our definition:
                    BE)                                                // integer is big-endian
 ```
 
-This concludes our Micheline definition.
+```k
+endmodule
+```
 
 ```k
+module MICHELINE
+  imports MICHELINE-PARSER
 endmodule
 ```
 
@@ -191,8 +250,189 @@ parse using the program as a Micheline expression and then apply a type
 checking process. However, for efficiency reasons, we choose to parse Michelson
 using a dedicated syntax.
 
+<!--
+```k
+module UNPARSED-MICHELSON-SYNTAX
+  imports EXTERNAL-MICHELINE-SYNTAX
+```
+
+To define the Michelson syntax proper, we restrict the type of possible
+primitives to those shown below.
+
+### Instructions
+
+```k
+  syntax Primitive ::= InstructionPrimitive
+  syntax InstructionPrimitive ::= "DROP"
+                                | "DROP"
+                                | "DIG"
+                                | "DUG"
+                                | "DUP"
+                                | "SWAP"
+                                | "PUSH"
+                                | "SOME"
+                                | "NONE"
+                                | "UNIT"
+                                | "IF_NONE"
+                                | "PAIR"
+                                | "UNPAIR"
+                                | "CAR"
+                                | "CDR"
+                                | "LEFT"
+                                | "RIGHT"
+                                | "IF_LEFT"
+                                | "NIL"
+                                | "CONS"
+                                | "IF_CONS"
+                                | "SIZE"
+                                | "EMPTY_SET"
+                                | "EMPTY_MAP"
+                                | "EMPTY_BIG_MAP"
+                                | "MAP"
+                                | "ITER"
+                                | "MEM"
+                                | "GET"
+                                | "UPDATE"
+                                | "IF"
+                                | "LOOP"
+                                | "LOOP_LEFT"
+                                | "LAMBDA"
+                                | "EXEC"
+                                | "APPLY"
+                                | "DIP"
+                                | "DIP"
+                                | "FAILWITH"
+                                | "CAST"
+                                | "RENAME"
+                                | "CONCAT"
+                                | "SLICE"
+                                | "PACK"
+                                | "UNPACK"
+                                | "ADD"
+                                | "SUB"
+                                | "MUL"
+                                | "EDIV"
+                                | "ABS"
+                                | "ISNAT"
+                                | "INT"
+                                | "NEG"
+                                | "LSL"
+                                | "LSR"
+                                | "OR"
+                                | "AND"
+                                | "XOR"
+                                | "NOT"
+                                | "COMPARE"
+                                | "EQ"
+                                | "NEQ"
+                                | "LT"
+                                | "GT"
+                                | "LE"
+                                | "GE"
+                                | "SELF"
+                                | "CONTRACT"
+                                | "TRANSFER_TOKENS"
+                                | "SET_DELEGATE"
+                                | "CREATE_ACCOUNT"
+                                | "IMPLICIT_ACCOUNT"
+                                | "NOW"
+                                | "CHAIN_ID"
+                                | "AMOUNT"
+                                | "BALANCE"
+                                | "CHECK_SIGNATURE"
+                                | "BLAKE2B"
+                                | "SHA256"
+                                | "SHA512"
+                                | "HASH_KEY"
+                                | "STEPS_TO_QUOTA"
+                                | "SOURCE"
+                                | "SENDER"
+                                | "ADDRESS"
+                                | "CREATE_CONTRACT"
+```
+
+### Types
+
+```k
+syntax Primitive ::= TypePrimitive
+syntax TypePrimitive ::= "int"
+                       | "nat"
+                       | "string"
+                       | "bytes"
+                       | "mutez"
+                       | "bool"
+                       | "key_hash"
+                       | "timestamp"
+                       | "address"
+                       | "key"
+                       | "unit"
+                       | "signature"
+                       | "operation"
+                       | "chain_id"
+                       | "pair"
+                       | "option"
+                       | "list"
+                       | "set"
+                       | "contract"
+                       | "or"
+                       | "lambda"
+                       | "map"
+                       | "big_map"
+```
+
+### Script Fields
+
+```k
+syntax Primitive ::= ScriptFieldPrimitive
+syntax ScriptFieldPrimitive ::= "parameter"
+                              | "storage"
+                              | "code"
+```
+
+### Michelson Annotations
+
+```k
+syntax MichelineAnnotation ::= FieldAnnotation    [klabel(FieldAnnotCtor), symbol, function, avoid]
+                             | TypeAnnotation     [klabel(TypeAnnotCtor),  symbol, function, avoid]
+                             | VariableAnnotation [klabel(VarAnnotCtor),   symbol, function, avoid]
+syntax FieldAnnotation    ::= r"%(@|[_a-zA-Z][_0-9a-zA-Z\\.]*)?"    [token]
+syntax TypeAnnotation     ::= r":([_a-zA-Z][_0-9a-zA-Z\\.]*)?"      [token]
+syntax VariableAnnotation ::= r"@(%|%%|[_a-zA-Z][_0-9a-zA-Z\\.]*)?" [token]
+```
+
+```k
+endmodule
+```
+
+### Putting it All Together
+
+```k
+module UNPARSED-MICHELSON
+  imports MICHELINE
+  imports UNPARSED-MICHELSON-SYNTAX
+  imports MICHELSON-INTERNAL-REPRESENTATION
+
+  rule `FieldAnnotCtor`(A) => FieldAnnot(MichelineAnnotToString(A))
+  rule `TypeAnnotCtor`(A)  => TypeAnnot(MichelineAnnotToString(A))
+  rule `VarAnnotCtor`(A)   => VarAnnot(MichelineAnnotToString(A))
+endmodule
+```
+
+```k
+module MICHELSON-INTERNAL-REPRESENTATION
+  imports STRING
+
+  syntax FieldAnnotation    ::= FieldAnnot(String)
+  syntax TypeAnnotation     ::= TypeAnnot(String)
+  syntax VariableAnnotation ::= VarAnnot(String)
+endmodule
+```
+
+This concludes the syntactic definition of Michelson programs.
+
 ## Parser Limitations
 
 This parser implements the full Micheline specification with the exception of
 its indentation rules for primtive applications and sequences. Thus, strictly
 speaking, this parser accepts a superset of all Micheline terms.
+-->
