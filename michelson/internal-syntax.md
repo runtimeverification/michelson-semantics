@@ -9,7 +9,7 @@ should not depend upon UNIT-TEST-SYNTAX.
 requires "michelson/syntax.md"
 
 module MICHELSON-INTERNAL-SYNTAX
-  imports MICHELSON-SYNTAX
+  imports MICHELSON-COMMON-SYNTAX
 
 ```
 

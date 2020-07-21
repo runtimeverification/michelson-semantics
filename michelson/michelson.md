@@ -11,7 +11,6 @@ requires "michelson/internal-syntax.md"
 requires "michelson/types.md"
 
 module MICHELSON
-  imports MICHELSON-SYNTAX
   imports MICHELSON-CONFIG
   imports MICHELSON-INTERNAL-SYNTAX
   imports DOMAINS

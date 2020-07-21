@@ -2,6 +2,16 @@ This module declares the syntax of a K-Michelson input file.  In particular, it 
 
 ```k
 module MICHELSON-SYNTAX
+  imports MICHELSON-COMMON-SYNTAX
+
+  syntax TypeAnnotation ::= r":([_a-zA-Z][_0-9a-zA-Z\\.]*)?" [token]
+  syntax VariableAnnotation ::= r"@(%|%%|[_a-zA-Z][_0-9a-zA-Z\\.]*)?" [token]
+  syntax FieldAnnotation ::= r"%(@|[_a-zA-Z][_0-9a-zA-Z\\.]*)?" [token]
+endmodule
+```
+
+```k
+module MICHELSON-COMMON-SYNTAX
   imports INT-SYNTAX
   imports STRING-SYNTAX
 ```
@@ -47,9 +57,9 @@ Here we define the three sequence sorts in Michelson.  Note that these sorts cov
 Here we define annotations.  Michelson actually has more stringent requirements for annotation lists to be well formed, but we do not yet enforce these requirements as annotations do very little in an execution semantics.  It is possible to fully specify the real requirements in the K grammar, and indeed an older version of the semantics did so.  However, the number of productions and rules necessary came at an unacceptable performance penalty when compared to the minimal benefit gained by rejecting such contracts.
 
 ```k
-  syntax TypeAnnotation ::= r":([_a-zA-Z][_0-9a-zA-Z\\.]*)?" [token]
-  syntax VariableAnnotation ::= r"@(%|%%|[_a-zA-Z][_0-9a-zA-Z\\.]*)?" [token]
-  syntax FieldAnnotation ::= r"%(@|[_a-zA-Z][_0-9a-zA-Z\\.]*)?" [token]
+  syntax TypeAnnotation     [token]
+  syntax VariableAnnotation [token]
+  syntax FieldAnnotation    [token]
   syntax Annotation ::= TypeAnnotation | VariableAnnotation | FieldAnnotation
 
   syntax AnnotationList ::= List{Annotation, ""}

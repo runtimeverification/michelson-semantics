@@ -83,7 +83,6 @@ requires "michelson/common.md"
 requires "michelson/types.md"
 
 module MICHELSON-CONFIG
-  imports MICHELSON-SYNTAX
   imports MICHELSON-COMMON
   imports MICHELSON-TYPES
   imports DOMAINS
