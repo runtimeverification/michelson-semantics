@@ -112,7 +112,7 @@ appropriate K-Michelson type.
   syntax Map ::= #BigMapsEntryListToKMap(BigMapEntryList) [function]
   syntax Map ::= #BigMapsEntryToKMap(BigMapEntry) [function]
 
-  rule #BigMapsEntryListToKMap(E) => #BigMapsEntryToKMap(E)
+  rule #BigMapsEntryListToKMap(.BigMapEntryList) => .Map
   rule #BigMapsEntryListToKMap(E ; Es) => #BigMapsEntryToKMap(E) #BigMapsEntryListToKMap(Es)
 
   syntax KItem ::= "#BigMap" "(" SequenceData "," Type ")"
