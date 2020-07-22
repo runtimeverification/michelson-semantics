@@ -48,7 +48,6 @@ module CONTRACT-EXPANDER
   rule #StackEltToPush(Stack_elt T D) => { PUSH .AnnotationList T D } [owise]
 
   syntax Block ::= #StackToPush(LiteralStack) [function]
-  rule #StackToPush( { .StackElementList } ) => { }
 
   syntax Block ::= #StackToPushAux(StackElementList, Block) [function]
   rule #StackToPush( { Se } ) => #StackToPushAux(Se, { DROP .AnnotationList 0 })
