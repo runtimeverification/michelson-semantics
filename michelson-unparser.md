@@ -339,10 +339,14 @@ module MICHELSON-UNPARSER
     " " +String
     #doUnparse(T, false)
 
-  rule #doUnparse(O:OtherContractsMapEntry ; Os:OtherContractsMapEntryList, _) =>
+  rule #doUnparse(O:OtherContractsMapEntry ; O':OtherContractsMapEntry ; Os:OtherContractsMapEntryList, _) =>
     #doUnparse(O, false) +String
     "; " +String
-    #doUnparse(Os, false)
+    #doUnparse(O' ; Os, false)
+
+  rule #doUnparse(O:OtherContractsMapEntry ; .OtherContractsMapEntryList, _) => #doUnparse(O, false)
+
+  rule #doUnparse(.OtherContractsMapEntryList, _) => ""
 
   rule #doUnparse(Big_map I T1 T2 { }, _) =>
     "Big_map" +String
@@ -363,10 +367,14 @@ module MICHELSON-UNPARSER
     " " +String
     #doUnparse(ML, false)
 
-  rule #doUnparse(O:BigMapEntry ; Os:BigMapEntryList, _) =>
+  rule #doUnparse(O:BigMapEntry ; O':BigMapEntry ; Os:BigMapEntryList, _) =>
     #doUnparse(O, false) +String
     "; " +String
-    #doUnparse(Os, false)
+    #doUnparse(O' ; Os, false)
+
+  rule #doUnparse(O:BigMapEntry ; .BigMapEntryList, _) => #doUnparse(O, false)
+
+  rule #doUnparse(.BigMapEntryList, _) => ""
 
   rule #doUnparse(contract { C }, _) => "contract { " +String #doUnparse(C, false) +String "}"
   rule #doUnparse(now I, _) => "now " +String #doUnparse(I, false)
