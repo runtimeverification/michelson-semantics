@@ -92,11 +92,8 @@ Here we specify the various complex types offered by Michelson, making the best 
   syntax OptionData ::= "Some" Data
                       | "None"
 
-  syntax ApplicationData ::= Pair | OrData | OptionData
-  syntax Data ::= ApplicationData
+  syntax Data ::= Pair | OrData | OptionData
 ```
-
-[//]: # (What is the role of `ApplicationData`? grepping it does not return much result)
 
 Here we specify the various forms of sequence literals in Michelson, including Map and List literals, and blocks.  The former two are converted to K's hooked sorts during load time.
 

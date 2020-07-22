@@ -10,12 +10,17 @@ module MICHELSON-UNPARSER
   imports UNIT-TEST-COMMON-SYNTAX
   imports DOMAINS
 
-  syntax String ::= #unparse(K) [function]
-  syntax String ::= #doUnparse(K, Bool) [function]
+  // We add sorts here to simplify when terms are primitive arguments
+  syntax ApplicationData ::= Pair | OrData | OptionData
+  syntax Data ::= ApplicationData
 
+  // Michelson IR Unparsing Entrypoint
+  syntax String ::= #unparse(K) [function]
   rule #unparse(O) => #doUnparse(O, false)
 
-  // Unparse Data.
+  // First argument is term to unparse, second arg is true iff term is a primitive argument
+  syntax String ::= #doUnparse(K, Bool) [function]
+
   rule #doUnparse(Elt D1:Data D2:Data, false) =>
     "Elt " +String
     #doUnparse(D1, true)
