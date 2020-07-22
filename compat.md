@@ -147,18 +147,22 @@ module EXTRACTOR
   rule #GroupContent(parameter_value C) => C
   rule #GroupContent(storage_value C) => C
 
-  syntax JSON ::= #GroupsToJson(Groups) [function]
-  syntax JSONs ::= #GroupsToJsonAux(Groups) [function]
-  syntax JSON ::= #GroupToJson(Group) [function]
+  syntax JSON  ::= #GroupsToJson(Groups)      [function]
+  syntax JSONs ::= #GroupsToJsonInner(Groups) [function]
+  syntax JSON  ::= #GroupToJson(Group)        [function]
+  syntax JSON  ::= #GroupToJson(Group,Bool)   [function]
 
-  rule #GroupsToJson(Gs) => { #GroupsToJsonAux(Gs) }
+  rule #GroupsToJson(Gs) => { #GroupsToJsonInner(Gs) }
 
-  rule #GroupsToJsonAux(G ; Gs) => #GroupToJson(G) , #GroupsToJsonAux(Gs)
-  rule #GroupsToJsonAux(G) => #GroupToJson(G)
-  rule #GroupsToJsonAux(G ;) => #GroupToJson(G)
+  rule #GroupsToJsonInner(G ; Gs) => #GroupToJson(G) , #GroupsToJsonInner(Gs)
+  rule #GroupsToJsonInner(G)      => #GroupToJson(G)
+  rule #GroupsToJsonInner(G ;)    => #GroupToJson(G)
 
+  // check if we need to add braces around our output group
+  rule #GroupToJson(G) => #GroupToJson(G, #KeyFromGroup(G) in SetItem("other_contracts") SetItem("big_maps"))
 
-  rule #GroupToJson(G) => #KeyFromGroup(G) : #unparse(#GroupContent(G))
+  rule #GroupToJson(G, false) => #KeyFromGroup(G) :             #unparse(#GroupContent(G))
+  rule #GroupToJson(G, true)  => #KeyFromGroup(G) : "{" +String #unparse(#GroupContent(G)) +String "}"
 
   rule <k> Gs:Groups => . </k>
        <out> ... .List => ListItem(JSON2String(#GroupsToJson(Gs))) </out>
