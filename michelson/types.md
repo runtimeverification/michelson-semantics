@@ -28,9 +28,8 @@ Type Check Constructors
   syntax TypedInstructionList ::= TypedInstruction ";" TypedInstructionList | TypedInstruction
                                 | #Remaining(DataList)
 
-  syntax TypeError ::= #InvalidTypeForInstruction(Instruction, TypeSeq)
+  syntax TypeError ::= #InvalidTypeForInstruction(Instruction, TypeSeq) [unused]
                      | #IncompatibleTypesForBranch(Instruction, TypeInput, TypeInput)
-                     | #UnexpectedMacro(Macro, TypeSeq)
                      | "#UnexpectedFailureType"
                      | "#InternalError"
                      | #MistypedData(Data, Type)
@@ -303,7 +302,7 @@ Type Checking Rules
   rule #TypeInstruction(_, (EMPTY_MAP _ KT VT) #as I, Ts) => #TI(I, Ts -> map .AnnotationList KT VT ; Ts)
   rule #TypeInstruction(_, (EMPTY_BIG_MAP _ KT VT) #as I, Ts) => #TI(I, Ts -> big_map .AnnotationList KT VT ; Ts)
 
- // rule #TypeInstruction(_, I, T) => #TI(I, #InvalidTypeForInstruction(I, T)) [owise]
+  // rule #TypeInstruction(_, I, T) => #TI(I, #InvalidTypeForInstruction(I, T)) [owise]
 
   syntax TypedInstruction ::= #MapAux(Instruction, TypedInstruction, TypeSeq) [function, functional]
   rule #MapAux(MAP _ _, (#TI(_, _ -> N ; Ts) #as B), (list _ _ ; Ts) #as OS) => #TI(MAP .AnnotationList { #Exec(B) }, OS -> (list .AnnotationList N) ; Ts)
@@ -541,10 +540,10 @@ Type Checking Rules
   rule #TypeInstruction(_, (SENDER _) #as I, OS) => #TI(I, OS -> (address .AnnotationList) ; OS)
   rule #TypeInstruction(_, (ADDRESS _) #as I, (contract _ _ ; Ts) #as OS) => #TI(I, OS -> (address .AnnotationList) ; Ts)
 
-  rule #TypeInstruction(C, (TRACE(S)) #as I, OS) => #TI(I, OS -> OS)
-  rule #TypeInstruction(C, STOP       #as I, OS) => #TI(I, OS -> OS)
-  rule #TypeInstruction(C, PAUSE      #as I, OS) => #TI(I, OS -> OS)
-  rule #TypeInstruction(C, (PAUSE(S)) #as I, OS) => #TI(I, OS -> OS)
+  rule #TypeInstruction(_, (TRACE(_)) #as I, OS) => #TI(I, OS -> OS)
+  rule #TypeInstruction(_, STOP       #as I, OS) => #TI(I, OS -> OS)
+  rule #TypeInstruction(_, PAUSE      #as I, OS) => #TI(I, OS -> OS)
+  rule #TypeInstruction(_, (PAUSE(_)) #as I, OS) => #TI(I, OS -> OS)
 
   syntax TypedInstruction ::= #CreateContractAux(Instruction, TypedInstruction, TypeSeq) [function, functional]
 
