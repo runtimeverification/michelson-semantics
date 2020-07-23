@@ -34,6 +34,7 @@ Contract Expander
 
 ```k
 module CONTRACT-EXPANDER-SYNTAX
+  imports MICHELSON-MACRO-SYNTAX
   imports UNIT-TEST-SYNTAX
 endmodule
 
@@ -101,6 +102,7 @@ Extractor
 
 ```k
 module EXTRACTOR-SYNTAX
+  imports MICHELSON-MACRO-SYNTAX
   imports UNIT-TEST-SYNTAX
 endmodule
 
@@ -174,6 +176,7 @@ Input Creator
 
 ```k
 module INPUT-CREATOR-SYNTAX
+  imports MICHELSON-MACRO-SYNTAX
   imports UNIT-TEST-SYNTAX
 endmodule
 
@@ -227,6 +230,7 @@ Output Compare
 
 ```k
 module OUTPUT-COMPARE-SYNTAX
+  imports MICHELSON-MACRO-SYNTAX
   imports UNIT-TEST-SYNTAX
   syntax RealOutputGroup ::= "real_output" OutputStack
   syntax Group ::= RealOutputGroup

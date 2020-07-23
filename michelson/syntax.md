@@ -287,67 +287,6 @@ set used for debugging purposes.
   syntax Instruction ::= TRACE(String)
 ```
 
-We list Macros separately, although in practice macros should not exist by this point (since the external parser eliminates them), we keep them in the grammar for future work.
-
-```k
-  syntax Macro
-  syntax Instruction ::= Macro
-
-  syntax DIPMacro ::= r"DII+P" [token]
-  syntax DUPMacro ::= r"DUU+P" [token]
-  syntax PairMacro ::= r"P[AIP]+R" [token] // This regex needs to be far more complex, but not sure how much K actually supports. P(\left=A|P(\left)(\right))(\right=I|P(\left)(\right))R
-  syntax UnpairMacro ::= r"UNP[AIP]+R" [token] // Same as above. UNP(\left=A|P(\left)(\right))(\right=I|P(\left)(\right))R
-  syntax CDARMacro ::= r"C[A,D]{2,}R" [token]
-  syntax SetCDARMacro ::= r"SET_C[AD]+R" [token]
-
-  syntax Macro ::= DIPMacro AnnotationList Block
-  syntax Macro ::= DUPMacro AnnotationList
-  syntax Macro ::= PairMacro AnnotationList
-  syntax Macro ::= UnpairMacro AnnotationList
-  syntax Macro ::= CDARMacro AnnotationList
-  syntax Macro ::= SetCDARMacro AnnotationList
-
-  syntax Macro ::= "CMPEQ" AnnotationList
-  syntax Macro ::= "CMPNEQ" AnnotationList
-  syntax Macro ::= "CMPLT" AnnotationList
-  syntax Macro ::= "CMPGT" AnnotationList
-  syntax Macro ::= "CMPLE" AnnotationList
-  syntax Macro ::= "CMPGE" AnnotationList
-  syntax Macro ::= "IFEQ" AnnotationList Block Block
-  syntax Macro ::= "IFNEQ" AnnotationList Block Block
-  syntax Macro ::= "IFLT" AnnotationList Block Block
-  syntax Macro ::= "IFGT" AnnotationList Block Block
-  syntax Macro ::= "IFLE" AnnotationList Block Block
-  syntax Macro ::= "IFGE" AnnotationList Block Block
-  syntax Macro ::= "IFCMPEQ" AnnotationList Block Block
-  syntax Macro ::= "IFCMPNEQ" AnnotationList Block Block
-  syntax Macro ::= "IFCMPLT" AnnotationList Block Block
-  syntax Macro ::= "IFCMPGT" AnnotationList Block Block
-  syntax Macro ::= "IFCMPLE" AnnotationList Block Block
-  syntax Macro ::= "IFCMPGE" AnnotationList Block Block
-  syntax Macro ::= "FAIL" AnnotationList
-  syntax Macro ::= "ASSERT" AnnotationList
-  syntax Macro ::= "ASSERT_EQ" AnnotationList
-  syntax Macro ::= "ASSERT_NEQ" AnnotationList
-  syntax Macro ::= "ASSERT_LT" AnnotationList
-  syntax Macro ::= "ASSERT_LE" AnnotationList
-  syntax Macro ::= "ASSERT_GT" AnnotationList
-  syntax Macro ::= "ASSERT_GE" AnnotationList
-  syntax Macro ::= "ASSERT_CMPEQ" AnnotationList
-  syntax Macro ::= "ASSERT_CMPNEQ" AnnotationList
-  syntax Macro ::= "ASSERT_CMPLT" AnnotationList
-  syntax Macro ::= "ASSERT_CMPLE" AnnotationList
-  syntax Macro ::= "ASSERT_CMPGT" AnnotationList
-  syntax Macro ::= "ASSERT_CMPGE" AnnotationList
-  syntax Macro ::= "ASSERT_NONE" AnnotationList
-  syntax Macro ::= "ASSERT_SOME" AnnotationList
-  syntax Macro ::= "ASSERT_LEFT" AnnotationList
-  syntax Macro ::= "ASSERT_RIGHT" AnnotationList
-  syntax Macro ::= "IF_SOME" AnnotationList Block Block
-  syntax Macro ::= "IF_RIGHT" AnnotationList Block Block
-  syntax Macro ::= "SET_CAR" AnnotationList
-  syntax Macro ::= "SET_CDR" AnnotationList
-```
 
 Here we specify the different formats a Michelson Contract may take.  These will be converted to the first format (`Code ; Storage ; Parameter ;`) by macros immediately after parsing.
 
@@ -446,5 +385,73 @@ present for an execution to work.
 
 ```k
   syntax Pgm ::= Groups
+endmodule
+```
+
+We list Macros separately, although in practice macros should not exist by this
+point (since the external parser eliminates them).
+We keep them in the grammar for future work.
+
+```k
+module MICHELSON-MACRO-SYNTAX
+  imports MICHELSON-SYNTAX
+
+  syntax Macro
+  syntax Instruction ::= Macro
+
+  syntax DIPMacro ::= r"DII+P" [token]
+  syntax DUPMacro ::= r"DUU+P" [token]
+  syntax PairMacro ::= r"P[AIP]+R" [token] // This regex needs to be far more complex, but not sure how much K actually supports. P(\left=A|P(\left)(\right))(\right=I|P(\left)(\right))R
+  syntax UnpairMacro ::= r"UNP[AIP]+R" [token] // Same as above. UNP(\left=A|P(\left)(\right))(\right=I|P(\left)(\right))R
+  syntax CDARMacro ::= r"C[A,D]{2,}R" [token]
+  syntax SetCDARMacro ::= r"SET_C[AD]+R" [token]
+
+  syntax Macro ::= DIPMacro AnnotationList Block
+  syntax Macro ::= DUPMacro AnnotationList
+  syntax Macro ::= PairMacro AnnotationList
+  syntax Macro ::= UnpairMacro AnnotationList
+  syntax Macro ::= CDARMacro AnnotationList
+  syntax Macro ::= SetCDARMacro AnnotationList
+
+  syntax Macro ::= "CMPEQ" AnnotationList
+  syntax Macro ::= "CMPNEQ" AnnotationList
+  syntax Macro ::= "CMPLT" AnnotationList
+  syntax Macro ::= "CMPGT" AnnotationList
+  syntax Macro ::= "CMPLE" AnnotationList
+  syntax Macro ::= "CMPGE" AnnotationList
+  syntax Macro ::= "IFEQ" AnnotationList Block Block
+  syntax Macro ::= "IFNEQ" AnnotationList Block Block
+  syntax Macro ::= "IFLT" AnnotationList Block Block
+  syntax Macro ::= "IFGT" AnnotationList Block Block
+  syntax Macro ::= "IFLE" AnnotationList Block Block
+  syntax Macro ::= "IFGE" AnnotationList Block Block
+  syntax Macro ::= "IFCMPEQ" AnnotationList Block Block
+  syntax Macro ::= "IFCMPNEQ" AnnotationList Block Block
+  syntax Macro ::= "IFCMPLT" AnnotationList Block Block
+  syntax Macro ::= "IFCMPGT" AnnotationList Block Block
+  syntax Macro ::= "IFCMPLE" AnnotationList Block Block
+  syntax Macro ::= "IFCMPGE" AnnotationList Block Block
+  syntax Macro ::= "FAIL" AnnotationList
+  syntax Macro ::= "ASSERT" AnnotationList
+  syntax Macro ::= "ASSERT_EQ" AnnotationList
+  syntax Macro ::= "ASSERT_NEQ" AnnotationList
+  syntax Macro ::= "ASSERT_LT" AnnotationList
+  syntax Macro ::= "ASSERT_LE" AnnotationList
+  syntax Macro ::= "ASSERT_GT" AnnotationList
+  syntax Macro ::= "ASSERT_GE" AnnotationList
+  syntax Macro ::= "ASSERT_CMPEQ" AnnotationList
+  syntax Macro ::= "ASSERT_CMPNEQ" AnnotationList
+  syntax Macro ::= "ASSERT_CMPLT" AnnotationList
+  syntax Macro ::= "ASSERT_CMPLE" AnnotationList
+  syntax Macro ::= "ASSERT_CMPGT" AnnotationList
+  syntax Macro ::= "ASSERT_CMPGE" AnnotationList
+  syntax Macro ::= "ASSERT_NONE" AnnotationList
+  syntax Macro ::= "ASSERT_SOME" AnnotationList
+  syntax Macro ::= "ASSERT_LEFT" AnnotationList
+  syntax Macro ::= "ASSERT_RIGHT" AnnotationList
+  syntax Macro ::= "IF_SOME" AnnotationList Block Block
+  syntax Macro ::= "IF_RIGHT" AnnotationList Block Block
+  syntax Macro ::= "SET_CAR" AnnotationList
+  syntax Macro ::= "SET_CDR" AnnotationList
 endmodule
 ```
