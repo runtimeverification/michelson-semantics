@@ -245,7 +245,6 @@ Type Checking Rules
 
   rule #SubTypedBranches(IF_NONE _ _ _, B1, B2)  => IF_NONE  .AnnotationList B1 B2
   rule #SubTypedBranches(IF_LEFT _ _ _, B1, B2)  => IF_LEFT  .AnnotationList B1 B2
-  rule #SubTypedBranches(IF_RIGHT _ _ _, B1, B2) => IF_RIGHT .AnnotationList B1 B2
   rule #SubTypedBranches(IF_CONS _ _ _, B1, B2)  => IF_CONS  .AnnotationList B1 B2
   rule #SubTypedBranches(IF      _ _ _, B1, B2)  => IF       .AnnotationList B1 B2
   rule #SubTypedBranches(I, _, _) => #InvalidBranchInstruction(I) [owise]
@@ -284,7 +283,6 @@ Type Checking Rules
   rule #TypeInstruction(_, (RIGHT _ TL) #as I, (TR ; Ts) #as OS) => #TI(I, OS -> (or .AnnotationList TL TR) ; Ts)
 
   rule #TypeInstruction(C, (IF_LEFT _ BL BR) #as I, ((or _ TL TR) ; Ts) #as OS) => #UnifyBranches(I, #TypeInstruction(C, BL, TL ; Ts), #TypeInstruction(C, BR, TR ; Ts), OS)
-  rule #TypeInstruction(C, (IF_RIGHT _ BL BR) #as I, ((or _ TR TL) ; Ts) #as OS) => #UnifyBranches(I, #TypeInstruction(C, BL, TL ; Ts), #TypeInstruction(C, BR, TR ; Ts), OS)
 
 
   rule #TypeInstruction(_, (NIL _ T) #as I, Ts) => #TI(I, Ts -> (list .AnnotationList T) ; Ts)

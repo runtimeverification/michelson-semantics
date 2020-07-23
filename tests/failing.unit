@@ -18,3 +18,5 @@ tests/unit/slice_bytes_02.tzt
 tests/unit/slice_bytes_03.tzt
 tests/unit/slice_bytes_04.tzt
 tests/unit/sub_timestamp-int_04.tzt
+tests/unit/ifright_orintstring_00.tzt
+tests/unit/ifright_orstringint_00.tzt
