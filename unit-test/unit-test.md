@@ -48,37 +48,33 @@ module UNIT-TEST
   syntax SymbolicElement ::= #SymbolicElement(SymbolicData, Type)
   syntax SymbolicElement ::= "#DummyElement"
 
+  syntax Set ::= #FindSymbolsBL(BlockList) [function, functional]
+  rule #FindSymbolsBL(.BlockList) => .Set
+  rule #FindSymbolsBL(B:Block ; Rs:BlockList) => #FindSymbolsB(B) #FindSymbolsBL(Rs)
+
+  syntax Set ::= #FindSymbolsB(Block) [function, functional]
+  rule #FindSymbolsB({ }) => .Set
+  rule #FindSymbolsB({ I:Instruction }) => #FindSymbolsI(I)
+  rule #FindSymbolsB({ I:Instruction ; Is:DataList }:Block) => #FindSymbolsI(I) |Set #FindSymbolsB({ Is })
+
+  syntax Set ::= #FindSymbolsI(Instruction) [function, functional]
+  rule #FindSymbolsI(PUSH _ T D) => #FindSymbolsIn(D, T)
+  rule #FindSymbolsI(_)          => .Set [owise]
+
+  syntax Set ::= #FindSymbolsS(StackElementList) [function, functional]
+  rule #FindSymbolsS(.StackElementList) => .Set
+  rule #FindSymbolsS((Stack_elt T D ); Ss:StackElementList)
+    => #FindSymbolsIn(D, T) |Set #FindSymbolsS(Ss)
+```
+
+```k
   syntax Set ::= #FindSymbolsIn(Data, Type) [function, functional]
-  syntax Set ::= #FindSymbols(KItem) [function, functional]
-
-  rule #FindSymbols({ B:BlockList }) => #FindSymbols(B)
-
-  rule #FindSymbols(B:Block ; Rs:BlockList) => #FindSymbols(B) #FindSymbols(Rs)
-
-  rule #FindSymbols({ }) => .Set
-  rule #FindSymbols( { I:Instruction }) => #FindSymbols(I)
-  rule #FindSymbols({ I:Instruction ; Is:DataList }) => #FindSymbols(I) |Set #FindSymbols(Is)
-
-  rule #FindSymbols(PUSH _ T D) => #FindSymbolsIn(D, T)
-
-
-  rule #FindSymbols( ( Failed S:SymbolicData ) ) => SetItem(#SymbolicElement(S, #UnknownType))
-
-  rule #FindSymbols( { S:StackElementList } ) => #FindSymbols(S)
-  rule #FindSymbols( S:StackElement ; Ss:StackElementList) => #FindSymbols(S) |Set #FindSymbols(Ss)
-
-  rule #FindSymbols( Stack_elt T D ) => #FindSymbolsIn(D, T)
-
-  rule #FindSymbols(_) => .Set [owise]
-
   rule #FindSymbolsIn(S:SymbolicData, T) => SetItem(#SymbolicElement(S, T)) // ???
-
   rule #FindSymbolsIn(Pair V1 V2, pair _ T1 T2) => #FindSymbolsIn(V1, T1) |Set #FindSymbolsIn(V2, T2)
   rule #FindSymbolsIn(Some V, option _ T) => #FindSymbolsIn(V, T)
   rule #FindSymbolsIn(Left V, or _ T _) => #FindSymbolsIn(V, T)
   rule #FindSymbolsIn(Right V, or _ _ T) => #FindSymbolsIn(V, T)
-
-  rule #FindSymbolsIn(B:Block, lambda _ _ _) => #FindSymbols(B)
+  rule #FindSymbolsIn(B:Block, lambda _ _ _) => #FindSymbolsB(B)
 
   rule #FindSymbolsIn({ }, list _ _) => .Set
   rule #FindSymbolsIn({ D:Data }, list _ T) => #FindSymbolsIn(D, T)
@@ -96,7 +92,9 @@ module UNIT-TEST
   rule #FindSymbolsIn(M:MapLiteral, big_map A KT VT) => #FindSymbolsIn(M, map A KT VT)
 
   rule #FindSymbolsIn(_, _) => .Set [owise]
+```
 
+```k
   syntax Bool ::= #AllTypesKnown(Set) [function, functional]
   rule #AllTypesKnown(SetItem(#SymbolicElement(_, #UnknownType)) _) => false
   rule #AllTypesKnown(_) => true [owise]
@@ -127,15 +125,15 @@ Load symbolic variables into the `<symbols>` map.
 ```k
   syntax KItem ::= "#CreateSymbols"
   rule <k> #CreateSymbols
-        => #CreateSymbols(#UnifiedSetToList(#UnifyTypes( #FindSymbols(Stack)
-                                                    |Set #FindSymbols(Pre)
-                                                    |Set #FindSymbols(Script)
+        => #CreateSymbols(#UnifiedSetToList(#UnifyTypes( #FindSymbolsS(Stack)
+                                                    |Set #FindSymbolsBL(Pre)
+                                                    |Set #FindSymbolsB({ Script })
                          )                )           )
            ...
        </k>
-       <inputstack> Stack </inputstack>
-       <pre> Pre </pre>
-       <script> Script </script>
+       <inputstack> { Stack }:LiteralStack </inputstack>
+       <pre> Pre:BlockList </pre>
+       <script> Script:Data </script>
 ```
 
 ```k
@@ -248,6 +246,8 @@ know what types are on the stack.
   rule #LiteralStackToTypes( { Stack_elt T D ; Gs:StackElementList }, PT)
     => T ; #LiteralStackToTypes({ Gs }, PT)
     requires #Typed(D, T) :=K #TypeData(PT, D, T)
+  rule #LiteralStackToTypes({ Stack_elt T S:SymbolicData ; Gs:StackElementList }, PT)
+    => T ; #LiteralStackToTypes({ Gs }, PT)
 ```
 
 ### `#TypeCheck` function
@@ -327,14 +327,12 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
 --------------------------------
 
 ```k
-  syntax Instruction ::= "ASSERT" Blocks
-                       | "ASSUME" Blocks
+  syntax Instruction ::= "ASSERT" "{" BlockList "}"
+                       | "ASSUME" "{" BlockList "}"
 ```
 
 ```k
-  rule <k> ASSERT { }:EmptyBlock => .K ... </k>
-  rule <k> ASSERT { { } } => .K ... </k>
-  rule <k> ASSERT { B } => ASSERT { B ; { } } ... </k> requires B =/=K { }
+  rule <k> ASSERT { .BlockList } => .K ... </k>
   rule <k> ASSERT { B; Bs }
         => B ~> #AssertTrue ~> ASSERT { Bs } ~> #RestoreStack(Stack)
            ...
@@ -343,9 +341,7 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
 ```
 
 ```k
-  rule <k> ASSUME { }:EmptyBlock => .K ... </k>
-  rule <k> ASSUME { { } } => .K ... </k>
-  rule <k> ASSUME { B } => ASSUME { B ; { } } ... </k> requires B =/=K { }
+  rule <k> ASSUME { .BlockList } => .K ... </k>
   rule <k> ASSUME { B; Bs }
         => B ~> #AssumeTrue ~> ASSUME { Bs } ~> #RestoreStack(Stack)
            ...
@@ -389,13 +385,13 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
 ---------------------
 
 ```k
-  rule <k> precondition Bs => .K ... </k>
-       <pre>  { } => Bs </pre>
+  rule <k> precondition { Bs } => .K ... </k>
+       <pre> .BlockList => Bs </pre>
 ```
 
 ```k
   syntax KItem ::= "#ExecutePreConditions"
-  rule <k> #ExecutePreConditions => ASSUME Preconditions ... </k>
+  rule <k> #ExecutePreConditions => ASSUME { Preconditions } ... </k>
        <pre> Preconditions </pre>
 ```
 
@@ -403,14 +399,14 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
 ---------------------
 
 ```k
-  rule <k> postcondition Bs => .K ... </k>
-       <post>  { } => Bs </post>
+  rule <k> postcondition { Bs } => .K ... </k>
+       <post> .BlockList => Bs </post>
 ```
 
 ```k
   syntax KItem ::= "#ExecutePostConditions"
   rule <k> #ExecutePostConditions
-        => BIND Expected { ASSERT Postconditions }
+        => BIND Expected { ASSERT { Postconditions } }
            ...
        </k>
        <expected> Expected </expected>
@@ -421,9 +417,9 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
 ---------------------
 
 ```k
-  rule <k> invariant Annot { Stack } Blocks => . ... </k>
+  rule <k> invariant Annot { Stack } { Blocks } => . ... </k>
        <invs> .Map
-           => (Annot |-> { Stack } Blocks)
+           => (Annot |-> { Stack } { Blocks })
               ...
        </invs>
 ```
@@ -458,17 +454,17 @@ When we reach a cutpoint, we need to generalize our current state into one which
 corresponds to the reachability logic circularity that we wish to use.
 
 ```symbolic
-  rule <k> CUTPOINT(I, { Shape } Predicates)
-        => BIND { Shape } { ASSERT Predicates }
+  rule <k> CUTPOINT(I, { Shape } { Predicates })
+        => BIND { Shape } { ASSERT { Predicates }}
         ~> #GeneralizeStack(Shape, .K)
-        ~> BIND { Shape } { ASSUME Predicates }
+        ~> BIND { Shape } { ASSUME { Predicates }}
            ...
        </k>
        <cutpoints> (.Set => SetItem(I)) VisitedCutpoints </cutpoints>
     requires notBool I in VisitedCutpoints
 
-  rule <k> CUTPOINT(I, { Shape } Predicates)
-        => BIND { Shape } { ASSERT Predicates }
+  rule <k> CUTPOINT(I, { Shape } { Predicates })
+        => BIND { Shape } { ASSERT { Predicates }}
         ~> #Assume(false)
            ...
        </k>
@@ -599,11 +595,6 @@ Extending functions to `SymbolicData`
 
   rule [[ #TypeData(_, S:SymbolicData, T) => #Typed(S, T) ]]
        <symbols> ... S |-> #TypedSymbol(T, _) ... </symbols>
-```
-
-```symbolic
-  rule #LiteralStackToTypes({ Stack_elt T S:SymbolicData ; Gs:StackElementList }, PT)
-    => T ; #LiteralStackToTypes({ Gs }, PT)
 ```
 
 ```k

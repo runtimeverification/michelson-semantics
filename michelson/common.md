@@ -155,11 +155,8 @@ eleven 'anywhere' rules here.
 This function is similar to `#MichelineToNative` but for contract maps.
 
 ```k
-  syntax Map ::= #OtherContractsMapToKMap(OtherContractsMap) [function]
   syntax Map ::= #OtherContractsMapEntryListToKMap(OtherContractsMapEntryList) [function]
-  rule #OtherContractsMapToKMap({ }) => .Map
-  rule #OtherContractsMapToKMap({ EL }) => #OtherContractsMapEntryListToKMap(EL)
-  rule #OtherContractsMapEntryListToKMap( Elt A T ) => #Address(A) |-> #Contract(#Address(A), T)
+  rule #OtherContractsMapEntryListToKMap( .OtherContractsMapEntryList ) => .Map
   rule #OtherContractsMapEntryListToKMap( Elt A T ; Rs ) => #Address(A) |-> #Contract(#Address(A), T) #OtherContractsMapEntryListToKMap(Rs)
 ```
 

@@ -339,15 +339,14 @@ module MICHELSON-UNPARSER
     " " +String
     #doUnparse(T, false)
 
-  rule #doUnparse(O:OtherContractsMapEntry ; Os:OtherContractsMapEntryList, _) =>
+  rule #doUnparse(O:OtherContractsMapEntry ; O':OtherContractsMapEntry ; Os:OtherContractsMapEntryList, _) =>
     #doUnparse(O, false) +String
     "; " +String
-    #doUnparse(Os, false)
+    #doUnparse(O' ; Os, false)
 
-  rule #doUnparse({ Os:OtherContractsMapEntryList }, _) =>
-    "{" +String
-    #doUnparse(Os, false) +String
-    "}"
+  rule #doUnparse(O:OtherContractsMapEntry ; .OtherContractsMapEntryList, _) => #doUnparse(O, false)
+
+  rule #doUnparse(.OtherContractsMapEntryList, _) => ""
 
   rule #doUnparse(Big_map I T1 T2 { }, _) =>
     "Big_map" +String
@@ -368,15 +367,14 @@ module MICHELSON-UNPARSER
     " " +String
     #doUnparse(ML, false)
 
-  rule #doUnparse(O:BigMapEntry ; Os:BigMapEntryList, _) =>
+  rule #doUnparse(O:BigMapEntry ; O':BigMapEntry ; Os:BigMapEntryList, _) =>
     #doUnparse(O, false) +String
     "; " +String
-    #doUnparse(Os, false)
+    #doUnparse(O' ; Os, false)
 
-  rule #doUnparse({ Os:BigMapEntryList }, _) =>
-    "{" +String
-    #doUnparse(Os, false) +String
-    "}"
+  rule #doUnparse(O:BigMapEntry ; .BigMapEntryList, _) => #doUnparse(O, false)
+
+  rule #doUnparse(.BigMapEntryList, _) => ""
 
   rule #doUnparse(contract { C }, _) => "contract { " +String #doUnparse(C, false) +String "}"
   rule #doUnparse(now I, _) => "now " +String #doUnparse(I, false)
@@ -386,10 +384,10 @@ module MICHELSON-UNPARSER
   rule #doUnparse(self S, _) => "self " +String #doUnparse(S, false)
   rule #doUnparse(amount S, _) => "amount " +String #doUnparse(S, false)
   rule #doUnparse(balance S, _) => "balance " +String #doUnparse(S, false)
-  rule #doUnparse(other_contracts S, _) => "other_contracts " +String #doUnparse(S, false)
+  rule #doUnparse(other_contracts { S }, _) => "other_contracts {" +String #doUnparse(S, false) +String "}"
   rule #doUnparse(parameter_value S, _) => "parameter_value " +String #doUnparse(S, false)
   rule #doUnparse(storage_value S, _) => "storage_value " +String #doUnparse(S, false)
-  rule #doUnparse(big_maps S, _) => "big_maps " +String #doUnparse(S, false)
+  rule #doUnparse(big_maps { S }, _) => "big_maps {" +String #doUnparse(S, false) +String "}"
 
   rule #doUnparse(G:Group ; Gs:Groups, _) =>
     #doUnparse(G, false) +String
