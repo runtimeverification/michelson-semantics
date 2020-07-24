@@ -16,3 +16,10 @@ tests/unit/slice_bytes_02.tzt
 tests/unit/slice_bytes_03.tzt
 tests/unit/slice_bytes_04.tzt
 tests/unit/sub_timestamp-int_04.tzt
+
+tests/macros/cdda.tzt
+tests/macros/cdddr.tzt
+tests/macros/cmpeq_00.tzt
+tests/macros/ifcmpeq.tzt
+tests/macros/pappaiir.tzt
+tests/macros/unpappaiir.tzt

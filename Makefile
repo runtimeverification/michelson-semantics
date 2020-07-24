@@ -274,7 +274,7 @@ test: test-unit test-cross test-prove
 
 # Unit
 
-unit_tests         := $(wildcard tests/unit/*.tzt)
+unit_tests         := $(wildcard tests/unit/*.tzt) $(wildcard tests/macros/*.tzt)
 unit_tests_failing := $(shell cat tests/failing.unit)
 unit_tests_passing := $(filter-out $(unit_tests_failing), $(unit_tests))
 
@@ -302,7 +302,7 @@ tests/%.symbolic: tests/% $(symbolic_kompiled)
 
 # Cross Validation
 
-cross_tests         := $(wildcard tests/unit/*.tzt)
+cross_tests         := $(wildcard tests/unit/*.tzt) $(wildcard tests/macros/*.tzt)
 cross_tests_failing := $(shell cat tests/failing.cross)
 cross_tests_passing := $(filter-out $(cross_tests_failing), $(cross_tests))
 
