@@ -15,6 +15,7 @@ The unit-test semantics does not need any processing in addition to the base ini
 ```k
 module UNIT-TEST-DRIVER
   imports UNIT-TEST
+  imports SYMBOLIC-UNIT-TEST-SYNTAX
 
   rule <k> #Init
         => #CreateSymbols
@@ -31,7 +32,7 @@ endmodule
 
 ```k
 module UNIT-TEST
-  imports SYMBOLIC-UNIT-TEST-SYNTAX
+  imports SYMBOLIC-UNIT-TEST-COMMON-SYNTAX
   imports MICHELSON
   imports MICHELSON-TYPES
   imports MATCHER
@@ -608,7 +609,7 @@ format proposal and discards list type information as discussed earlier.
 ```k
 module MATCHER
   imports MICHELSON-COMMON
-  imports UNIT-TEST-SYNTAX
+  imports UNIT-TEST-COMMON-SYNTAX
 
   syntax Bool ::= #Matches(Data, Data) [function] // Expected, Actual
 

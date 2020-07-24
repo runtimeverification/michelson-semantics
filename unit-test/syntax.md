@@ -27,7 +27,14 @@ as the reference implementation by passing a conformance test suite.
 
 ```k
 module UNIT-TEST-SYNTAX
+  imports UNIT-TEST-COMMON-SYNTAX
   imports MICHELSON-SYNTAX
+endmodule
+```
+
+```k
+module UNIT-TEST-COMMON-SYNTAX
+  imports MICHELSON-COMMON-SYNTAX
   imports MICHELSON-INTERNAL-SYNTAX
 ```
 
@@ -100,7 +107,7 @@ contract pushed by the `SELF` instruction.
 ```
 
 Besides these, the `now`, `sender`, `source`, `chain_id`, `self`, `amount`, and
-`balance`, `other_contracts`, and ``big_maps` groups are defined in
+`balance`, `other_contracts`, and `big_maps` groups are defined in
 [michelson/syntax.md](michelson/syntax.md)
 
 ```k
@@ -116,12 +123,21 @@ pre- and post-conditions as well as invariants to enable verification.
 ```k
 module SYMBOLIC-UNIT-TEST-SYNTAX
   imports UNIT-TEST-SYNTAX
+  imports SYMBOLIC-UNIT-TEST-COMMON-SYNTAX
+
+  syntax SymbolicData ::= r"$[_a-zA-Z][_0-9a-zA-Z]*" [token]
+endmodule
+```
+
+```k
+module SYMBOLIC-UNIT-TEST-COMMON-SYNTAX
+  imports UNIT-TEST-COMMON-SYNTAX
 ```
 
 We extend `Data` to allow symbolic variables.
 
 ```k
-  syntax SymbolicData ::= r"$[_a-zA-Z][_0-9a-zA-Z]*" [token]
+  syntax SymbolicData [token]
   syntax Data ::= SymbolicData
 ```
 
