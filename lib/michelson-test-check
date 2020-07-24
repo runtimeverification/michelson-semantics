@@ -95,6 +95,10 @@ assert(len(sys.argv) == 2)
 pathToDefinition = sys.argv[1]
 definition = pyk.readKastTerm(os.path.join(pathToDefinition, 'compiled.json'))
 symbolTable = pyk.buildSymbolTable(definition)
+
+def print_in_keys(map, key): return "%s in_keys(%s)" %(map, key)
+symbolTable['_in_keys(_)_MAP_Bool_KItem_Map'] = print_in_keys
+
 outputTerm = parseKastTerm(sys.stdin.read())
 success_count, failures, stucks = findFailingBranches(outputTerm)
 printStates("Stuck",stucks)
