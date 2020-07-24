@@ -450,8 +450,13 @@ module MICHELSON-MACRO-SYNTAX
   syntax Macro ::= "ASSERT_SOME" AnnotationList
   syntax Macro ::= "ASSERT_LEFT" AnnotationList
   syntax Macro ::= "ASSERT_RIGHT" AnnotationList
-  syntax Macro ::= "IF_SOME" AnnotationList Block Block
-  syntax Macro ::= "IF_RIGHT" AnnotationList Block Block
+
+  syntax Instruction ::= "IF_SOME" AnnotationList Block Block
+  rule IF_SOME Annots BS BN => IF_NONE Annots BN BS [anywhere]
+
+  syntax Instruction ::= "IF_RIGHT" AnnotationList Block Block
+  rule IF_RIGHT Annots BL BR => IF_LEFT Annots BR BL [anywhere] 
+  
   syntax Macro ::= "SET_CAR" AnnotationList
   syntax Macro ::= "SET_CDR" AnnotationList
 endmodule
