@@ -3,6 +3,7 @@ This module declares the syntax of a K-Michelson input file.  In particular, it 
 ```k
 module MICHELSON-SYNTAX
   imports MICHELSON-COMMON-SYNTAX
+  imports MICHELSON-MACRO-SYNTAX
 
   syntax TypeAnnotation ::= r":([_a-zA-Z][_0-9a-zA-Z\\.]*)?" [token]
   syntax VariableAnnotation ::= r"@(%|%%|[_a-zA-Z][_0-9a-zA-Z\\.]*)?" [token]
@@ -394,7 +395,7 @@ We keep them in the grammar for future work.
 
 ```k
 module MICHELSON-MACRO-SYNTAX
-  imports MICHELSON-SYNTAX
+  imports MICHELSON-COMMON-SYNTAX
 
   syntax Macro
   syntax Instruction ::= Macro
