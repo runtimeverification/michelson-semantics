@@ -5,7 +5,7 @@ code { DUP                      //     I1 I1
      ; LT                       //   0>I1 I1
      ; IF { SOME            }   // (Some I1) where I1 > 0
           { DROP ; NONE nat }   //      None
-     ; PUSH nat 2
+     ; PUSH nat 2               // Have nat, expecting option
      } ;
 output { Stack_elt (option nat) $OPT } ;
 postcondition { { PUSH (option nat) $OPT
