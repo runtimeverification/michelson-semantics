@@ -1,3 +1,0 @@
-code { SET_DELEGATE } ; 
-input { Stack_elt (option string) (Some "tz1NwQ6hkenkn6aYYio8VnJvjtb4K1pfeU1Z") } ;
-output { Stack_elt operation Set_delegate(0, Some "tz1NwQ6hkenkn6aYYio8VnJvjtb4K1pfeU1Z") } 
