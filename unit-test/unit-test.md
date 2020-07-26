@@ -47,7 +47,6 @@ module UNIT-TEST
   syntax KItem ::= SymbolicElement
 
   syntax SymbolicElement ::= #SymbolicElement(SymbolicData, Type)
-  syntax SymbolicElement ::= "#DummyElement"
 
   syntax Set ::= #FindSymbolsBL(BlockList) [function, functional]
   rule #FindSymbolsBL(.BlockList) => .Set
@@ -87,7 +86,7 @@ module UNIT-TEST
 
   rule #FindSymbolsIn({ }, map _ _ _) => .Set
   rule #FindSymbolsIn({ Elt K V }, map _ KT VT) => #FindSymbolsIn(K, KT) |Set #FindSymbolsIn(V, VT)
-  rule #FindSymbolsIn({ M:MapEntry ; ML:MapEntryList }, (map _ K V) #as MT) =>
+  rule #FindSymbolsIn({ M:MapEntry ; ML:MapEntryList }, (map _ _ _) #as MT) =>
        #FindSymbolsIn({ M }, MT) |Set #FindSymbolsIn({ ML }, MT)
 
   rule #FindSymbolsIn(M:MapLiteral, big_map A KT VT) => #FindSymbolsIn(M, map A KT VT)
@@ -187,7 +186,7 @@ productions) into a KSequence (the same format as the execution stack).
 
 ```k
   syntax K ::= #LiteralStackToSemantics(LiteralStack, Map, Map) [function]
-  rule #LiteralStackToSemantics({ .StackElementList }, KnownAddrs, BigMaps) => .
+  rule #LiteralStackToSemantics({ .StackElementList }, _KnownAddrs, _BigMaps) => .
   rule #LiteralStackToSemantics({ Stack_elt T D ; Gs:StackElementList }, KnownAddrs, BigMaps)
     => #MichelineToNative(D, T, KnownAddrs, BigMaps)
     ~> #LiteralStackToSemantics({ Gs }, KnownAddrs, BigMaps)
@@ -247,7 +246,7 @@ know what types are on the stack.
   rule #LiteralStackToTypes( { Stack_elt T D ; Gs:StackElementList }, PT)
     => T ; #LiteralStackToTypes({ Gs }, PT)
     requires #Typed(D, T) :=K #TypeData(PT, D, T)
-  rule #LiteralStackToTypes({ Stack_elt T S:SymbolicData ; Gs:StackElementList }, PT)
+  rule #LiteralStackToTypes({ Stack_elt T _:SymbolicData ; Gs:StackElementList }, PT)
     => T ; #LiteralStackToTypes({ Gs }, PT)
 ```
 
@@ -289,7 +288,7 @@ TODO: Consider best way to introduce type-checks to pre/post conditions
   syntax KItem ::= #TypeCheck(Block, Type, LiteralStack, OutputStack)
   syntax KItem ::= #TypeCheckAux(LiteralStack, LiteralStack, TypeSeq, TypedInstruction)
 
-  rule <k> #TypeCheck(B,P,IS,OS:LiteralStack)
+  rule <k> #TypeCheck(B, P, IS, OS:LiteralStack)
         => #TypeCheckAux(
              IS,
              OS,
@@ -300,10 +299,10 @@ TODO: Consider best way to introduce type-checks to pre/post conditions
        </k>
 
   // TODO: Implement a "partial" type check case
-  rule <k> #TypeCheck(B,P,IS,OS:FailedStack) => . ... </k>
+  rule <k> #TypeCheck(B, _P, _IS, _OS:FailedStack) => . ... </k>
        <script> B </script>
 
-  rule <k> #TypeCheckAux(IS, OS, OSTypes, #TI(B, ISTypes -> OSTypes))
+  rule <k> #TypeCheckAux(_IS, _OS, OSTypes, #TI(B, ISTypes -> OSTypes))
         => .
            ...
        </k>

@@ -835,12 +835,6 @@ Sum types are similar to options.
 
   rule <k> IF_LEFT A BT BF => #HandleAnnotations(A) ~> BF ... </k>
        <stack> Right V => V ... </stack>
-
-  rule <k> IF_RIGHT A BT BF => #HandleAnnotations(A) ~> BT ... </k>
-       <stack> Right V => V ... </stack>
-
-  rule <k> IF_RIGHT A BT BF => #HandleAnnotations(A) ~> BF ... </k>
-       <stack> Left V => V ... </stack>
 ```
 
 Lists are somewhat nontrivial in that we need to keep track of typing

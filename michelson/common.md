@@ -186,11 +186,11 @@ These include:
 We delegate these datatypes validations to their own functions.
 
 ```k
-  rule #MichelineToNative(S:String, key_hash _,  KnownAddrs, BigMaps) => #ParseKeyHash(S)
-  rule #MichelineToNative(S:String, address _,   KnownAddrs, BigMaps) => #ParseAddress(S)
-  rule #MichelineToNative(S:String, key _,       KnownAddrs, BigMaps) => #ParseKey(S)
-  rule #MichelineToNative(S:String, signature _, KnownAddrs, BigMaps) => #ParseSignature(S)
-  rule #MichelineToNative(S:String, timestamp _, KnownAddrs, BigMaps) => #ParseTimestamp(S)
+  rule #MichelineToNative(S:String, key_hash _,  _KnownAddrs, _BigMaps) => #ParseKeyHash(S)
+  rule #MichelineToNative(S:String, address _,   _KnownAddrs, _BigMaps) => #ParseAddress(S)
+  rule #MichelineToNative(S:String, key _,       _KnownAddrs, _BigMaps) => #ParseKey(S)
+  rule #MichelineToNative(S:String, signature _, _KnownAddrs, _BigMaps) => #ParseSignature(S)
+  rule #MichelineToNative(S:String, timestamp _, _KnownAddrs, _BigMaps) => #ParseTimestamp(S)
 ```
 
 A simple hook to return the Unix epoch representation of a timestamp passed to
@@ -227,7 +227,7 @@ Note that timestamps have an optimized form based on integers.
 We convert that form here.
 
 ```k
-  rule #MichelineToNative(I:Int, timestamp _, KnownAddrs, BigMaps) => #Timestamp(I)
+  rule #MichelineToNative(I:Int, timestamp _, _KnownAddrs, _BigMaps) => #Timestamp(I)
 ```
 
 ### Converting Simple Datatypes
@@ -235,34 +235,34 @@ We convert that form here.
 A ChainId is simply a specially tagged MBytes.
 
 ```k
-  rule #MichelineToNative(H:MBytes, chain_id _, KnownAddrs, BigMaps) => #ChainId(H)
+  rule #MichelineToNative(H:MBytes, chain_id _, _KnownAddrs, _BigMaps) => #ChainId(H)
 ```
 
 An int can simply be represented directly as a K int. Nats get an additional
 sanity check to avoid negative nats.
 
 ```k
-  rule #MichelineToNative(I:Int, int _, KnownAddrs, BigMaps) => I
-  rule #MichelineToNative(I:Int, nat _, KnownAddrs, BigMaps) => I requires I >=Int 0
+  rule #MichelineToNative(I:Int, int _, _KnownAddrs, _BigMaps) => I
+  rule #MichelineToNative(I:Int, nat _, _KnownAddrs, _BigMaps) => I requires I >=Int 0
 ```
 
 Strings, like ints, represent themselves.
 
 ```k
-  rule #MichelineToNative(S:String, string _, KnownAddrs, BigMaps) => S
+  rule #MichelineToNative(S:String, string _, _KnownAddrs, _BigMaps) => S
 ```
 
 MBytes conversion is done by the function rule.
 
 ```k
-  rule #MichelineToNative(B:MBytes, bytes _, KnownAddrs, BigMaps) => B
+  rule #MichelineToNative(B:MBytes, bytes _, _KnownAddrs, _BigMaps) => B
 ```
 
 Mutez is simply a specially tagged int - we also sanity check the int to ensure
 that it is in bounds.
 
 ```k
-  rule #MichelineToNative(I:Int, mutez _, KnownAddrs, BigMaps) => #Mutez(I) requires #IsLegalMutezValue(I)
+  rule #MichelineToNative(I:Int, mutez _, _KnownAddrs, _BigMaps) => #Mutez(I) requires #IsLegalMutezValue(I)
 ```
 
 K's function expansion step has already handled converting Michelsons
@@ -270,13 +270,13 @@ K's function expansion step has already handled converting Michelsons
 special with them here.
 
 ```k
-  rule #MichelineToNative(B:Bool, bool _, KnownAddrs, BigMaps) => B
+  rule #MichelineToNative(B:Bool, bool _, _KnownAddrs, _BigMaps) => B
 ```
 
 The Unit token represents itself.
 
 ```k
-  rule #MichelineToNative(Unit, unit _, KnownAddrs, BigMaps) => Unit
+  rule #MichelineToNative(Unit, unit _, _KnownAddrs, _BigMaps) => Unit
 ```
 
 ### Converting Complex Datatypes
@@ -288,7 +288,7 @@ We recursively convert the contents of pairs, ors and options, if applicable.
        Pair #MichelineToNative(A, T1, KnownAddrs, BigMaps) #MichelineToNative(B, T2, KnownAddrs, BigMaps)
 
   rule #MichelineToNative(Some V, option _ T, KnownAddrs, BigMaps) => Some #MichelineToNative(V, T, KnownAddrs, BigMaps)
-  rule #MichelineToNative(None, option _:AnnotationList _, KnownAddrs, BigMaps) => None
+  rule #MichelineToNative(None, option _:AnnotationList _, _KnownAddrs, _BigMaps) => None
 
   rule #MichelineToNative(Left V, or _:AnnotationList TL:Type _:Type,  KnownAddrs, BigMaps) => Left #MichelineToNative(V, TL, KnownAddrs, BigMaps)
   rule #MichelineToNative(Right V, or _:AnnotationList _:Type TR:Type, KnownAddrs, BigMaps) => Right #MichelineToNative(V, TR, KnownAddrs, BigMaps)
@@ -297,7 +297,7 @@ We recursively convert the contents of pairs, ors and options, if applicable.
 We wrap Lambdas appropriately and save their type information.  Note that we do *not* recurse into the Block.
 
 ```k
-  rule #MichelineToNative(B:Block, lambda _:AnnotationList T1 T2, KnownAddrs, BigMaps) => #Lambda(T1, T2, B)
+  rule #MichelineToNative(B:Block, lambda _:AnnotationList T1 T2, _KnownAddrs, _BigMaps) => #Lambda(T1, T2, B)
 ```
 
 Collections are converted one element at a time. We need to handle the cases of
@@ -305,7 +305,7 @@ Collections are converted one element at a time. We need to handle the cases of
 element list, and another embedded list.
 
 ```k
-  rule #MichelineToNative({ }, list _ _, KnownAddrs, BigMaps) => .List
+  rule #MichelineToNative({ }, list _ _, _KnownAddrs, _BigMaps) => .List
   rule #MichelineToNative({ D1:Data }, list _ T, KnownAddrs, BigMaps) => ListItem(#MichelineToNative(D1, T, KnownAddrs, BigMaps))
   rule #MichelineToNative({ D1 ; DL:DataList }, list _ T, KnownAddrs, BigMaps) => #MichelineToNative(D1 ; DL, list .AnnotationList T, KnownAddrs, BigMaps)
 
@@ -320,7 +320,7 @@ Sets are handled essentially the same way as lists, with the same caveat about
 needing to handle 3 cases (0-Size sets, 1-Size sets, and otherwise).
 
 ```k
-  rule #MichelineToNative({ }, set _ _, KnownAddrs, BigMaps) => .Set
+  rule #MichelineToNative({ }, set _ _, _KnownAddrs, _BigMaps) => .Set
   rule #MichelineToNative({ D:Data }, set _ T, KnownAddrs, BigMaps) => SetItem(#MichelineToNative(D, T, KnownAddrs, BigMaps))
   rule #MichelineToNative({ D1 ; DL:DataList }, set _ T, KnownAddrs, BigMaps) => #MichelineToNative(D1 ; DL, set .AnnotationList T, KnownAddrs, BigMaps)
 
@@ -336,7 +336,7 @@ handle the case of size 1 maps separately. Note that, internally, no difference
 exists between maps and `big_map`s in K-Michelson.
 
 ```k
-  rule #MichelineToNative({ }, map _ _ _, KnownAddrs, BigMaps) => .Map
+  rule #MichelineToNative({ }, map _ _ _, _KnownAddrs, _BigMaps) => .Map
   rule #MichelineToNative({ M:MapEntryList }, map _:AnnotationList KT VT, KnownAddrs, BigMaps) =>
        #MichelineToNative(M, map .AnnotationList KT VT, KnownAddrs, BigMaps)
 
@@ -346,7 +346,7 @@ exists between maps and `big_map`s in K-Michelson.
   rule #MichelineToNative(Elt K V, map _:AnnotationList KT VT, KnownAddrs, BigMaps) =>
        #MichelineToNative(K, KT, KnownAddrs, BigMaps) |-> #MichelineToNative(V, VT, KnownAddrs, BigMaps)
 
-  rule #MichelineToNative({ }, big_map _:AnnotationList K V, KnownAddrs, BigMaps) => .Map
+  rule #MichelineToNative({ }, big_map _:AnnotationList _K _V, _KnownAddrs, _BigMaps) => .Map
 
   rule #MichelineToNative({ M:MapEntryList }, big_map _:AnnotationList K V, KnownAddrs, BigMaps) =>
        #MichelineToNative({ M:MapEntryList }, map .AnnotationList K V, KnownAddrs, BigMaps)  // We handle big_map literals as maps.
@@ -357,7 +357,7 @@ for convenience, we do not enforce that this address exists in the
 `other_contracts` map!
 
 ```k
-  rule #MichelineToNative(S:String, contract _ T, KnownAddrs, BigMaps) => #Contract(#ParseAddress(S), T)
+  rule #MichelineToNative(S:String, contract _ T, _KnownAddrs, _BigMaps) => #Contract(#ParseAddress(S), T)
 
   rule #MichelineToNative(#Typed(D, T), T, KnownAddrs, BigMaps) => #MichelineToNative(D, T, KnownAddrs, BigMaps)
 ```
@@ -412,7 +412,7 @@ We extract a `big_map` by index from the bigmaps map. Note that these have
 already been converted to K-internal form, so there is no need to recurse here.
 
 ```k
-  rule #MichelineToNative(I:Int, big_map _:AnnotationList K V, KnownAddrs, BigMaps) => {BigMaps[I]}:>Data
+  rule #MichelineToNative(I:Int, big_map _:AnnotationList _K _V, _KnownAddrs, BigMaps) => {BigMaps[I]}:>Data
 ```
 
 ```k

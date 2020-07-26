@@ -5,6 +5,7 @@ requires "michelson/common.md"
 requires "unit-test/syntax.md"
 
 module MICHELSON-UNPARSER
+  imports MICHELSON-MACRO-SYNTAX
   imports MICHELSON-INTERNAL-SYNTAX
   imports MICHELSON-COMMON
   imports UNIT-TEST-COMMON-SYNTAX
