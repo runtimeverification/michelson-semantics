@@ -1,0 +1,52 @@
+code {
+//  AMOUNT ;
+//  PUSH mutez 5000000 ;
+//  COMPARE ;
+//  GT ;
+//  IF { UNIT ; FAILWITH }
+//     { } ;
+  DUP ; DIP { CDR ; DUP } ;
+  CAR ; DUP ;
+  DIP {
+      TRACE("Before GET1") ;
+      GET ;
+    //   PAUSE("After GET1") ;
+      IF_NONE { UNIT ; FAILWITH } { } ; // ASSERT_SOME ;
+      PUSH int 1 ;
+      ADD ;
+      SOME
+  } ;
+  UPDATE ;
+  NIL operation ;
+  PAIR
+} ;
+// storage (map string int) ;
+// parameter string ;
+input { Stack_elt (pair string (map string int)) $I } ;
+precondition { { PUSH (pair string (map string int)) $I   //            (S, M)
+               ; UNPAIR                                   //               S M
+               ; MEM                                      //         (S \in M)
+               }
+             } ;
+output { Stack_elt (pair (list operation) (map string int)) $O } ;
+postcondition { { PUSH (pair string (map string int)) $I                      //                    (S,M)
+                ; CDR                                                         //                        M
+                ; PUSH string $K                                              //                      K M
+                ; GET                                                         //                    M[K]?
+                ; IF_NONE { PUSH bool True } {                                //                     M[K]
+                    PUSH (pair (list operation) (map string int)) $O          //              (O,M') M[K]
+                  ; CDR                                                       //                  M' M[K]
+                  ; PUSH string $K                                            //                K M' M[K]
+                  ; GET                                                       //              M'[K]? M[K]
+                  ; IF_NONE { UNIT ; FAILWITH } { }                           //              M'[K]  M[K]
+                  ; SWAP                                                      //              M'[K]  M[K]
+
+                  ; PUSH string $K                                            //      K       M[K]  M'[K]
+                  ; PUSH (pair string (map string int)) $I                    //   (M,S) K    M[K]  M'[K]
+                  ; CAR                                                       //     S K      M[K]  M'[K]
+                  ; COMPARE ; EQ                                              //     S=K      M[K]  M'[K]
+                  ; IF { TRACE("1") ; PUSH nat 1; ADD ; COMPARE ; EQ }        //             M[K]+1=M'[K]
+                       { TRACE("2") ;                          COMPARE ; EQ } //             M[K] = M'[K]
+                  }
+                }
+             }
