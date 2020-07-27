@@ -156,7 +156,7 @@ Load symbolic variables into the `<symbols>` map.
 ```symbolic
   syntax KItem ::= #CreateSymbol(SymbolicData, Type)
   rule <k> (.K => #MakeFresh(T)) ~>  #CreateSymbol(_, T) ... </k>
-  rule <k> #Fresh(V) ~> #CreateSymbol(N, T) => . ... </k>
+  rule <k> V ~> #CreateSymbol(N, T) => . ... </k>
        <symbols> M => M[N <- #TypedSymbol(T, V)] </symbols>
 ```
 
@@ -480,7 +480,7 @@ abstract out pieces of the stack which are non-invariant during loop execution.
            ...
        </k>
 
-  rule <k> ( #Fresh(V)
+  rule <k> ( V
           ~> #GeneralizeStack(Stack_elt T D:SymbolicData ; Stack, KSeq)
            )
         =>   #GeneralizeStack(Stack_elt T V ; Stack, KSeq)
@@ -491,23 +491,23 @@ abstract out pieces of the stack which are non-invariant during loop execution.
 Here `#MakeFresh` is responsible for generating a fresh value of a given type.
 
 ```symbolic
-  syntax Data ::= #MakeFresh(Type) | #Fresh(Data) | "#hole"
+  syntax Data ::= #MakeFresh(Type) | "#hole"
 
-  rule <k> #MakeFresh(bool   _:AnnotationList)                     =>                        #Fresh(?_:Bool)   ... </k>
-  rule <k> #MakeFresh(int    _:AnnotationList)                     =>                        #Fresh(?_:Int)    ... </k>
-  rule <k> #MakeFresh(nat    _:AnnotationList)                     => #Assume(?V >=Int 0) ~> #Fresh(?V:Int)    ... </k>
-  rule <k> #MakeFresh(string _:AnnotationList)                     =>                        #Fresh(?_:String) ... </k>
-  rule <k> #MakeFresh(map    (_):AnnotationList (_):Type (_):Type) =>                        #Fresh(?_:Map)    ... </k>
+  rule <k> #MakeFresh(bool   _:AnnotationList)                     =>                        ?_:Bool     ... </k>
+  rule <k> #MakeFresh(int    _:AnnotationList)                     =>                        ?_:Int      ... </k>
+  rule <k> #MakeFresh(nat    _:AnnotationList)                     => #Assume(?V >=Int 0) ~> ?V:Int      ... </k>
+  rule <k> #MakeFresh(string _:AnnotationList)                     =>                        ?_:String   ... </k>
+  rule <k> #MakeFresh(map    (_):AnnotationList (_):Type (_):Type) =>                        ?_:Map      ... </k>
 
   // TODO: Is there a neater way of doing this? Perhaps using K's contexts?
   rule <k> #MakeFresh(pair _:AnnotationList T1 T2)
         => #MakeFresh(T1)
         ~> #MakeFresh(T2)
-        ~> #Fresh((Pair #hole #hole))
+        ~> (Pair #hole #hole)
            ...
        </k>
-  rule <k> (#Fresh(V1) => .K) ~> _:Data ~> #Fresh(Pair (#hole => V1) #hole) ... </k>
-  rule <k> (#Fresh(V2) => .K) ~> #Fresh(Pair _ (#hole => V2)) ... </k>
+  rule <k> (V1 => .K) ~> _:DataExp ~> (Pair (#hole => V1) #hole) ... </k>
+  rule <k> (V2 => .K) ~> Pair _ (#hole => V2) ... </k>
 ```
 
 Handle `Aborted`
