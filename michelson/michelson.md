@@ -399,20 +399,6 @@ immediately rather than waiting for `I = 0`. Instead it is placed when `I = 0`.
   rule <k> #DoDug(-1, .K, _) => .K ... </k>
 ```
 
-PUSH needs to convert its argument to semantics form, but otherwise matches the
-documentation directly.
-
-TODO: We should define a `Value` sort heirarchy parallel to the `Data` heirarchy instead of using `SimpleData` here.
-
-```k
-  syntax KResult ::= SimpleData | Int
-  syntax Data ::= "#hole"
-  rule PUSH A T HOLE:TypedData => (HOLE ~> PUSH A T #hole)
-  rule (HOLE:SimpleData ~> PUSH A T #hole) => PUSH A T HOLE
-  rule <k> PUSH A T (X:SimpleData) => #HandleAnnotations(A) ... </k>
-       <stack> . => X ... </stack>
-```
-
 UNIT and LAMBDA are implemented almost exactly as specified in the documentation.
 
 ```k

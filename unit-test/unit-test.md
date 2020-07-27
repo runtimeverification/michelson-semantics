@@ -160,17 +160,23 @@ Load symbolic variables into the `<symbols>` map.
        <symbols> M => M[N <- #TypedSymbol(T, V)] </symbols>
 ```
 
+PUSH needs to convert its argument to semantics form, but otherwise matches the
+documentation directly.
+
 ```k
-  rule <k> PUSH A T X:SymbolicData => PUSH A T #Typed(X, T) ... </k>
-  rule <k> #Typed(X, T) => #MichelineToNative(X, T, KnownAddrs, BigMaps) ... </k>
-       <knownaddrs> KnownAddrs </knownaddrs>
-       <bigmaps> BigMaps </bigmaps>
-    requires notBool isSymbolicData(X)
-  rule <k> (.K => #CreateSymbol(X, T)) ~> #Typed(X:SymbolicData, T) ... </k>
-       <symbols> Symbols </symbols>
+  rule <k> PUSH A T (HOLE:TypedData => #MichelineToNative(HOLE, T, .Map, .Map)) ... </k>
+  rule <k> PUSH A T X => #HandleAnnotations(A) ... </k>
+       <stack> . => X ... </stack>
+    requires notBool isTypedData(X)
+     andBool notBool isSymbolicData(X)
+```
+
+```k
+  rule <k> PUSH A T (X:SymbolicData => D)  ... </k>
+       <symbols> X |-> #TypedSymbol(T, D) ... </symbols>
+  rule <k> (.K => #CreateSymbol(X, T)) ~> PUSH A T X:SymbolicData  ... </k>
+       <symbols> Symbols  </symbols>
     requires notBool X in_keys(Symbols)
-  rule <k> #Typed(X:SymbolicData, T) => #Typed(D, T) ... </k>
-       <symbols> S |-> #TypedSymbol(T, D) ... </symbols>
 ```
 
 The representation of \#Any is the same in the semantics and the concrete
