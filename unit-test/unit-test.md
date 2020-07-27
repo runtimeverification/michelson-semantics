@@ -395,14 +395,23 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
        <post> .BlockList => Bs </post>
 ```
 
+
 ```k
   syntax KItem ::= "#ExecutePostConditions"
   rule <k> #ExecutePostConditions
-        => BIND Expected { ASSERT { Postconditions } }
+        => #CreateSymbols(#UnifiedSetToList(#UnifyTypes(#FindSymbolsBL(Postconditions)
+                                                  -Set (    #FindSymbolsS(Expected)
+                                                       |Set #FindSymbolsS(Input)
+                                                       |Set #FindSymbolsBL(Pre)
+                                                       |Set #FindSymbolsB({ Script })))))
+        ~> BIND { Expected } { ASSERT {Postconditions} }
            ...
        </k>
-       <expected> Expected </expected>
+       <expected> { Expected } </expected>
        <post> Postconditions </post>
+       <inputstack> { Input:StackElementList } </inputstack>
+       <pre> Pre </pre>
+       <script> Script </script>
 ```
 
 `invariants` group
