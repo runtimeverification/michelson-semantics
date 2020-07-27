@@ -381,10 +381,41 @@ endmodule
 module MICHELSON-PARSER
   imports MICHELINE-TO-MICHELSON-COMMON-SYNTAX
   imports MICHELSON-PARSER-INTERNAL
+
+  rule NodesToIR()                       => .MichelineIRNodes
+  rule NodesToIR(N Ns)                   => NodeToIR(N) NodesToIRAux(Ns)
+  rule NodesToIRAux(; Ns:MichelineNodes) => NodesToIR(Ns)
+  rule NodesToIRAux()                    => .MichelineIRNodes
+endmodule
+
+module MICHELINE-INTERNAL-REPRESENTATION
+  imports MICHELINE-TO-MICHELSON-COMMON-SYNTAX
+  imports INT
+  imports STRING
+  imports BYTES
+
+  syntax MichelineIRNode ::= Int
+                           | String
+                           | Bytes
+                           | Primitive(String, AnnotationData, MichelineIRNodes)
+                           | Seq(MichelineIRNodes)
+
+  syntax MichelineIRNodes ::= List{MichelineIRNode, ""}
+
+  syntax AnnotationData      ::= VarAnnotationList TypeAnnotationList FieldAnnotationList
+  syntax VarAnnotationList   ::= List{VarAnnotation,  ""}
+  syntax TypeAnnotationList  ::= List{TypeAnnotation, ""}
+  syntax FieldAnnotationList ::= List{TypeAnnotation, ""}
 endmodule
 
 module MICHELSON-PARSER-INTERNAL
   imports MICHELINE-TO-MICHELSON-COMMON-SYNTAX
+  imports MICHELINE-INTERNAL-REPRESENTATION
+
   configuration <k> $PGM:MichelineNodes </k>
+
+  syntax MichelineIRNodes ::= NodesToIR(MichelineNodes)
+                            | NodesToIRAux(MichelineNodesAux)
+  syntax MichelineIRNode  ::= NodeToIR(MichelineNode)
 endmodule
 ```
