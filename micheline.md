@@ -52,10 +52,10 @@ module MICHELINE-TO-MICHELSON-COMMON-SYNTAX
   imports MICHELINE-COMMON-SYNTAX
 
   // Annotations
-  syntax Annotation ::= VariableAnnotation | TypeAnnotation | FieldAnnotation
-  syntax VariableAnnotation [token]
-  syntax TypeAnnotation     [token]
-  syntax FieldAnnotation    [token]
+  syntax Annotation ::= VarAnnotation | TypeAnnotation | FieldAnnotation
+  syntax VarAnnotation   [token]
+  syntax TypeAnnotation  [token]
+  syntax FieldAnnotation [token]
 
   syntax Primitive ::= Type | Instruction | Macro | Field | MichelsonData | InternalData
 
@@ -359,7 +359,7 @@ module MICHELSON-PARSER-SYNTAX
 
   syntax BytesToken         ::= r"0x[a-fA-F0-9]*"                     [token]
 
-  syntax VariableAnnotation ::= r"@(%|%%|[_a-zA-Z][_0-9a-zA-Z\\.]*)?" [token]
+  syntax VarAnnotation      ::= r"@(%|%%|[_a-zA-Z][_0-9a-zA-Z\\.]*)?" [token]
   syntax TypeAnnotation     ::= r":([_a-zA-Z][_0-9a-zA-Z\\.]*)?"      [token]
   syntax FieldAnnotation    ::= r"%(@|[_a-zA-Z][_0-9a-zA-Z\\.]*)?"    [token]
 
