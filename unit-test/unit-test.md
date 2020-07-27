@@ -124,6 +124,13 @@ Load symbolic variables into the `<symbols>` map.
 
 ```k
   syntax KItem ::= "#CreateSymbols"
+```
+
+```concrete
+  rule <k> #CreateSymbols => . ... </k>
+```
+
+```symbolic
   rule <k> #CreateSymbols
         => #CreateSymbols(#UnifiedSetToList(#UnifyTypes( #FindSymbolsS(Stack)
                                                     |Set #FindSymbolsBL(Pre)
@@ -136,7 +143,7 @@ Load symbolic variables into the `<symbols>` map.
        <script> Script:Data </script>
 ```
 
-```k
+```symbolic
   syntax KItem ::= #CreateSymbols(UnifiedList)
   rule <k> #CreateSymbols(.List) => . ... </k>
   rule <k> #CreateSymbols(ListItem(#SymbolicElement(D, T)) S)
@@ -146,7 +153,7 @@ Load symbolic variables into the `<symbols>` map.
        </k>
 ```
 
-```k
+```symbolic
   syntax KItem ::= #CreateSymbol(SymbolicData, Type)
   rule <k> (.K => #MakeFresh(T)) ~>  #CreateSymbol(_, T) ... </k>
   rule <k> #Fresh(V) ~> #CreateSymbol(N, T) => . ... </k>
