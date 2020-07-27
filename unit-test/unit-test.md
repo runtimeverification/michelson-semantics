@@ -496,11 +496,11 @@ Here `#MakeFresh` is responsible for generating a fresh value of a given type.
 ```symbolic
   syntax Data ::= #MakeFresh(Type) | #Fresh(Data) | "#hole"
 
-  rule <k> #MakeFresh(bool   _:AnnotationList)                     =>                       #Fresh(?_:Bool)   ... </k>
-  rule <k> #MakeFresh(int    _:AnnotationList)                     =>                       #Fresh(?_:Int)    ... </k>
-  rule <k> #MakeFresh(nat    _:AnnotationList)                     => #Assume(?V >Int 0) ~> #Fresh(?V:Int)    ... </k>
-  rule <k> #MakeFresh(string _:AnnotationList)                     =>                       #Fresh(?_:String) ... </k>
-  rule <k> #MakeFresh(map    (_):AnnotationList (_):Type (_):Type) =>                       #Fresh(?_:Map)    ... </k>
+  rule <k> #MakeFresh(bool   _:AnnotationList)                     =>                        #Fresh(?_:Bool)   ... </k>
+  rule <k> #MakeFresh(int    _:AnnotationList)                     =>                        #Fresh(?_:Int)    ... </k>
+  rule <k> #MakeFresh(nat    _:AnnotationList)                     => #Assume(?V >=Int 0) ~> #Fresh(?V:Int)    ... </k>
+  rule <k> #MakeFresh(string _:AnnotationList)                     =>                        #Fresh(?_:String) ... </k>
+  rule <k> #MakeFresh(map    (_):AnnotationList (_):Type (_):Type) =>                        #Fresh(?_:Map)    ... </k>
 
   // TODO: Is there a neater way of doing this? Perhaps using K's contexts?
   rule <k> #MakeFresh(pair _:AnnotationList T1 T2)
