@@ -588,13 +588,12 @@ instantiations of the COMPARE operation to be implemented in fewer rules.
 TODO: If we define `DoCompare` as a macro for `#ite` we can avoid this.
 
 ```symbolic
-  rule #DoCompare(B1:Bool, B2:Bool) ==Int 0 => B1 ==Bool B2 [simplification]
+  rule #DoCompare(B1, B2) ==Int 0 => B1 ==K B2 [simplification]
 
-  rule #DoCompare(I1:Int, I2:Int) <Int 0 => I1 <Int I2 [simplification]
+  rule #DoCompare(I1:Int, I2:Int)  <Int 0 => I1  <Int I2 [simplification]
   rule #DoCompare(I1:Int, I2:Int) <=Int 0 => I1 <=Int I2 [simplification]
-  rule #DoCompare(I1:Int, I2:Int) ==Int 0 => I1 ==Int I2 [simplification]
   rule #DoCompare(I1:Int, I2:Int) >=Int 0 => I1 >=Int I2 [simplification]
-  rule #DoCompare(I1:Int, I2:Int) >Int 0 => I1 >Int I2 [simplification]
+  rule #DoCompare(I1:Int, I2:Int)  >Int 0 => I1  >Int I2 [simplification]
 ```
 
 CONCAT is complicated by the fact that it is defined differently over strings
