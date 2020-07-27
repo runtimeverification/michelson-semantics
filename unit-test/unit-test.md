@@ -356,17 +356,23 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
 ```
 
 ```k
-  syntax KItem ::= #Assert(Bool)
+  syntax KItem ::= #Assert(BoolExp) [strict, result(Data)]
   rule <k> #Assert(true)  => .             ... </k>
   rule <k> #Assert(false) => #AssertFailed ... </k>
   syntax KItem ::= "#AssertFailed" [klabel(#AssertFailed), symbol]
 ```
 
 ```k
-  syntax KItem ::= #Assume(Bool)
+  syntax KItem ::= #Assume(BoolExp) [strict, result(Data)]
   rule <k> #Assume(true)  => .             ... </k>
   rule <k> #Assume(false) ~> _:K => . </k>
        <assumeFailed> _ => true </assumeFailed> [transition]
+
+  syntax BoolExp ::= Bool
+                   | DataExp "==" DataExp [strict(2), result(Data)]
+  syntax DataExp ::= Data
+
+  rule <k> D1:Data == D2:Data => D1 ==K D2 ... </k>
 ```
 
 `precondition` Groups
@@ -491,7 +497,8 @@ abstract out pieces of the stack which are non-invariant during loop execution.
 Here `#MakeFresh` is responsible for generating a fresh value of a given type.
 
 ```symbolic
-  syntax Data ::= #MakeFresh(Type) | "#hole"
+  syntax DataExp ::= #MakeFresh(Type)
+  syntax Data ::= "#hole"
 
   rule <k> #MakeFresh(bool   _:AnnotationList)                     =>                        ?_:Bool     ... </k>
   rule <k> #MakeFresh(int    _:AnnotationList)                     =>                        ?_:Int      ... </k>
