@@ -714,7 +714,15 @@ Much like Sets, MAP operations lift reasonably easily into K.
   rule <k> GET A => #HandleAnnotations(A) ... </k>
        <stack> X:SimpleData ~> M => None ... </stack>
        requires notBool(X in_keys(M))
+```
 
+```concrete
+  rule <k> GET A => #HandleAnnotations(A) ... </k>
+       <stack> X ~> M => Some {M[X]}:>Data ... </stack>
+       requires X in_keys(M)
+```
+
+```k
   rule <k> MEM A => #HandleAnnotations(A) ~> . ... </k>
        <stack> X ~> M => X in_keys(M) ... </stack>
 
@@ -723,12 +731,6 @@ Much like Sets, MAP operations lift reasonably easily into K.
 
   rule <k> UPDATE A => #HandleAnnotations(A)  ... </k>
        <stack> K ~> None ~> M:Map => M[K <- undef] ... </stack>
-```
-
-```concrete
-  rule <k> GET A => #HandleAnnotations(A) ... </k>
-       <stack> X ~> M => Some {M[X]}:>Data ... </stack>
-       requires X in_keys(M)
 ```
 
 The MAP operation, over maps, is somewhat more involved. We need to set up a
