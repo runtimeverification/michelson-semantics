@@ -124,6 +124,13 @@ Load symbolic variables into the `<symbols>` map.
 
 ```k
   syntax KItem ::= "#CreateSymbols"
+```
+
+```concrete
+  rule <k> #CreateSymbols => . ... </k>
+```
+
+```symbolic
   rule <k> #CreateSymbols
         => #CreateSymbols(#UnifiedSetToList(#UnifyTypes( #FindSymbolsS(Stack)
                                                     |Set #FindSymbolsBL(Pre)
@@ -136,7 +143,7 @@ Load symbolic variables into the `<symbols>` map.
        <script> Script:Data </script>
 ```
 
-```k
+```symbolic
   syntax KItem ::= #CreateSymbols(UnifiedList)
   rule <k> #CreateSymbols(.List) => . ... </k>
   rule <k> #CreateSymbols(ListItem(#SymbolicElement(D, T)) S)
@@ -146,20 +153,11 @@ Load symbolic variables into the `<symbols>` map.
        </k>
 ```
 
-```k
-  syntax KItem ::= #CreateSymbol(SymbolicData, Type)
-```
-
 ```symbolic
-  rule <k> #CreateSymbol(N, (nat _) #as T) => . ... </k>
-       <symbols> M => M[N <- #TypedSymbol(T, ?V:Int)] </symbols>
-    ensures ?V >=Int 0
-
-  rule <k> #CreateSymbol(N, (int _) #as T) => . ... </k>
-       <symbols> M => M[N <- #TypedSymbol(T, ?V:Int)] </symbols>
-
-  rule <k> #CreateSymbol(N, (string _) #as T) => . ... </k>
-       <symbols> M => M[N <- #TypedSymbol(T, ?V:String)] </symbols>
+  syntax KItem ::= #CreateSymbol(SymbolicData, Type)
+  rule <k> (.K => #MakeFresh(T)) ~>  #CreateSymbol(_, T) ... </k>
+  rule <k> #Fresh(V) ~> #CreateSymbol(N, T) => . ... </k>
+       <symbols> M => M[N <- #TypedSymbol(T, V)] </symbols>
 ```
 
 During the final output comparison step we discard the type information retained
@@ -503,11 +501,23 @@ abstract out pieces of the stack which are non-invariant during loop execution.
 Here `#MakeFresh` is responsible for generating a fresh value of a given type.
 
 ```symbolic
-  syntax KItem ::= #MakeFresh(Type) | #Fresh(Data)
-  rule <k> #MakeFresh(bool   _:AnnotationList) =>                       #Fresh(?_:Bool)   ... </k>
-  rule <k> #MakeFresh(int    _:AnnotationList) =>                       #Fresh(?_:Int)    ... </k>
-  rule <k> #MakeFresh(nat    _:AnnotationList) => #Assume(?V >Int 0) ~> #Fresh(?V:Int)    ... </k>
-  rule <k> #MakeFresh(string _:AnnotationList) =>                       #Fresh(?_:String) ... </k>
+  syntax Data ::= #MakeFresh(Type) | #Fresh(Data) | "#hole"
+
+  rule <k> #MakeFresh(bool   _:AnnotationList)                     =>                        #Fresh(?_:Bool)   ... </k>
+  rule <k> #MakeFresh(int    _:AnnotationList)                     =>                        #Fresh(?_:Int)    ... </k>
+  rule <k> #MakeFresh(nat    _:AnnotationList)                     => #Assume(?V >=Int 0) ~> #Fresh(?V:Int)    ... </k>
+  rule <k> #MakeFresh(string _:AnnotationList)                     =>                        #Fresh(?_:String) ... </k>
+  rule <k> #MakeFresh(map    (_):AnnotationList (_):Type (_):Type) =>                        #Fresh(?_:Map)    ... </k>
+
+  // TODO: Is there a neater way of doing this? Perhaps using K's contexts?
+  rule <k> #MakeFresh(pair _:AnnotationList T1 T2)
+        => #MakeFresh(T1)
+        ~> #MakeFresh(T2)
+        ~> #Fresh((Pair #hole #hole))
+           ...
+       </k>
+  rule <k> (#Fresh(V1) => .K) ~> _:Data ~> #Fresh(Pair (#hole => V1) #hole) ... </k>
+  rule <k> (#Fresh(V2) => .K) ~> #Fresh(Pair _ (#hole => V2)) ... </k>
 ```
 
 Handle `Aborted`
