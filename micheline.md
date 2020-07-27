@@ -315,6 +315,7 @@ module MICHELINE-TO-MICHELSON-COMMON-SYNTAX
   // Michelson data constructors (arguments to PUSH or Stack_elt)
 
   syntax SymbolicPrimitive [token]
+  syntax AnyToken          [token]
 
   // Booleans
   syntax MichelsonData ::= "True"
@@ -346,7 +347,7 @@ module MICHELINE-TO-MICHELSON-COMMON-SYNTAX
                         | "MutezUnderflow"
                         | "GeneralOverflow"
   // Any
-                        | "_"
+                        | AnyToken
   // Michelson extended internal data constructors
                         | "#Any"
                         | SymbolicPrimitive
@@ -371,6 +372,7 @@ module MICHELSON-PARSER-SYNTAX
   syntax SETCADRMacro       ::= r"SET_C[AD]+R"                        [token]
   syntax MAPCADRMacro       ::= r"MAP_C[AD]+R"                        [token]
 
+  syntax AnyToken           ::= "_"                                   [token]
   syntax SymbolicPrimitive  ::= r"\\$[a-zA-Z_0-9]+"                   [token]
 endmodule
 ```
