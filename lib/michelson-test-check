@@ -20,7 +20,7 @@ def findSubtermsByLabel(label, term):
         return ret
     return []
 
-def findImmediateSubtermsByLabel(labels,term):
+def findImmediateSubtermsByLabel(labels,term,throws = True):
     if not pyk.isKApply(term): return dict()
     ret = dict()
     for label in labels:
@@ -29,7 +29,7 @@ def findImmediateSubtermsByLabel(labels,term):
             if subterm['label'] == label:
                 ret[label] = subterm
                 break
-        if not label in ret.keys(): raise ValueError("Subterm " + label + " not found")
+        if throws and not label in ret.keys(): raise ValueError("Subterm " + label + " not found")
     return ret
 
 def parseKastTerm(jsonString):
@@ -53,11 +53,11 @@ def splitPathConditions(term):
         assert(lconfig == None or rconfig == None)
         return (lconfig if lconfig else rconfig, lconstraints + rconstraints)
 
-    if term['label'] == '#And':
+    if pyk.isKApply(term) and term['label'] == '#And':
         return combine(splitPathConditions(term['args'][0]), splitPathConditions(term['args'][1]))
-    if findSubtermsByLabel('<michelsonTop>',term) != []:
-        assert(term['label'] == '#Equals')
-        return (findSubtermsByLabel('<michelsonTop>',term)[0], [])
+    if pyk.isKApply(term)            and term['label']            == '#Equals' and \
+       pyk.isKApply(term['args'][1]) and term['args'][1]['label'] == '<generatedTop>':
+        return (term['args'][1]['args'][0], [])
     # Path condition only (hopefully!)
     return (None, [term])
 
