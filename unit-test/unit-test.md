@@ -395,10 +395,12 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
 ```
 
 ```symbolic
- rule <k> GET A => #Assume(M[K] ==K ?V:Int) ... </k>
-     <stack> (K:SimpleData ~> M:Map) => Some ?V ... </stack>
-     // <stacktypes> KT ; map A KT VT </stacktypes>
-   requires K in_keys(M)
+  rule <k> GET A => #Assume(K in_keys(M)) ~> #Assume(M[K] ==K ?V:Int) ... </k>
+      <stack> (K:SimpleData ~> M:Map) => Some ?V ... </stack>
+      // <stacktypes> KT ; map A KT VT </stacktypes>
+    requires K in_keys(M)
+  rule  K in_keys(_:Map[ K <- _ ]) => true [simplification]
+  rule  _:Map[ K <- V ][K] => V            [simplification]
 ```
 
 ```symbolic
