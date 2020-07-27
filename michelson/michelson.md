@@ -45,7 +45,7 @@ chain\_id and self.
 
 ```k
   rule <k> G ; Gs:Groups => G ~> Gs ... </k>
-  rule <k> G ; =>           G       ... </k>
+  rule <k> G ; => G       ... </k>
 
   rule <k> now I => .K ... </k>
        <mynow> #Timestamp(0 => I) </mynow>
