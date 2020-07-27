@@ -724,13 +724,13 @@ Much like Sets, MAP operations lift reasonably easily into K.
 
 ```k
   rule <k> MEM A => #HandleAnnotations(A) ~> . ... </k>
-       <stack> X ~> M => X in_keys(M) ... </stack>
+       <stack> X ~> M => lookupMap(M, X) =/=K None ... </stack>
 
   rule <k> UPDATE A => #HandleAnnotations(A)  ... </k>
-       <stack> K ~> Some V ~> M:Map => M[K <- V] ... </stack>
+       <stack> K ~> Some V ~> M:MapValue => (update K, V, M) ... </stack>
 
-  rule <k> UPDATE A => #HandleAnnotations(A)  ... </k>
-       <stack> K ~> None ~> M:Map => M[K <- undef] ... </stack>
+//  rule <k> UPDATE A => #HandleAnnotations(A)  ... </k>
+//       <stack> K ~> None ~> M:Map => M[K <- undef] ... </stack>
 ```
 
 The MAP operation, over maps, is somewhat more involved. We need to set up a

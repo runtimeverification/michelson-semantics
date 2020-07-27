@@ -395,10 +395,10 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
 ```
 
 ```symbolic
-  rule <k> GET A => #Assume(K in_keys(M)) ~> #Assume(M[K] ==K ?V:Int) ... </k>
-      <stack> (K:SimpleData ~> M:Map) => Some ?V ... </stack>
-      // <stacktypes> KT ; map A KT VT </stacktypes>
-    requires K in_keys(M)
+  rule <k> GET A => #HandleAnnotations(A) ~> #Assume(lookupMap(M, X) == #MakeFresh((option .AnnotationList VT))) ... </k>
+       <stack> X ~> M => lookupMap(M, X) ... </stack>
+       <stacktypes> KT ; map A KT VT ; _ </stacktypes>
+
   rule K1 in_keys(_:Map[ K2 <- _ ]) => true          requires         K1 ==K K2 [simplification]
   rule K1 in_keys(M:Map[ K2 <- _ ]) => K1 in_keys(M) requires notBool K1 ==K K2 [simplification]
   rule _:Map[ K1 <- V ][K2] => V                     requires         K1 ==K K2 [simplification]
@@ -547,7 +547,7 @@ Here `#MakeFresh` is responsible for generating a fresh value of a given type.
   rule <k> #MakeFresh(int    _:AnnotationList)                     =>                        ?_:Int      ... </k>
   rule <k> #MakeFresh(nat    _:AnnotationList)                     => #Assume(?V >=Int 0) ~> ?V:Int      ... </k>
   rule <k> #MakeFresh(string _:AnnotationList)                     =>                        ?_:String   ... </k>
-  rule <k> #MakeFresh(map    (_):AnnotationList (_):Type (_):Type) =>                        ?_:Map      ... </k>
+  rule <k> #MakeFresh(map    (_):AnnotationList (_):Type (_):Type) =>                        ?_:MapValue ... </k>
 
   // TODO: Is there a neater way of doing this? Perhaps using K's contexts?
   rule <k> #MakeFresh(pair _:AnnotationList T1 T2)

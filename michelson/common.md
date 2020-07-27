@@ -336,20 +336,33 @@ handle the case of size 1 maps separately. Note that, internally, no difference
 exists between maps and `big_map`s in K-Michelson.
 
 ```k
-  rule #MichelineToNative({ }, map _ _ _, _KnownAddrs, _BigMaps) => .Map
-  rule #MichelineToNative({ M:MapEntryList }, map _:AnnotationList KT VT, KnownAddrs, BigMaps) =>
-       #MichelineToNative(M, map .AnnotationList KT VT, KnownAddrs, BigMaps)
+  syntax Data ::= MapValue
+  syntax MapValue ::= "emptyMap"
+                    | "(" "update" key: Data "," value: Data "," map: MapValue ")"
+  syntax OptionData ::= lookupMap(MapValue, Data) [function, functional]
+  rule lookupMap(emptyMap, _Key) => None                                                                                 [concrete, simplification, anywhere]
+  rule lookupMap((update Key , Value, _M), Key) => Value                                                                 [concrete, simplification, anywhere]
+  rule lookupMap((update Key', Value, M ), Key) => lookupMap((update Key', Value, M), Key) requires notBool Key ==K Key' [concrete, simplification, anywhere]
+```
 
-  rule #MichelineToNative(Elt K V ; ML, map _:AnnotationList KT VT, KnownAddrs, BigMaps) =>
-       ({#MichelineToNative(ML, map .AnnotationList KT VT, KnownAddrs, BigMaps)}:>Map)[#MichelineToNative(K, KT, KnownAddrs, BigMaps) <- #MichelineToNative(V, VT, KnownAddrs, BigMaps)]
+```k
+  rule #MichelineToNative({ }, map _ _ _, KnownAddrs, BigMaps) => emptyMap
+  rule #MichelineToNative({ M:MapEntryList }, map _:AnnotationList KT VT, KnownAddrs, BigMaps)
+    => #MichelineToNative(M, map .AnnotationList KT VT, KnownAddrs, BigMaps)
 
-  rule #MichelineToNative(Elt K V, map _:AnnotationList KT VT, KnownAddrs, BigMaps) =>
-       #MichelineToNative(K, KT, KnownAddrs, BigMaps) |-> #MichelineToNative(V, VT, KnownAddrs, BigMaps)
+  rule #MichelineToNative(Elt K V ; ML, map _:AnnotationList KT VT, KnownAddrs, BigMaps)
+    => (update #MichelineToNative(K, KT, KnownAddrs, BigMaps)
+             , #MichelineToNative(V, VT, KnownAddrs, BigMaps)
+             , ({#MichelineToNative(ML, map .AnnotationList KT VT, KnownAddrs, BigMaps)}:>MapValue)
+       )
+  rule #MichelineToNative(Elt K V, map _:AnnotationList KT VT, KnownAddrs, BigMaps)
+    => (update #MichelineToNative(K, KT, KnownAddrs, BigMaps)
+             , #MichelineToNative(V, VT, KnownAddrs, BigMaps)
+             , emptyMap
+       )
 
-  rule #MichelineToNative({ }, big_map _:AnnotationList _K _V, _KnownAddrs, _BigMaps) => .Map
-
-  rule #MichelineToNative({ M:MapEntryList }, big_map _:AnnotationList K V, KnownAddrs, BigMaps) =>
-       #MichelineToNative({ M:MapEntryList }, map .AnnotationList K V, KnownAddrs, BigMaps)  // We handle big_map literals as maps.
+  rule #MichelineToNative(M, big_map _:AnnotationList K V, KnownAddrs, BigMaps)
+    => #MichelineToNative(M, map .AnnotationList K V, KnownAddrs, BigMaps)  // We handle big_map literals as maps.
 ```
 
 We construct a contract datatype from its string address and type. Note that,
