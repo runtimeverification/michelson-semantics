@@ -83,7 +83,7 @@ They are converted to K booleans immediately after parsing by function rules.
 Here we specify the various complex types offered by Michelson, making the best possible use of K sorts.
 
 ```k
-  syntax Pair ::= "Pair" Data Data
+  syntax Pair ::= "Pair" Data Data [klabel(Pair), symbol]
 
   syntax LeftData ::= "Left" Data
   syntax RightData ::= "Right" Data
