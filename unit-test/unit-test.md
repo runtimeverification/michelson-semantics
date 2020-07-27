@@ -382,6 +382,10 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
    requires K in_keys(M)
 ```
 
+```symbolic
+//  rule <stack> _:SymbolicData => #MakeFresh(T) ... </stack>
+```
+
 `precondition` Groups
 ---------------------
 
