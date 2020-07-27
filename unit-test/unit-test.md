@@ -160,16 +160,6 @@ Load symbolic variables into the `<symbols>` map.
        <symbols> M => M[N <- #TypedSymbol(T, V)] </symbols>
 ```
 
-During the final output comparison step we discard the type information retained
-in lists. This allows us to compare lists which result from the 'MAP'
-instruction correctly, since we do not presently determine a type for those
-lists.
-
-```k
-  syntax Data ::= List
-```
-
-
 The representation of \#Any is the same in the semantics and the concrete
 syntax.
 
