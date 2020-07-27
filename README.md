@@ -31,7 +31,7 @@ following to install all needed dependencies:
 sudo apt-get install rsync git m4 build-essential patch unzip bubblewrap wget  \
 pkg-config libgmp-dev libev-dev libhidapi-dev libmpfr-dev flex bison z3        \
 libz3-dev maven python3 cmake gcc zlib1g-dev libboost-test-dev libyaml-dev     \
-libjemalloc-dev openjdk-8-jdk clang-8 lld-8 llvm-8-tools pcregrep pandoc
+libjemalloc-dev openjdk-8-jdk clang-8 lld-8 llvm-8-tools pcregrep
 ```
 
 Note that the JDK and Clang packages referenced above typically can be
@@ -79,9 +79,9 @@ make deps
 
 The following command will build all versions of the semantics including:
 
-- The LLVM backend for running `*.tzt` programs,
-- The Haskell backend for running proofs about the semantics,
-- The Haskell backend for running symbolic tests, and
+- The LLVM backend for running Michelson unit tests (`.tzt` extension);
+- The Haskell backend for running symbolic Michelson unit tests (also `.tzt`
+  extension);
 - The compatibility layers for validating the semantics against the Tezos
   reference client.
 
@@ -112,13 +112,7 @@ fail.
 make test-symbolic -j8
 ```
 
-The proof tests:
-
-```sh
-make test-prove -j2
-```
-
-The validation tests against the Tezon reference client:
+The validation tests against the Tezos reference client:
 
 ```sh
 make test-cross -j8
@@ -135,55 +129,10 @@ this script.
 
 ### Example
 
-The semantics accept Michelson contracts or unit tests in a variant of the
-format discussed
+The semantics accepts unit tests in the format discussed
 [here](https://gitlab.com/tezos/tezos/-/merge_requests/1487/diffs).
-The primary change can be seen in the addition of the `contract`,
-`parameter_value` and `storage_value` primitive applications, which capture the
-remaining initial state of a Michelson contract execution.
-Either these three primitive applications, or the `code`, `input` and `output`
-applications detailed in the Unit Test syntax must be present in any input file
-for the semantics.
-The former results in a full contract execution, the latter in the execution of
-a small snippet.
-
-As an example, here is a contract input file implementing a sum-to-n program
-(at `sum-to-n.tzt`):
-
-```tzt
-parameter_value 300000 ;
-storage_value 0 ;
-contract {
-  storage nat ;
-  parameter nat ;
-  code { LEFT nat ;
-         LOOP_LEFT { DUP ;
-                     DIP { CDR } ;
-                     CAR ;
-                     DUP ;
-                     DIP { ADD } ;
-                     PUSH nat 1 ;
-                     SWAP ;
-                     SUB ;
-                     ISNAT ;
-                     IF_NONE { RIGHT (pair nat nat) }
-                             { PAIR ; LEFT nat }
-                   } ;
-         NIL operation ; PAIR
-       }
-}
-```
-
-This contract computes the sum of 1 to its parameter value, plus its storage
-value, and places the result in its storage.
-You can run this contract using `kmich` as follows:
-
-```sh
-./kmich run sum-to-n.tzt
-```
-
-As an example of a unit test format file, here is a test for the `DIG`
-instruction (at `dig.tzt`):
+As an example of a unit test file, here is a test for the `DIG`
+instruction (at `tests/unit/dig_01.tzt`):
 
 ```tzt
 code { DIG 1 } ;
@@ -198,7 +147,7 @@ output stack, rather than using the normal Michelson parameter/storage system.
 You can run this program using:
 
 ```sh
-./kmich run dig.tzt
+./kmich interpret tests/unit/dig_01.tzt
 ```
 
 Project Structure
@@ -236,42 +185,3 @@ Tezon Reference client used for doing cross-validation between the two.
 timestamp translation (i.e. from an ISO-8601 human readable timestamp to a Unix
 timestamp) and print binary blobs as hexadecimal strings.  They are used by the
 K semantics internally.
-
-Miscellaneous Documentation
----------------------------
-
-We store bits and pieces of useful information here that.
-These are primarily of interest to developers.
-
-### Semantics Initializatation
-
-As is the case with other languages, the K-Michelson semantics needs different
-drivers to support its use in different tools.
-Currently, we have the following drivers:
-
-- a driver that executes Michelson contracts extended with inputs
-- a driver that executes Michelson unit tests
-
-Each of these drivers must perform slightly different initialization routines.
-However, these initialization routines have a common structure:
-
-1. Parse the input file and put it into the `<k>` cell
-2. Load each of the input file groups into a specific configuration cell
-3. Apply the driver `#Init` rule
-
-We give an overview of the steps performed by each driver:
-
-1. Create fresh variables for any symbolic inputs (symbolic semantics only)
-2. Execute the precondition blocks
-3. Execute the main program block
-4. Bind the symbolic variables in the expected output stack against the
-   actual output stack (symbolic semantics only)
-4. Execute the postcondition blocks
-
-In particular, it is worth considering the steps necessary to execute a block:
-
-1. Load the block input stack and expected output stack
-2. Type-check the block against the input stack and expected output stack
-3. Convert the input/output stacks into internal forms used for execution
-4. Run the block with the converted input stack
-5. Check that our actual output stack matches the expected output stack
