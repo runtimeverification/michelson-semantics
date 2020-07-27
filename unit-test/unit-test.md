@@ -508,6 +508,10 @@ Here `#MakeFresh` is responsible for generating a fresh value of a given type.
        </k>
   rule <k> (V1 => .K) ~> _:DataExp ~> (Pair (#hole => V1) #hole) ... </k>
   rule <k> (V2 => .K) ~> Pair _ (#hole => V2) ... </k>
+
+  rule <k> #MakeFresh(option _:AnnotationList T) => None       ... </k>
+  rule <k> #MakeFresh(option _:AnnotationList T) => #MakeFresh(T) ~> Some #hole ... </k>
+  rule <k> (V => .K) ~> (Some (#hole => V)) ... </k>
 ```
 
 Handle `Aborted`
