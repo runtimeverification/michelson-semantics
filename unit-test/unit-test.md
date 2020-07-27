@@ -399,8 +399,10 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
       <stack> (K:SimpleData ~> M:Map) => Some ?V ... </stack>
       // <stacktypes> KT ; map A KT VT </stacktypes>
     requires K in_keys(M)
-  rule  K in_keys(_:Map[ K <- _ ]) => true [simplification]
-  rule  _:Map[ K <- V ][K] => V            [simplification]
+  rule K1 in_keys(_:Map[ K2 <- _ ]) => true          requires         K1 ==K K2 [simplification]
+  rule K1 in_keys(M:Map[ K2 <- _ ]) => K1 in_keys(M) requires notBool K1 ==K K2 [simplification]
+  rule _:Map[ K1 <- V ][K2] => V                     requires         K1 ==K K2 [simplification]
+  rule M:Map[ K1 <- V ][K2] => M:Map[K2]             requires notBool K1 ==K K2 [simplification]
 ```
 
 ```symbolic
