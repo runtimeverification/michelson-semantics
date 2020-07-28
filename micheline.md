@@ -169,7 +169,7 @@ module MICHELINE-TO-MICHELSON-COMMON-SYNTAX
   syntax TypeAnnotation  [token]
   syntax FieldAnnotation [token]
 
-  syntax Primitive ::= Type | Instruction | Macro | Field | MichelsonData | InternalData
+  syntax Primitive ::= Type | Instruction | Macro | Field | MichelsonData
 
   // Types
   // Simple types
@@ -453,7 +453,7 @@ module MICHELINE-TO-MICHELSON-COMMON-SYNTAX
 
   // Michelson internal data constructors (used in TZT files)
   // Big_maps
-  syntax Michelson    ::= InternalData
+  syntax MichelsonData ::= InternalData
   syntax InternalData ::= "Big_map"
   // Operations
                         | "Transfer_token"
@@ -472,4 +472,3 @@ module MICHELINE-TO-MICHELSON-COMMON-SYNTAX
                         | SymbolicPrimitive
 endmodule
 ```
-
