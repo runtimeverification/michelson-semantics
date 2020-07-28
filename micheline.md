@@ -1,7 +1,36 @@
 # Micheline Format
 
+We parse and validate Michelson in the following fashion:
+
+1.  Parse initial program text as K-flavored Micheline AST (K-MICHELINE-CONCRETE-SYNTAX).
+    K-flavored Micheline is different from Micheline in three respects:
+
+    - no whitespace sensitivity
+    - only admits primitives known to K-Michelson as instructions, macros, fields, or data constructors
+    - only admits annotations known to K-Michelson
+
+2.  Use internal hooks to re-interpret AST as abstract K-flavored Micheline AST (K-MICHELINE-ABSTRACT-SYNTAX)
+
+    - collapse nested primitive application `"(" PrimitiveApplication ")"` and `PrimitiveApplication`
+    - collapse Micheline nodes `MichelineNode` into subsort of primitive arguments `PrimitiveArg`
+    - collapse Micheline node lists `MichelineNodes` into primitive argument lists `PrimitiveArgs`
+
+    Note that in the abstract AST, ill-formed Micheline expressions are constructible.
+    However, we only use this formart as a temporary container and immediately apply the next processing step.
+
+3.  Transform via rewrite rules the abstract Micheline AST into K-flavored Micheline IR (K-MICHELINE-IR)
+
+    - primitive argument arity is validated
+    - annotation kind/arity is validated
+    - macros are expanded
+
+    Note special rules handle arity checking for macros and optional argument instructions `DROP` and `DIP`
+    (and possibly `DIG` and `DUG` --- which, by default, would be either `SWAP` or a no-op).
+
+4.  Apply type-checking pass that transforms the K-flavored Micheline IR into a typed K-Michelson IR.
+
 ```k
-module MICHELINE-COMMON-SYNTAX
+module K-MICHELINE-COMMON-SYNTAX
   syntax BytesToken
   syntax Primitive
   syntax Annotation
@@ -9,8 +38,8 @@ endmodule
 ```
 
 ```k
-module MICHELSON-PARSER-SYNTAX
-  imports MICHELINE-TO-MICHELSON-COMMON-SYNTAX
+module K-MICHELINE-CONCRETE-SYNTAX
+  imports K-MICHELINE-TO-MICHELSON-COMMON-SYNTAX
   imports INT-SYNTAX
   imports STRING-SYNTAX
 
@@ -73,8 +102,8 @@ endmodule
 ```
 
 ```k
-module MICHELINE-INTERNAL-SYNTAX
-  imports MICHELINE-TO-MICHELSON-COMMON-SYNTAX
+module K-MICHELINE-ABSTRACT-SYNTAX
+  imports K-MICHELINE-TO-MICHELSON-COMMON-SYNTAX
   imports INT-SYNTAX
   imports STRING-SYNTAX
 
@@ -98,15 +127,12 @@ endmodule
 ```
 
 ```k
-module MICHELSON-PARSER-INTERNAL
-  imports MICHELINE-TO-MICHELSON-COMMON-SYNTAX
-  imports MICHELINE-INTERNAL-SYNTAX
+module K-MICHELINE-IR
+  imports K-MICHELINE-TO-MICHELSON-COMMON-SYNTAX
+  imports K-MICHELINE-ABSTRACT-SYNTAX
   imports INT
   imports STRING
   imports BYTES
-
-  syntax Pgm ::= PrimitiveArgs [klabel(MichelsonPgm), symbol]
-  configuration <k> $PGM:Pgm </k>
 
   syntax MichelineNode   ::= MichelineIRNode
   syntax MichelineIRNode ::= Int
@@ -114,8 +140,8 @@ module MICHELSON-PARSER-INTERNAL
                            | Bytes
                            | Inst(Instruction, AnnotationData, MichelineIRNodes)
                            | Macro(Macro, AnnotationData, MichelineIRNodes)
-                           | Field(Field, MichelineIRNodes)
                            | Data(MichelsonData, AnnotationData, MichelineIRNodes)
+                           | Field(Field, MichelineIRNodes)
                            | Seq(MichelineIRNodes)
 
   syntax MichelineIRNodes ::= List{MichelineIRNode, ""}
@@ -127,39 +153,44 @@ module MICHELSON-PARSER-INTERNAL
 
   syntax AnnotationData  ::= "noAnnotData" [function, functional]
   rule noAnnotData => .VarAnnotationList .TypeAnnotationList .FieldAnnotationList
-
-  /*
-  syntax PrimArgData ::= #PAD(AnnotationData, PrimitiveArgs)
-                       | toPrimArgData(PrimitiveArgs)              [function]
-                       | toPrimArgData(PrimitiveArgs, PrimArgData) [function]
-
-  rule toPrimArgData(Args) => toPrimArgData(Args, #PAD(noAnnotData, .PrimitiveArgs))
-  rule toPrimArgData(.PrimitiveArgs, PAD) => PAD
-  rule toPrimArgData(A:VarAnnotation   Rest, #PAD(VAs TAs FAs, Args)) => toPrimArgData(Rest, #PAD(VAs ; A TAs FAs, Args))
-  rule toPrimArgData(A:TypeAnnotation  Rest, #PAD(VAs TAs FAs, Args)) => toPrimArgData(Rest, #PAD(VAs TAs ; A FAs, Args))
-  rule toPrimArgData(A:FieldAnnotation Rest, #PAD(VAs TAs FAs, Args)) => toPrimArgData(Rest, #PAD(VAs TAs FAs ; A, Args))
-  rule toPrimArgData(N:MichelineNode   Rest, #PAD(VAs TAs FAs, Args)) => toPrimArgData(Rest, #PAD(VAs TAs FAs, Args N))
-  */
-endmodule
-
-module MICHELSON-PARSER
-  imports MICHELINE-TO-MICHELSON-COMMON-SYNTAX
-  imports MICHELSON-PARSER-INTERNAL
-
-  // syntax MichelineIRNode ::= NodeToPrim(Primitive, PrimArgData)
-
-  // rule (N:Primitive):MichelineNode => NodeToPrim(N, #PAD(noAnnotData, .PrimitiveArgs)) [anywhere]
-  // rule N:Primitive Args       => NodeToPrim(N, toPrimArgData(wrapArgs(Args)))   [anywhere]
-
-  // rule NodeToPrim(I:NullaryInst, (Annots, NoArgs)) => Inst(I,NoAnnots,.MichelineIRNodes)
-  // rule NodeToPrim(I:UnaryInst,   Arg)    => Inst(I,
-  // rule NodeToPrim(I:UnaryInst, NoArgs) => ...
 endmodule
 ```
 
 ```k
-module MICHELINE-TO-MICHELSON-COMMON-SYNTAX
-  imports MICHELINE-COMMON-SYNTAX
+module K-MICHELINE-IR-TRANSLATION
+  imports K-MICHELINE-IR
+
+  syntax MichelineIRNode ::= NodeToPrim(Primitive, PrimArgData)
+
+  // miscellaneous helper functions
+  syntax PrimArgData ::= #PAD(AnnotationData, PrimitiveArgs)
+
+  syntax PrimArgData ::= toPrimArgData(PrimitiveArgs)              [function]
+                       | toPrimArgData(PrimitiveArgs, PrimArgData) [function]
+
+  rule toPrimArgData(Args) => toPrimArgData(Args, #PAD(noAnnotData, .PrimitiveArgs))
+  // TODO: reverse the argument list before returning it because it is flipped
+  rule toPrimArgData(.PrimitiveArgs, PAD) => PAD
+  rule toPrimArgData(A:VarAnnotation   Rest, #PAD(VAs TAs FAs, Args)) => toPrimArgData(Rest, #PAD(VAs ; A TAs FAs, Args))
+  rule toPrimArgData(A:TypeAnnotation  Rest, #PAD(VAs TAs FAs, Args)) => toPrimArgData(Rest, #PAD(VAs TAs ; A FAs, Args))
+  rule toPrimArgData(A:FieldAnnotation Rest, #PAD(VAs TAs FAs, Args)) => toPrimArgData(Rest, #PAD(VAs TAs FAs ; A, Args))
+  rule toPrimArgData(N:MichelineNode   Rest, #PAD(VAs TAs FAs, Args)) => toPrimArgData(Rest, #PAD(VAs TAs FAs, N Args))
+endmodule
+```
+
+```k
+module MICHELSON-PARSER
+  imports K-MICHELINE-TO-MICHELSON-COMMON-SYNTAX
+  imports K-MICHELINE-IR-TRANSLATION
+
+  syntax Pgm ::= PrimitiveArgs [klabel(MichelsonPgm), symbol]
+  configuration <k> $PGM:Pgm </k>
+endmodule
+```
+
+```k
+module K-MICHELINE-TO-MICHELSON-COMMON-SYNTAX
+  imports K-MICHELINE-COMMON-SYNTAX
 
   // Annotations
   syntax Annotation ::= VarAnnotation | TypeAnnotation | FieldAnnotation
