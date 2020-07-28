@@ -30,9 +30,9 @@ Micheline has five node types.
   syntax SequenceNode ::= "{" MichelineNodes "}"
 
   syntax MichelineNodes   ::= MichelineNode MichelineNodesAux
-                             | ""
+                         // | ""
   syntax MichelineNodesAux ::= ";" MichelineNodes
-                             | ""
+                         // | ""
 
   syntax PrimitiveArg ::= Int
                         | String
@@ -356,6 +356,9 @@ endmodule
 ```k
 module MICHELSON-PARSER-SYNTAX
   imports MICHELINE-TO-MICHELSON-COMMON-SYNTAX
+
+  syntax MichelineNodes     ::= "" [klabel(.MichelineNodes),    symbol]
+  syntax MichelineNodesAux  ::= "" [klabel(.MichelineNodesAux), symbol]
 
   syntax BytesToken         ::= r"0x[a-fA-F0-9]*"                     [token]
 
