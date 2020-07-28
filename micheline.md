@@ -337,6 +337,7 @@ module MICHELINE-TO-MICHELSON-COMMON-SYNTAX
 
   // Michelson internal data constructors (used in TZT files)
   // Big_maps
+  syntax Michelson    ::= InternalData
   syntax InternalData ::= "Big_map"
   // Operations
                         | "Transfer_token"
