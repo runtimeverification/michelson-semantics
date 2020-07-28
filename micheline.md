@@ -338,7 +338,8 @@ module MICHELSON-PARSER-SYNTAX
 
   syntax Pgm ::= MichelineNodes [klabel(Injection2), symbol]
 
-  syntax MichelineNode ::= Int             [klabel(MichInt),    symbol]
+  syntax MichelineNode ::= MichelineNode2 [klabel(Injection3), symbol]
+  syntax MichelineNode2 ::= Int             [klabel(MichInt),    symbol]
                          | String          [klabel(MichString), symbol]
                          | BytesToken      [klabel(MichBytes),  symbol]
                          | SequenceNode    [klabel(MichSeq),    symbol]
@@ -366,13 +367,14 @@ module MICHELSON-PARSER-SYNTAX
 
   syntax PrimitiveApplication ::= Primitive NePrimitiveArgs [klabel(PrimitiveApplication), symbol]
 
-  syntax PrimitiveArg ::= Int                          [klabel(MichInt),    symbol]
+  syntax PrimitiveArg ::= PrimitiveArgNode        [klabel(Injection3),  symbol]
+                        | Annotation              [klabel(MichAnnot),   symbol]
+  syntax PrimitiveArgNode ::= Int                      [klabel(MichInt),    symbol]
                         | String                       [klabel(MichString), symbol]
                         | BytesToken                   [klabel(MichBytes),  symbol]
                         | SequenceNode                 [klabel(MichSeq),    symbol]
                         | Primitive                    [klabel(MichPrim),   symbol]
                         | "(" PrimitiveApplication ")" [klabel(MichPrimApp), symbol]
-                        | Annotation                   [klabel(MichAnnot),   symbol]
 
   syntax BytesToken         ::= r"0x[a-fA-F0-9]*"                     [token]
 
@@ -418,12 +420,14 @@ module MICHELINE-INTERNAL-REPRESENTATION
 
   syntax SequenceNode ::= "{" PrimitiveArgs "}" [klabel(SequenceNode), symbol]
 
-  syntax PrimitiveArg ::=  Int                  [klabel(MichInt),    symbol]
+  syntax MichelineNode ::= Int                  [klabel(MichInt),    symbol]
                          | String               [klabel(MichString), symbol]
                          | BytesToken           [klabel(MichBytes),  symbol]
                          | SequenceNode         [klabel(MichSeq),    symbol]
                          | Primitive            [klabel(MichPrim),   symbol]
                          | PrimitiveApplication [klabel(MichPrimApp), symbol]
+
+  syntax PrimitiveArg ::=  MichelineNode        [klabel(Injection3), symbol]
                          | Annotation           [klabel(MichAnnot),  symbol]
 
   syntax PrimitiveApplication ::= Primitive PrimitiveArgs [klabel(PrimitiveApplication), symbol]
