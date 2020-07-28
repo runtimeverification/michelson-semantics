@@ -29,18 +29,23 @@ Micheline has five node types.
 
   syntax SequenceNode ::= "{" MichelineNodes "}"
 
-  syntax MichelineNodes   ::= MichelineNode MichelineNodesAux
-                         // | ""
-  syntax MichelineNodesAux ::= ";" MichelineNodes
-                         // | ""
+  syntax EmptyMichelineNodes          // ::= "" [klabel(.MichelineNodes), symbol]
+  syntax EmptyMichelineNodesSemiColon // ::= ";"
+  syntax NeMichelineNodes ::= MichelineNode EmptyMichelineNodes          [klabel(MichelineNodesCons), symbol]
+                            | MichelineNode EmptyMichelineNodesSemiColon [klabel(MichelineNodesCons)]
+                            | MichelineNode ";" NeMichelineNodes         [klabel(MichelineNodesCons)]
+  syntax MichelineNodes   ::= NeMichelineNodes
+                            | EmptyMichelineNodes
 
-  syntax PrimitiveArg ::= Int
-                        | String
-                        | MichelineBytes
-                        | SequenceNode
-                        | Primitive
-                        | "(" PrimitiveApplication ")"
+  syntax PrimitiveArg ::= NodeArg
                         | Annotation
+
+  syntax NodeArg ::= Int
+                   | String
+                   | MichelineBytes
+                   | SequenceNode
+                   | Primitive
+                   | "(" PrimitiveApplication ")"
 
   syntax Annotation
 endmodule
@@ -357,8 +362,8 @@ endmodule
 module MICHELSON-PARSER-SYNTAX
   imports MICHELINE-TO-MICHELSON-COMMON-SYNTAX
 
-  syntax MichelineNodes     ::= "" [klabel(.MichelineNodes),    symbol]
-  syntax MichelineNodesAux  ::= "" [klabel(.MichelineNodesAux), symbol]
+  syntax EmptyMichelineNodes          ::= ""  [klabel(.MichelineNodes), symbol]
+  syntax EmptyMichelineNodesSemiColon ::= ";" [klabel(.MichelineNodes), symbol]
 
   syntax BytesToken         ::= r"0x[a-fA-F0-9]*"                     [token]
 
