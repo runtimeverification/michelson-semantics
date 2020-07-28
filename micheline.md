@@ -11,19 +11,19 @@ module MICHELINE-COMMON-SYNTAX
 Micheline has five node types.
 
 ```k
-  syntax MichelineNode ::= Int
-                         | String
-                         | MichelineBytes
-                         | PrimitiveNode
-                         | SequenceNode
+  syntax MichelineNode
+  //                       ::= Int
+  //                         | String
+  //                         | MichelineBytes
+  //                         | SequenceNode
+  //                         | Primitive
+  //                         | PrimitiveApplication
 
   syntax BytesToken
   syntax MichelineBytes ::= BytesToken
 
   syntax Primitive
 
-  syntax PrimitiveNode ::= Primitive
-                         | PrimitiveApplication
   syntax PrimitiveApplication ::= Primitive PrimitiveArgs
   syntax PrimitiveArgs ::= NeList{PrimitiveArg, ""} [klabel(PrimitiveArgs), symbol]
 
@@ -37,15 +37,14 @@ Micheline has five node types.
   syntax MichelineNodes   ::= NeMichelineNodes
                             | EmptyMichelineNodes
 
-  syntax PrimitiveArg ::= NodeArg
+  syntax PrimitiveArg ::= Int
+                        | String
+                        | MichelineBytes
+                        | SequenceNode
+                        | Primitive
+                     // | "(" PrimitiveApplication ")"
                         | Annotation
 
-  syntax NodeArg ::= Int
-                   | String
-                   | MichelineBytes
-                   | SequenceNode
-                   | Primitive
-                   | "(" PrimitiveApplication ")"
 
   syntax Annotation
 endmodule
@@ -362,6 +361,15 @@ endmodule
 module MICHELSON-PARSER-SYNTAX
   imports MICHELINE-TO-MICHELSON-COMMON-SYNTAX
 
+  syntax MichelineNode ::= Int
+                         | String
+                         | MichelineBytes
+                         | SequenceNode
+                         | Primitive
+                         | PrimitiveApplication [klabel(PrimitiveApplication), symbol]
+
+  syntax PrimitiveArg ::= "(" PrimitiveApplication ")" [klabel(PrimitiveApplication), symbol]
+
   syntax EmptyMichelineNodes          ::= ""  [klabel(.MichelineNodes), symbol]
   syntax EmptyMichelineNodesSemiColon ::= ";" [klabel(.MichelineNodes), symbol]
 
@@ -404,18 +412,36 @@ module MICHELINE-INTERNAL-REPRESENTATION
   imports STRING
   imports BYTES
 
+  syntax MichelineNode ::= Int
+                         | String
+                         | MichelineBytes
+                         | SequenceNode
+                         | Primitive
+                         | PrimitiveApplication [klabel(PrimitiveApplication), symbol]
+
+  syntax MichelineNodes    ::= ".MichelineNodes"    [klabel(.MichelineNodes), symbol]
+
+  syntax PrimitiveArg ::= MichelineNode
+
+  syntax MichelineNode   ::= MichelineIRNode
   syntax MichelineIRNode ::= Int
                            | String
                            | Bytes
-                           | Prim(String, AnnotationData, MichelineIRNodes)
+                           | Inst(Instruction, AnnotationData, MichelineIRNodes)
+                           | Macro(Macro, AnnotationData, MichelineIRNodes)
+                           | Field(Field, MichelineIRNodes)
+                           | Data(MichelsonData, AnnotationData, MichelineIRNodes)
                            | Seq(MichelineIRNodes)
 
   syntax MichelineIRNodes ::= List{MichelineIRNode, ""}
 
   syntax AnnotationData      ::= VarAnnotationList TypeAnnotationList FieldAnnotationList
-  syntax VarAnnotationList   ::= List{VarAnnotation,  ""}
-  syntax TypeAnnotationList  ::= List{TypeAnnotation, ""}
-  syntax FieldAnnotationList ::= List{TypeAnnotation, ""}
+  syntax VarAnnotationList   ::= List{VarAnnotation,   ";"}
+  syntax TypeAnnotationList  ::= List{TypeAnnotation,  ";"}
+  syntax FieldAnnotationList ::= List{FieldAnnotation, ";"}
+
+  syntax AnnotationData  ::= "noAnnotData" [function, functional]
+  rule noAnnotData => .VarAnnotationList .TypeAnnotationList .FieldAnnotationList
 endmodule
 
 module MICHELSON-PARSER-INTERNAL
