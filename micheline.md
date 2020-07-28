@@ -45,8 +45,9 @@ module K-MICHELINE-CONCRETE-SYNTAX
 
   syntax Pgm ::= NeMichelineNodes [klabel(MichelsonPgm), symbol]
 
-  syntax SequenceNode         ::= "{" MichelineNodes "}"    [klabel(SeqNodeCtor), symbol]
-  syntax PrimitiveApplication ::= Primitive NePrimitiveArgs [klabel(AppNodeCtor), symbol]
+  syntax SequenceNode         ::= "{" EmptyMichelineNodes "}" [klabel(SeqNodeCtor), symbol]
+                                | "{"    NeMichelineNodes "}" [klabel(SeqNodeCtor), symbol]
+  syntax PrimitiveApplication ::= Primitive NePrimitiveArgs   [klabel(AppNodeCtor), symbol]
 
   syntax MichelineNode  ::= MichelineNode0       [klabel(Node0),      symbol]
   syntax MichelineNode0 ::= Int                  [klabel(IntNode),    symbol]
@@ -71,15 +72,11 @@ module K-MICHELINE-CONCRETE-SYNTAX
   syntax NeMichelineNodes ::= MichelineNode EmptyMichelineNodes   [klabel(PrimArgsCons), symbol]
                             | MichelineNode EmptyMichelineNodesSC [klabel(PrimArgsCons), symbol]
                             | MichelineNode ";" NeMichelineNodes  [klabel(PrimArgsCons), symbol]
-  syntax MichelineNodes   ::= NeMichelineNodes                    [klabel(PrimArgs),     symbol]
-                            | EmptyMichelineNodes                 [klabel(PrimArgs),     symbol]
 
   // Primtive Args
   syntax EmptyPrimitiveArgs ::= "" [klabel(.PrimArgs), symbol]
   syntax NePrimitiveArgs ::= PrimitiveArg EmptyPrimitiveArgs [klabel(PrimArgsCons), symbol]
                            | PrimitiveArg NePrimitiveArgs    [klabel(PrimArgsCons), symbol]
-  syntax PrimitiveArgs   ::= NePrimitiveArgs                 [klabel(PrimArgs),     symbol]
-                           | EmptyPrimitiveArgs              [klabel(PrimArgs),     symbol]
 
   // Tokens
   syntax BytesToken         ::= r"0x[a-fA-F0-9]*"                     [token]
@@ -107,8 +104,8 @@ module K-MICHELINE-ABSTRACT-SYNTAX
   imports INT-SYNTAX
   imports STRING-SYNTAX
 
-  syntax SequenceNode         ::= "{" PrimitiveArgsX "}"   [klabel(SeqNodeCtor), symbol]
-  syntax PrimitiveApplication ::= Primitive PrimitiveArgsX [klabel(AppNodeCtor), symbol]
+  syntax SequenceNode         ::= "{" PrimitiveArgs "}"   [klabel(SeqNodeCtor), symbol]
+  syntax PrimitiveApplication ::= Primitive PrimitiveArgs [klabel(AppNodeCtor), symbol]
 
   syntax MichelineNode ::= Int                  [klabel(IntNode),    symbol]
                          | String               [klabel(StringNode), symbol]
@@ -120,7 +117,6 @@ module K-MICHELINE-ABSTRACT-SYNTAX
   syntax PrimitiveArg ::= MichelineNode [klabel(Node0),    symbol]
                         | Annotation    [klabel(AnnotArg), symbol]
 
-  syntax PrimitiveArgsX ::= PrimitiveArgs              [klabel(PrimArgs), symbol]
   syntax PrimitiveArgs  ::= ".PrimitiveArgs"           [klabel(.PrimArgs), symbol]
                           | PrimitiveArg PrimitiveArgs [klabel(PrimArgsCons), symbol, right]
 endmodule
