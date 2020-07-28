@@ -2,19 +2,173 @@
 
 ```k
 module MICHELINE-COMMON-SYNTAX
-  imports INT-SYNTAX
-  imports STRING-SYNTAX
-```
-
-## Micheline Node Types
-
-Micheline has five node types.
-
-```k
   syntax BytesToken
   syntax Primitive
   syntax Annotation
+endmodule
+```
 
+```k
+module MICHELSON-PARSER-SYNTAX
+  imports MICHELINE-TO-MICHELSON-COMMON-SYNTAX
+  imports INT-SYNTAX
+  imports STRING-SYNTAX
+
+  syntax Pgm ::= MichelineNodes [klabel(Injection2), symbol]
+
+  syntax MichelineNode ::= MichelineNode2 [klabel(Injection3), symbol]
+  syntax MichelineNode2 ::= Int             [klabel(MichInt),    symbol]
+                         | String          [klabel(MichString), symbol]
+                         | BytesToken      [klabel(MichBytes),  symbol]
+                         | SequenceNode    [klabel(MichSeq),    symbol]
+                         | Primitive       [klabel(MichPrim),   symbol]
+                         | PrimitiveApplication [klabel(MichPrimApp), symbol]
+
+  syntax SequenceNode ::= "{" MichelineNodes "}" [klabel(SequenceNode), symbol]
+
+  //
+  syntax EmptyMichelineNodes          ::= ""  [klabel(.PrimitiveArgs), symbol]
+  syntax EmptyMichelineNodesSemiColon ::= ";" [klabel(.PrimitiveArgs), symbol]
+  syntax NeMichelineNodes ::= MichelineNode EmptyMichelineNodes          [klabel(PrimitiveArgs), symbol]
+                            | MichelineNode EmptyMichelineNodesSemiColon [klabel(PrimitiveArgs), symbol]
+                            | MichelineNode ";" NeMichelineNodes         [klabel(PrimitiveArgs), symbol]
+  syntax MichelineNodes   ::= NeMichelineNodes                           [klabel(Injection), symbol]
+                            | EmptyMichelineNodes                        [klabel(Injection), symbol]
+
+  //
+  syntax EmptyPrimitiveArgs ::= "" [klabel(.PrimitiveArgs), symbol]
+  syntax NePrimitiveArgs  ::= PrimitiveArg EmptyPrimitiveArgs  [klabel(PrimitiveArgs), symbol]
+                              | PrimitiveArg NePrimitiveArgs     [klabel(PrimitiveArgs), symbol]
+  syntax PrimitiveArgs ::= NePrimitiveArgs                     [klabel(Injection), symbol]
+                         | EmptyPrimitiveArgs                  [klabel(Injection), symbol]
+
+
+  syntax PrimitiveApplication ::= Primitive NePrimitiveArgs [klabel(PrimitiveApplication), symbol]
+
+  syntax PrimitiveArg ::= PrimitiveArgNode        [klabel(Injection3),  symbol]
+                        | Annotation              [klabel(MichAnnot),   symbol]
+  syntax PrimitiveArgNode ::= Int                      [klabel(MichInt),    symbol]
+                        | String                       [klabel(MichString), symbol]
+                        | BytesToken                   [klabel(MichBytes),  symbol]
+                        | SequenceNode                 [klabel(MichSeq),    symbol]
+                        | Primitive                    [klabel(MichPrim),   symbol]
+                        | "(" PrimitiveApplication ")" [klabel(MichPrimApp), symbol]
+
+  syntax BytesToken         ::= r"0x[a-fA-F0-9]*"                     [token]
+
+  syntax VarAnnotation      ::= r"@(%|%%|[_a-zA-Z][_0-9a-zA-Z\\.]*)?" [token]
+  syntax TypeAnnotation     ::= r":([_a-zA-Z][_0-9a-zA-Z\\.]*)?"      [token]
+  syntax FieldAnnotation    ::= r"%(@|[_a-zA-Z][_0-9a-zA-Z\\.]*)?"    [token]
+
+  syntax DIPMacro           ::= r"DII+P"                              [token]
+  syntax DUPMacro           ::= r"DUU+P"                              [token]
+  syntax PAIRMacro          ::= r"P[AIP]+R"                           [token]
+  syntax UNPAIRMacro        ::= r"UNP[AIP]+R"                         [token]
+  syntax CADRMacro          ::= r"C[A,D]{2,}R"                        [token]
+  syntax SETCADRMacro       ::= r"SET_C[AD]+R"                        [token]
+  syntax MAPCADRMacro       ::= r"MAP_C[AD]+R"                        [token]
+
+  syntax AnyToken           ::= "_"                                   [token]
+  syntax SymbolicPrimitive  ::= r"\\$[a-zA-Z_0-9]+"                   [token]
+endmodule
+```
+
+```k
+module MICHELINE-INTERNAL-REPRESENTATION
+  imports MICHELINE-TO-MICHELSON-COMMON-SYNTAX
+  imports INT
+  imports STRING
+  imports BYTES
+
+  syntax SequenceNode ::= "{" PrimitiveArgs "}" [klabel(SequenceNode), symbol]
+
+  syntax MichelineNode ::= Int                  [klabel(MichInt),    symbol]
+                         | String               [klabel(MichString), symbol]
+                         | BytesToken           [klabel(MichBytes),  symbol]
+                         | SequenceNode         [klabel(MichSeq),    symbol]
+                         | Primitive            [klabel(MichPrim),   symbol]
+                         | PrimitiveApplication [klabel(MichPrimApp), symbol]
+
+  syntax PrimitiveArg ::=  MichelineNode        [klabel(Injection3), symbol]
+                         | Annotation           [klabel(MichAnnot),  symbol]
+
+  syntax PrimitiveApplication ::= Primitive PrimitiveArgs [klabel(PrimitiveApplication), symbol]
+
+  syntax EmptyPrimitiveArgs ::= ".PrimitiveArgs" [klabel(.PrimitiveArgs), symbol]
+  syntax NePrimitiveArgs  ::= PrimitiveArg EmptyPrimitiveArgs  [klabel(PrimitiveArgs), symbol]
+                              | PrimitiveArg NePrimitiveArgs     [klabel(PrimitiveArgs)]
+  syntax PrimitiveArgs ::= NePrimitiveArgs                     [klabel(Injection), symbol]
+                         | EmptyPrimitiveArgs                  [klabel(Injection)]
+
+
+endmodule
+```
+
+```k
+module MICHELSON-PARSER-INTERNAL
+  imports MICHELINE-TO-MICHELSON-COMMON-SYNTAX
+  imports MICHELINE-INTERNAL-REPRESENTATION
+
+  syntax Pgm ::= PrimitiveArgs [klabel(Injection2), symbol]
+  configuration <k> $PGM:Pgm </k>
+
+  syntax MichelineNode   ::= MichelineIRNode
+  syntax MichelineIRNode ::= Int
+                           | String
+                           | Bytes
+                           | Inst(Instruction, AnnotationData, MichelineIRNodes)
+                           | Macro(Macro, AnnotationData, MichelineIRNodes)
+                           | Field(Field, MichelineIRNodes)
+                           | Data(MichelsonData, AnnotationData, MichelineIRNodes)
+                           | Seq(MichelineIRNodes)
+
+  syntax MichelineIRNodes ::= List{MichelineIRNode, ""}
+
+  syntax AnnotationData      ::= VarAnnotationList TypeAnnotationList FieldAnnotationList
+  syntax VarAnnotationList   ::= List{VarAnnotation,   ";"}
+  syntax TypeAnnotationList  ::= List{TypeAnnotation,  ";"}
+  syntax FieldAnnotationList ::= List{FieldAnnotation, ";"}
+
+  syntax AnnotationData  ::= "noAnnotData" [function, functional]
+  rule noAnnotData => .VarAnnotationList .TypeAnnotationList .FieldAnnotationList
+
+  /*
+  syntax WrappedArg  ::= Arg(PrimitiveArg)
+  syntax WrappedArgs ::= List{WrappedArg, ""}
+                       | wrapArgs(PrimitiveArgs) [function]
+
+  rule wrapArgs(A Args) => Arg(A) wrapArgs(Args)
+  rule wrapArgs(A)      => Arg(A)
+
+  syntax PrimArgData ::= #PAD(AnnotationData, WrappedArgs)
+                       | toPrimArgData(WrappedArgs)              [function]
+                       | toPrimArgData(WrappedArgs, PrimArgData) [function]
+
+  rule toPrimArgData(Args) => toPrimArgData(Args, #PAD(noAnnotData, .WrappedArgs))
+
+  rule toPrimArgData(.WrappedArgs, PAD) => PAD
+
+  rule toPrimArgData(Arg(A:VarAnnotation)   Rest, #PAD(VAs TAs FAs, Args)) => toPrimArgData(Rest, #PAD(VAs ; A TAs FAs, Args))
+  rule toPrimArgData(Arg(A:TypeAnnotation)  Rest, #PAD(VAs TAs FAs, Args)) => toPrimArgData(Rest, #PAD(VAs TAs ; A FAs, Args))
+  rule toPrimArgData(Arg(A:FieldAnnotation) Rest, #PAD(VAs TAs FAs, Args)) => toPrimArgData(Rest, #PAD(VAs TAs FAs ; A, Args))
+  rule toPrimArgData(Arg(N:NodeArg)         Rest, #PAD(VAs TAs FAs, Args)) => toPrimArgData(Rest, #PAD(VAs TAs FAs, Args Arg(N)))
+  */
+endmodule
+
+module MICHELSON-PARSER
+  imports MICHELINE-TO-MICHELSON-COMMON-SYNTAX
+  imports MICHELSON-PARSER-INTERNAL
+
+  // syntax MichelineNode ::= NodeToPrim(Primitive, PrimArgData)
+
+  // rule (N:Primitive):MichelineNode => (0):MichelineNode [anywhere]
+
+  // rule (N:Primitive):MichelineNode => NodeToPrim(N, #PAD(noAnnotData, .WrappedArgs)) [anywhere]
+  // rule N:Primitive Args       => NodeToPrim(N, toPrimArgData(wrapArgs(Args)))   [anywhere]
+
+  // rule NodeToPrim(I:NullaryInst, (Annots, NoArgs)) => Inst(I,NoAnnots,.MichelineIRNodes)
+  // rule NodeToPrim(I:UnaryInst,   Arg)    => Inst(I,
+  // rule NodeToPrim(I:UnaryInst, NoArgs) => ...
 endmodule
 ```
 
@@ -331,167 +485,4 @@ module MICHELINE-TO-MICHELSON-COMMON-SYNTAX
                         | SymbolicPrimitive
 endmodule
 ```
-
-```k
-module MICHELSON-PARSER-SYNTAX
-  imports MICHELINE-TO-MICHELSON-COMMON-SYNTAX
-
-  syntax Pgm ::= MichelineNodes [klabel(Injection2), symbol]
-
-  syntax MichelineNode ::= MichelineNode2 [klabel(Injection3), symbol]
-  syntax MichelineNode2 ::= Int             [klabel(MichInt),    symbol]
-                         | String          [klabel(MichString), symbol]
-                         | BytesToken      [klabel(MichBytes),  symbol]
-                         | SequenceNode    [klabel(MichSeq),    symbol]
-                         | Primitive       [klabel(MichPrim),   symbol]
-                         | PrimitiveApplication [klabel(MichPrimApp), symbol]
-
-  syntax SequenceNode ::= "{" MichelineNodes "}" [klabel(SequenceNode), symbol]
-
-  //
-  syntax EmptyMichelineNodes          ::= ""  [klabel(.PrimitiveArgs), symbol]
-  syntax EmptyMichelineNodesSemiColon ::= ";" [klabel(.PrimitiveArgs), symbol]
-  syntax NeMichelineNodes ::= MichelineNode EmptyMichelineNodes          [klabel(PrimitiveArgs), symbol]
-                            | MichelineNode EmptyMichelineNodesSemiColon [klabel(PrimitiveArgs), symbol]
-                            | MichelineNode ";" NeMichelineNodes         [klabel(PrimitiveArgs), symbol]
-  syntax MichelineNodes   ::= NeMichelineNodes                           [klabel(Injection), symbol]
-                            | EmptyMichelineNodes                        [klabel(Injection), symbol]
-
-  //
-  syntax EmptyPrimitiveArgs ::= "" [klabel(.PrimitiveArgs), symbol]
-  syntax NePrimitiveArgs  ::= PrimitiveArg EmptyPrimitiveArgs  [klabel(PrimitiveArgs), symbol]
-                              | PrimitiveArg NePrimitiveArgs     [klabel(PrimitiveArgs), symbol]
-  syntax PrimitiveArgs ::= NePrimitiveArgs                     [klabel(Injection), symbol]
-                         | EmptyPrimitiveArgs                  [klabel(Injection), symbol]
-
-
-  syntax PrimitiveApplication ::= Primitive NePrimitiveArgs [klabel(PrimitiveApplication), symbol]
-
-  syntax PrimitiveArg ::= PrimitiveArgNode        [klabel(Injection3),  symbol]
-                        | Annotation              [klabel(MichAnnot),   symbol]
-  syntax PrimitiveArgNode ::= Int                      [klabel(MichInt),    symbol]
-                        | String                       [klabel(MichString), symbol]
-                        | BytesToken                   [klabel(MichBytes),  symbol]
-                        | SequenceNode                 [klabel(MichSeq),    symbol]
-                        | Primitive                    [klabel(MichPrim),   symbol]
-                        | "(" PrimitiveApplication ")" [klabel(MichPrimApp), symbol]
-
-  syntax BytesToken         ::= r"0x[a-fA-F0-9]*"                     [token]
-
-  syntax VarAnnotation      ::= r"@(%|%%|[_a-zA-Z][_0-9a-zA-Z\\.]*)?" [token]
-  syntax TypeAnnotation     ::= r":([_a-zA-Z][_0-9a-zA-Z\\.]*)?"      [token]
-  syntax FieldAnnotation    ::= r"%(@|[_a-zA-Z][_0-9a-zA-Z\\.]*)?"    [token]
-
-  syntax DIPMacro           ::= r"DII+P"                              [token]
-  syntax DUPMacro           ::= r"DUU+P"                              [token]
-  syntax PAIRMacro          ::= r"P[AIP]+R"                           [token]
-  syntax UNPAIRMacro        ::= r"UNP[AIP]+R"                         [token]
-  syntax CADRMacro          ::= r"C[A,D]{2,}R"                        [token]
-  syntax SETCADRMacro       ::= r"SET_C[AD]+R"                        [token]
-  syntax MAPCADRMacro       ::= r"MAP_C[AD]+R"                        [token]
-
-  syntax AnyToken           ::= "_"                                   [token]
-  syntax SymbolicPrimitive  ::= r"\\$[a-zA-Z_0-9]+"                   [token]
-endmodule
-```
-
-```k
-module MICHELSON-PARSER
-  imports MICHELINE-TO-MICHELSON-COMMON-SYNTAX
-  imports MICHELSON-PARSER-INTERNAL
-
-  // syntax MichelineNode ::= NodeToPrim(Primitive, PrimArgData)
-
-  // rule (N:Primitive):MichelineNode => (0):MichelineNode [anywhere]
-
-  // rule (N:Primitive):MichelineNode => NodeToPrim(N, #PAD(noAnnotData, .WrappedArgs)) [anywhere]
-  // rule N:Primitive Args       => NodeToPrim(N, toPrimArgData(wrapArgs(Args)))   [anywhere]
-
-  // rule NodeToPrim(I:NullaryInst, (Annots, NoArgs)) => Inst(I,NoAnnots,.MichelineIRNodes)
-  // rule NodeToPrim(I:UnaryInst,   Arg)    => Inst(I,
-  // rule NodeToPrim(I:UnaryInst, NoArgs) => ...
-endmodule
-
-module MICHELINE-INTERNAL-REPRESENTATION
-  imports MICHELINE-TO-MICHELSON-COMMON-SYNTAX
-  imports INT
-  imports STRING
-  imports BYTES
-
-  syntax SequenceNode ::= "{" PrimitiveArgs "}" [klabel(SequenceNode), symbol]
-
-  syntax MichelineNode ::= Int                  [klabel(MichInt),    symbol]
-                         | String               [klabel(MichString), symbol]
-                         | BytesToken           [klabel(MichBytes),  symbol]
-                         | SequenceNode         [klabel(MichSeq),    symbol]
-                         | Primitive            [klabel(MichPrim),   symbol]
-                         | PrimitiveApplication [klabel(MichPrimApp), symbol]
-
-  syntax PrimitiveArg ::=  MichelineNode        [klabel(Injection3), symbol]
-                         | Annotation           [klabel(MichAnnot),  symbol]
-
-  syntax PrimitiveApplication ::= Primitive PrimitiveArgs [klabel(PrimitiveApplication), symbol]
-
-  syntax EmptyPrimitiveArgs ::= ".PrimitiveArgs" [klabel(.PrimitiveArgs), symbol]
-  syntax NePrimitiveArgs  ::= PrimitiveArg EmptyPrimitiveArgs  [klabel(PrimitiveArgs), symbol]
-                              | PrimitiveArg NePrimitiveArgs     [klabel(PrimitiveArgs)]
-  syntax PrimitiveArgs ::= NePrimitiveArgs                     [klabel(Injection), symbol]
-                         | EmptyPrimitiveArgs                  [klabel(Injection)]
-
-
-  syntax MichelineNode   ::= MichelineIRNode
-  syntax MichelineIRNode ::= Int
-                           | String
-                           | Bytes
-                           | Inst(Instruction, AnnotationData, MichelineIRNodes)
-                           | Macro(Macro, AnnotationData, MichelineIRNodes)
-                           | Field(Field, MichelineIRNodes)
-                           | Data(MichelsonData, AnnotationData, MichelineIRNodes)
-                           | Seq(MichelineIRNodes)
-
-  syntax MichelineIRNodes ::= List{MichelineIRNode, ""}
-
-  syntax AnnotationData      ::= VarAnnotationList TypeAnnotationList FieldAnnotationList
-  syntax VarAnnotationList   ::= List{VarAnnotation,   ";"}
-  syntax TypeAnnotationList  ::= List{TypeAnnotation,  ";"}
-  syntax FieldAnnotationList ::= List{FieldAnnotation, ";"}
-
-  syntax AnnotationData  ::= "noAnnotData" [function, functional]
-  rule noAnnotData => .VarAnnotationList .TypeAnnotationList .FieldAnnotationList
-endmodule
-
-module MICHELSON-PARSER-INTERNAL
-  imports MICHELINE-TO-MICHELSON-COMMON-SYNTAX
-  imports MICHELINE-INTERNAL-REPRESENTATION
-
-  syntax Pgm ::= PrimitiveArgs [klabel(Injection2), symbol]
-  configuration <k> $PGM:Pgm </k>
-
-  /*
-  syntax WrappedArg  ::= Arg(PrimitiveArg)
-  syntax WrappedArgs ::= List{WrappedArg, ""}
-                       | wrapArgs(PrimitiveArgs) [function]
-
-  rule wrapArgs(A Args) => Arg(A) wrapArgs(Args)
-  rule wrapArgs(A)      => Arg(A)
-
-  syntax PrimArgData ::= #PAD(AnnotationData, WrappedArgs)
-                       | toPrimArgData(WrappedArgs)              [function]
-                       | toPrimArgData(WrappedArgs, PrimArgData) [function]
-
-  rule toPrimArgData(Args) => toPrimArgData(Args, #PAD(noAnnotData, .WrappedArgs))
-
-  rule toPrimArgData(.WrappedArgs, PAD) => PAD
-
-  rule toPrimArgData(Arg(A:VarAnnotation)   Rest, #PAD(VAs TAs FAs, Args)) => toPrimArgData(Rest, #PAD(VAs ; A TAs FAs, Args))
-  rule toPrimArgData(Arg(A:TypeAnnotation)  Rest, #PAD(VAs TAs FAs, Args)) => toPrimArgData(Rest, #PAD(VAs TAs ; A FAs, Args))
-  rule toPrimArgData(Arg(A:FieldAnnotation) Rest, #PAD(VAs TAs FAs, Args)) => toPrimArgData(Rest, #PAD(VAs TAs FAs ; A, Args))
-  rule toPrimArgData(Arg(N:NodeArg)         Rest, #PAD(VAs TAs FAs, Args)) => toPrimArgData(Rest, #PAD(VAs TAs FAs, Args Arg(N)))
-  */
-endmodule
-```
-
-1. Micheline-Like    - all primitives are well-defined
-2. MichelineIR       - all primitives take correct number of args / annotations
-3. TypedMichelsonIR  - convert IR to typed version --- progress guaranteed
 
