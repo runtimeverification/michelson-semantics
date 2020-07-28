@@ -25,8 +25,7 @@ Micheline has five node types.
   syntax PrimitiveNode ::= Primitive
                          | PrimitiveApplication
   syntax PrimitiveApplication ::= Primitive PrimitiveArgs
-  syntax PrimitiveArgs ::= PrimitiveArg
-                         | PrimitiveArg PrimitiveArgs
+  syntax PrimitiveArgs ::= NeList{PrimitiveArg, ""} [klabel(PrimitiveArgs), symbol]
 
   syntax SequenceNode ::= "{" MichelineNodes "}"
 
@@ -386,6 +385,9 @@ module MICHELSON-PARSER
   rule NodesToIR(N Ns)                   => NodeToIR(N) NodesToIRAux(Ns)
   rule NodesToIRAux(; Ns:MichelineNodes) => NodesToIR(Ns)
   rule NodesToIRAux()                    => .MichelineIRNodes
+
+  rule NodeToIR(P:Primitive)      => NodeToPrim(P, NoArgs)
+  rule NodeToIR(P:Primitive Args) => NodeToPrim(P, Args)
 endmodule
 
 module MICHELINE-INTERNAL-REPRESENTATION
@@ -397,7 +399,7 @@ module MICHELINE-INTERNAL-REPRESENTATION
   syntax MichelineIRNode ::= Int
                            | String
                            | Bytes
-                           | Primitive(String, AnnotationData, MichelineIRNodes)
+                           | Prim(String, AnnotationData, MichelineIRNodes)
                            | Seq(MichelineIRNodes)
 
   syntax MichelineIRNodes ::= List{MichelineIRNode, ""}
@@ -417,5 +419,14 @@ module MICHELSON-PARSER-INTERNAL
   syntax MichelineIRNodes ::= NodesToIR(MichelineNodes)
                             | NodesToIRAux(MichelineNodesAux)
   syntax MichelineIRNode  ::= NodeToIR(MichelineNode)
+                            | NodeToPrim(Primitive, OptPrimitiveArgs)
+
+  syntax OptPrimitiveArgs ::= "NoArgs"
+                            | PrimitiveArgs
 endmodule
 ```
+
+1. Micheline-Like    - all primitives are well-defined
+2. MichelineIR       - all primitives take correct number of args / annotations
+3. TypedMichelsonIR  - convert IR to typed version --- progress guaranteed
+
