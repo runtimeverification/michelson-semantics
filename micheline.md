@@ -397,13 +397,16 @@ module MICHELSON-PARSER
   imports MICHELINE-TO-MICHELSON-COMMON-SYNTAX
   imports MICHELSON-PARSER-INTERNAL
 
-  rule NodesToIR()                       => .MichelineIRNodes
-  rule NodesToIR(N Ns)                   => NodeToIR(N) NodesToIRAux(Ns)
-  rule NodesToIRAux(; Ns:MichelineNodes) => NodesToIR(Ns)
-  rule NodesToIRAux()                    => .MichelineIRNodes
+  // syntax MichelineNode ::= NodeToPrim(Primitive, PrimArgData)
 
-  rule NodeToIR(P:Primitive)      => NodeToPrim(P, NoArgs)
-  rule NodeToIR(P:Primitive Args) => NodeToPrim(P, Args)
+  // rule (N:Primitive):MichelineNode => (0):MichelineNode [anywhere]
+
+  // rule (N:Primitive):MichelineNode => NodeToPrim(N, #PAD(noAnnotData, .WrappedArgs)) [anywhere]
+  // rule N:Primitive Args       => NodeToPrim(N, toPrimArgData(wrapArgs(Args)))   [anywhere]
+
+  // rule NodeToPrim(I:NullaryInst, (Annots, NoArgs)) => Inst(I,NoAnnots,.MichelineIRNodes)
+  // rule NodeToPrim(I:UnaryInst,   Arg)    => Inst(I,
+  // rule NodeToPrim(I:UnaryInst, NoArgs) => ...
 endmodule
 
 module MICHELINE-INTERNAL-REPRESENTATION
@@ -450,13 +453,27 @@ module MICHELSON-PARSER-INTERNAL
 
   configuration <k> $PGM:MichelineNodes </k>
 
-  syntax MichelineIRNodes ::= NodesToIR(MichelineNodes)
-                            | NodesToIRAux(MichelineNodesAux)
-  syntax MichelineIRNode  ::= NodeToIR(MichelineNode)
-                            | NodeToPrim(Primitive, OptPrimitiveArgs)
+  /*
+  syntax WrappedArg  ::= Arg(PrimitiveArg)
+  syntax WrappedArgs ::= List{WrappedArg, ""}
+                       | wrapArgs(PrimitiveArgs) [function]
 
-  syntax OptPrimitiveArgs ::= "NoArgs"
-                            | PrimitiveArgs
+  rule wrapArgs(A Args) => Arg(A) wrapArgs(Args)
+  rule wrapArgs(A)      => Arg(A)
+
+  syntax PrimArgData ::= #PAD(AnnotationData, WrappedArgs)
+                       | toPrimArgData(WrappedArgs)              [function]
+                       | toPrimArgData(WrappedArgs, PrimArgData) [function]
+
+  rule toPrimArgData(Args) => toPrimArgData(Args, #PAD(noAnnotData, .WrappedArgs))
+
+  rule toPrimArgData(.WrappedArgs, PAD) => PAD
+
+  rule toPrimArgData(Arg(A:VarAnnotation)   Rest, #PAD(VAs TAs FAs, Args)) => toPrimArgData(Rest, #PAD(VAs ; A TAs FAs, Args))
+  rule toPrimArgData(Arg(A:TypeAnnotation)  Rest, #PAD(VAs TAs FAs, Args)) => toPrimArgData(Rest, #PAD(VAs TAs ; A FAs, Args))
+  rule toPrimArgData(Arg(A:FieldAnnotation) Rest, #PAD(VAs TAs FAs, Args)) => toPrimArgData(Rest, #PAD(VAs TAs FAs ; A, Args))
+  rule toPrimArgData(Arg(N:NodeArg)         Rest, #PAD(VAs TAs FAs, Args)) => toPrimArgData(Rest, #PAD(VAs TAs FAs, Args Arg(N)))
+  */
 endmodule
 ```
 
