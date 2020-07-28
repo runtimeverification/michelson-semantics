@@ -78,8 +78,8 @@ module MICHELINE-INTERNAL-SYNTAX
   imports INT-SYNTAX
   imports STRING-SYNTAX
 
-  syntax SequenceNode         ::= "{" PrimitiveArgs "}"   [klabel(SeqNodeCtor), symbol]
-  syntax PrimitiveApplication ::= Primitive PrimitiveArgs [klabel(AppNodeCtor), symbol]
+  syntax SequenceNode         ::= "{" PrimitiveArgsX "}"   [klabel(SeqNodeCtor), symbol]
+  syntax PrimitiveApplication ::= Primitive PrimitiveArgsX [klabel(AppNodeCtor), symbol]
 
   syntax MichelineNode ::= Int                  [klabel(IntNode),    symbol]
                          | String               [klabel(StringNode), symbol]
@@ -91,11 +91,9 @@ module MICHELINE-INTERNAL-SYNTAX
   syntax PrimitiveArg ::= MichelineNode [klabel(Node0),    symbol]
                         | Annotation    [klabel(AnnotArg), symbol]
 
-  syntax EmptyPrimitiveArgs ::= ".PrimitiveArgs" [klabel(.PrimArgs), symbol]
-  syntax NePrimitiveArgs ::= PrimitiveArg EmptyPrimitiveArgs [klabel(PrimArgsCons), symbol]
-                           | PrimitiveArg NePrimitiveArgs    [klabel(PrimArgsCons)        ]
-  syntax PrimitiveArgs   ::= NePrimitiveArgs                 [klabel(PrimArgs),     symbol]
-                           | EmptyPrimitiveArgs              [klabel(PrimArgs)            ]
+  syntax PrimitiveArgsX ::= PrimitiveArgs              [klabel(PrimArgs), symbol]
+  syntax PrimitiveArgs  ::= ".PrimitiveArgs"           [klabel(.PrimArgs), symbol]
+                          | PrimitiveArg PrimitiveArgs [klabel(PrimArgsCons), symbol, right]
 endmodule
 ```
 
