@@ -11,35 +11,10 @@ module MICHELINE-COMMON-SYNTAX
 Micheline has five node types.
 
 ```k
-  syntax MichelineNode
-  //                       ::= Int
-  //                         | String
-  //                         | MichelineBytes
-  //                         | SequenceNode
-  //                         | Primitive
-  //                         | PrimitiveApplication
-
   syntax BytesToken
-  syntax MichelineBytes ::= BytesToken
-
   syntax Primitive
-
-  syntax PrimitiveApplication ::= Primitive PrimitiveArgs
-
-  syntax SequenceNode
-
-  syntax PrimitiveArgs
-
-  syntax PrimitiveArg ::= Int
-                        | String
-                        | MichelineBytes
-                        | SequenceNode
-                        | Primitive
-                     // | "(" PrimitiveApplication ")"
-                        | Annotation
-
-
   syntax Annotation
+
 endmodule
 ```
 
@@ -363,12 +338,12 @@ module MICHELSON-PARSER-SYNTAX
 
   syntax Pgm ::= MichelineNodes [klabel(Injection2), symbol]
 
-  syntax MichelineNode ::= Int
-                         | String
-                         | MichelineBytes
-                         | SequenceNode
-                         | Primitive
-                         | PrimitiveApplication [klabel(PrimitiveApplication), symbol]
+  syntax MichelineNode ::= Int             [klabel(MichInt),    symbol]
+                         | String          [klabel(MichString), symbol]
+                         | BytesToken      [klabel(MichBytes),  symbol]
+                         | SequenceNode    [klabel(MichSeq),    symbol]
+                         | Primitive       [klabel(MichPrim),   symbol]
+                         | PrimitiveApplication [klabel(MichPrimApp), symbol]
 
   syntax SequenceNode ::= "{" MichelineNodes "}" [klabel(SequenceNode), symbol]
 
@@ -388,7 +363,16 @@ module MICHELSON-PARSER-SYNTAX
   syntax PrimitiveArgs ::= NePrimitiveArgs                     [klabel(Injection), symbol]
                          | EmptyPrimitiveArgs                  [klabel(Injection), symbol]
 
-  syntax PrimitiveArg ::= "(" PrimitiveApplication ")" [klabel(PrimitiveApplication), symbol]
+
+  syntax PrimitiveApplication ::= Primitive NePrimitiveArgs [klabel(PrimitiveApplication), symbol]
+
+  syntax PrimitiveArg ::= Int                          [klabel(MichInt),    symbol]
+                        | String                       [klabel(MichString), symbol]
+                        | BytesToken                   [klabel(MichBytes),  symbol]
+                        | SequenceNode                 [klabel(MichSeq),    symbol]
+                        | Primitive                    [klabel(MichPrim),   symbol]
+                        | "(" PrimitiveApplication ")" [klabel(MichPrimApp), symbol]
+                        | Annotation                   [klabel(MichAnnot),   symbol]
 
   syntax BytesToken         ::= r"0x[a-fA-F0-9]*"                     [token]
 
@@ -432,17 +416,17 @@ module MICHELINE-INTERNAL-REPRESENTATION
   imports STRING
   imports BYTES
 
-  syntax MichelineNode ::= Int
-                         | String
-                         | MichelineBytes
-                         | SequenceNode
-                         | Primitive
-                         | PrimitiveApplication [klabel(PrimitiveApplication), symbol]
-
   syntax SequenceNode ::= "{" PrimitiveArgs "}" [klabel(SequenceNode), symbol]
 
-  syntax PrimitiveArg ::= MichelineNode
+  syntax PrimitiveArg ::=  Int                  [klabel(MichInt),    symbol]
+                         | String               [klabel(MichString), symbol]
+                         | BytesToken           [klabel(MichBytes),  symbol]
+                         | SequenceNode         [klabel(MichSeq),    symbol]
+                         | Primitive            [klabel(MichPrim),   symbol]
+                         | PrimitiveApplication [klabel(MichPrimApp), symbol]
+                         | Annotation           [klabel(MichAnnot),  symbol]
 
+  syntax PrimitiveApplication ::= Primitive PrimitiveArgs [klabel(PrimitiveApplication), symbol]
 
   syntax EmptyPrimitiveArgs ::= ".PrimitiveArgs" [klabel(.PrimitiveArgs), symbol]
   syntax NePrimitiveArgs  ::= PrimitiveArg EmptyPrimitiveArgs  [klabel(PrimitiveArgs), symbol]
