@@ -2,6 +2,17 @@ This module declares the syntax of a K-Michelson input file.  In particular, it 
 
 ```k
 module MICHELSON-SYNTAX
+  imports MICHELSON-COMMON-SYNTAX
+  imports MICHELSON-MACRO-SYNTAX
+
+  syntax TypeAnnotation ::= r":([_a-zA-Z][_0-9a-zA-Z\\.]*)?" [token]
+  syntax VariableAnnotation ::= r"@(%|%%|[_a-zA-Z][_0-9a-zA-Z\\.]*)?" [token]
+  syntax FieldAnnotation ::= r"%(@|[_a-zA-Z][_0-9a-zA-Z\\.]*)?" [token]
+endmodule
+```
+
+```k
+module MICHELSON-COMMON-SYNTAX
   imports INT-SYNTAX
   imports STRING-SYNTAX
 ```
@@ -47,9 +58,9 @@ Here we define the three sequence sorts in Michelson.  Note that these sorts cov
 Here we define annotations.  Michelson actually has more stringent requirements for annotation lists to be well formed, but we do not yet enforce these requirements as annotations do very little in an execution semantics.  It is possible to fully specify the real requirements in the K grammar, and indeed an older version of the semantics did so.  However, the number of productions and rules necessary came at an unacceptable performance penalty when compared to the minimal benefit gained by rejecting such contracts.
 
 ```k
-  syntax TypeAnnotation ::= r":([_a-zA-Z][_0-9a-zA-Z\\.]*)?" [token]
-  syntax VariableAnnotation ::= r"@(%|%%|[_a-zA-Z][_0-9a-zA-Z\\.]*)?" [token]
-  syntax FieldAnnotation ::= r"%(@|[_a-zA-Z][_0-9a-zA-Z\\.]*)?" [token]
+  syntax TypeAnnotation     [token]
+  syntax VariableAnnotation [token]
+  syntax FieldAnnotation    [token]
   syntax Annotation ::= TypeAnnotation | VariableAnnotation | FieldAnnotation
 
   syntax AnnotationList ::= List{Annotation, ""}
@@ -82,11 +93,8 @@ Here we specify the various complex types offered by Michelson, making the best 
   syntax OptionData ::= "Some" Data
                       | "None"
 
-  syntax ApplicationData ::= Pair | OrData | OptionData
-  syntax Data ::= ApplicationData
+  syntax Data ::= Pair | OrData | OptionData
 ```
-
-[//]: # (What is the role of `ApplicationData`? grepping it does not return much result)
 
 Here we specify the various forms of sequence literals in Michelson, including Map and List literals, and blocks.  The former two are converted to K's hooked sorts during load time.
 
@@ -280,9 +288,115 @@ set used for debugging purposes.
   syntax Instruction ::= TRACE(String)
 ```
 
-We list Macros separately, although in practice macros should not exist by this point (since the external parser eliminates them), we keep them in the grammar for future work.
+
+Here we specify the different formats a Michelson Contract may take.  These will be converted to the first format (`Code ; Storage ; Parameter ;`) by macros immediately after parsing.
 
 ```k
+  syntax CodeDecl ::= "code" Block
+  syntax StorageDecl ::= "storage" Type
+  syntax ParameterDecl ::= "parameter" Type
+
+  syntax Contract ::= CodeDecl ";" StorageDecl ";" ParameterDecl ";"
+                    | CodeDecl ";" ParameterDecl ";" StorageDecl ";"
+                    | StorageDecl ";" CodeDecl ";" ParameterDecl ";"
+                    | ParameterDecl ";" CodeDecl ";" StorageDecl ";"
+                    | StorageDecl ";" ParameterDecl ";" CodeDecl ";"
+                    | ParameterDecl ";" StorageDecl ";" CodeDecl ";"
+
+  syntax Contract ::= CodeDecl ";" StorageDecl ";" ParameterDecl
+                    | CodeDecl ";" ParameterDecl ";" StorageDecl
+                    | StorageDecl ";" CodeDecl ";" ParameterDecl
+                    | ParameterDecl ";" CodeDecl ";" StorageDecl
+                    | StorageDecl ";" ParameterDecl ";" CodeDecl
+                    | ParameterDecl ";" StorageDecl ";" CodeDecl
+```
+
+[//]: # (I suggest to rename "Contract" into "Script"; in Tezos, "contract" usually means everything that is stored at a given address: this includes the script but also the storage and the balance.)
+
+These sorts construct a mapping from Addresses to Types which will specify which contracts are available for this contract to access with the `CONTRACT T` instruction. In principle, any contract on the blockchain should be so accessible, but in practice this would be infeasible and needlessly overcomplicate using the semantics.
+
+```k
+  syntax OtherContractsMapEntry ::= "Elt" String Type
+  syntax OtherContractsMapEntryList ::= List{OtherContractsMapEntry, ";"} [klabel(OtherContractsMapEntryList)]
+```
+
+These sorts construct a mapping from Ints to big\_maps and specify the contents of any big\_maps identified by their index in the storage field.
+
+```k
+  syntax BigMapEntry ::= "Big_map" Int Type Type MapLiteral
+                       | "Big_map" Int Type Type EmptyBlock
+  syntax BigMapEntryList ::= List{BigMapEntry, ";"} [klabel(BigMapEntryList)]
+```
+
+These sorts define the *Loading Groups* for the contract.  Loading groups specify information about the contract execution.  They intentionally look like Micheline primitive applications.  A program in the Michelson semantics consists of a sequence of loading groups separated by semicolons.  The order of these groups does not matter as the sequence is sorted before loading occurs.
+
+- Contract specifies the Michelson contract to execute.
+- Now specifies the timestamp output by the `NOW` instruction.
+- Sender specifies the address output by the `SENDER` instruction.
+- Source specifies the address output by the `SOURCE` instruction.
+- Chain specifies the chain\_id output by the `CHAIN_ID` function.
+- Self specifies the address of the contract output by the `SELF` instruction (the parameter type from the contract group specifies its type).
+- Amount specifies the mutez quantity output by the `AMOUNT` instruction.
+- Balance specifies the mutez quantity output by the `BALANCE` instruction.
+- Contracts specifies the other smart contracts this execution knows about and might query with the `CONTRACT` instruction.
+- ParameterValue specifies the data passed to this execution as a parameter.
+- StorageValue specifies the data passed to this execution as its last storage value.
+- BigMap specifies the big\_map data stored at each big\_map index.
+
+
+[//]: # (Are ParameterValue and StorageValue ever used?)
+
+```k
+  syntax ContractGroup ::= "contract" "{" Contract "}"
+  syntax NowGroup ::= "now" Int
+  syntax SenderGroup ::= "sender" String
+  syntax SourceGroup ::= "source" String
+  syntax ChainGroup ::= "chain_id" MBytes
+  syntax SelfGroup ::= "self" String
+  syntax AmountGroup ::= "amount" Int
+  syntax BalanceGroup ::= "balance" Int
+  syntax ContractsGroup ::= "other_contracts" "{" OtherContractsMapEntryList "}"
+  syntax ParameterValueGroup ::= "parameter_value" Data
+  syntax StorageValueGroup ::= "storage_value" Data
+  syntax BigMapGroup ::= "big_maps" "{" BigMapEntryList "}"
+
+  syntax Group ::= ContractGroup
+                 | ParameterValueGroup
+                 | StorageValueGroup
+                 | NowGroup
+                 | SenderGroup
+                 | SourceGroup
+                 | ChainGroup
+                 | SelfGroup
+                 | AmountGroup
+                 | BalanceGroup
+                 | ContractsGroup
+                 | BigMapGroup
+
+  syntax Groups ::= Group | Group ";" Groups | Group ";"
+```
+
+Programs consist of sequences of these groups, potentially with an extra
+semicolon on the end.
+
+Note that for the default semantics, the `contract`, `parameter`, and `storage`
+groups are required; all other groups are optional.  Accordingly, no empty
+sequence of groups exists in the parser, since at least three groups must be
+present for an execution to work.
+
+```k
+  syntax Pgm ::= Groups
+endmodule
+```
+
+We list Macros separately, although in practice macros should not exist by this
+point (since the external parser eliminates them).
+We keep them in the grammar for future work.
+
+```k
+module MICHELSON-MACRO-SYNTAX
+  imports MICHELSON-COMMON-SYNTAX
+
   syntax Macro
   syntax Instruction ::= Macro
 
@@ -336,110 +450,14 @@ We list Macros separately, although in practice macros should not exist by this 
   syntax Macro ::= "ASSERT_SOME" AnnotationList
   syntax Macro ::= "ASSERT_LEFT" AnnotationList
   syntax Macro ::= "ASSERT_RIGHT" AnnotationList
-  syntax Macro ::= "IF_SOME" AnnotationList Block Block
-  syntax Macro ::= "IF_RIGHT" AnnotationList Block Block
+
+  syntax Instruction ::= "IF_SOME" AnnotationList Block Block
+  rule IF_SOME Annots BS BN => IF_NONE Annots BN BS [anywhere]
+
+  syntax Instruction ::= "IF_RIGHT" AnnotationList Block Block
+  rule IF_RIGHT Annots BL BR => IF_LEFT Annots BR BL [anywhere] 
+  
   syntax Macro ::= "SET_CAR" AnnotationList
   syntax Macro ::= "SET_CDR" AnnotationList
-```
-
-Here we specify the different formats a Michelson Contract may take.  These will be converted to the first format (`Code ; Storage ; Parameter ;`) by macros immediately after parsing.
-
-```k
-  syntax CodeDecl ::= "code" Block
-  syntax StorageDecl ::= "storage" Type
-  syntax ParameterDecl ::= "parameter" Type
-
-  syntax Contract ::= CodeDecl ";" StorageDecl ";" ParameterDecl ";"
-                    | CodeDecl ";" ParameterDecl ";" StorageDecl ";"
-                    | StorageDecl ";" CodeDecl ";" ParameterDecl ";"
-                    | ParameterDecl ";" CodeDecl ";" StorageDecl ";"
-                    | StorageDecl ";" ParameterDecl ";" CodeDecl ";"
-                    | ParameterDecl ";" StorageDecl ";" CodeDecl ";"
-
-  syntax Contract ::= CodeDecl ";" StorageDecl ";" ParameterDecl
-                    | CodeDecl ";" ParameterDecl ";" StorageDecl
-                    | StorageDecl ";" CodeDecl ";" ParameterDecl
-                    | ParameterDecl ";" CodeDecl ";" StorageDecl
-                    | StorageDecl ";" ParameterDecl ";" CodeDecl
-                    | ParameterDecl ";" StorageDecl ";" CodeDecl
-```
-
-[//]: # (I suggest to rename "Contract" into "Script"; in Tezos, "contract" usually means everything that is stored at a given address: this includes the script but also the storage and the balance.)
-
-These sorts construct a mapping from Addresses to Types which will specify which contracts are available for this contract to access with the `CONTRACT T` instruction. In principle, any contract on the blockchain should be so accessible, but in practice this would be infeasible and needlessly overcomplicate using the semantics.
-
-```k
-  syntax OtherContractsMapEntry ::= "Elt" String Type
-  syntax OtherContractsMapEntryList ::= OtherContractsMapEntry | OtherContractsMapEntry ";" OtherContractsMapEntryList
-  syntax OtherContractsMap ::= EmptyBlock | "{" OtherContractsMapEntryList "}"
-```
-
-These sorts construct a mapping from Ints to big\_maps and specify the contents of any big\_maps identified by their index in the storage field.
-
-```k
-  syntax BigMapEntry ::= "Big_map" Int Type Type MapLiteral
-                       | "Big_map" Int Type Type EmptyBlock
-  syntax BigMapEntryList ::= BigMapEntry | BigMapEntry ";" BigMapEntryList
-  syntax BigMapMap ::= EmptyBlock | "{" BigMapEntryList "}"
-```
-
-These sorts define the *Loading Groups* for the contract.  Loading groups specify information about the contract execution.  They intentionally look like Micheline primitive applications.  A program in the Michelson semantics consists of a sequence of loading groups separated by semicolons.  The order of these groups does not matter as the sequence is sorted before loading occurs.
-
-- Contract specifies the Michelson contract to execute.
-- Now specifies the timestamp output by the `NOW` instruction.
-- Sender specifies the address output by the `SENDER` instruction.
-- Source specifies the address output by the `SOURCE` instruction.
-- Chain specifies the chain\_id output by the `CHAIN_ID` function.
-- Self specifies the address of the contract output by the `SELF` instruction (the parameter type from the contract group specifies its type).
-- Amount specifies the mutez quantity output by the `AMOUNT` instruction.
-- Balance specifies the mutez quantity output by the `BALANCE` instruction.
-- Contracts specifies the other smart contracts this execution knows about and might query with the `CONTRACT` instruction.
-- ParameterValue specifies the data passed to this execution as a parameter.
-- StorageValue specifies the data passed to this execution as its last storage value.
-- BigMap specifies the big\_map data stored at each big\_map index.
-
-
-[//]: # (Are ParameterValue and StorageValue ever used?)
-
-```k
-  syntax ContractGroup ::= "contract" "{" Contract "}"
-  syntax NowGroup ::= "now" Int
-  syntax SenderGroup ::= "sender" String
-  syntax SourceGroup ::= "source" String
-  syntax ChainGroup ::= "chain_id" MBytes
-  syntax SelfGroup ::= "self" String
-  syntax AmountGroup ::= "amount" Int
-  syntax BalanceGroup ::= "balance" Int
-  syntax ContractsGroup ::= "other_contracts" OtherContractsMap
-  syntax ParameterValueGroup ::= "parameter_value" Data
-  syntax StorageValueGroup ::= "storage_value" Data
-  syntax BigMapGroup ::= "big_maps" BigMapMap
-
-  syntax Group ::= ContractGroup
-                 | ParameterValueGroup
-                 | StorageValueGroup
-                 | NowGroup
-                 | SenderGroup
-                 | SourceGroup
-                 | ChainGroup
-                 | SelfGroup
-                 | AmountGroup
-                 | BalanceGroup
-                 | ContractsGroup
-                 | BigMapGroup
-
-  syntax Groups ::= Group | Group ";" Groups | Group ";"
-```
-
-Programs consist of sequences of these groups, potentially with an extra
-semicolon on the end.
-
-Note that for the default semantics, the `contract`, `parameter`, and `storage`
-groups are required; all other groups are optional.  Accordingly, no empty
-sequence of groups exists in the parser, since at least three groups must be
-present for an execution to work.
-
-```k
-  syntax Pgm ::= Groups
 endmodule
 ```

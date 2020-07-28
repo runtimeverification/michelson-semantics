@@ -1,0 +1,4 @@
+code { PAIR } ; 
+input { Stack_elt nat $I1 ; Stack_elt nat $I2 } ;
+output { Stack_elt (pair nat nat) $P } ;
+postcondition { { PUSH (pair nat nat) $P ; UNPAIR ; PUSH nat $I1 ; COMPARE ; EQ ; SWAP ; PUSH nat $I2 ; COMPARE ; EQ ; AND } } 

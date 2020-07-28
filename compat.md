@@ -48,7 +48,6 @@ module CONTRACT-EXPANDER
   rule #StackEltToPush(Stack_elt T D) => { PUSH .AnnotationList T D } [owise]
 
   syntax Block ::= #StackToPush(LiteralStack) [function]
-  rule #StackToPush( { .StackElementList } ) => { }
 
   syntax Block ::= #StackToPushAux(StackElementList, Block) [function]
   rule #StackToPush( { Se } ) => #StackToPushAux(Se, { DROP .AnnotationList 0 })
@@ -138,27 +137,31 @@ module EXTRACTOR
   rule #GroupContent(self C) => C
   rule #GroupContent(amount C) => C
   rule #GroupContent(balance C) => C
-  rule #GroupContent(other_contracts C) => C
+  rule #GroupContent(other_contracts { C }) => C
   rule #GroupContent(code C) => C
   rule #GroupContent(input C) => C
   rule #GroupContent(output C) => C
   rule #GroupContent(parameter C) => C
-  rule #GroupContent(big_maps C) => C
+  rule #GroupContent(big_maps { C }) => C
   rule #GroupContent(parameter_value C) => C
   rule #GroupContent(storage_value C) => C
 
-  syntax JSON ::= #GroupsToJson(Groups) [function]
-  syntax JSONs ::= #GroupsToJsonAux(Groups) [function]
-  syntax JSON ::= #GroupToJson(Group) [function]
+  syntax JSON  ::= #GroupsToJson(Groups)      [function]
+  syntax JSONs ::= #GroupsToJsonInner(Groups) [function]
+  syntax JSON  ::= #GroupToJson(Group)        [function]
+  syntax JSON  ::= #GroupToJson(Group,Bool)   [function]
 
-  rule #GroupsToJson(Gs) => { #GroupsToJsonAux(Gs) }
+  rule #GroupsToJson(Gs) => { #GroupsToJsonInner(Gs) }
 
-  rule #GroupsToJsonAux(G ; Gs) => #GroupToJson(G) , #GroupsToJsonAux(Gs)
-  rule #GroupsToJsonAux(G) => #GroupToJson(G)
-  rule #GroupsToJsonAux(G ;) => #GroupToJson(G)
+  rule #GroupsToJsonInner(G ; Gs) => #GroupToJson(G) , #GroupsToJsonInner(Gs)
+  rule #GroupsToJsonInner(G)      => #GroupToJson(G)
+  rule #GroupsToJsonInner(G ;)    => #GroupToJson(G)
 
+  // check if we need to add braces around our output group
+  rule #GroupToJson(G) => #GroupToJson(G, #KeyFromGroup(G) in SetItem("other_contracts") SetItem("big_maps"))
 
-  rule #GroupToJson(G) => #KeyFromGroup(G) : #unparse(#GroupContent(G))
+  rule #GroupToJson(G, false) => #KeyFromGroup(G) :             #unparse(#GroupContent(G))
+  rule #GroupToJson(G, true)  => #KeyFromGroup(G) : "{" +String #unparse(#GroupContent(G)) +String "}"
 
   rule <k> Gs:Groups => . </k>
        <out> ... .List => ListItem(JSON2String(#GroupsToJson(Gs))) </out>
@@ -292,8 +295,8 @@ module OUTPUT-COMPARE
                      )
        </out> [owise]
 
-  rule <k> other_contracts M ; Gs => Gs </k>
-       <knownaddrs> _ => #OtherContractsMapToKMap(M) </knownaddrs>
+  rule <k> other_contracts { M }; Gs => Gs </k>
+       <knownaddrs> _ => #OtherContractsMapEntryListToKMap(M) </knownaddrs>
 
   rule <k> real_output AOS ; output EOS ; => #CheckOutput(EOS, AOS) ... </k>
 endmodule

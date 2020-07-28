@@ -36,9 +36,11 @@ export PYTHONPATH
 
 .PHONY: all clean distclean clean-tests                                                             \
         deps deps-k deps-tezos                                                                      \
-        defn defn-llvm                                                                              \
+        defn defn-k defn-compat                                                                     \
+        defn-llvm defn-symbolic                                                                     \
+        defn-contract-expander defn-extractor defn-input-creator defn-output-compare                \
         build build-k build-compat                                                                  \
-        build-llvm build-prove build-symbolic                                                       \
+        build-llvm build-symbolic                                                                   \
         build-contract-expander build-extractor build-input-creator build-output-compare            \
         test test-unit test-unit-failing test-cross test-cross-faling test-prove test-prove-failing
 .SECONDARY:
@@ -101,7 +103,8 @@ tangle_llvm    := k | concrete
 
 HOOK_NAMESPACES := TIME MICHELSON
 
-KOMPILE_OPTS += --hook-namespaces "$(HOOK_NAMESPACES)" --gen-bison-parser --emit-json -w all -Wno unused-var -Wno unused-symbol
+# NOTE: -W useless-rule check is quite expensive (increasing compilation times by several times), use -Wno useless-rule unless this check is needed!!!
+KOMPILE_OPTS += --hook-namespaces "$(HOOK_NAMESPACES)" --gen-bison-parser --emit-json -w all -Wno unused-var -Wno unused-symbol -Wno useless-rule
 
 ifneq (,$(RELEASE))
     KOMPILE_OPTS += -O3
@@ -128,11 +131,11 @@ KOMPILE_HASKELL := kompile --debug --backend haskell --md-selector "$(tangle_has
                    $(HASKELL_KOMPILE_OPTS)
 
 defn:        defn-k defn-compat
-defn-k:      defn-llvm defn-prove defn-symbolic
+defn-k:      defn-llvm defn-symbolic
 defn-compat: defn-contract-expander defn-extractor defn-input-creator defn-output-compare
 
 build:        build-k build-compat
-build-k:      build-llvm build-prove build-symbolic
+build-k:      build-llvm build-symbolic
 build-compat: build-contract-expander build-extractor build-input-creator build-output-compare
 
 # LLVM
@@ -152,24 +155,6 @@ $(llvm_kompiled): $(llvm_files)
 	                --directory $(llvm_dir) -I $(CURDIR)  \
 	                --main-module $(llvm_main_module)     \
 	                --syntax-module $(llvm_syntax_module)
-
-### Prove
-
-prove_dir           := $(DEFN_DIR)/prove
-prove_files         := $(ALL_FILES)
-prove_main_file     := unit-test/unit-test
-prove_main_module   := UNIT-TEST-DRIVER
-prove_syntax_module := UNIT-TEST-SYNTAX
-prove_kompiled      := $(prove_dir)/$(notdir $(prove_main_file))-kompiled/definition.kore
-
-defn-prove:  $(prove_files)
-build-prove: $(prove_kompiled)
-
-$(prove_kompiled): $(prove_files)
-	$(KOMPILE_HASKELL) $(prove_main_file).md                  \
-	                   --directory $(prove_dir) -I $(CURDIR)  \
-	                   --main-module $(prove_main_module)     \
-	                   --syntax-module $(prove_syntax_module)
 
 ### Symbolic
 
@@ -273,7 +258,7 @@ test: test-unit test-cross test-prove
 
 # Unit
 
-unit_tests         := $(wildcard tests/unit/*.tzt)
+unit_tests         := $(wildcard tests/unit/*.tzt) $(wildcard tests/macros/*.tzt)
 unit_tests_failing := $(shell cat tests/failing.unit)
 unit_tests_passing := $(filter-out $(unit_tests_failing), $(unit_tests))
 
@@ -301,7 +286,7 @@ tests/%.symbolic: tests/% $(symbolic_kompiled)
 
 # Cross Validation
 
-cross_tests         := $(wildcard tests/unit/*.tzt)
+cross_tests         := $(wildcard tests/unit/*.tzt) $(wildcard tests/macros/*.tzt)
 cross_tests_failing := $(shell cat tests/failing.cross)
 cross_tests_passing := $(filter-out $(cross_tests_failing), $(cross_tests))
 

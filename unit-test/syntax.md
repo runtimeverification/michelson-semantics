@@ -27,7 +27,14 @@ as the reference implementation by passing a conformance test suite.
 
 ```k
 module UNIT-TEST-SYNTAX
+  imports UNIT-TEST-COMMON-SYNTAX
   imports MICHELSON-SYNTAX
+endmodule
+```
+
+```k
+module UNIT-TEST-COMMON-SYNTAX
+  imports MICHELSON-COMMON-SYNTAX
   imports MICHELSON-INTERNAL-SYNTAX
 ```
 
@@ -100,7 +107,7 @@ contract pushed by the `SELF` instruction.
 ```
 
 Besides these, the `now`, `sender`, `source`, `chain_id`, `self`, `amount`, and
-`balance`, `other_contracts`, and ``big_maps` groups are defined in
+`balance`, `other_contracts`, and `big_maps` groups are defined in
 [michelson/syntax.md](michelson/syntax.md)
 
 ```k
@@ -116,12 +123,21 @@ pre- and post-conditions as well as invariants to enable verification.
 ```k
 module SYMBOLIC-UNIT-TEST-SYNTAX
   imports UNIT-TEST-SYNTAX
+  imports SYMBOLIC-UNIT-TEST-COMMON-SYNTAX
+
+  syntax SymbolicData ::= r"$[_a-zA-Z][_0-9a-zA-Z]*" [token]
+endmodule
+```
+
+```k
+module SYMBOLIC-UNIT-TEST-COMMON-SYNTAX
+  imports UNIT-TEST-COMMON-SYNTAX
 ```
 
 We extend `Data` to allow symbolic variables.
 
 ```k
-  syntax SymbolicData ::= r"$[_a-zA-Z][_0-9a-zA-Z]*" [token]
+  syntax SymbolicData [token]
   syntax Data ::= SymbolicData
 ```
 
@@ -130,13 +146,13 @@ contains a well-typed Michelson expression that consumes an empty input stack
 and produces an output stack of type `Stack_elt bool _`.
 
 ```k
-  syntax PreconditionGroup ::= "precondition" Blocks
-  syntax PostconditionGroup ::= "postcondition" Blocks
+  syntax PreconditionGroup ::= "precondition" "{" BlockList "}"
+  syntax PostconditionGroup ::= "postcondition" "{" BlockList "}"
   syntax Group ::= PreconditionGroup | PostconditionGroup
 ```
 
 An invariant is an annotated pair of a stack shape (represented as a
-`LiteralStack`) and a list of predicates (represented as `Blocks`).
+`LiteralStack`) and a list of predicates (represented as `BlockList`).
 The annotation determines to which looping instruction sequence (i.e. `LOOP`,
 `LOOP_LEFT`, or `ITER`) an invariant corresponds.
 When the program reaches the head of an annotated loop, we check that the actual
@@ -149,7 +165,7 @@ variables.
 
 ```k
   syntax InvariantsGroup ::= "invariant" VariableAnnotation Invariant
-  syntax Invariant ::= LiteralStack Blocks
+  syntax Invariant ::= LiteralStack "{" BlockList "}"
   syntax Group ::= InvariantsGroup
 ```
 

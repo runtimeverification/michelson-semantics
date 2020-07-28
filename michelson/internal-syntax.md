@@ -9,7 +9,7 @@ should not depend upon UNIT-TEST-SYNTAX.
 requires "michelson/syntax.md"
 
 module MICHELSON-INTERNAL-SYNTAX
-  imports MICHELSON-SYNTAX
+  imports MICHELSON-COMMON-SYNTAX
 
 ```
 
@@ -116,8 +116,7 @@ When running Michelson unit tests, we store pre- and post-conditions as lists
 of Michelson sequences that produce a stack of the form `Stack_elt bool`.
 
 ```k
-  syntax BlockList ::= Block | Block ";" BlockList
-  syntax Blocks ::= EmptyBlock | "{" BlockList "}"
+  syntax BlockList ::= List{Block, ";"} [klabel(BlockList)]
 ```
 
 ```k

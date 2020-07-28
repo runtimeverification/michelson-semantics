@@ -83,7 +83,6 @@ requires "michelson/common.md"
 requires "michelson/types.md"
 
 module MICHELSON-CONFIG
-  imports MICHELSON-SYNTAX
   imports MICHELSON-COMMON
   imports MICHELSON-TYPES
   imports DOMAINS
@@ -315,8 +314,8 @@ of Michelson code. We list these configuration cells here:
    symbolic input and output values.
 
     ```k
-                  <pre> {}:Blocks </pre>
-                  <post> {}:Blocks </post>
+                  <pre> .BlockList </pre>
+                  <post> .BlockList </post>
                   <invs> .Map </invs>
     ```
 

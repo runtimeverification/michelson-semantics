@@ -11,7 +11,6 @@ requires "michelson/internal-syntax.md"
 requires "michelson/types.md"
 
 module MICHELSON
-  imports MICHELSON-SYNTAX
   imports MICHELSON-CONFIG
   imports MICHELSON-INTERNAL-SYNTAX
   imports DOMAINS
@@ -82,8 +81,8 @@ Loading the other contracts map involves transforming its map entry list style
 concrete representation to a K-Michelson map.
 
 ```k
-  rule <k> other_contracts M => .K ... </k>
-       <knownaddrs> .Map => #OtherContractsMapToKMap(M) </knownaddrs>
+  rule <k> other_contracts { M } => .K ... </k>
+       <knownaddrs> .Map => #OtherContractsMapEntryListToKMap(M) </knownaddrs>
 ```
 
 These two groups contain information from the contract itself, but they are
@@ -106,17 +105,13 @@ Similar to the `other_contracts` rule, we need to transform BigMaps into the
 appropriate K-Michelson type.
 
 ```k
-  rule <k> big_maps M => .K ... </k>
-       <bigmaps> .Map => #BigMapsToKMap(M) </bigmaps>
+  rule <k> big_maps { M } => .K ... </k>
+       <bigmaps> .Map => #BigMapsEntryListToKMap(M) </bigmaps>
 
-  syntax Map ::= #BigMapsToKMap(BigMapMap) [function]
   syntax Map ::= #BigMapsEntryListToKMap(BigMapEntryList) [function]
   syntax Map ::= #BigMapsEntryToKMap(BigMapEntry) [function]
 
-  rule #BigMapsToKMap({ }) => .Map
-  rule #BigMapsToKMap({ EL }) => #BigMapsEntryListToKMap(EL)
-
-  rule #BigMapsEntryListToKMap(E) => #BigMapsEntryToKMap(E)
+  rule #BigMapsEntryListToKMap(.BigMapEntryList) => .Map
   rule #BigMapsEntryListToKMap(E ; Es) => #BigMapsEntryToKMap(E) #BigMapsEntryListToKMap(Es)
 
   syntax KItem ::= "#BigMap" "(" SequenceData "," Type ")"
@@ -840,12 +835,6 @@ Sum types are similar to options.
 
   rule <k> IF_LEFT A BT BF => #HandleAnnotations(A) ~> BF ... </k>
        <stack> Right V => V ... </stack>
-
-  rule <k> IF_RIGHT A BT BF => #HandleAnnotations(A) ~> BT ... </k>
-       <stack> Right V => V ... </stack>
-
-  rule <k> IF_RIGHT A BT BF => #HandleAnnotations(A) ~> BF ... </k>
-       <stack> Left V => V ... </stack>
 ```
 
 Lists are somewhat nontrivial in that we need to keep track of typing
