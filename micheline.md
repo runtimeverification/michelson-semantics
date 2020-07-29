@@ -8,6 +8,8 @@ We parse and validate Michelson in the following fashion:
     - no whitespace sensitivity
     - only admits primitives known to K-Michelson as instructions, macros, fields, or data constructors
     - only admits annotations known to K-Michelson
+    - lexer limitation means annotations with a number immediately following the sigil are tokenized as
+      two separate tokens instead of a single annotation (`@1` tokenizes as `@` and `1`)
 
 2.  Use internal hooks to re-interpret AST as abstract K-flavored Micheline AST (K-MICHELINE-ABSTRACT-SYNTAX)
 
