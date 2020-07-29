@@ -117,8 +117,8 @@ module K-MICHELINE-ABSTRACT-SYNTAX
   syntax PrimitiveArg ::= MichelineNode [klabel(Node0),    symbol]
                         | Annotation    [klabel(AnnotArg), symbol]
 
-  syntax PrimitiveArgs  ::= ".PrimitiveArgs"           [klabel(.PrimArgs), symbol]
-                          | PrimitiveArg PrimitiveArgs [klabel(PrimArgsCons), symbol, right]
+  syntax PrimitiveArgs ::= ".PrimitiveArgs"              [klabel(.PrimArgs),    symbol,        userList(*)]
+                         | PrimitiveArg "" PrimitiveArgs [klabel(PrimArgsCons), symbol, right, userList(*)]
 endmodule
 ```
 
