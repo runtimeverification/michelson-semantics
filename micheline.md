@@ -160,6 +160,12 @@ module K-MICHELINE-IR-TRANSLATION
 
   syntax MichelineIRNode ::= NodeToPrim(Primitive, PrimArgData)
 
+  rule (N:Primitive):MichelineNode      => NodeToPrim(N, #PAD(noAnnotData, .PrimitiveArgs)) [anywhere]
+  rule (N:Primitive Args):MichelineNode => NodeToPrim(N, toPrimArgData(Args))               [anywhere]
+
+  // rule NodeToPrim(I:Instruction,  (Annots, Args)) => Inst(I,Annots,Args)
+  // rule NodeToPrim(D:MichelonData, (Annots, Args)) => Data(D, )
+
   // miscellaneous helper functions
   syntax PrimArgData ::= #PAD(AnnotationData, PrimitiveArgs)
 
@@ -167,12 +173,11 @@ module K-MICHELINE-IR-TRANSLATION
                        | toPrimArgData(PrimitiveArgs, PrimArgData) [function]
 
   rule toPrimArgData(Args) => toPrimArgData(Args, #PAD(noAnnotData, .PrimitiveArgs))
-  // TODO: reverse the argument list before returning it because it is flipped
-  rule toPrimArgData(.PrimitiveArgs, PAD) => PAD
+  rule toPrimArgData(.PrimitiveArgs, #PAD(Annots, Args)) => #PAD(Annots, Args)
   rule toPrimArgData(A:VarAnnotation   Rest, #PAD(VAs TAs FAs, Args)) => toPrimArgData(Rest, #PAD(VAs ; A TAs FAs, Args))
   rule toPrimArgData(A:TypeAnnotation  Rest, #PAD(VAs TAs FAs, Args)) => toPrimArgData(Rest, #PAD(VAs TAs ; A FAs, Args))
   rule toPrimArgData(A:FieldAnnotation Rest, #PAD(VAs TAs FAs, Args)) => toPrimArgData(Rest, #PAD(VAs TAs FAs ; A, Args))
-  rule toPrimArgData(N:MichelineNode   Rest, #PAD(VAs TAs FAs, Args)) => toPrimArgData(Rest, #PAD(VAs TAs FAs, N Args))
+  rule toPrimArgData(N:MichelineNode   Rest, #PAD(VAs TAs FAs, Args)) => toPrimArgData(Rest, #PAD(VAs TAs FAs,Args N))
 endmodule
 ```
 
