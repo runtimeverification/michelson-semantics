@@ -43,7 +43,7 @@ module K-MICHELINE-CONCRETE-SYNTAX
   imports INT-SYNTAX
   imports STRING-SYNTAX
 
-  syntax Pgm ::= MichelineNodes [klabel(MichelsonPgm), symbol]
+  syntax Pgm ::= NeMichelineNodes [klabel(MichelsonPgm), symbol]
 
   syntax SequenceNode         ::= "{" MichelineNodes "}"    [klabel(SeqNodeCtor), symbol]
   syntax PrimitiveApplication ::= Primitive NePrimitiveArgs [klabel(AppNodeCtor), symbol]
