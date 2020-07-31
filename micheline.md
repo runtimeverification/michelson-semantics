@@ -107,45 +107,35 @@ module K-MICHELINE-ABSTRACT-SYNTAX
   imports STRING-SYNTAX
   imports MAP
 
-  // Abstract
-  syntax SequenceNode         ::= SeqNodeCtor(AbsPrimitiveArgs)           [klabel(SeqNodeCtor), symbol]
-  syntax PrimitiveApplication ::= AppNodeCtor(Primitive,AbsPrimitiveArgs) [klabel(AppNodeCtor), symbol]
+  syntax SequenceNode         ::= "{" PrimitiveArgs "}"                [klabel(SeqNodeCtor), symbol]
+  syntax PrimitiveApplication ::= AppNodeCtor(Primitive,PrimitiveArgs) [klabel(AppNodeCtor), symbol]
 
-  syntax AbsMichelineNode ::= IntNode(Int)               [klabel(IntNode),    symbol]
+  syntax MichelineNode ::= IntNode(Int)                  [klabel(IntNode),    symbol]
                          | StringNode(String)            [klabel(StringNode), symbol]
                          | BytesNode(BytesToken)         [klabel(BytesNode),  symbol]
                          | SeqNode(SequenceNode)         [klabel(SeqNode),    symbol]
                          | PrimNode(Primitive)           [klabel(PrimNode),   symbol]
                          | AppNode(PrimitiveApplication) [klabel(AppNode),    symbol]
-
-  syntax AbsPrimitiveArg ::= Node(AbsMichelineNode) [klabel(Node),     symbol]
-                        | AnnotArg(Annotation)   [klabel(AnnotArg), symbol]
-
-  syntax AbsPrimitiveArgs ::= ".AbsPrimitiveArgs"               [klabel(.PrimArgs),    symbol       ]
-                         | AbsPrimitiveArg "|" AbsPrimitiveArgs [klabel(PrimArgsCons), symbol, right]
-
-  // Semantics
-  syntax AbsMichelineNode ::= MichelineNode
-  syntax AbsPrimitiveArg  ::= PrimitiveArg
-
-  syntax MichelineNodes ::= MichelineNode ";" MichelineNodes
-                          | ".Nodes"
-  syntax PrimitiveArgs ::= List{PrimitiveArg,""}
-
-  syntax MichelineNode ::= Int
+                         | Int
                          | String
                          | BytesToken
-                         | "{" MichelineNodes "}"
+                         | SequenceNode
                          | Primitive Map PrimitiveArgs
 
-  syntax PrimitiveArg ::= MichelineNode
+  syntax PrimitiveArg ::= Node(MichelineNode)    [klabel(Node),     symbol]
+                        | AnnotArg(Annotation)   [klabel(AnnotArg), symbol]
+                        | MichelineNode
                         | Annotation
 
-  rule IntNode(I)    => I [anywhere]
+  syntax PrimitiveArgs ::= ".PrimitiveArgs"              [klabel(.PrimArgs),    symbol       ]
+                         | PrimitiveArg "" PrimitiveArgs [klabel(PrimArgsCons), symbol, right]
+
+  rule IntNode(I) => I [anywhere]
   rule StringNode(S) => S [anywhere]
-  rule BytesNode(B)  => B [anywhere]
-  rule AnnotArg(A)   => A [anywhere]
-  rule Node(N)       => N [anywhere]
+  rule BytesNode(B) => B [anywhere]
+  rule SeqNode(S) => S [anywhere]
+  rule AnnotArg(A) => A [anywhere]
+  rule Node(N) => N [anywhere]
 endmodule
 ```
 
@@ -155,8 +145,6 @@ module K-MICHELINE-PRIMITIVE
   imports INT
   imports STRING
   imports BYTES
-
-  rule SeqNode(S)    => "{" toNodes(S) "}" [anywhere]
 
   // Internal Primitive Definition
   // Primitive has three arguments
@@ -171,16 +159,12 @@ module K-MICHELINE-PRIMITIVE
   // Internal Primitive Conversion
   syntax MichelineNode ::= toPrim(Primitive, PrimArgData)
 
-  rule PrimNode(N:Primitive)                  => toPrim(N, #PAD(newAnnotMap, .AbsPrimitiveArgs)) [anywhere]
-  rule AppNode(AppNodeCtor(N:Primitive,Args)) => toPrim(N, toPrimArgData(Args))                  [anywhere]
-  rule toPrim(P,#PAD(Annots, Args))           => P Annots Args                                   [anywhere]
+  rule PrimNode(N:Primitive)                  => toPrim(N, #PAD(newAnnotMap, .PrimitiveArgs)) [anywhere]
+  rule AppNode(AppNodeCtor(N:Primitive,Args)) => toPrim(N, toPrimArgData(Args))               [anywhere]
+  rule toPrim(P,#PAD(Annots, Args))           => P Annots Args                                [anywhere]
 
   // Auxiliary Functions
   // list helpers
-  syntax MichelineNodes ::= toNodes(AbsPrimitiveArgs) [function]
-  rule toNodes(N:AbsMichelineNode | Args) => N ; toNodes(Args)
-  rule toNodes(.AbsPrimitiveArgs)         => .Nodes
-
   syntax AnnotationList ::= revAnnots(AnnotationList)                 [function, functional]
                           | revAnnots(AnnotationList, AnnotationList) [function, functional]
   rule revAnnots(As) => revAnnots(As, .AnnotationList)
@@ -190,8 +174,8 @@ module K-MICHELINE-PRIMITIVE
   syntax PrimitiveArgs ::= revArgs(PrimitiveArgs)                [function, functional]
                          | revArgs(PrimitiveArgs, PrimitiveArgs) [function, functional]
   rule revArgs(As) => revArgs(As, .PrimitiveArgs)
-  rule revArgs(A | As:PrimitiveArgs, As':PrimitiveArgs) => revArgs(As, A | As')
-  rule revArgs(      .PrimitiveArgs, As':PrimitiveArgs) => As'
+  rule revArgs(A As:PrimitiveArgs, As':PrimitiveArgs) => revArgs(As, A As')
+  rule revArgs(    .PrimitiveArgs, As':PrimitiveArgs) => As'
 
   // map helpers
   syntax Map ::= "newAnnotMap" [function, functional]
