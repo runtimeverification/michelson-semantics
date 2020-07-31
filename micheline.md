@@ -51,7 +51,7 @@ module K-MICHELINE-CONCRETE-SYNTAX
                                 | "{"    NeMichelineNodes "}" [klabel(SeqNodeCtor), symbol]
   syntax PrimitiveApplication ::= Primitive NePrimitiveArgs   [klabel(AppNodeCtor), symbol]
 
-  syntax MichelineNode  ::= MichelineNode0       [klabel(Node0),      symbol]
+  syntax MichelineNode  ::= MichelineNode0       [klabel(Node),       symbol]
   syntax MichelineNode0 ::= Int                  [klabel(IntNode),    symbol]
                           | String               [klabel(StringNode), symbol]
                           | BytesToken           [klabel(BytesNode),  symbol]
@@ -59,7 +59,7 @@ module K-MICHELINE-CONCRETE-SYNTAX
                           | Primitive            [klabel(PrimNode),   symbol]
                           | PrimitiveApplication [klabel(AppNode),    symbol]
 
-  syntax PrimitiveArg  ::= PrimitiveArg0                [klabel(Node0),      symbol]
+  syntax PrimitiveArg  ::= PrimitiveArg0                [klabel(Node),       symbol]
                          | Annotation                   [klabel(AnnotArg),   symbol]
   syntax PrimitiveArg0 ::= Int                          [klabel(IntNode),    symbol]
                          | String                       [klabel(StringNode), symbol]
