@@ -125,25 +125,32 @@ endmodule
 ```
 
 ```k
-module K-MICHELINE-IR
-  imports K-MICHELINE-TO-MICHELSON-COMMON-SYNTAX
+module K-MICHELINE-PRIMITIVE
   imports K-MICHELINE-ABSTRACT-SYNTAX
   imports INT
   imports STRING
   imports BYTES
   imports MAP
 
-  // `Map` argument has type: AnnotationType |-> AnnotationList
-  syntax MichelineNode   ::= MichelineIRNode
-  syntax MichelineIRNode ::= Type(Type,          Map, PrimitiveArgs)
-                           | Inst(Instruction,   Map, PrimitiveArgs)
-                           | Macro(Macro,        Map, PrimitiveArgs)
-                           | Data(MichelsonData, Map, PrimitiveArgs)
-                           | Field(Field, PrimitiveArgs)
-
-  syntax AnnotationList ::= List{Annotation, ";"}
+  // Internal Primitive Definition
+  // Primitive has three arguments
+  //
+  // 1. Primitive name
+  // 2. `Map` argument has type: AnnotationType |-> AnnotationList
+  // 3. Primitive argument list (possibly empty)
+  //
   syntax AnnotationType ::= "#@" | "#:" | "#%" | "#!"
+  syntax AnnotationList ::= List{Annotation, ";"}
+  syntax MichelineNode  ::= Prim(Primitive, Map, PrimitiveArgs)
 
+  // Internal Primitive Conversion
+  syntax PrimitiveArg ::= toPrim(Primitive, PrimArgData)
+
+  rule (N:Primitive):PrimitiveArg      => toPrim(N, #PAD(newAnnotMap, .PrimitiveArgs)) [anywhere]
+  rule (N:Primitive Args):PrimitiveArg => toPrim(N, toPrimArgData(Args))               [anywhere]
+  rule toPrim(P,#PAD(Annots, Args))    => (Prim(P,Annots,Args)):PrimitiveArg           [anywhere]
+
+  // Auxiliary Functions
   // list helpers
   syntax AnnotationList ::= revAnnots(AnnotationList)                 [function, functional]
                           | revAnnots(AnnotationList, AnnotationList) [function, functional]
@@ -164,32 +171,7 @@ module K-MICHELINE-IR
                       #% |-> .AnnotationList
                       #! |-> .AnnotationList
 
-  syntax Bool ::= emptyAnnotMap(Map) [function, functional]
-  rule emptyAnnotMap(#@ |-> VAs #: |-> TAs #% |-> FAs #! |-> LAs) =>
-               VAs ==K .AnnotationList
-       andBool TAs ==K .AnnotationList
-       andBool FAs ==K .AnnotationList
-       andBool LAs ==K .AnnotationList
-endmodule
-```
-
-```k
-module K-MICHELINE-IR-TRANSLATION
-  imports K-MICHELINE-IR
-
-  // Conversion rules
-  syntax PrimitiveArg ::= NodeToPrim(Primitive, PrimArgData)
-
-  // rule (N:Primitive):PrimitiveArg      => NodeToPrim(N, #PAD(newAnnotMap, .PrimitiveArgs)) [anywhere]
-  // rule (N:Primitive Args):PrimitiveArg => NodeToPrim(N, toPrimArgData(Args))               [anywhere]
-
-  // rule NodeToPrim(I:Instruction,   #PAD(Annots, Args))           => (Inst(I,Annots,Args)):PrimitiveArg [anywhere]
-  // rule NodeToPrim(D:MichelsonData, #PAD(Annots, Args))           => (Data(D,Annots,Args)):PrimitiveArg [anywhere]
-  // rule NodeToPrim(F:Field,         #PAD(Annots, A:PrimitiveArg)) => (Field(F,      A   )):PrimitiveArg [anywhere]
-
-  // rule NodeToPrim(M:Macro,         #PAD(Annots, Args)) =>
-
-  // Primitive Argument Classifier
+  // Primitive argument annotation separator
   syntax PrimArgData ::= #PAD(Map, PrimitiveArgs)
 
   syntax PrimArgData ::= toPrimArgData(PrimitiveArgs)              [function]
@@ -215,8 +197,7 @@ endmodule
 
 ```k
 module MICHELSON-PARSER
-  imports K-MICHELINE-TO-MICHELSON-COMMON-SYNTAX
-  imports K-MICHELINE-IR-TRANSLATION
+  imports K-MICHELINE-PRIMITIVE
 
   syntax Pgm ::= PrimitiveArgs [klabel(MichelsonPgm), symbol]
   configuration <k> $PGM:Pgm </k>
