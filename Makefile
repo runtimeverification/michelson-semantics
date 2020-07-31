@@ -84,6 +84,7 @@ deps-tezos: $(TEZOS_SUBMODULE)/make.timestamp
 # --------
 
 SOURCE_FILES       := compat                    \
+                      micheline	                \
                       michelson/common          \
                       michelson/configuration   \
                       michelson/internal-syntax \
@@ -139,9 +140,9 @@ build-compat: build-contract-expander build-extractor build-input-creator build-
 
 llvm_dir           := $(DEFN_DIR)/llvm
 llvm_files         := $(ALL_FILES)
-llvm_main_file     := unit-test/unit-test
-llvm_main_module   := UNIT-TEST-DRIVER
-llvm_syntax_module := UNIT-TEST-SYNTAX
+llvm_main_file     := michelson/michelson
+llvm_main_module   := MICHELSON
+llvm_syntax_module := K-MICHELINE-CONCRETE-SYNTAX
 llvm_kompiled      := $(llvm_dir)/$(notdir $(llvm_main_file))-kompiled/interpreter
 
 defn-llvm:  $(llvm_files)
