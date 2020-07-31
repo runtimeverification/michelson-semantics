@@ -130,12 +130,12 @@ module K-MICHELINE-ABSTRACT-SYNTAX
   syntax PrimitiveArgs ::= ".PrimitiveArgs"              [klabel(.PrimArgs),    symbol       ]
                          | PrimitiveArg "" PrimitiveArgs [klabel(PrimArgsCons), symbol, right]
 
-  rule IntNode(I)    => I [anywhere]
+  rule IntNode(I) => I [anywhere]
   rule StringNode(S) => S [anywhere]
-  rule BytesNode(B)  => B [anywhere]
-  rule SeqNode(S)    => S [anywhere]
-  rule AnnotArg(A)   => A [anywhere]
-  rule Node(N)       => N [anywhere]
+  rule BytesNode(B) => B [anywhere]
+  rule SeqNode(S) => S [anywhere]
+  rule AnnotArg(A) => A [anywhere]
+  rule Node(N) => N [anywhere]
 endmodule
 ```
 
