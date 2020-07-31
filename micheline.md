@@ -109,12 +109,12 @@ module K-MICHELINE-ABSTRACT-SYNTAX
   syntax SequenceNode         ::= "{" PrimitiveArgs "}"   [klabel(SeqNodeCtor), symbol]
   syntax PrimitiveApplication ::= Primitive PrimitiveArgs [klabel(AppNodeCtor), symbol]
 
-  syntax MichelineNode ::= Int                  [klabel(IntNode),    symbol]
-                         | String               [klabel(StringNode), symbol]
-                         | BytesToken           [klabel(BytesNode),  symbol]
-                         | SequenceNode         [klabel(SeqNode),    symbol]
-                         | Primitive            [klabel(PrimNode),   symbol]
-                         | PrimitiveApplication [klabel(AppNode),    symbol]
+  syntax MichelineNode ::= Int                           [klabel(IntNode),    symbol]
+                         | String                        [klabel(StringNode), symbol]
+                         | BytesToken                    [klabel(BytesNode),  symbol]
+                         | SequenceNode                  [klabel(SeqNode),    symbol]
+                         | PrimNode(Primitive)           [klabel(PrimNode),   symbol]
+                         | AppNode(PrimitiveApplication) [klabel(AppNode),    symbol]
 
   syntax PrimitiveArg ::= MichelineNode [klabel(Node0),    symbol]
                         | Annotation    [klabel(AnnotArg), symbol]
@@ -141,14 +141,14 @@ module K-MICHELINE-PRIMITIVE
   //
   syntax AnnotationType ::= "#@" | "#:" | "#%" | "#!"
   syntax AnnotationList ::= List{Annotation, ";"}
-  syntax MichelineNode  ::= Prim(Primitive, Map, PrimitiveArgs)
+  syntax MichelineNode  ::= Primitive Map PrimitiveArgs
 
   // Internal Primitive Conversion
   syntax PrimitiveArg ::= toPrim(Primitive, PrimArgData)
 
-  rule (N:Primitive):PrimitiveArg      => toPrim(N, #PAD(newAnnotMap, .PrimitiveArgs)) [anywhere]
-  rule (N:Primitive Args):PrimitiveArg => toPrim(N, toPrimArgData(Args))               [anywhere]
-  rule toPrim(P,#PAD(Annots, Args))    => (Prim(P,Annots,Args)):PrimitiveArg           [anywhere]
+  rule PrimNode(N:Primitive)        => toPrim(N, #PAD(newAnnotMap, .PrimitiveArgs)) [anywhere]
+  rule AppNode(N:Primitive Args)    => toPrim(N, toPrimArgData(Args))               [anywhere]
+  rule toPrim(P,#PAD(Annots, Args)) => (P Annots Args):PrimitiveArg                 [anywhere]
 
   // Auxiliary Functions
   // list helpers
