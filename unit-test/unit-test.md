@@ -160,6 +160,16 @@ Load symbolic variables into the `<symbols>` map.
        <symbols> M => M[N <- #TypedSymbol(T, V)] </symbols>
 ```
 
+The `PUSH` instruction needs an additional rule for evaluating symbolic variables:
+
+```symbolic
+  rule <k> PUSH A T (X:SymbolicData => D)  ... </k>
+       <symbols> X |-> #TypedSymbol(T, D) ... </symbols>
+  rule <k> (.K => #CreateSymbol(X, T)) ~> PUSH A T X:SymbolicData  ... </k>
+       <symbols> Symbols  </symbols>
+    requires notBool X in_keys(Symbols)
+```
+
 The representation of \#Any is the same in the semantics and the concrete
 syntax.
 

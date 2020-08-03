@@ -403,8 +403,22 @@ PUSH needs to convert its argument to semantics form, but otherwise matches the
 documentation directly.
 
 ```k
+  rule <k> PUSH A T (#Typed(D, T) => #MichelineToNative(D, T, .Map, .Map)) ... </k>
   rule <k> PUSH A T X => #HandleAnnotations(A) ... </k>
-       <stack> . => #MichelineToNative(X, T, .Map, .Map) ... </stack>
+       <stack> . => X ... </stack>
+    requires isSimpleData(X)
+```
+
+```k
+  rule isSimpleData(Pair L R) => isSimpleData(L) andBool isSimpleData(R)
+  rule isSimpleData(None)     => true
+  rule isSimpleData(Some D)   => isSimpleData(D)
+  rule isSimpleData(Left D)   => isSimpleData(D)
+  rule isSimpleData(Right D)  => isSimpleData(D)
+  rule isSimpleData(Pair L R) => isSimpleData(L) andBool isSimpleData(R) [simplification]
+  rule isSimpleData(Some D)   => isSimpleData(D)                         [simplification]
+  rule isSimpleData(Left D)   => isSimpleData(D)                         [simplification]
+  rule isSimpleData(Right D)  => isSimpleData(D)                         [simplification]
 ```
 
 UNIT and LAMBDA are implemented almost exactly as specified in the documentation.
