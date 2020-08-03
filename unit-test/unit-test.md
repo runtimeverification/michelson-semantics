@@ -160,6 +160,19 @@ Load symbolic variables into the `<symbols>` map.
        <symbols> M => M[N <- #TypedSymbol(T, V)] </symbols>
 ```
 
+```k
+  rule <k> PUSH A T X:SymbolicData => PUSH A T #Typed(X, T) ... </k>
+  rule <k> #Typed(X, T) => #MichelineToNative(X, T, KnownAddrs, BigMaps) ... </k>
+       <knownaddrs> KnownAddrs </knownaddrs>
+       <bigmaps> BigMaps </bigmaps>
+    requires notBool isSymbolicData(X)
+  rule <k> (.K => #CreateSymbol(X, T)) ~> #Typed(X:SymbolicData, T) ... </k>
+       <symbols> Symbols </symbols>
+    requires notBool X in_keys(Symbols)
+  rule <k> #Typed(X:SymbolicData, T) => #Typed(D, T) ... </k>
+       <symbols> S |-> #TypedSymbol(T, D) ... </symbols>
+```
+
 The representation of \#Any is the same in the semantics and the concrete
 syntax.
 
