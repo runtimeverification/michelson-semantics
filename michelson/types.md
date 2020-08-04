@@ -227,7 +227,7 @@ Type Checking Rules
 
   rule #PushAux(I, _, _) => #TI(I, #InternalError) [owise]
   rule #PushAux(I, TE:TypeError, _) => #TI(I, #InvalidPush(I, TE))
-  rule #PushAux(PUSH _ T _, TD:TypedData, Ts) => #TI(PUSH .AnnotationList T TD, Ts -> T ; Ts)
+  rule #PushAux(PUSH _ T D #Typed(D, T), Ts) => #TI(PUSH .AnnotationList T D, Ts -> T ; Ts)
 
   rule #TypeInstruction(C, (PUSH _ T D) #as I, Ts) => #PushAux(I, #TypeData(C, D, T), Ts)
 
