@@ -58,6 +58,13 @@ timestamps and naturals.
   syntax Key ::= #Key(String)
   syntax Signature ::= #Signature(String)
   syntax OperationNonce ::= #Nonce(Int)
+  syntax LambdaData ::= #Lambda(Type, Type, Block)
+```
+
+We extend the `SimpleData` sort to contain internal datatypes.
+
+```k
+  syntax SimpleData ::= Bool | LambdaData | Set | Map | List
 ```
 
 The K specification of the Michelson Bytes type is incomplete due to the lack a
@@ -73,23 +80,6 @@ now.
                   | #Blake2B(MBytes)
                   | #SHA256(MBytes)
                   | #SHA512(MBytes)
-```
-
-We extend the Data sort with the internal K representations of any Michelson
-data that does not directly map into K, such as those in the productions above.
-
-```k
-  syntax Data ::= Timestamp
-  syntax Data ::= ChainId
-  syntax Data ::= KeyHash
-  syntax Data ::= Mutez
-  syntax Data ::= Address
-  syntax Data ::= ContractData
-  syntax Data ::= Key
-  syntax Data ::= Signature
-  syntax Data ::= Bool
-  syntax Data ::= #Lambda(Type, Type, Block)
-  syntax Data ::= MBytes
 ```
 
 We specify that both `parameter T` and `storage T` productions are also groups

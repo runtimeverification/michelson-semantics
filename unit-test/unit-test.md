@@ -156,7 +156,7 @@ Load symbolic variables into the `<symbols>` map.
 ```symbolic
   syntax KItem ::= #CreateSymbol(SymbolicData, Type)
   rule <k> (.K => #MakeFresh(T)) ~>  #CreateSymbol(_, T) ... </k>
-  rule <k> V ~> #CreateSymbol(N, T) => . ... </k>
+  rule <k> (V:SimpleData ~> #CreateSymbol(N, T)) => . ... </k>
        <symbols> M => M[N <- #TypedSymbol(T, V)] </symbols>
 ```
 
@@ -369,9 +369,7 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
        <assumeFailed> _ => true </assumeFailed> [transition]
 
   syntax BoolExp ::= Bool
-                   | DataExp "==" DataExp [strict(2), result(Data)]
-  syntax DataExp ::= Data
-
+                   | Data "==" Data [seqstrict]
   rule <k> D1:Data == D2:Data => D1 ==K D2 ... </k>
 ```
 
@@ -486,7 +484,7 @@ abstract out pieces of the stack which are non-invariant during loop execution.
            ...
        </k>
 
-  rule <k> ( V
+  rule <k> ( V:SimpleData
           ~> #GeneralizeStack(Stack_elt T D:SymbolicData ; Stack, KSeq)
            )
         =>   #GeneralizeStack(Stack_elt T V ; Stack, KSeq)
@@ -497,8 +495,7 @@ abstract out pieces of the stack which are non-invariant during loop execution.
 Here `#MakeFresh` is responsible for generating a fresh value of a given type.
 
 ```symbolic
-  syntax DataExp ::= #MakeFresh(Type)
-  syntax Data ::= "#hole"
+  syntax Data ::= #MakeFresh(Type)
 
   rule <k> #MakeFresh(nat       _:AnnotationList) => #Assume(?V >=Int 0)             ~> ?V:Int         ... </k>
   rule <k> #MakeFresh(mutez     _:AnnotationList) => #Assume(#IsLegalMutezValue(?V)) ~> #Mutez(?V:Int) ... </k>
@@ -523,24 +520,16 @@ Here `#MakeFresh` is responsible for generating a fresh value of a given type.
   rule <k> #MakeFresh(lambda    _:AnnotationList T1 T2)         => #Lambda(T1,T2,?_:Block)          ... </k>
   rule <k> #MakeFresh(contract  _:AnnotationList T)             => #Contract(#Address(?_:String),T) ... </k>
 
-  // TODO: Is there a neater way of doing this? Perhaps using K's contexts?
   rule <k> #MakeFresh(pair _:AnnotationList T1 T2)
-        => #MakeFresh(T1)
-        ~> #MakeFresh(T2)
-        ~> (Pair #hole #hole)
+        => (Pair #MakeFresh(T1) #MakeFresh(T2))
            ...
        </k>
-  rule <k> (V1 => .K) ~> _:DataExp ~> (Pair (#hole => V1) #hole) ... </k>
-  rule <k> (V2 => .K) ~> Pair _ (#hole => V2) ... </k>
 
-  rule <k> #MakeFresh(option _:AnnotationList T) => None       ... </k>
-  rule <k> #MakeFresh(option _:AnnotationList T) => #MakeFresh(T) ~> Some #hole ... </k>
-  rule <k> (V => .K) ~> (Some (#hole => V)) ... </k>
+  rule <k> #MakeFresh(option _:AnnotationList T) => None               ... </k>
+  rule <k> #MakeFresh(option _:AnnotationList T) => Some #MakeFresh(T) ... </k>
 
-  rule <k> #MakeFresh(or _:AnnotationList T1 T2) => #MakeFresh(T1) ~> Left  #hole ... </k>
-  rule <k> #MakeFresh(or _:AnnotationList T1 T2) => #MakeFresh(T2) ~> Right #hole ... </k>
-  rule <k> (V => .K) ~> (Left  (#hole => V)) ... </k>
-  rule <k> (V => .K) ~> (Right (#hole => V)) ... </k>
+  rule <k> #MakeFresh(or _:AnnotationList T1 T2) => Left  #MakeFresh(T1) ... </k>
+  rule <k> #MakeFresh(or _:AnnotationList T1 T2) => Right #MakeFresh(T2) ... </k>
 ```
 
 Handle `Aborted`
