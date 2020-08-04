@@ -493,11 +493,28 @@ Here `#MakeFresh` is responsible for generating a fresh value of a given type.
 ```symbolic
   syntax Data ::= #MakeFresh(Type) | "#hole"
 
-  rule <k> #MakeFresh(bool   _:AnnotationList)                     =>                        ?_:Bool     ... </k>
-  rule <k> #MakeFresh(int    _:AnnotationList)                     =>                        ?_:Int      ... </k>
-  rule <k> #MakeFresh(nat    _:AnnotationList)                     => #Assume(?V >=Int 0) ~> ?V:Int      ... </k>
-  rule <k> #MakeFresh(string _:AnnotationList)                     =>                        ?_:String   ... </k>
-  rule <k> #MakeFresh(map    (_):AnnotationList (_):Type (_):Type) =>                        ?_:Map      ... </k>
+  rule <k> #MakeFresh(nat       _:AnnotationList) => #Assume(?V >=Int 0)             ~> ?V:Int         ... </k>
+  rule <k> #MakeFresh(mutez     _:AnnotationList) => #Assume(#IsLegalMutezValue(?V)) ~> #Mutez(?V:Int) ... </k>
+
+  rule <k> #MakeFresh(bool      _:AnnotationList) => ?_:Bool                ... </k>
+  rule <k> #MakeFresh(int       _:AnnotationList) => ?_:Int                 ... </k>
+  rule <k> #MakeFresh(bytes     _:AnnotationList) => ?_:Bytes               ... </k>
+  rule <k> #MakeFresh(string    _:AnnotationList) => ?_:String              ... </k>
+  rule <k> #MakeFresh(unit      _:AnnotationList) => Unit                   ... </k>
+  rule <k> #MakeFresh(key       _:AnnotationList) => #Key(?_:String)        ... </k>
+  rule <k> #MakeFresh(key_hash  _:AnnotationList) => #KeyHash(?_:String)    ... </k>
+  rule <k> #MakeFresh(signature _:AnnotationList) => #Signature(?_:String)  ... </k>
+  rule <k> #MakeFresh(timestamp _:AnnotationList) => #Timestamp(?_:Int)     ... </k>
+  rule <k> #MakeFresh(address   _:AnnotationList) => #Address(?_:String)    ... </k>
+  rule <k> #MakeFresh(chain_id  _:AnnotationList) => #ChainId(?_:Bytes)     ... </k>
+  rule <k> #MakeFresh(operation _:AnnotationList) => ?_:BlockchainOperation ... </k>
+
+  rule <k> #MakeFresh(list      _:AnnotationList _:Type)        => ?_:List                          ... </k>
+  rule <k> #MakeFresh(set       _:AnnotationList _:Type)        => ?_:Set                           ... </k>
+  rule <k> #MakeFresh(map       _:AnnotationList _:Type _:Type) => ?_:Map                           ... </k>
+  rule <k> #MakeFresh(big_map   _:AnnotationList _:Type _:Type) => ?_:Map                           ... </k>
+  rule <k> #MakeFresh(lambda    _:AnnotationList T1 T2)         => #Lambda(T1,T2,?_:Block)          ... </k>
+  rule <k> #MakeFresh(contract  _:AnnotationList T)             => #Contract(#Address(?_:String),T) ... </k>
 
   // TODO: Is there a neater way of doing this? Perhaps using K's contexts?
   rule <k> #MakeFresh(pair _:AnnotationList T1 T2)
@@ -512,6 +529,11 @@ Here `#MakeFresh` is responsible for generating a fresh value of a given type.
   rule <k> #MakeFresh(option _:AnnotationList T) => None       ... </k>
   rule <k> #MakeFresh(option _:AnnotationList T) => #MakeFresh(T) ~> Some #hole ... </k>
   rule <k> (V => .K) ~> (Some (#hole => V)) ... </k>
+
+  rule <k> #MakeFresh(or _:AnnotationList T1 T2) => #MakeFresh(T1) ~> Left  #hole ... </k>
+  rule <k> #MakeFresh(or _:AnnotationList T1 T2) => #MakeFresh(T2) ~> Right #hole ... </k>
+  rule <k> (V => .K) ~> (Left  (#hole => V)) ... </k>
+  rule <k> (V => .K) ~> (Right (#hole => V)) ... </k>
 ```
 
 Handle `Aborted`
