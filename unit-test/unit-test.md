@@ -156,8 +156,9 @@ Load symbolic variables into the `<symbols>` map.
 ```symbolic
   syntax KItem ::= #CreateSymbol(SymbolicData, Type)
   rule <k> (.K => #MakeFresh(T)) ~>  #CreateSymbol(_, T) ... </k>
-  rule <k> (V:SimpleData ~> #CreateSymbol(N, T)) => . ... </k>
+  rule <k> (V ~> #CreateSymbol(N, T)) => . ... </k>
        <symbols> M => M[N <- #TypedSymbol(T, V)] </symbols>
+    requires isSimpleData(V)
 ```
 
 The `PUSH` instruction needs an additional rule for evaluating symbolic variables:
@@ -383,9 +384,9 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
   rule <k> D1:Data == D2:Data => D1 ==K D2 ... </k>
 ```
 
-```k
+```symbolic
   syntax OptionData ::= lookupMap(Map, Data) [function]
-  rule lookupMap(M, Key) => Some {M[Key]}:>Data requires         Key in_keys(M) [concrete, simplification]
+  rule lookupMap(M, Key) => Some {M[Key]}:>Data requires        Key in_keys(M) [concrete, simplification]
   rule lookupMap(M, Key) => None               requires notBool Key in_keys(M) [concrete, simplification]
 
   rule <k> GET A
@@ -428,15 +429,10 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
 ```k
   syntax KItem ::= "#ExecutePostConditions"
   rule <k> #ExecutePostConditions
-        => #CreateSymbols(#UnifiedSetToList(#UnifyTypes(#FindSymbolsBL(Postconditions)
-                                                  -Set (    #FindSymbolsS(Expected)
-                                                       |Set #FindSymbolsS(Input)
-                                                       |Set #FindSymbolsBL(Pre)
-                                                       |Set #FindSymbolsB({ Script })))))
-        ~> BIND { Expected } { ASSERT {Postconditions} }
+        => BIND Expected { ASSERT {Postconditions} }
            ...
        </k>
-       <expected> { Expected } </expected>
+       <expected> Expected </expected>
        <post> Postconditions </post>
        <inputstack> { Input:StackElementList } </inputstack>
        <pre> Pre </pre>
@@ -522,12 +518,13 @@ abstract out pieces of the stack which are non-invariant during loop execution.
            ...
        </k>
 
-  rule <k> ( V:SimpleData
+  rule <k> ( V
           ~> #GeneralizeStack(Stack_elt T D:SymbolicData ; Stack, KSeq)
            )
         =>   #GeneralizeStack(Stack_elt T V ; Stack, KSeq)
            ...
        </k>
+    requires isSimpleData(V)
 ```
 
 Here `#MakeFresh` is responsible for generating a fresh value of a given type.
