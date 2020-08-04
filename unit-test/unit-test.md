@@ -511,6 +511,7 @@ Here `#MakeFresh` is responsible for generating a fresh value of a given type.
   rule <k> #MakeFresh(timestamp _:AnnotationList) => #Timestamp(?_:Int)     ... </k>
   rule <k> #MakeFresh(address   _:AnnotationList) => #Address(?_:String)    ... </k>
   rule <k> #MakeFresh(chain_id  _:AnnotationList) => #ChainId(?_:Bytes)     ... </k>
+  // TODO: should we expand into the three separate kinds of Blockchain operations?
   rule <k> #MakeFresh(operation _:AnnotationList) => ?_:BlockchainOperation ... </k>
 
   rule <k> #MakeFresh(list      _:AnnotationList _:Type)        => ?_:List                          ... </k>
