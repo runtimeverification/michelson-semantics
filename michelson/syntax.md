@@ -22,6 +22,7 @@ Here we declare many of the data sorts we will use.  Note that, in this module a
 ```k
   // Sorts
   syntax SimpleData
+  syntax KResult ::= SimpleData
   syntax Data
   syntax Instruction
   syntax Type
@@ -70,12 +71,14 @@ The bytes literal is expressed here.  We accept mixed type bytes of the form `0x
 
 ```k
   syntax MBytesLiteral ::= r"0x([0-9a-fA-F]{2})*" [token]
+  syntax MBytes ::= MBytesLiteral [klabel(MBytesLiteral), symbol, function, avoid]
 ```
 
 K boolean values use all lowercase `true` and `false` - hence we need to add tokens for Michelson bools.
 They are converted to K booleans immediately after parsing by function rules.
 
 ```k
+  syntax Data ::= MichelsonBool [klabel(MichelsonBool), symbol, function, avoid]
   syntax MichelsonBool ::= "True" [token]
                          | "False" [token]
 ```
@@ -83,14 +86,14 @@ They are converted to K booleans immediately after parsing by function rules.
 Here we specify the various complex types offered by Michelson, making the best possible use of K sorts.
 
 ```k
-  syntax Pair ::= "Pair" Data Data
+  syntax Pair ::= "Pair" Data Data [seqstrict]
 
-  syntax LeftData ::= "Left" Data
-  syntax RightData ::= "Right" Data
+  syntax LeftData ::= "Left" Data [seqstrict]
+  syntax RightData ::= "Right" Data [seqstrict]
 
   syntax OrData ::= LeftData | RightData
 
-  syntax OptionData ::= "Some" Data
+  syntax OptionData ::= "Some" Data [seqstrict]
                       | "None"
 
   syntax Data ::= Pair | OrData | OptionData
@@ -113,11 +116,8 @@ Here we specify the various forms of sequence literals in Michelson, including M
 Here we define the simple data literals.
 
 ```k
-  syntax MBytes ::= MBytesLiteral [klabel(MBytesLiteral), symbol, function, avoid]
-
   syntax SimpleData ::= Int
   syntax SimpleData ::= String
-  syntax Data ::= MichelsonBool [klabel(MichelsonBool), symbol, function, avoid]
   syntax SimpleData ::= MBytes
   syntax SimpleData ::= "Unit"
   syntax SimpleData ::= Timestamp

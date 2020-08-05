@@ -68,7 +68,7 @@ We need to be able to represent `operation` literals stored on the stack.
 Thus, we make `BlockchainOperation` a subsort of `Data`.
 
 ```k
-  syntax Data ::= BlockchainOperation
+  syntax SimpleData ::= BlockchainOperation
 ```
 
 Failed Stack Literals

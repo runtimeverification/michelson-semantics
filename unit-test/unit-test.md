@@ -156,7 +156,7 @@ Load symbolic variables into the `<symbols>` map.
 ```symbolic
   syntax KItem ::= #CreateSymbol(SymbolicData, Type)
   rule <k> (.K => #MakeFresh(T)) ~>  #CreateSymbol(_, T) ... </k>
-  rule <k> #Fresh(V) ~> #CreateSymbol(N, T) => . ... </k>
+  rule <k> (V:SimpleData ~> #CreateSymbol(N, T)) => . ... </k>
        <symbols> M => M[N <- #TypedSymbol(T, V)] </symbols>
 ```
 
@@ -356,17 +356,21 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
 ```
 
 ```k
-  syntax KItem ::= #Assert(Bool)
+  syntax KItem ::= #Assert(BoolExp) [strict, result(Data)]
   rule <k> #Assert(true)  => .             ... </k>
   rule <k> #Assert(false) => #AssertFailed ... </k>
   syntax KItem ::= "#AssertFailed" [klabel(#AssertFailed), symbol]
 ```
 
 ```k
-  syntax KItem ::= #Assume(Bool)
+  syntax KItem ::= #Assume(BoolExp) [strict, result(Data)]
   rule <k> #Assume(true)  => .             ... </k>
   rule <k> #Assume(false) ~> _:K => . </k>
        <assumeFailed> _ => true </assumeFailed> [transition]
+
+  syntax BoolExp ::= Bool
+                   | Data "==" Data [seqstrict]
+  rule <k> D1:Data == D2:Data => D1 ==K D2 ... </k>
 ```
 
 `precondition` Groups
@@ -480,7 +484,7 @@ abstract out pieces of the stack which are non-invariant during loop execution.
            ...
        </k>
 
-  rule <k> ( #Fresh(V)
+  rule <k> ( V:SimpleData
           ~> #GeneralizeStack(Stack_elt T D:SymbolicData ; Stack, KSeq)
            )
         =>   #GeneralizeStack(Stack_elt T V ; Stack, KSeq)
@@ -491,23 +495,42 @@ abstract out pieces of the stack which are non-invariant during loop execution.
 Here `#MakeFresh` is responsible for generating a fresh value of a given type.
 
 ```symbolic
-  syntax Data ::= #MakeFresh(Type) | #Fresh(Data) | "#hole"
+  syntax Data ::= #MakeFresh(Type)
 
-  rule <k> #MakeFresh(bool   _:AnnotationList)                     =>                        #Fresh(?_:Bool)   ... </k>
-  rule <k> #MakeFresh(int    _:AnnotationList)                     =>                        #Fresh(?_:Int)    ... </k>
-  rule <k> #MakeFresh(nat    _:AnnotationList)                     => #Assume(?V >=Int 0) ~> #Fresh(?V:Int)    ... </k>
-  rule <k> #MakeFresh(string _:AnnotationList)                     =>                        #Fresh(?_:String) ... </k>
-  rule <k> #MakeFresh(map    (_):AnnotationList (_):Type (_):Type) =>                        #Fresh(?_:Map)    ... </k>
+  rule <k> #MakeFresh(nat       _:AnnotationList) => #Assume(?V >=Int 0)             ~> ?V:Int         ... </k>
+  rule <k> #MakeFresh(mutez     _:AnnotationList) => #Assume(#IsLegalMutezValue(?V)) ~> #Mutez(?V:Int) ... </k>
 
-  // TODO: Is there a neater way of doing this? Perhaps using K's contexts?
+  rule <k> #MakeFresh(bool      _:AnnotationList) => ?_:Bool                ... </k>
+  rule <k> #MakeFresh(int       _:AnnotationList) => ?_:Int                 ... </k>
+  rule <k> #MakeFresh(bytes     _:AnnotationList) => ?_:Bytes               ... </k>
+  rule <k> #MakeFresh(string    _:AnnotationList) => ?_:String              ... </k>
+  rule <k> #MakeFresh(unit      _:AnnotationList) => Unit                   ... </k>
+  rule <k> #MakeFresh(key       _:AnnotationList) => #Key(?_:String)        ... </k>
+  rule <k> #MakeFresh(key_hash  _:AnnotationList) => #KeyHash(?_:String)    ... </k>
+  rule <k> #MakeFresh(signature _:AnnotationList) => #Signature(?_:String)  ... </k>
+  rule <k> #MakeFresh(timestamp _:AnnotationList) => #Timestamp(?_:Int)     ... </k>
+  rule <k> #MakeFresh(address   _:AnnotationList) => #Address(?_:String)    ... </k>
+  rule <k> #MakeFresh(chain_id  _:AnnotationList) => #ChainId(?_:Bytes)     ... </k>
+  // TODO: should we expand into the three separate kinds of Blockchain operations?
+  rule <k> #MakeFresh(operation _:AnnotationList) => ?_:BlockchainOperation ... </k>
+
+  rule <k> #MakeFresh(list      _:AnnotationList _:Type)        => ?_:List                          ... </k>
+  rule <k> #MakeFresh(set       _:AnnotationList _:Type)        => ?_:Set                           ... </k>
+  rule <k> #MakeFresh(map       _:AnnotationList _:Type _:Type) => ?_:Map                           ... </k>
+  rule <k> #MakeFresh(big_map   _:AnnotationList _:Type _:Type) => ?_:Map                           ... </k>
+  rule <k> #MakeFresh(lambda    _:AnnotationList T1 T2)         => #Lambda(T1,T2,?_:Block)          ... </k>
+  rule <k> #MakeFresh(contract  _:AnnotationList T)             => #Contract(#Address(?_:String),T) ... </k>
+
   rule <k> #MakeFresh(pair _:AnnotationList T1 T2)
-        => #MakeFresh(T1)
-        ~> #MakeFresh(T2)
-        ~> #Fresh((Pair #hole #hole))
+        => (Pair #MakeFresh(T1) #MakeFresh(T2))
            ...
        </k>
-  rule <k> (#Fresh(V1) => .K) ~> _:Data ~> #Fresh(Pair (#hole => V1) #hole) ... </k>
-  rule <k> (#Fresh(V2) => .K) ~> #Fresh(Pair _ (#hole => V2)) ... </k>
+
+  rule <k> #MakeFresh(option _:AnnotationList T) => None               ... </k>
+  rule <k> #MakeFresh(option _:AnnotationList T) => Some #MakeFresh(T) ... </k>
+
+  rule <k> #MakeFresh(or _:AnnotationList T1 T2) => Left  #MakeFresh(T1) ... </k>
+  rule <k> #MakeFresh(or _:AnnotationList T1 T2) => Right #MakeFresh(T2) ... </k>
 ```
 
 Handle `Aborted`
