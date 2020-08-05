@@ -576,7 +576,6 @@ The `BIND` instruction
        </k>
        <paramtype> PT </paramtype>
        <symbols> .Map => S |-> #TypedSymbol(T, D) ... </symbols>
-    requires isTypedData(#TypeData(PT,D,T))
 
   rule <k> #Bind( { Stack_elt T S:SymbolicData ; Ss } => { Ss }
                 , ( (D ~> K:K)                        => K )
@@ -585,7 +584,6 @@ The `BIND` instruction
        </k>
        <paramtype> PT </paramtype>
        <symbols> S |-> #TypedSymbol(T, D) ... </symbols>
-    requires isTypedData(#TypeData(PT,D,T))
 
   rule <k> #Bind( { Stack_elt T ED ; Ss } => { Ss }
                 , ( (AD ~> K:K)             => K )
