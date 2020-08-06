@@ -85,12 +85,12 @@ deps-tezos: $(TEZOS_SUBMODULE)/make.timestamp
 # Building
 # --------
 
-SOURCE_FILES       := compat                    \
-                      michelson/common          \
-                      michelson/michelson       \
-                      michelson/syntax          \
-                      michelson/types           \
-                      michelson-unparser
+SOURCE_FILES       := compat    \
+                      common    \
+                      michelson \
+                      syntax    \
+                      types     \
+                      unparser
 EXTRA_SOURCE_FILES :=
 ALL_FILES          := $(patsubst %, %.md, $(SOURCE_FILES) $(EXTRA_SOURCE_FILES))
 
