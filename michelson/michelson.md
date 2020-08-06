@@ -611,6 +611,9 @@ TODO: If we define `DoCompare` as a macro for `#ite` we can avoid this.
   rule #DoCompare(I1:String, I2:String) ==Int 0 => I1 ==String I2 [simplification]
   rule #DoCompare(I1:String, I2:String) >=Int 0 => I1 >=String I2 [simplification]
   rule #DoCompare(I1:String, I2:String) >Int 0  => I1 >String I2  [simplification]
+
+  // TODO: at some point this rule should be builtin
+  rule X ==String X => true [simplification]
 ```
 
 CONCAT is complicated by the fact that it is defined differently over strings
