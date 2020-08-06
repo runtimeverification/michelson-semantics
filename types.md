@@ -152,6 +152,8 @@ Type Checking Rules
   rule #TypeData(_, (Transfer_tokens(_, _, _, _) #as D), (operation _) #as T) => #Typed(D, T)
   rule #TypeData(_, (Set_delegate(_, _) #as D), (operation _) #as T) => #Typed(D, T)
 
+  rule #TypeData(_, #Any, T) => #Typed(#Any, T)
+
   rule #TypeInstruction(_, { }, TS) => #TI({ }, TS -> TS)
   rule #TypeInstruction(C, { Is:DataList }, TS) => #fun(#TIs(Is2, TR) => #TI({ #Exec(Is2) }, TR))(#TypeInstructions(C, Is, TS))
 

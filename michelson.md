@@ -379,14 +379,36 @@ transforming values from their Micheline representations to K internal
 representations. It also contains the .tzt file loading and contract
 initialization logic.
 
+
+We implement the unit test section of the .tzt format described by the
+Tezos foundation
+[here](https://gitlab.com/tezos/tezos/-/merge_requests/1487/diffs). This file
+implements the behavior of the 'code,' 'input,' and 'output' applications
+discussed in that document.
+
+```k
+module UNIT-TEST-DRIVER
+  imports MICHELSON
+  imports SYMBOLIC-UNIT-TEST-SYNTAX
+
+  rule <k> #Init
+        => #CreateSymbols
+        ~> #BaseInit
+        ~> #ExecutePreConditions
+        ~> #TypeCheck
+        ~> #LoadInputStack
+        ~> #ExecuteScript
+        ~> #ExecutePostConditions
+           ...
+       </k>
+endmodule
+```
+
 ```k
 module MICHELSON
   imports MICHELSON-CONFIG
-  imports MICHELSON-INTERNAL-SYNTAX
-  imports DOMAINS
-  imports BYTES
+  imports MATCHER
 ```
-
 
 The `#BaseInit` takes care of initialization common to the different semantics.
 This can be invoked by a rule similar to `rule <k> #Init => #Preprocess ~>
@@ -487,7 +509,7 @@ appropriate K-Michelson type.
   rule #BigMapsEntryToKMap(Big_map I T1 T2 ML:MapLiteral) => I |-> #BigMap(ML,  big_map .AnnotationList T1 T2)
 ```
 
-The final loading group in this file is the contract group. The storage and
+The next loading group in this file is the contract group. The storage and
 parameter values are combined and the stack is initialized, and then the code is
 extracted so that we can move on to the execution semantics.
 
@@ -496,6 +518,63 @@ extracted so that we can move on to the execution semantics.
        <script> #NoData => C </script>
        <paramtype> #NotSet => P </paramtype>
        <storagetype> #NotSet => S </storagetype>
+```
+
+### `precondition` group
+
+```k
+  rule <k> precondition { Bs } => .K ... </k>
+       <pre> .BlockList => Bs </pre>
+```
+
+```k
+  syntax KItem ::= "#ExecutePreConditions"
+  rule <k> #ExecutePreConditions => ASSUME { Preconditions } ... </k>
+       <pre> Preconditions </pre>
+```
+
+### `postcondition` group
+
+```k
+  rule <k> postcondition { Bs } => .K ... </k>
+       <post> .BlockList => Bs </post>
+```
+
+```k
+  syntax KItem ::= "#ExecutePostConditions"
+  rule <k> #ExecutePostConditions
+        => BIND Expected { ASSERT { Postconditions } }
+           ...
+       </k>
+       <expected> Expected </expected>
+       <post> Postconditions </post>
+```
+
+### `invariant` groups
+
+```k
+  rule <k> invariant Annot { Stack } { Blocks } => . ... </k>
+       <invs> .Map
+           => (Annot |-> { Stack } { Blocks })
+              ...
+       </invs>
+```
+
+### `input` and `output` groups
+
+```k
+  rule <k> input LS => .K ... </k>
+       <inputstack> .K => LS </inputstack>
+
+  rule <k> output Os => .K ... </k>
+       <expected> .K => Os </expected>
+```
+
+### `code` group
+
+```k
+  rule <k> code C => .K ... </k>
+       <script> #NoData => C </script>
 ```
 
 From Micheline to K-Michelson Internal Representation
@@ -1586,45 +1665,6 @@ When the `<k>` cell is empty, we consider execution successful
        <returncode> 1 => 0 </returncode>
 ```
 
-```k
-endmodule
-```
-
-Unit Test Semantics
-===================
-
-We implement the unit test section of the .tzt format described by the
-Tezos foundation
-[here](https://gitlab.com/tezos/tezos/-/merge_requests/1487/diffs). This file
-implements the behavior of the 'code,' 'input,' and 'output' applications
-discussed in that document.
-
-```k
-module UNIT-TEST-DRIVER
-  imports UNIT-TEST
-  imports SYMBOLIC-UNIT-TEST-SYNTAX
-
-  rule <k> #Init
-        => #CreateSymbols
-        ~> #BaseInit
-        ~> #ExecutePreConditions
-        ~> #TypeCheck
-        ~> #LoadInputStack
-        ~> #ExecuteScript
-        ~> #ExecutePostConditions
-           ...
-       </k>
-endmodule
-```
-
-```k
-module UNIT-TEST
-  imports SYMBOLIC-UNIT-TEST-COMMON-SYNTAX
-  imports MICHELSON
-  imports MICHELSON-TYPES
-  imports MATCHER
-```
-
 `#CreateSymbol`
 --------------
 
@@ -1747,15 +1787,6 @@ Load symbolic variables into the `<symbols>` map.
        <symbols> M => M[N <- #TypedSymbol(T, V)] </symbols>
 ```
 
-The representation of \#Any is the same in the semantics and the concrete
-syntax.
-
-```k
-  rule #MichelineToNative(#Any, _, _, _) => #Any
-  rule #TypeData(_, #Any, T) => #Typed(#Any, T)
-```
-
-
 This function transforms a LiteralStack (e.g. a sequence of `Stack_elt`
 productions) into a KSequence (the same format as the execution stack).
 
@@ -1778,18 +1809,6 @@ transformed as in the input group).
   rule #OutputStackToSemantics(X:FailedStack, _, _) => X
 ```
 
-Loading the input or expected output stack involves simply converting it to a
-KSeq whose elements are Data in their internal representations, and then
-placing that KSeq in the main execution stack configuration cell.
-
-```k
-  rule <k> input LS => .K ... </k>
-       <inputstack> .K => LS </inputstack>
-
-  rule <k> output Os => .K ... </k>
-       <expected> .K => Os </expected>
-```
-
 ```k
   syntax KItem ::= "#LoadInputStack"
   rule <k> #LoadInputStack => .K ... </k>
@@ -1799,14 +1818,6 @@ placing that KSeq in the main execution stack configuration cell.
        <paramtype> PT </paramtype>
        <knownaddrs> KnownAddrs </knownaddrs>
        <bigmaps> BigMaps </bigmaps>
-```
-
-As in the case of the contract group, loading the code group is trivial --
-simply extract the block and let the main semantics handle the rest.
-
-```k
-  rule <k> code C => .K ... </k>
-       <script> #NoData => C </script>
 ```
 
 Type Checking Extension
@@ -1958,49 +1969,6 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
   syntax BoolExp ::= Bool
                    | Data "==" Data [seqstrict]
   rule <k> D1:Data == D2:Data => D1 ==K D2 ... </k>
-```
-
-`precondition` Groups
----------------------
-
-```k
-  rule <k> precondition { Bs } => .K ... </k>
-       <pre> .BlockList => Bs </pre>
-```
-
-```k
-  syntax KItem ::= "#ExecutePreConditions"
-  rule <k> #ExecutePreConditions => ASSUME { Preconditions } ... </k>
-       <pre> Preconditions </pre>
-```
-
-`postcondition` group
----------------------
-
-```k
-  rule <k> postcondition { Bs } => .K ... </k>
-       <post> .BlockList => Bs </post>
-```
-
-```k
-  syntax KItem ::= "#ExecutePostConditions"
-  rule <k> #ExecutePostConditions
-        => BIND Expected { ASSERT { Postconditions } }
-           ...
-       </k>
-       <expected> Expected </expected>
-       <post> Postconditions </post>
-```
-
-`invariants` group
----------------------
-
-```k
-  rule <k> invariant Annot { Stack } { Blocks } => . ... </k>
-       <invs> .Map
-           => (Annot |-> { Stack } { Blocks })
-              ...
-       </invs>
 ```
 
 We need stack concatentation for invariant preprocessing.
