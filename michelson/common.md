@@ -6,7 +6,7 @@ representations of certain productions (e.g. by reordering them and
 adding/removing extra semicolons).
 
 ```k
-requires "michelson/internal-syntax.md"
+requires "michelson/syntax.md"
 
 module MICHELSON-COMMON
   imports MICHELSON-INTERNAL-SYNTAX

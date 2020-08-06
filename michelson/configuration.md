@@ -80,7 +80,6 @@ above.
 ```k
 requires "michelson/syntax.md"
 requires "michelson/common.md"
-requires "michelson/types.md"
 
 module MICHELSON-CONFIG
   imports MICHELSON-COMMON

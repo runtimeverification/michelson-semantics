@@ -6,8 +6,6 @@ discussed in that document.
 
 ```k
 requires "michelson/michelson.md"
-requires "michelson/types.md"
-requires "unit-test/syntax.md"
 ```
 
 The unit-test semantics does not need any processing in addition to the base initialization.

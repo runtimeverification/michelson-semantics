@@ -7,7 +7,6 @@ initialization logic.
 ```k
 requires "michelson/syntax.md"
 requires "michelson/configuration.md"
-requires "michelson/internal-syntax.md"
 requires "michelson/types.md"
 
 module MICHELSON
