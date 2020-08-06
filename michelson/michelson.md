@@ -583,6 +583,12 @@ instantiations of the COMPARE operation to be implemented in fewer rules.
 
   rule <k> COMPARE A => #HandleAnnotations(A) ... </k>
        <stack> V1 ~> V2 => #DoCompare(V1, V2) ... </stack>
+
+  rule #DoCompare(B1:Bytes, B2:Bytes) => #DoCompare(Bytes2Int(B1, BE, Unsigned), Bytes2Int(B2, BE, Unsigned))
+  rule #DoCompare(#KeyHash(S1), #KeyHash(S2)) => #DoCompare(S1, S2)
+  rule #DoCompare(#Mutez(I1), #Mutez(I2)) => #DoCompare(I1, I2)
+  rule #DoCompare(#Timestamp(I1), #Timestamp(I2)) => #DoCompare(I1, I2)
+  rule #DoCompare(#Address(S1), #Address(S2)) => #DoCompare(S1, S2)
 ```
 
 TODO: If we define `DoCompare` as a macro for `#ite` we can avoid this.
@@ -926,7 +932,6 @@ however forces us to use two rules for each operation.
   rule <k> SUB A => . ... </k>
        <stack> #Timestamp(I1) ~> #Timestamp(I2) => I1 -Int I2 ... </stack>
 
-  rule #DoCompare(#Timestamp(I1), #Timestamp(I2)) => #DoCompare(I1, I2)
 ```
 
 Operations instructions mostly simply sanity check their arguments and then
@@ -1090,8 +1095,6 @@ allowing for code reuse.
 
   rule <k> SLICE A => #HandleAnnotations(A) ... </k>
        <stack> O:Int ~> L:Int ~> B:Bytes => #SliceBytes(B, O, L)  ... </stack>
-
-  rule #DoCompare(B1:Bytes, B2:Bytes) => #DoCompare(Bytes2Int(B1, BE, Unsigned), Bytes2Int(B2, BE, Unsigned))
 ```
 
 The cryptographic operations are simply stubbed for now.
@@ -1121,8 +1124,6 @@ The cryptographic operations are simply stubbed for now.
 
   rule <k> CHECK_SIGNATURE A => #HandleAnnotations(A) ... </k>
        <stack> #Key(_) ~> #Signature(_) ~> _:MBytes => false ... </stack> [owise] // TODO: Bug - The haskell backend does not support distinguishing these rules.*/
-
-  rule #DoCompare(#KeyHash(S1), #KeyHash(S2)) => #DoCompare(S1, S2)
 ```
 
 Mutez operations need to check their results since Mutez is not an unlimited
@@ -1177,7 +1178,6 @@ identical to those defined over integers.
        <stack> #Mutez(I1) ~> I2 => Some (Pair #Mutez(I1 /Int I2) #Mutez(I1 %Int I2)) </stack>
        requires I2 >Int 0
 
-  rule #DoCompare(#Mutez(I1), #Mutez(I2)) => #DoCompare(I1, I2)
 ```
 
 We introduce several pseudo-instructions that are used for debugging:
