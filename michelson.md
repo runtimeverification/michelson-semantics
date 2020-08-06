@@ -387,39 +387,24 @@ implements the behavior of the 'code,' 'input,' and 'output' applications
 discussed in that document.
 
 ```k
-module UNIT-TEST-DRIVER
-  imports MICHELSON
-  imports SYMBOLIC-UNIT-TEST-SYNTAX
-
-  rule <k> #Init
-        => #CreateSymbols
-        ~> #BaseInit
-        ~> #ExecutePreConditions
-        ~> #TypeCheck
-        ~> #LoadInputStack
-        ~> #ExecuteScript
-        ~> #ExecutePostConditions
-           ...
-       </k>
-endmodule
-```
-
-```k
 module MICHELSON
   imports MICHELSON-CONFIG
   imports MATCHER
 ```
 
-The `#BaseInit` takes care of initialization common to the different semantics.
-This can be invoked by a rule similar to `rule <k> #Init => #Preprocess ~>
-#BaseInit ~> #Postprocess ... </k>`.
+`#Init` takes care of initialization.
 
 ```k
-  syntax KItem ::= "#BaseInit"
-  rule <k> #BaseInit
-        => #ConvertBigMapsToNative
+  rule <k> #Init
+        => #CreateSymbols
+        ~> #ConvertBigMapsToNative
         ~> #ConvertParamToNative
         ~> #ConvertStorageToNative
+        ~> #ExecutePreConditions
+        ~> #TypeCheck
+        ~> #LoadInputStack
+        ~> #ExecuteScript
+        ~> #ExecutePostConditions
            ...
        </k>
 ```

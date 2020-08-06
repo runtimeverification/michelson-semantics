@@ -138,7 +138,7 @@ build-compat: build-contract-expander build-extractor build-input-creator build-
 llvm_dir           := $(DEFN_DIR)/llvm
 llvm_files         := $(ALL_FILES)
 llvm_main_file     := michelson
-llvm_main_module   := UNIT-TEST-DRIVER
+llvm_main_module   := MICHELSON
 llvm_syntax_module := UNIT-TEST-SYNTAX
 llvm_kompiled      := $(llvm_dir)/$(notdir $(llvm_main_file))-kompiled/interpreter
 
@@ -156,7 +156,7 @@ $(llvm_kompiled): $(llvm_files)
 symbolic_dir           := $(DEFN_DIR)/symbolic
 symbolic_files         := $(ALL_FILES)
 symbolic_main_file     := michelson
-symbolic_main_module   := UNIT-TEST-DRIVER
+symbolic_main_module   := MICHELSON
 symbolic_syntax_module := SYMBOLIC-UNIT-TEST-SYNTAX
 symbolic_kompiled      := $(symbolic_dir)/$(notdir $(symbolic_main_file))-kompiled/definition.kore
 
