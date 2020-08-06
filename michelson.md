@@ -668,6 +668,12 @@ It then consumes the rest of the program:
   rule <k> Aborted(_, _, _, _) ~> (_:Data => .K) ... </k>
 ```
 
+If a program aborts due to the FAILWITH instruction, we throw away the abortion debug info:
+
+```k
+  rule <k> (Aborted(_, _, _, _) => .K) ~> #ExecutePostConditions ... </k>
+```
+
 Conditionals
 ------------
 
@@ -704,6 +710,23 @@ Loops
   rule <k> LOOP_LEFT A B => #HandleAnnotations(A) ... </k>
        <stack> Right D => D ... </stack>
 ```
+
+Here we handle symbolic loop semantics.
+
+```symbolic
+  rule <k> LOOP A .AnnotationList Body
+        => CUTPOINT(!Id, Invariant) ;
+           LOOP .AnnotationList {
+             Body ;
+             CUTPOINT(!Id, Invariant)
+           }
+           ...
+       </k>
+       <invs> A |-> Invariant ... </invs>
+```
+
+Other Control Operators
+-----------------------
 
 It is sometimes useful to create "pseudo-instructions" like this to schedule
 operations to happen in the future.
@@ -1625,6 +1648,181 @@ identical to those defined over integers.
 
 ```
 
+### `#Assume`/`#Assert` instructions
+
+```k
+  syntax Instruction ::= "ASSERT" "{" BlockList "}"
+                       | "ASSUME" "{" BlockList "}"
+```
+
+```k
+  rule <k> ASSERT { .BlockList } => .K ... </k>
+  rule <k> ASSERT { B; Bs }
+        => B ~> #AssertTrue ~> ASSERT { Bs } ~> #RestoreStack(Stack)
+           ...
+       </k>
+       <stack> Stack => .K </stack>
+```
+
+```k
+  rule <k> ASSUME { .BlockList } => .K ... </k>
+  rule <k> ASSUME { B; Bs }
+        => B ~> #AssumeTrue ~> ASSUME { Bs } ~> #RestoreStack(Stack)
+           ...
+       </k>
+       <stack> Stack => .K </stack>
+```
+
+```k
+  syntax Instruction ::= #RestoreStack(K)
+  rule <k> #RestoreStack(Stack) => .K ... </k>
+       <stack> _ => Stack </stack>
+```
+
+```k
+  syntax Instruction ::= "#AssertTrue"
+  rule <k> #AssertTrue => #Assert(B) ... </k>
+       <stack> B:Bool => . </stack>
+```
+
+```k
+  syntax Instruction ::= "#AssumeTrue"
+  rule <k> #AssumeTrue => #Assume(B) ... </k>
+       <stack> B:Bool => . </stack>
+```
+
+```k
+  syntax KItem ::= #Assert(BoolExp) [strict, result(Data)]
+  rule <k> #Assert(true)  => .             ... </k>
+  rule <k> #Assert(false) => #AssertFailed ... </k>
+  syntax KItem ::= "#AssertFailed" [klabel(#AssertFailed), symbol]
+```
+
+```k
+  syntax KItem ::= #Assume(BoolExp) [strict, result(Data)]
+  rule <k> #Assume(true)  => .             ... </k>
+  rule <k> #Assume(false) ~> _:K => . </k>
+       <assumeFailed> _ => true </assumeFailed> [transition]
+
+  syntax BoolExp ::= Bool
+                   | Data "==" Data [seqstrict]
+  rule <k> D1:Data == D2:Data => D1 ==K D2 ... </k>
+```
+
+### `CUTPOINT`s and stack generalization
+
+A cutpoint is a semantic construct that internalizes the notion of a
+reachability logic circularity (or claim).
+When we reach a cutpoint, we need to generalize our current state into one which
+corresponds to the reachability logic circularity that we wish to use.
+
+```symbolic
+  syntax Instruction ::= CUTPOINT( id: Int, invariant: Invariant)
+
+  rule <k> CUTPOINT(I, { Shape } { Predicates })
+        => BIND { Shape } { ASSERT { Predicates }}
+        ~> #GeneralizeStack(Shape, .K)
+        ~> BIND { Shape } { ASSUME { Predicates }}
+           ...
+       </k>
+       <cutpoints> (.Set => SetItem(I)) VisitedCutpoints </cutpoints>
+    requires notBool I in VisitedCutpoints
+
+  rule <k> CUTPOINT(I, { Shape } { Predicates })
+        => BIND { Shape } { ASSERT { Predicates }}
+        ~> #Assume(false)
+           ...
+       </k>
+       <cutpoints> VisitedCutpoints </cutpoints>
+    requires I in VisitedCutpoints
+```
+
+In stack-based languages like Michelson, state generalization means that we
+abstract out pieces of the stack which are non-invariant during loop execution.
+
+```symbolic
+  syntax KItem ::= #GeneralizeStack(StackElementList, K)
+  rule <k> #GeneralizeStack(.StackElementList, Stack) => . ... </k>
+       <stack> .K => Stack </stack>
+
+  rule <k> #GeneralizeStack(Stack_elt T D ; Stack, KSeq:K)
+        => #GeneralizeStack(Stack, KSeq ~> D)
+           ...
+       </k>
+       <stack> _:Data => . ... </stack>
+    requires notBool isSymbolicData(D)
+
+  rule <k> (.K => #MakeFresh(T))
+        ~> #GeneralizeStack(Stack_elt T D:SymbolicData ; Stack, KSeq)
+           ...
+       </k>
+
+  rule <k> ( V:SimpleData
+          ~> #GeneralizeStack(Stack_elt T D:SymbolicData ; Stack, KSeq)
+           )
+        =>   #GeneralizeStack(Stack_elt T V ; Stack, KSeq)
+           ...
+       </k>
+```
+
+### The `BIND` instruction
+
+```k
+  syntax Instruction ::= "BIND" OutputStack Block
+  rule <k> BIND Shape Block
+        => #Bind(Shape, Stack)
+        ~> Block
+        ~> #RestoreSymbols(Symbols)
+           ...
+       </k>
+       <symbols> Symbols </symbols>
+       <stack> Stack </stack>
+```
+
+```k
+  syntax KItem ::= #Bind(OutputStack, K)
+
+  rule <k> #Bind({ .StackElementList }, .K) => .K ... </k>
+
+  rule <k> #Bind(S1:FailedStack, S2:FailedStack) => .K ... </k>
+    requires #Matches(S1, S2)
+
+  rule <k> #Bind( { Stack_elt T S:SymbolicData ; Ss } => { Ss }
+                , ( (D ~> K:K)                        => K )
+                )
+           ...
+       </k>
+       <paramtype> PT </paramtype>
+       <symbols> .Map => S |-> #TypedSymbol(T, D) ... </symbols>
+
+  rule <k> #Bind( { Stack_elt T S:SymbolicData ; Ss } => { Ss }
+                , ( (D ~> K:K)                        => K )
+                )
+           ...
+       </k>
+       <paramtype> PT </paramtype>
+       <symbols> S |-> #TypedSymbol(T, D) ... </symbols>
+
+  rule <k> #Bind( { Stack_elt T ED ; Ss } => { Ss }
+                , ( (AD ~> K:K)             => K )
+                )
+           ...
+       </k>
+       <knownaddrs> KnownAddrs </knownaddrs>
+       <bigmaps> BigMaps </bigmaps>
+       <stack> AD => .K ... </stack>
+    requires #Matches(#MichelineToNative(ED,T,KnownAddrs,BigMaps),AD)
+     andBool notBool isSymbolicData(ED)
+```
+
+```k
+  syntax KItem ::= #RestoreSymbols(Map)
+  rule <k> #RestoreSymbols(Symbols) => .K ... </k>
+       <symbols> _ => Symbols </symbols>
+```
+
+### Debugging Instructions
+
 We introduce several pseudo-instructions that are used for debugging:
 
 -   `TRACE` appends its string content to the `<trace>` cell as a debugging aid
@@ -1650,8 +1848,28 @@ When the `<k>` cell is empty, we consider execution successful
        <returncode> 1 => 0 </returncode>
 ```
 
-`#CreateSymbol`
---------------
+`SymbolicData` Processing
+-------------------------
+
+### Extending functions to `SymbolicData`
+
+```k
+  syntax TypedSymbol ::= #TypedSymbol(Type, Data)
+```
+
+```symbolic
+  rule [[ #MichelineToNative(S:SymbolicData, T, _, _) => D ]]
+       <symbols> S |-> #TypedSymbol(T, D) ... </symbols>
+
+  rule [[ #MichelineToNative(S:SymbolicData, T, _, _) => S ]]
+       <symbols> Syms:Map </symbols>
+    requires notBool (S in_keys(Syms))
+
+  rule [[ #TypeData(_, S:SymbolicData, T) => #Typed(S, T) ]]
+       <symbols> ... S |-> #TypedSymbol(T, _) ... </symbols>
+```
+
+### `#CreateSymbol`
 
 ```k
   syntax Type ::= "#UnknownType"
@@ -1805,6 +2023,49 @@ transformed as in the input group).
        <bigmaps> BigMaps </bigmaps>
 ```
 
+### `#MakeFresh`
+
+Here `#MakeFresh` is responsible for generating a fresh value of a given type.
+
+```symbolic
+  syntax Data ::= #MakeFresh(Type)
+
+  rule <k> #MakeFresh(nat       _:AnnotationList) => #Assume(?V >=Int 0)             ~> ?V:Int         ... </k>
+  rule <k> #MakeFresh(mutez     _:AnnotationList) => #Assume(#IsLegalMutezValue(?V)) ~> #Mutez(?V:Int) ... </k>
+
+  rule <k> #MakeFresh(bool      _:AnnotationList) => ?_:Bool                ... </k>
+  rule <k> #MakeFresh(int       _:AnnotationList) => ?_:Int                 ... </k>
+  rule <k> #MakeFresh(bytes     _:AnnotationList) => ?_:Bytes               ... </k>
+  rule <k> #MakeFresh(string    _:AnnotationList) => ?_:String              ... </k>
+  rule <k> #MakeFresh(unit      _:AnnotationList) => Unit                   ... </k>
+  rule <k> #MakeFresh(key       _:AnnotationList) => #Key(?_:String)        ... </k>
+  rule <k> #MakeFresh(key_hash  _:AnnotationList) => #KeyHash(?_:String)    ... </k>
+  rule <k> #MakeFresh(signature _:AnnotationList) => #Signature(?_:String)  ... </k>
+  rule <k> #MakeFresh(timestamp _:AnnotationList) => #Timestamp(?_:Int)     ... </k>
+  rule <k> #MakeFresh(address   _:AnnotationList) => #Address(?_:String)    ... </k>
+  rule <k> #MakeFresh(chain_id  _:AnnotationList) => #ChainId(?_:Bytes)     ... </k>
+  // TODO: should we expand into the three separate kinds of Blockchain operations?
+  rule <k> #MakeFresh(operation _:AnnotationList) => ?_:BlockchainOperation ... </k>
+
+  rule <k> #MakeFresh(list      _:AnnotationList _:Type)        => ?_:List                          ... </k>
+  rule <k> #MakeFresh(set       _:AnnotationList _:Type)        => ?_:Set                           ... </k>
+  rule <k> #MakeFresh(map       _:AnnotationList _:Type _:Type) => ?_:Map                           ... </k>
+  rule <k> #MakeFresh(big_map   _:AnnotationList _:Type _:Type) => ?_:Map                           ... </k>
+  rule <k> #MakeFresh(lambda    _:AnnotationList T1 T2)         => #Lambda(T1,T2,?_:Block)          ... </k>
+  rule <k> #MakeFresh(contract  _:AnnotationList T)             => #Contract(#Address(?_:String),T) ... </k>
+
+  rule <k> #MakeFresh(pair _:AnnotationList T1 T2)
+        => (Pair #MakeFresh(T1) #MakeFresh(T2))
+           ...
+       </k>
+
+  rule <k> #MakeFresh(option _:AnnotationList T) => None               ... </k>
+  rule <k> #MakeFresh(option _:AnnotationList T) => Some #MakeFresh(T) ... </k>
+
+  rule <k> #MakeFresh(or _:AnnotationList T1 T2) => Left  #MakeFresh(T1) ... </k>
+  rule <k> #MakeFresh(or _:AnnotationList T1 T2) => Right #MakeFresh(T2) ... </k>
+```
+
 Type Checking Extension
 -----------------------
 
@@ -1892,270 +2153,6 @@ This directive supplies all of the arguments to the `#TypeCheck` rule.
        <paramtype> PT </paramtype>
        <inputstack> IS </inputstack>
        <expected> OS </expected>
-```
-
-`#Assume`/`#Assert` instructions
---------------------------------
-
-```k
-  syntax Instruction ::= "ASSERT" "{" BlockList "}"
-                       | "ASSUME" "{" BlockList "}"
-```
-
-```k
-  rule <k> ASSERT { .BlockList } => .K ... </k>
-  rule <k> ASSERT { B; Bs }
-        => B ~> #AssertTrue ~> ASSERT { Bs } ~> #RestoreStack(Stack)
-           ...
-       </k>
-       <stack> Stack => .K </stack>
-```
-
-```k
-  rule <k> ASSUME { .BlockList } => .K ... </k>
-  rule <k> ASSUME { B; Bs }
-        => B ~> #AssumeTrue ~> ASSUME { Bs } ~> #RestoreStack(Stack)
-           ...
-       </k>
-       <stack> Stack => .K </stack>
-```
-
-```k
-  syntax Instruction ::= #RestoreStack(K)
-  rule <k> #RestoreStack(Stack) => .K ... </k>
-       <stack> _ => Stack </stack>
-```
-
-```k
-  syntax Instruction ::= "#AssertTrue"
-  rule <k> #AssertTrue => #Assert(B) ... </k>
-       <stack> B:Bool => . </stack>
-```
-
-```k
-  syntax Instruction ::= "#AssumeTrue"
-  rule <k> #AssumeTrue => #Assume(B) ... </k>
-       <stack> B:Bool => . </stack>
-```
-
-```k
-  syntax KItem ::= #Assert(BoolExp) [strict, result(Data)]
-  rule <k> #Assert(true)  => .             ... </k>
-  rule <k> #Assert(false) => #AssertFailed ... </k>
-  syntax KItem ::= "#AssertFailed" [klabel(#AssertFailed), symbol]
-```
-
-```k
-  syntax KItem ::= #Assume(BoolExp) [strict, result(Data)]
-  rule <k> #Assume(true)  => .             ... </k>
-  rule <k> #Assume(false) ~> _:K => . </k>
-       <assumeFailed> _ => true </assumeFailed> [transition]
-
-  syntax BoolExp ::= Bool
-                   | Data "==" Data [seqstrict]
-  rule <k> D1:Data == D2:Data => D1 ==K D2 ... </k>
-```
-
-We need stack concatentation for invariant preprocessing.
-Note that `#AnyStack` on the lefthand side is currently unhandled.
-
-```k
-  syntax StackElementList ::= StackElementList "++StackElementList" StackElementList [function, left, avoid]
-  rule .StackElementList ++StackElementList S2 => S2
-  rule (E1 ; S1)         ++StackElementList S2 => E1 ; (S1 ++StackElementList S2)
-```
-
-```symbolic
-  syntax Instruction ::= CUTPOINT( id: Int, invariant: Invariant)
-  rule <k> LOOP A .AnnotationList Body
-        => CUTPOINT(!Id, Invariant) ;
-           LOOP .AnnotationList {
-             Body ;
-             CUTPOINT(!Id, Invariant)
-           }
-           ...
-       </k>
-       <invs> A |-> Invariant ... </invs>
-```
-
-### `CUTPOINT`s and stack generalization
-
-A cutpoint is a semantic construct that internalizes the notion of a
-reachability logic circularity (or claim).
-When we reach a cutpoint, we need to generalize our current state into one which
-corresponds to the reachability logic circularity that we wish to use.
-
-```symbolic
-  rule <k> CUTPOINT(I, { Shape } { Predicates })
-        => BIND { Shape } { ASSERT { Predicates }}
-        ~> #GeneralizeStack(Shape, .K)
-        ~> BIND { Shape } { ASSUME { Predicates }}
-           ...
-       </k>
-       <cutpoints> (.Set => SetItem(I)) VisitedCutpoints </cutpoints>
-    requires notBool I in VisitedCutpoints
-
-  rule <k> CUTPOINT(I, { Shape } { Predicates })
-        => BIND { Shape } { ASSERT { Predicates }}
-        ~> #Assume(false)
-           ...
-       </k>
-       <cutpoints> VisitedCutpoints </cutpoints>
-    requires I in VisitedCutpoints
-```
-
-In stack-based languages like Michelson, state generalization means that we
-abstract out pieces of the stack which are non-invariant during loop execution.
-
-```symbolic
-  syntax KItem ::= #GeneralizeStack(StackElementList, K)
-  rule <k> #GeneralizeStack(.StackElementList, Stack) => . ... </k>
-       <stack> .K => Stack </stack>
-
-  rule <k> #GeneralizeStack(Stack_elt T D ; Stack, KSeq:K)
-        => #GeneralizeStack(Stack, KSeq ~> D)
-           ...
-       </k>
-       <stack> _:Data => . ... </stack>
-    requires notBool isSymbolicData(D)
-
-  rule <k> (.K => #MakeFresh(T))
-        ~> #GeneralizeStack(Stack_elt T D:SymbolicData ; Stack, KSeq)
-           ...
-       </k>
-
-  rule <k> ( V:SimpleData
-          ~> #GeneralizeStack(Stack_elt T D:SymbolicData ; Stack, KSeq)
-           )
-        =>   #GeneralizeStack(Stack_elt T V ; Stack, KSeq)
-           ...
-       </k>
-```
-
-Here `#MakeFresh` is responsible for generating a fresh value of a given type.
-
-```symbolic
-  syntax Data ::= #MakeFresh(Type)
-
-  rule <k> #MakeFresh(nat       _:AnnotationList) => #Assume(?V >=Int 0)             ~> ?V:Int         ... </k>
-  rule <k> #MakeFresh(mutez     _:AnnotationList) => #Assume(#IsLegalMutezValue(?V)) ~> #Mutez(?V:Int) ... </k>
-
-  rule <k> #MakeFresh(bool      _:AnnotationList) => ?_:Bool                ... </k>
-  rule <k> #MakeFresh(int       _:AnnotationList) => ?_:Int                 ... </k>
-  rule <k> #MakeFresh(bytes     _:AnnotationList) => ?_:Bytes               ... </k>
-  rule <k> #MakeFresh(string    _:AnnotationList) => ?_:String              ... </k>
-  rule <k> #MakeFresh(unit      _:AnnotationList) => Unit                   ... </k>
-  rule <k> #MakeFresh(key       _:AnnotationList) => #Key(?_:String)        ... </k>
-  rule <k> #MakeFresh(key_hash  _:AnnotationList) => #KeyHash(?_:String)    ... </k>
-  rule <k> #MakeFresh(signature _:AnnotationList) => #Signature(?_:String)  ... </k>
-  rule <k> #MakeFresh(timestamp _:AnnotationList) => #Timestamp(?_:Int)     ... </k>
-  rule <k> #MakeFresh(address   _:AnnotationList) => #Address(?_:String)    ... </k>
-  rule <k> #MakeFresh(chain_id  _:AnnotationList) => #ChainId(?_:Bytes)     ... </k>
-  // TODO: should we expand into the three separate kinds of Blockchain operations?
-  rule <k> #MakeFresh(operation _:AnnotationList) => ?_:BlockchainOperation ... </k>
-
-  rule <k> #MakeFresh(list      _:AnnotationList _:Type)        => ?_:List                          ... </k>
-  rule <k> #MakeFresh(set       _:AnnotationList _:Type)        => ?_:Set                           ... </k>
-  rule <k> #MakeFresh(map       _:AnnotationList _:Type _:Type) => ?_:Map                           ... </k>
-  rule <k> #MakeFresh(big_map   _:AnnotationList _:Type _:Type) => ?_:Map                           ... </k>
-  rule <k> #MakeFresh(lambda    _:AnnotationList T1 T2)         => #Lambda(T1,T2,?_:Block)          ... </k>
-  rule <k> #MakeFresh(contract  _:AnnotationList T)             => #Contract(#Address(?_:String),T) ... </k>
-
-  rule <k> #MakeFresh(pair _:AnnotationList T1 T2)
-        => (Pair #MakeFresh(T1) #MakeFresh(T2))
-           ...
-       </k>
-
-  rule <k> #MakeFresh(option _:AnnotationList T) => None               ... </k>
-  rule <k> #MakeFresh(option _:AnnotationList T) => Some #MakeFresh(T) ... </k>
-
-  rule <k> #MakeFresh(or _:AnnotationList T1 T2) => Left  #MakeFresh(T1) ... </k>
-  rule <k> #MakeFresh(or _:AnnotationList T1 T2) => Right #MakeFresh(T2) ... </k>
-```
-
-Handle `Aborted`
-----------------
-
-```k
-  syntax TypedSymbol ::= #TypedSymbol(Type, Data)
-```
-
-If a program aborts due to the FAILWITH instruction, we throw away the abortion debug info:
-
-```k
-  rule <k> (Aborted(_, _, _, _) => .K) ~> #ExecutePostConditions ... </k>
-```
-
-The `BIND` instruction
-----------------------
-
-```k
-  syntax Instruction ::= "BIND" OutputStack Block
-  rule <k> BIND Shape Block
-        => #Bind(Shape, Stack)
-        ~> Block
-        ~> #RestoreSymbols(Symbols)
-           ...
-       </k>
-       <symbols> Symbols </symbols>
-       <stack> Stack </stack>
-```
-
-```k
-  syntax KItem ::= #Bind(OutputStack, K)
-
-  rule <k> #Bind({ .StackElementList }, .K) => .K ... </k>
-
-  rule <k> #Bind(S1:FailedStack, S2:FailedStack) => .K ... </k>
-    requires #Matches(S1, S2)
-
-  rule <k> #Bind( { Stack_elt T S:SymbolicData ; Ss } => { Ss }
-                , ( (D ~> K:K)                        => K )
-                )
-           ...
-       </k>
-       <paramtype> PT </paramtype>
-       <symbols> .Map => S |-> #TypedSymbol(T, D) ... </symbols>
-
-  rule <k> #Bind( { Stack_elt T S:SymbolicData ; Ss } => { Ss }
-                , ( (D ~> K:K)                        => K )
-                )
-           ...
-       </k>
-       <paramtype> PT </paramtype>
-       <symbols> S |-> #TypedSymbol(T, D) ... </symbols>
-
-  rule <k> #Bind( { Stack_elt T ED ; Ss } => { Ss }
-                , ( (AD ~> K:K)             => K )
-                )
-           ...
-       </k>
-       <knownaddrs> KnownAddrs </knownaddrs>
-       <bigmaps> BigMaps </bigmaps>
-       <stack> AD => .K ... </stack>
-    requires #Matches(#MichelineToNative(ED,T,KnownAddrs,BigMaps),AD)
-     andBool notBool isSymbolicData(ED)
-```
-
-```k
-  syntax KItem ::= #RestoreSymbols(Map)
-  rule <k> #RestoreSymbols(Symbols) => .K ... </k>
-       <symbols> _ => Symbols </symbols>
-```
-
-Extending functions to `SymbolicData`
--------------------------------------
-
-```symbolic
-  rule [[ #MichelineToNative(S:SymbolicData, T, _, _) => D ]]
-       <symbols> S |-> #TypedSymbol(T, D) ... </symbols>
-
-  rule [[ #MichelineToNative(S:SymbolicData, T, _, _) => S ]]
-       <symbols> Syms:Map </symbols>
-    requires notBool (S in_keys(Syms))
-
-  rule [[ #TypeData(_, S:SymbolicData, T) => #Typed(S, T) ]]
-       <symbols> ... S |-> #TypedSymbol(T, _) ... </symbols>
 ```
 
 ```k
