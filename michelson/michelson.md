@@ -594,13 +594,23 @@ instantiations of the COMPARE operation to be implemented in fewer rules.
 TODO: If we define `DoCompare` as a macro for `#ite` we can avoid this.
 
 ```symbolic
-  rule #DoCompare(B1:Bool, B2:Bool) ==Int 0 => B1 ==Bool B2 [simplification]
+  rule #DoCompare(I1:Bool, I2:Bool) <Int 0  => (I1 ==Bool false) andBool (I2 ==Bool true)                       [simplification]
+  rule #DoCompare(I1:Bool, I2:Bool) <=Int 0 => ((I1 ==Bool false) andBool (I2 ==Bool true)) orBool I1 ==Bool I2 [simplification]
+  rule #DoCompare(I1:Bool, I2:Bool) ==Int 0 => I1 ==Bool I2                                                     [simplification]
+  rule #DoCompare(I1:Bool, I2:Bool) >=Int 0 => ((I1 ==Bool true) andBool (I2 ==Bool false)) orBool I1 ==Bool I2 [simplification]
+  rule #DoCompare(I1:Bool, I2:Bool) >Int 0  => (I1 ==Bool true) andBool (I2 ==Bool false)                       [simplification]
 
-  rule #DoCompare(I1:Int, I2:Int) <Int 0 => I1 <Int I2 [simplification]
+  rule #DoCompare(I1:Int, I2:Int) <Int 0  => I1 <Int I2  [simplification]
   rule #DoCompare(I1:Int, I2:Int) <=Int 0 => I1 <=Int I2 [simplification]
   rule #DoCompare(I1:Int, I2:Int) ==Int 0 => I1 ==Int I2 [simplification]
   rule #DoCompare(I1:Int, I2:Int) >=Int 0 => I1 >=Int I2 [simplification]
-  rule #DoCompare(I1:Int, I2:Int) >Int 0 => I1 >Int I2 [simplification]
+  rule #DoCompare(I1:Int, I2:Int) >Int 0  => I1 >Int I2  [simplification]
+
+  rule #DoCompare(I1:String, I2:String) <Int 0  => I1 <String I2  [simplification]
+  rule #DoCompare(I1:String, I2:String) <=Int 0 => I1 <=String I2 [simplification]
+  rule #DoCompare(I1:String, I2:String) ==Int 0 => I1 ==String I2 [simplification]
+  rule #DoCompare(I1:String, I2:String) >=Int 0 => I1 >=String I2 [simplification]
+  rule #DoCompare(I1:String, I2:String) >Int 0  => I1 >String I2  [simplification]
 ```
 
 CONCAT is complicated by the fact that it is defined differently over strings
