@@ -96,7 +96,7 @@ Here we specify the various complex types offered by Michelson, making the best 
   syntax OptionData ::= "Some" Data [seqstrict]
                       | "None"
 
-  syntax Data ::= Pair | OrData | OptionData
+  syntax SimpleData ::= Pair | OrData | OptionData
 ```
 
 Here we specify the various forms of sequence literals in Michelson, including Map and List literals, and blocks.  The former two are converted to K's hooked sorts during load time.

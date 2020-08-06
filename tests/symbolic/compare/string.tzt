@@ -1,0 +1,6 @@
+input  { Stack_elt string $VAL } ;
+code   { DUP } ;
+output { Stack_elt string $VAL1 ; Stack_elt string $VAL2 } ;
+postcondition {
+  { PUSH string $VAL ; DUP ; PUSH string $VAL1 ; COMPARE ; EQ ; SWAP ; PUSH string $VAL2 ; COMPARE ; EQ ; AND }
+}

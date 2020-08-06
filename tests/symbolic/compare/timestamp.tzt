@@ -1,0 +1,6 @@
+input  { Stack_elt timestamp $VAL } ;
+code   { DUP } ;
+output { Stack_elt timestamp $VAL1 ; Stack_elt timestamp $VAL2 } ;
+postcondition {
+  { PUSH timestamp $VAL ; DUP ; PUSH timestamp $VAL1 ; COMPARE ; EQ ; SWAP ; PUSH timestamp $VAL2 ; COMPARE ; EQ ; AND }
+}

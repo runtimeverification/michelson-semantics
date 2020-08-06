@@ -1,0 +1,3 @@
+input  { Stack_elt key $VAL } ;
+code   { DUP } ;
+output { Stack_elt key $VAL ; Stack_elt key $VAL }

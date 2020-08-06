@@ -573,9 +573,9 @@ instantiations of the COMPARE operation to be implemented in fewer rules.
   rule #DoCompare(I1:Int, I2:Int) => 0 requires I1 ==Int I2 [concrete(I1,I2)]
   rule #DoCompare(I1:Int, I2:Int) => 1 requires I1 >Int I2  [concrete(I1,I2)]
 
-  rule #DoCompare(S1:String, S2:String) => -1 requires S1 <String S2
-  rule #DoCompare(S1:String, S2:String) => 0 requires S1 ==String S2
-  rule #DoCompare(S1:String, S2:String) => 1 requires S1 >String S2
+  rule #DoCompare(S1:String, S2:String) => -1 requires S1 <String S2 [concrete]
+  rule #DoCompare(S1:String, S2:String) => 0 requires S1 ==String S2 [concrete]
+  rule #DoCompare(S1:String, S2:String) => 1 requires S1 >String S2  [concrete]
 
   rule #DoCompare((Pair A1 A2), (Pair B1 B2)) => -1                 requires #DoCompare(A1, B1) ==Int -1
   rule #DoCompare((Pair A1 A2), (Pair B1 B2)) => #DoCompare(A2, B2) requires #DoCompare(A1, B1) ==Int 0
@@ -583,18 +583,37 @@ instantiations of the COMPARE operation to be implemented in fewer rules.
 
   rule <k> COMPARE A => #HandleAnnotations(A) ... </k>
        <stack> V1 ~> V2 => #DoCompare(V1, V2) ... </stack>
+
+  rule #DoCompare(B1:Bytes, B2:Bytes) => #DoCompare(Bytes2Int(B1, BE, Unsigned), Bytes2Int(B2, BE, Unsigned))
+  rule #DoCompare(#KeyHash(S1), #KeyHash(S2)) => #DoCompare(S1, S2)
+  rule #DoCompare(#Mutez(I1), #Mutez(I2)) => #DoCompare(I1, I2)
+  rule #DoCompare(#Timestamp(I1), #Timestamp(I2)) => #DoCompare(I1, I2)
+  rule #DoCompare(#Address(S1), #Address(S2)) => #DoCompare(S1, S2)
 ```
 
 TODO: If we define `DoCompare` as a macro for `#ite` we can avoid this.
 
 ```symbolic
-  rule #DoCompare(B1:Bool, B2:Bool) ==Int 0 => B1 ==Bool B2 [simplification]
+  rule #DoCompare(I1:Bool, I2:Bool) <Int 0  => (I1 ==Bool false) andBool (I2 ==Bool true)                       [simplification]
+  rule #DoCompare(I1:Bool, I2:Bool) <=Int 0 => ((I1 ==Bool false) andBool (I2 ==Bool true)) orBool I1 ==Bool I2 [simplification]
+  rule #DoCompare(I1:Bool, I2:Bool) ==Int 0 => I1 ==Bool I2                                                     [simplification]
+  rule #DoCompare(I1:Bool, I2:Bool) >=Int 0 => ((I1 ==Bool true) andBool (I2 ==Bool false)) orBool I1 ==Bool I2 [simplification]
+  rule #DoCompare(I1:Bool, I2:Bool) >Int 0  => (I1 ==Bool true) andBool (I2 ==Bool false)                       [simplification]
 
-  rule #DoCompare(I1:Int, I2:Int) <Int 0 => I1 <Int I2 [simplification]
+  rule #DoCompare(I1:Int, I2:Int) <Int 0  => I1 <Int I2  [simplification]
   rule #DoCompare(I1:Int, I2:Int) <=Int 0 => I1 <=Int I2 [simplification]
   rule #DoCompare(I1:Int, I2:Int) ==Int 0 => I1 ==Int I2 [simplification]
   rule #DoCompare(I1:Int, I2:Int) >=Int 0 => I1 >=Int I2 [simplification]
-  rule #DoCompare(I1:Int, I2:Int) >Int 0 => I1 >Int I2 [simplification]
+  rule #DoCompare(I1:Int, I2:Int) >Int 0  => I1 >Int I2  [simplification]
+
+  rule #DoCompare(I1:String, I2:String) <Int 0  => I1 <String I2  [simplification]
+  rule #DoCompare(I1:String, I2:String) <=Int 0 => I1 <=String I2 [simplification]
+  rule #DoCompare(I1:String, I2:String) ==Int 0 => I1 ==String I2 [simplification]
+  rule #DoCompare(I1:String, I2:String) >=Int 0 => I1 >=String I2 [simplification]
+  rule #DoCompare(I1:String, I2:String) >Int 0  => I1 >String I2  [simplification]
+
+  // TODO: at some point this rule should be builtin
+  rule X ==String X => true [simplification]
 ```
 
 CONCAT is complicated by the fact that it is defined differently over strings
@@ -926,7 +945,6 @@ however forces us to use two rules for each operation.
   rule <k> SUB A => . ... </k>
        <stack> #Timestamp(I1) ~> #Timestamp(I2) => I1 -Int I2 ... </stack>
 
-  rule #DoCompare(#Timestamp(I1), #Timestamp(I2)) => #DoCompare(I1, I2)
 ```
 
 Operations instructions mostly simply sanity check their arguments and then
@@ -1090,8 +1108,6 @@ allowing for code reuse.
 
   rule <k> SLICE A => #HandleAnnotations(A) ... </k>
        <stack> O:Int ~> L:Int ~> B:Bytes => #SliceBytes(B, O, L)  ... </stack>
-
-  rule #DoCompare(B1:Bytes, B2:Bytes) => #DoCompare(Bytes2Int(B1, BE, Unsigned), Bytes2Int(B2, BE, Unsigned))
 ```
 
 The cryptographic operations are simply stubbed for now.
@@ -1121,8 +1137,6 @@ The cryptographic operations are simply stubbed for now.
 
   rule <k> CHECK_SIGNATURE A => #HandleAnnotations(A) ... </k>
        <stack> #Key(_) ~> #Signature(_) ~> _:MBytes => false ... </stack> [owise] // TODO: Bug - The haskell backend does not support distinguishing these rules.*/
-
-  rule #DoCompare(#KeyHash(S1), #KeyHash(S2)) => #DoCompare(S1, S2)
 ```
 
 Mutez operations need to check their results since Mutez is not an unlimited
@@ -1177,7 +1191,6 @@ identical to those defined over integers.
        <stack> #Mutez(I1) ~> I2 => Some (Pair #Mutez(I1 /Int I2) #Mutez(I1 %Int I2)) </stack>
        requires I2 >Int 0
 
-  rule #DoCompare(#Mutez(I1), #Mutez(I2)) => #DoCompare(I1, I2)
 ```
 
 We introduce several pseudo-instructions that are used for debugging:
