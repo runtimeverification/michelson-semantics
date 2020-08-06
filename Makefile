@@ -89,8 +89,7 @@ SOURCE_FILES       := compat    \
                       common    \
                       michelson \
                       syntax    \
-                      types     \
-                      unparser
+                      types
 EXTRA_SOURCE_FILES :=
 ALL_FILES          := $(patsubst %, %.md, $(SOURCE_FILES) $(EXTRA_SOURCE_FILES))
 
