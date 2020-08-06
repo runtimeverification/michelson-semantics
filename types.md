@@ -2,7 +2,7 @@ Michelson Type Checker
 ======================
 
 ```k
-requires "michelson/common.md"
+requires "common.md"
 
 module MICHELSON-TYPES
   imports MICHELSON-COMMON

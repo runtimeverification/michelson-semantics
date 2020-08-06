@@ -1,6 +1,6 @@
 ```k
-requires "michelson/common.md"
-requires "michelson/types.md"
+requires "common.md"
+requires "types.md"
 ```
 
 Michelson Interpreter State
