@@ -11,7 +11,7 @@ The unparser converts from an internal representation to Michelson source.
 
 ```k
 requires "json.k"
-requires "michelson/michelson.md"
+requires "michelson.md"
 
 module MICHELSON-UNPARSER
   imports MICHELSON-MACRO-SYNTAX
