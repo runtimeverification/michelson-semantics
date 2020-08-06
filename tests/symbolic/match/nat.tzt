@@ -1,0 +1,3 @@
+input  { Stack_elt nat $VAL } ;
+code   { DUP } ;
+output { Stack_elt nat $VAL ; Stack_elt nat $VAL }

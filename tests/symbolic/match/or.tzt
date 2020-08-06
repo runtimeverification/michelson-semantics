@@ -1,0 +1,3 @@
+input  { Stack_elt (or int int) $VAL } ;
+code   { DUP } ;
+output { Stack_elt (or int int) $VAL ; Stack_elt (or int int) $VAL }

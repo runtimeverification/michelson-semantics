@@ -1,0 +1,3 @@
+input  { Stack_elt (lambda int int) $VAL } ;
+code   { DUP } ;
+output { Stack_elt (lambda int int) $VAL ; Stack_elt (lambda int int) $VAL }

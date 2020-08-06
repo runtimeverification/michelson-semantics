@@ -1,0 +1,6 @@
+input  { Stack_elt mutez $VAL } ;
+code   { DUP } ;
+output { Stack_elt mutez $VAL1 ; Stack_elt mutez $VAL2 } ;
+postcondition {
+  { PUSH mutez $VAL ; DUP ; PUSH mutez $VAL1 ; COMPARE ; EQ ; SWAP ; PUSH mutez $VAL2 ; COMPARE ; EQ ; AND }
+}
