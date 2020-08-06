@@ -370,8 +370,8 @@ configuration cell.
 endmodule
 ```
 
-Michelson Core Semantics
-========================
+Michelson Semantics
+===================
 
 This is the main execution semantics for Michelson. It contains the rewrite
 rule semantics for the all Michelson instructions, as well as logic for
@@ -392,6 +392,9 @@ module MICHELSON
   imports MATCHER
 ```
 
+Semantics Initialization
+------------------------
+
 `#Init` takes care of initialization.
 
 ```k
@@ -409,14 +412,24 @@ module MICHELSON
        </k>
 ```
 
-Loading groups into the K configuration
----------------------------------------
+### Group Loading
 
 Below are the rules for loading specific groups.
 
-Loading a `now` group simply involves setting the contents of the now timestamp
-to the contained integer. Similarly simple logic applies to sender, source,
-chain\_id and self.
+#### Default Contract Groups
+
+```k
+  rule <k> parameter T => .K ... </k>
+       <paramtype> #NotSet => T </paramtype>
+
+  rule <k> storage T => .K ... </k>
+       <storagetype> #NotSet => T </storagetype>
+
+  rule <k> code C => .K ... </k>
+       <script> #NoData => C </script>
+```
+
+#### Extended Unit Test Gruops
 
 ```k
   rule <k> G ; Gs:Groups => G ~> Gs ... </k>
@@ -436,13 +449,7 @@ chain\_id and self.
 
   rule <k> self A => .K ... </k>
        <myaddr> #Address("InvalidMyAddr" => A) </myaddr>
-```
 
-Amount and balance require slightly more logic to verify that the value they're
-being set to is actually a legal mutez value, but are otherwise relatively
-simple.
-
-```k
   rule <k> amount I => .K ... </k>
        <myamount> #Mutez(0 => I) </myamount>
     requires #IsLegalMutezValue(I)
@@ -450,36 +457,10 @@ simple.
   rule <k> balance I => .K ... </k>
        <mybalance> #Mutez(0 => I) </mybalance>
     requires #IsLegalMutezValue(I)
-```
 
-Loading the other contracts map involves transforming its map entry list style
-concrete representation to a K-Michelson map.
-
-```k
   rule <k> other_contracts { M } => .K ... </k>
        <knownaddrs> .Map => #OtherContractsMapEntryListToKMap(M) </knownaddrs>
-```
 
-These two groups contain information from the contract itself, but they are
-promoted to loading groups due to data dependency orders. Specifically, if we
-left these as part of the contract, we would need to load the `parameter_value`
-and `storage_value` groups after the contract so we know what types we're working
-with, but we need to load those groups before the contract so the contract can
-execute with the appropriate starting state. Extracting these groups solves the
-cyclical ordering problem.
-
-```k
-  rule <k> parameter T => .K ... </k>
-       <paramtype> #NotSet => T </paramtype>
-
-  rule <k> storage T => .K ... </k>
-       <storagetype> #NotSet => T </storagetype>
-```
-
-Similar to the `other_contracts` rule, we need to transform BigMaps into the
-appropriate K-Michelson type.
-
-```k
   rule <k> big_maps { M } => .K ... </k>
        <bigmaps> .Map => #BigMapsEntryListToKMap(M) </bigmaps>
 
@@ -492,78 +473,52 @@ appropriate K-Michelson type.
   syntax KItem ::= "#BigMap" "(" SequenceData "," Type ")"
   rule #BigMapsEntryToKMap(Big_map I T1 T2 { }          ) => I |-> #BigMap({ }, big_map .AnnotationList T1 T2)
   rule #BigMapsEntryToKMap(Big_map I T1 T2 ML:MapLiteral) => I |-> #BigMap(ML,  big_map .AnnotationList T1 T2)
-```
 
-The next loading group in this file is the contract group. The storage and
-parameter values are combined and the stack is initialized, and then the code is
-extracted so that we can move on to the execution semantics.
-
-```k
-  rule <k> contract { code C ; storage S ; parameter P ; } ; Cs => .K ... </k>
-       <script> #NoData => C </script>
-       <paramtype> #NotSet => P </paramtype>
-       <storagetype> #NotSet => S </storagetype>
-```
-
-### `precondition` group
-
-```k
-  rule <k> precondition { Bs } => .K ... </k>
-       <pre> .BlockList => Bs </pre>
-```
-
-```k
-  syntax KItem ::= "#ExecutePreConditions"
-  rule <k> #ExecutePreConditions => ASSUME { Preconditions } ... </k>
-       <pre> Preconditions </pre>
-```
-
-### `postcondition` group
-
-```k
-  rule <k> postcondition { Bs } => .K ... </k>
-       <post> .BlockList => Bs </post>
-```
-
-```k
-  syntax KItem ::= "#ExecutePostConditions"
-  rule <k> #ExecutePostConditions
-        => BIND Expected { ASSERT { Postconditions } }
-           ...
-       </k>
-       <expected> Expected </expected>
-       <post> Postconditions </post>
-```
-
-### `invariant` groups
-
-```k
   rule <k> invariant Annot { Stack } { Blocks } => . ... </k>
        <invs> .Map
            => (Annot |-> { Stack } { Blocks })
               ...
        </invs>
-```
 
-### `input` and `output` groups
-
-```k
   rule <k> input LS => .K ... </k>
        <inputstack> .K => LS </inputstack>
 
   rule <k> output Os => .K ... </k>
        <expected> .K => Os </expected>
+
+  rule <k> precondition { Bs } => .K ... </k>
+       <pre> .BlockList => Bs </pre>
+
+  rule <k> postcondition { Bs } => .K ... </k>
+       <post> .BlockList => Bs </post>
 ```
 
-### `code` group
+### Symbol Creation
+
+Load symbolic variables into the `<symbols>` map.
 
 ```k
-  rule <k> code C => .K ... </k>
-       <script> #NoData => C </script>
+  syntax KItem ::= "#CreateSymbols"
 ```
 
-From Micheline to K-Michelson Internal Representation
------------------------------------------------------
+```concrete
+  rule <k> #CreateSymbols => . ... </k>
+```
+
+```symbolic
+  rule <k> #CreateSymbols
+        => #CreateSymbols(#UnifiedSetToList(#UnifyTypes( #FindSymbolsS(Stack)
+                                                    |Set #FindSymbolsBL(Pre)
+                                                    |Set #FindSymbolsB({ Script })
+                         )                )           )
+           ...
+       </k>
+       <inputstack> { Stack }:LiteralStack </inputstack>
+       <pre> Pre:BlockList </pre>
+       <script> Script:Data </script>
+```
+
+### Micheline to Native Conversion
 
 ```k
   syntax KItem ::= "#ConvertBigMapsToNative"
@@ -604,23 +559,130 @@ From Micheline to K-Michelson Internal Representation
   rule #ConvertToType(T:Type)  => T
 ```
 
-Execution Semantics
-===================
+### Type Checking
+
+Executing Michelson code without type information leads to non-determinism.
+For example, the `CONCAT` instruction, when applied to an empty list, produces
+either an empty `string` or empty `bytes`. Without knowing the type of the list,
+the resulting type of value is unknown.
+
+The K-Michelson semantics was originally written without a type system/checker.
+Later, a type system was added to resolve various issues, including the one
+mentioned above.
+
+The result of type-checking a block of code produces an equivalent block where
+each instruction has been wrapped in its corresponding type. These types are
+unwrapped and stored in a fresh configuration cell `<stacktypes>` during
+execution. This allows the oringal "type-free" semantics can be used for all
+unambiguous cases while any type-dependent instructions can reference the
+`<stacktypes>` cell to determine which execution path is needed.
+
+To correctly check the typing of a unit test, we need the following info:
+
+1. the contract parameter type --- only used in typing the `SELF` instruction
+2. the input stack types --- which depend on (1) because `lambda`
+3. the output stack types --- which depend on (1) for the same reason
+4. a Michelson script
+
+The `#TypeCheck` takes parameters 1-4, performs the type-check, and then
+replaces the code in the script cell with typed version.
+
+TODO: Consider best way to introduce type-checks to pre/post conditions
 
 ```k
-  syntax KItem ::= "#LoadStack"
-  rule <k> #LoadStack ... </k>
+  syntax KItem ::= "#TypeCheck"
+  rule <k> #TypeCheck
+        => #TypeCheck(B,PT,IS,OS)
+        ...
+       </k>
+       <script> B </script>
+       <paramtype> PT </paramtype>
+       <inputstack> IS </inputstack>
+       <expected> OS </expected>
+
+  syntax KItem ::= #TypeCheck(Block, Type, LiteralStack, OutputStack)
+  syntax KItem ::= #TypeCheckAux(LiteralStack, LiteralStack, TypeSeq, TypedInstruction)
+
+  rule <k> #TypeCheck(B, P, IS, OS:LiteralStack)
+        => #TypeCheckAux(
+             IS,
+             OS,
+             #LiteralStackToTypes(OS, P),
+             #TypeInstruction(P, B, #LiteralStackToTypes(IS,P))
+           )
+           ...
+       </k>
+
+  // TODO: Implement a "partial" type check case
+  rule <k> #TypeCheck(B, _P, _IS, _OS:FailedStack) => . ... </k>
+       <script> B </script>
+
+  rule <k> #TypeCheckAux(_IS, _OS, OSTypes, #TI(B, ISTypes -> OSTypes))
+        => .
+           ...
+       </k>
+       <script> _ => { #Exec(#TI(B, ISTypes -> OSTypes)) } </script>
+
+  syntax TypeSeq ::= #LiteralStackToTypes(LiteralStack, Type) [function]
+  rule #LiteralStackToTypes( { .StackElementList }, _) => .TypeSeq
+  rule #LiteralStackToTypes( { Stack_elt T D ; Gs:StackElementList }, PT)
+    => T ; #LiteralStackToTypes({ Gs }, PT)
+    requires #Typed(D, T) :=K #TypeData(PT, D, T)
+  rule #LiteralStackToTypes({ Stack_elt T _:SymbolicData ; Gs:StackElementList }, PT)
+    => T ; #LiteralStackToTypes({ Gs }, PT)
+```
+
+### Stack Loading
+
+```k
+  syntax KItem ::= "#LoadInputStack"
+  rule <k> #LoadInputStack => .K ... </k>
+       <stack> _ => #LiteralStackToSemantics(Actual, KnownAddrs, BigMaps) </stack>
+       <stacktypes> _ => #LiteralStackToTypes(Actual,PT) </stacktypes>
+       <inputstack> Actual </inputstack>
+       <paramtype> PT </paramtype>
+       <knownaddrs> KnownAddrs </knownaddrs>
+       <bigmaps> BigMaps </bigmaps>
+
+  syntax K ::= #LiteralStackToSemantics(LiteralStack, Map, Map) [function]
+  rule #LiteralStackToSemantics({ .StackElementList }, _KnownAddrs, _BigMaps) => .
+  rule #LiteralStackToSemantics({ Stack_elt T D ; Gs:StackElementList }, KnownAddrs, BigMaps)
+    => #MichelineToNative(D, T, KnownAddrs, BigMaps)
+    ~> #LiteralStackToSemantics({ Gs }, KnownAddrs, BigMaps)
+```
+
+```k
+  syntax KItem ::= "#LoadDefaultContractStack"
+  rule <k> #LoadDefaultContractStack ... </k>
        <stack> .K => Pair P S </stack>
        <paramvalue> P </paramvalue>
        <storagevalue> S </storagevalue>
+```
+
+### Code Execution
+
+```k
+  syntax KItem ::= "#ExecutePreConditions"
+  rule <k> #ExecutePreConditions => ASSUME { Preconditions } ... </k>
+       <pre> Preconditions </pre>
+
+  syntax KItem ::= "#ExecutePostConditions"
+  rule <k> #ExecutePostConditions
+        => BIND Expected { ASSERT { Postconditions } }
+           ...
+       </k>
+       <expected> Expected </expected>
+       <post> Postconditions </post>
 
   syntax KItem ::= "#ExecuteScript"
   rule <k> #ExecuteScript => Script ... </k>
        <script> Script </script>
 ```
 
-These rules split apart blocks into KItems so that the main semantic rules can
-use idiomatic K.
+Execution Semantics
+===================
+
+We handle typed instruction wrappers and blocks here.
 
 ```k
   rule #Exec(Is) => Is
@@ -633,31 +695,38 @@ use idiomatic K.
   rule I:Instruction ; Is => I ~> Is
   rule {} => .K [structrual]
   rule { Is:DataList } => Is
-//  rule I:Data ; => I [anywhere]
 ```
 
-For now, annotations are simply ignored.
+For now, annotations are ignored.
 
 ```k
   syntax Instruction ::= #HandleAnnotations(AnnotationList)
   rule #HandleAnnotations(_) => .
 ```
 
-This production contains error information when a contract fails at runtime. Its
-arguments are:
+Control Structures
+------------------
 
-1. An error message.
-2. The top element of the stack (the argument to `FAILWITH`)
-3. The remainder of the stack.
-4. The remainder of the K cell.
+### User-defined Exceptions
+
+The `FAILWITH` instruction lets users terminate execution at any point.
 
 ```k
-  syntax Error ::= Aborted(String, KItem, K, K)
-
-  // Core Instructioons
-  //// Control Structures
-  rule <k> FAILWITH A ~> Rk => #HandleAnnotations(A) ~> Aborted("FAILWITH instruction reached", D, Rk, Rs) ~> Rk </k>
+  rule <k> FAILWITH A ~> Rk
+        => #HandleAnnotations(A)
+	~> Aborted("FAILWITH instruction reached", D, Rk, Rs)
+	~> Rk
+       </k>
        <stack> D ~> Rs => ( Failed D ) </stack>
+```
+
+`Aborted()` contains error information when a contract fails at runtime.
+
+```k
+  syntax Error ::= Aborted(message: String,
+                           stackTop: KItem,
+			   restOfStack: K,
+			   restOfContinuation: K)
 ```
 
 It then consumes the rest of the program:
@@ -668,14 +737,14 @@ It then consumes the rest of the program:
   rule <k> Aborted(_, _, _, _) ~> (_:Data => .K) ... </k>
 ```
 
-If a program aborts due to the FAILWITH instruction, we throw away the abortion debug info:
+Currently, if a program aborts due to the FAILWITH instruction, we throw away
+the abortion debug info:
 
 ```k
   rule <k> (Aborted(_, _, _, _) => .K) ~> #ExecutePostConditions ... </k>
 ```
 
-Conditionals
-------------
+### Conditionals
 
 The control flow instruction's implementations in K should look extremely
 similar to their formal description in the [Michelson
@@ -691,8 +760,9 @@ reasons, was a major design goal of the semantics.
        <stack> false => . ... </stack>
 ```
 
-Loops
------
+### Loops
+
+Here we handle concrete loop semantics.
 
 ```k
   rule <k> LOOP .AnnotationList B
@@ -725,8 +795,7 @@ Here we handle symbolic loop semantics.
        <invs> A |-> Invariant ... </invs>
 ```
 
-Other Control Operators
------------------------
+### Stack Manipulation
 
 It is sometimes useful to create "pseudo-instructions" like this to schedule
 operations to happen in the future.
@@ -763,29 +832,10 @@ when a lambda completes execution.
        <stack> R:Data => R ~> Ls </stack>
 ```
 
-An EXEC instruction replaces the stack and schedules the restoration of the old
-stack after the completion of the lambda code.
-
-```k
-  rule <k> EXEC B => #HandleAnnotations(B) ~> C ~> #ReturnStack(Rs) ... </k>
-       <stack> A:Data ~> #Lambda(_, _, C):Data ~> Rs:K => A </stack>
-```
-
-APPLY demonstrates why lambdas have their type information preserved, as
-otherwise we would be unable to produce an appropriate `PUSH` instruction for
-the expanded lambda.
-
-```k
-  rule <k> APPLY A => #HandleAnnotations(A) ... </k>
-       <stack> D:Data ~> #Lambda(pair _:AnnotationList T0 T1, T2, { C } ) => #Lambda(T1, T2, { PUSH .AnnotationList T0 D ; PAIR .AnnotationList ; { C } } ) ... </stack>
-```
-
 `DROP n` is implemented in a recursive style, like in the Michelson
 documentation.
 
 ```k
-  ////Stack operations
-
   rule <k> DROP A =>  #HandleAnnotations(A) ... </k>
        <stack> _:Data => . ... </stack>
 
@@ -872,11 +922,33 @@ UNIT and LAMBDA are implemented almost exactly as specified in the documentation
        <stack> . => #Lambda(T1, T2, C) ... </stack>
 ```
 
+### Lambda Evaluation
+
+An EXEC instruction replaces the stack and schedules the restoration of the old
+stack after the completion of the lambda code.
+
+```k
+  rule <k> EXEC B => #HandleAnnotations(B) ~> C ~> #ReturnStack(Rs) ... </k>
+       <stack> A:Data ~> #Lambda(_, _, C):Data ~> Rs:K => A </stack>
+```
+
+APPLY demonstrates why lambdas have their type information preserved, as
+otherwise we would be unable to produce an appropriate `PUSH` instruction for
+the expanded lambda.
+
+```k
+  rule <k> APPLY A => #HandleAnnotations(A) ... </k>
+       <stack> D:Data ~> #Lambda(pair _:AnnotationList T0 T1, T2, { C } ) => #Lambda(T1, T2, { PUSH .AnnotationList T0 D ; PAIR .AnnotationList ; { C } } ) ... </stack>
+```
+
+Core Operations
+---------------
+
+### Generic Comparison
+
 Comparisons map directly onto K Int functions.
 
 ```k
-  //// Generic Comparisons
-
   rule <k> EQ A => #HandleAnnotations(A) ... </k>
        <stack> I => I ==Int 0 ... </stack>
 
@@ -901,11 +973,11 @@ Comparisons map directly onto K Int functions.
     rule A >=Int B => notBool( A  <Int B ) [simplification]
 ```
 
+### Boolean Operations
+
 As do basic boolean functions.
 
 ```k
-  // Operations
-  //// Operations on booleans
   rule <k> OR A => #HandleAnnotations(A) ... </k>
        <stack> B1 ~> B2 => B1 orBool B2 ...  </stack>
 
@@ -919,10 +991,11 @@ As do basic boolean functions.
        <stack> B => notBool B ... </stack>
 ```
 
+### Integer and Natural Operations
+
 Negation and taking absolute value are similarly trivial.
 
 ```k
-  //// Operations on integers and natural numbers
   rule <k> NEG A => #HandleAnnotations(A) ... </k>
        <stack> I => 0 -Int I ... </stack>
 
@@ -1013,6 +1086,8 @@ cell to an Aborted production.
        requires S >Int 256
 ```
 
+### `COMPARE` Instruction
+
 We lift the COMPARE operation to a function over Data, allowing many different
 instantiations of the COMPARE operation to be implemented in fewer rules.
 
@@ -1071,20 +1146,13 @@ TODO: If we define `DoCompare` as a macro for `#ite` we can avoid this.
   rule X ==String X => true [simplification]
 ```
 
-CONCAT is complicated by the fact that it is defined differently over strings
-and bytes, and so we need type information to select the correct implementation.
-This is no problem for non-empty lists, but CONCATing an empty list of strings
-should produce `""`, whereas CONCATing an empty list of bytes should produce 0x.
-We use the type information stored in `#List` to try to determine this, but the
-case of lists produced with MAP cannot be solved without a full type system,
-which is currently out of scope.
+### String Operations
 
 ```k
   syntax String ::= #ConcatStrings(List, String) [function]
   rule #ConcatStrings(.List, A) => A
   rule #ConcatStrings(ListItem(S1) DL, A) => #ConcatStrings(DL, A +String S1)
 
-  //// Operations on strings
   rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
        <stack> S1 ~> S2 => S1 +String S2 ... </stack>
 
@@ -1113,10 +1181,69 @@ Earlier versions of the semantics didn't check if O was in bounds, resulting in
        <stack> O ~> L ~> S => #SliceString(S, O, L)  ... </stack>
 ```
 
+### Bytes Operations
+
+The bytes instructions have a stubbed implementation for the time being, since
+the actual serialization format is not formally unspecified.
+
+```k
+  rule <k> PACK A => #HandleAnnotations(A) ... </k>
+       <stack> T => #Packed(T) ... </stack>
+
+  rule <k> UNPACK A _ => #HandleAnnotations(A) ... </k>
+       <stack> #Packed(T) => Some T ... </stack>
+```
+
+The concat operation over two bytes is relatively straightforward since we
+already have helper functions to extract bytes content.
+
+```k
+  rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
+       <stack> B1:Bytes ~> B2:Bytes => B1 +Bytes B2 ... </stack>
+```
+
+Concatenating lists of bytes is somewhat more involved, since we need to
+distinguish this case from lists of strings.
+
+```k
+  syntax Bytes ::= #ConcatBytes(List, Bytes) [function]
+  rule #ConcatBytes(.List, A) => A
+  rule #ConcatBytes(ListItem(B) DL, A) => #ConcatBytes(DL, A +Bytes B)
+
+  rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
+       <stack> L => #ConcatBytes(L, .Bytes) ... </stack>
+       <stacktypes> list _ bytes _ ; _ </stacktypes>
+```
+
+Size is relatively simple, except that we must remember to divide by two, since
+bytes length is measured in terms of number of bytes, not characters in the hex
+string.
+
+```k
+  rule <k> SIZE A => #HandleAnnotations(A) ... </k>
+       <stack> B => lengthBytes(B) ... </stack>
+```
+
+The remaining operations are defined in terms of the same operations on strings,
+allowing for code reuse.
+
+```k
+  syntax OptionData ::= #SliceBytes(Bytes, Int, Int) [function]
+
+  rule #SliceBytes(S, O, L) => Some substrBytes(S, O, O +Int L)
+  requires O >=Int 0 andBool L >=Int 0 andBool O <Int lengthBytes(S) andBool (O +Int L) <=Int lengthBytes(S)
+
+  rule #SliceBytes(S, O, L) => None [owise]
+
+  rule <k> SLICE A => #HandleAnnotations(A) ... </k>
+       <stack> O:Int ~> L:Int ~> B:Bytes => #SliceBytes(B, O, L)  ... </stack>
+```
+
+### Pair Operations
+
 Pair operations lift directly from the documentation.
 
 ```k
-  //// Operations on pairs
   rule <k> PAIR A => #HandleAnnotations(A) ... </k>
        <stack> L ~> R => Pair L R ... </stack>
 
@@ -1130,11 +1257,12 @@ Pair operations lift directly from the documentation.
        <stack> Pair _ R => R ... </stack>
 ```
 
+### Set Operations
+
 Sets in Michelson are implemented using the K hooked set implementation. This
 allows many Michelson operation, like MEM, to lift directly to Set functions.
 
 ```k
-  //// Operations on sets
   rule <k> EMPTY_SET A _ => #HandleAnnotations(A) ... </k>
        <stack> . => .Set ... </stack>
 
@@ -1187,10 +1315,11 @@ Set size is lifts directly into Michelson.
        <stack> S:Set => size(S) ... </stack>
 ```
 
+### Map Operations
+
 Much like Sets, MAP operations lift reasonably easily into K.
 
 ```k
-  //// Operations on maps
   rule <k> EMPTY_MAP A _ _ => #HandleAnnotations(A) ... </k>
        <stack> . => .Map ... </stack>
 
@@ -1263,12 +1392,12 @@ SIZE lifts direclty into K.
        <stack> M:Map => size(M) ... </stack>
 ```
 
+### Big Map Operations
+
 For the purposes of this semantics, `big_map`s are represented in the same way
 as maps, so they can reuse the same execution rules.
 
 ```k
-  //// Operations on big maps
-
   rule <k> EMPTY_BIG_MAP A _ _ => #HandleAnnotations(A)  ... </k>
        <stack> . => .Map ... </stack>
 
@@ -1294,10 +1423,11 @@ documentation into rewrite rules.
        <stack> Some V => V ... </stack>
 ```
 
+### Union Operations
+
 Sum types are similar to options.
 
 ```k
-  //// Operations on unions
   rule <k> LEFT A _ => #HandleAnnotations(A)  ... </k>
        <stack> X:Data => Left X ... </stack>
 
@@ -1311,12 +1441,13 @@ Sum types are similar to options.
        <stack> Right V => V ... </stack>
 ```
 
+### List Operations
+
 Lists are somewhat nontrivial in that we need to keep track of typing
 information and hence we have the `#List` nonterminal. Aside from that, the
 rules are a direct translation of the documentation into K.
 
 ```k
-  //// Operations on lists
   rule <k> CONS A => #HandleAnnotations(A)  ... </k>
        <stack> V ~> L:List => ListItem(V) L ... </stack>
 
@@ -1381,13 +1512,16 @@ Size and iter have relatively simple implementations.
        <stack> ListItem(L) Ls => L ... </stack>
 ```
 
+Domain Specific operations
+--------------------------
+
+### Timestamp Operations
+
 Timestamps are simply wrapped ints in K-Michelson, so the implementation of
 simple arithmetic over them is straightforward. The differing argument types
 however forces us to use two rules for each operation.
 
 ```k
-  // Domain Specific operations
-  //// Operations on timestamps
   rule <k> ADD A => . ... </k>
        <stack> #Timestamp(I1) ~> I2 => #Timestamp(I1 +Int I2) ... </stack>
 
@@ -1401,6 +1535,8 @@ however forces us to use two rules for each operation.
        <stack> #Timestamp(I1) ~> #Timestamp(I2) => I1 -Int I2 ... </stack>
 
 ```
+
+### Blockchain Operations
 
 Operations instructions mostly simply sanity check their arguments and then
 package them into the appropriate operation structure from
@@ -1498,7 +1634,6 @@ account is unit.
   rule <k> IMPLICIT_ACCOUNT Ann => . ... </k>
        <stack> #KeyHash(A) => #Contract(#Address(A), unit .AnnotationList) ... </stack>
 
-  //// Special Operations
   rule <k> CHAIN_ID A => . ... </k>
        <stack> . => C ... </stack>
        <mychainid> C </mychainid>
@@ -1508,68 +1643,11 @@ account is unit.
        <mynow> N </mynow>
 ```
 
-The bytes instructions have a stubbed implementation for the time being, since
-the actual serialization format is unspecified.
-
-```k
-  //// Operations on MBytes, stubbed for now because of the lack of a documented bytes format.
-  rule <k> PACK A => #HandleAnnotations(A) ... </k>
-       <stack> T => #Packed(T) ... </stack>
-
-  rule <k> UNPACK A _ => #HandleAnnotations(A) ... </k>
-       <stack> #Packed(T) => Some T ... </stack>
-```
-
-The concat operation over two bytes is relatively straightforward since we
-already have helper functions to extract bytes content.
-
-```k
-  rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
-       <stack> B1:Bytes ~> B2:Bytes => B1 +Bytes B2 ... </stack>
-```
-
-Concatenating lists of bytes is somewhat more involved, since we need to
-distinguish this case from lists of strings.
-
-```k
-  syntax Bytes ::= #ConcatBytes(List, Bytes) [function]
-  rule #ConcatBytes(.List, A) => A
-  rule #ConcatBytes(ListItem(B) DL, A) => #ConcatBytes(DL, A +Bytes B)
-
-  rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
-       <stack> L => #ConcatBytes(L, .Bytes) ... </stack>
-       <stacktypes> list _ bytes _ ; _ </stacktypes>
-```
-
-Size is relatively simple, except that we must remember to divide by two, since
-bytes length is measured in terms of number of bytes, not characters in the hex
-string.
-
-```k
-  rule <k> SIZE A => #HandleAnnotations(A) ... </k>
-       <stack> B => lengthBytes(B) ... </stack>
-```
-
-The remaining operations are defined in terms of the same operations on strings,
-allowing for code reuse.
-
-```k
-  syntax OptionData ::= #SliceBytes(Bytes, Int, Int) [function]
-
-  rule #SliceBytes(S, O, L) => Some substrBytes(S, O, O +Int L)
-  requires O >=Int 0 andBool L >=Int 0 andBool O <Int lengthBytes(S) andBool (O +Int L) <=Int lengthBytes(S)
-
-  rule #SliceBytes(S, O, L) => None [owise]
-
-  rule <k> SLICE A => #HandleAnnotations(A) ... </k>
-       <stack> O:Int ~> L:Int ~> B:Bytes => #SliceBytes(B, O, L)  ... </stack>
-```
+### Cryptographic Operations
 
 The cryptographic operations are simply stubbed for now.
 
 ```k
-  //// Cryptographic primitives
-
   syntax String ::= #Blake2BKeyHash(String) [function] // TODO: Blake2B crypto hook.
   rule #Blake2BKeyHash(S) => S
 
@@ -1587,19 +1665,23 @@ The cryptographic operations are simply stubbed for now.
 
   syntax MBytes ::= #SignedMBytes(Key, Signature, MBytes)
 
-/*  rule <k> CHECK_SIGNATURE A => #HandleAnnotations(A) ... </k>
+/*
+  // FIXME: The haskell backend does not support distinguishing these rules.
+  rule <k> CHECK_SIGNATURE A => #HandleAnnotations(A) ... </k>
        <stack> #Key(K) ~> #Signature(S) ~> #SignedMBytes(#Key(K), #Signature(S), _) => true ... </stack>
 
   rule <k> CHECK_SIGNATURE A => #HandleAnnotations(A) ... </k>
-       <stack> #Key(_) ~> #Signature(_) ~> _:MBytes => false ... </stack> [owise] // TODO: Bug - The haskell backend does not support distinguishing these rules.*/
+       <stack> #Key(_) ~> #Signature(_) ~> _:MBytes => false ... </stack> [owise] 
+*/
 ```
+
+### Mutez Operations
 
 Mutez operations need to check their results since Mutez is not an unlimited
 precision type. This internal instruction checks and produces the appropriate error case if the
 value is invalid.
 
 ```k
-  //// Operations on Mutez
   syntax Instruction ::= #ValidateMutezAndPush(Mutez, Int, Int)
 
   syntax FailedStack ::= #FailureFromMutezValue(Mutez, Int, Int) [function]
@@ -1648,7 +1730,41 @@ identical to those defined over integers.
 
 ```
 
-### `#Assume`/`#Assert` instructions
+Debugging Operations
+--------------------
+
+We introduce several pseudo-instructions that are used for debugging:
+
+-   `TRACE` appends its string content to the `<trace>` cell as a debugging aid
+    for complex programs.
+-   `STOP` is an instruction that cannot be evaluated and causes the program to
+    get stuck
+-   `PAUSE` non-determinstically chooses to either do nothing or else `STOP`;
+    it optionally traces at its pause point.
+
+```k
+  rule <k> TRACE(S) => .K ... </k>
+       <trace> K:K => (K ~> S) </trace>
+
+  rule <k> PAUSE    => .K                ... </k>
+  rule <k> PAUSE    => STOP              ... </k>
+  rule <k> PAUSE(S) => TRACE(S) ~> PAUSE ... </k>
+```
+
+When the `<k>` cell is empty, we consider execution successful
+
+```k
+  rule <k> . </k>
+       <returncode> 1 => 0 </returncode>
+```
+
+
+Internal Operations
+-------------------
+
+These operations are used internally for implementation purposes.
+
+### `ASSUME`/`ASSERT` Instructions
 
 ```k
   syntax Instruction ::= "ASSERT" "{" BlockList "}"
@@ -1709,12 +1825,12 @@ identical to those defined over integers.
   rule <k> D1:Data == D2:Data => D1 ==K D2 ... </k>
 ```
 
-### `CUTPOINT`s and stack generalization
+### `CUTPOINT` Instruction
 
 A cutpoint is a semantic construct that internalizes the notion of a
 reachability logic circularity (or claim).
-When we reach a cutpoint, we need to generalize our current state into one which
-corresponds to the reachability logic circularity that we wish to use.
+When we reach a cutpoint, we need to generalize our current state into one
+which corresponds to the reachability logic circularity that we wish to use.
 
 ```symbolic
   syntax Instruction ::= CUTPOINT( id: Int, invariant: Invariant)
@@ -1765,7 +1881,7 @@ abstract out pieces of the stack which are non-invariant during loop execution.
        </k>
 ```
 
-### The `BIND` instruction
+### `BIND` Instruction
 
 ```k
   syntax Instruction ::= "BIND" OutputStack Block
@@ -1821,34 +1937,7 @@ abstract out pieces of the stack which are non-invariant during loop execution.
        <symbols> _ => Symbols </symbols>
 ```
 
-### Debugging Instructions
-
-We introduce several pseudo-instructions that are used for debugging:
-
--   `TRACE` appends its string content to the `<trace>` cell as a debugging aid
-    for complex programs.
--   `STOP` is an instruction that cannot be evaluated and causes the program to
-    get stuck
--   `PAUSE` non-determinstically chooses to either do nothing or else `STOP`;
-    it optionally traces at its pause point.
-
-```k
-  rule <k> TRACE(S) => .K ... </k>
-       <trace> K:K => (K ~> S) </trace>
-
-  rule <k> PAUSE    => .K                ... </k>
-  rule <k> PAUSE    => STOP              ... </k>
-  rule <k> PAUSE(S) => TRACE(S) ~> PAUSE ... </k>
-```
-
-When the `<k>` cell is empty, we consider execution successful
-
-```k
-  rule <k> . </k>
-       <returncode> 1 => 0 </returncode>
-```
-
-`SymbolicData` Processing
+Symbolic Value Processing
 -------------------------
 
 ### Extending functions to `SymbolicData`
@@ -1870,6 +1959,8 @@ When the `<k>` cell is empty, we consider execution successful
 ```
 
 ### `#CreateSymbol`
+
+`#CreateSymbol` is responsible for setting up the initial symbol table.
 
 ```k
   syntax Type ::= "#UnknownType"
@@ -1950,29 +2041,6 @@ When the `<k>` cell is empty, we consider execution successful
   rule #UnifiedSetToList(#UnificationFailure) => #UnificationFailure
 ```
 
-Load symbolic variables into the `<symbols>` map.
-
-```k
-  syntax KItem ::= "#CreateSymbols"
-```
-
-```concrete
-  rule <k> #CreateSymbols => . ... </k>
-```
-
-```symbolic
-  rule <k> #CreateSymbols
-        => #CreateSymbols(#UnifiedSetToList(#UnifyTypes( #FindSymbolsS(Stack)
-                                                    |Set #FindSymbolsBL(Pre)
-                                                    |Set #FindSymbolsB({ Script })
-                         )                )           )
-           ...
-       </k>
-       <inputstack> { Stack }:LiteralStack </inputstack>
-       <pre> Pre:BlockList </pre>
-       <script> Script:Data </script>
-```
-
 ```symbolic
   syntax KItem ::= #CreateSymbols(UnifiedList)
   rule <k> #CreateSymbols(.List) => . ... </k>
@@ -1990,42 +2058,9 @@ Load symbolic variables into the `<symbols>` map.
        <symbols> M => M[N <- #TypedSymbol(T, V)] </symbols>
 ```
 
-This function transforms a LiteralStack (e.g. a sequence of `Stack_elt`
-productions) into a KSequence (the same format as the execution stack).
-
-```k
-  syntax K ::= #LiteralStackToSemantics(LiteralStack, Map, Map) [function]
-  rule #LiteralStackToSemantics({ .StackElementList }, _KnownAddrs, _BigMaps) => .
-  rule #LiteralStackToSemantics({ Stack_elt T D ; Gs:StackElementList }, KnownAddrs, BigMaps)
-    => #MichelineToNative(D, T, KnownAddrs, BigMaps)
-    ~> #LiteralStackToSemantics({ Gs }, KnownAddrs, BigMaps)
-```
-
-This function transforms an expected output stack to its internal representation
-(failed stacks are already in their internal representation, literals must be
-transformed as in the input group).
-
-```k
-  syntax K ::= #OutputStackToSemantics(OutputStack, Map, Map) [function]
-  rule #OutputStackToSemantics(L, KnownAddrs, BigMaps)
-    => #LiteralStackToSemantics(L, KnownAddrs, BigMaps)
-  rule #OutputStackToSemantics(X:FailedStack, _, _) => X
-```
-
-```k
-  syntax KItem ::= "#LoadInputStack"
-  rule <k> #LoadInputStack => .K ... </k>
-       <stack> _ => #LiteralStackToSemantics(Actual, KnownAddrs, BigMaps) </stack>
-       <stacktypes> _ => #LiteralStackToTypes(Actual,PT) </stacktypes>
-       <inputstack> Actual </inputstack>
-       <paramtype> PT </paramtype>
-       <knownaddrs> KnownAddrs </knownaddrs>
-       <bigmaps> BigMaps </bigmaps>
-```
-
 ### `#MakeFresh`
 
-Here `#MakeFresh` is responsible for generating a fresh value of a given type.
+`#MakeFresh` is responsible for generating a fresh value of a given type.
 
 ```symbolic
   syntax Data ::= #MakeFresh(Type)
@@ -2064,95 +2099,6 @@ Here `#MakeFresh` is responsible for generating a fresh value of a given type.
 
   rule <k> #MakeFresh(or _:AnnotationList T1 T2) => Left  #MakeFresh(T1) ... </k>
   rule <k> #MakeFresh(or _:AnnotationList T1 T2) => Right #MakeFresh(T2) ... </k>
-```
-
-Type Checking Extension
------------------------
-
-For type-checking purposes, given an input or expected output stack, we need to
-know what types are on the stack.
-
-```k
-  syntax TypeSeq ::= #LiteralStackToTypes(LiteralStack, Type) [function]
-  rule #LiteralStackToTypes( { .StackElementList }, _) => .TypeSeq
-  rule #LiteralStackToTypes( { Stack_elt T D ; Gs:StackElementList }, PT)
-    => T ; #LiteralStackToTypes({ Gs }, PT)
-    requires #Typed(D, T) :=K #TypeData(PT, D, T)
-  rule #LiteralStackToTypes({ Stack_elt T _:SymbolicData ; Gs:StackElementList }, PT)
-    => T ; #LiteralStackToTypes({ Gs }, PT)
-```
-
-### `#TypeCheck` function
-
-Executing Michelson code without type information leads to non-determinism.
-For example, the `CONCAT` instruction, when applied to an empty list, produces
-either an empty `string` or empty `bytes`. Without knowing the type of the list,
-the resulting type of value is unknown.
-
-The K-Michelson semantics was originally written without a type system/checker.
-Later, a type system was added to resolve various issues, including the one
-mentioned above.
-
-The result of type-checking a block of code produces an equivalent block where
-each instruction has been wrapped in its corresponding type. These types are
-unwrapped and stored in a fresh configuration cell `<stacktypes>` during
-execution. This allows the oringal "type-free" semantics can be used for all
-unambiguous cases while any type-dependent instructions can reference the
-`<stacktypes>` cell to determine which execution path is needed.
-
-To correctly check the typing of a unit test, we need the following info:
-
-1. the contract parameter type --- only used in typing the `SELF` instruction
-2. the input stack types --- which depend on (1) because `lambda`
-3. the output stack types --- which depend on (1) for the same reason
-4. a Michelson script
-
-The `#TypeCheck` takes parameters 1-4, performs the type-check, and then
-replaces the code in the script cell with typed version.
-
-TODO: `#TypeCheck` currently is a no-op when the expected output stack is
-a failed stack --- but this means that we cannot execute tests fully when we
-expect failure. See note below.
-
-TODO: Consider best way to introduce type-checks to pre/post conditions
-
-```k
-  syntax KItem ::= #TypeCheck(Block, Type, LiteralStack, OutputStack)
-  syntax KItem ::= #TypeCheckAux(LiteralStack, LiteralStack, TypeSeq, TypedInstruction)
-
-  rule <k> #TypeCheck(B, P, IS, OS:LiteralStack)
-        => #TypeCheckAux(
-             IS,
-             OS,
-             #LiteralStackToTypes(OS, P),
-             #TypeInstruction(P, B, #LiteralStackToTypes(IS,P))
-           )
-           ...
-       </k>
-
-  // TODO: Implement a "partial" type check case
-  rule <k> #TypeCheck(B, _P, _IS, _OS:FailedStack) => . ... </k>
-       <script> B </script>
-
-  rule <k> #TypeCheckAux(_IS, _OS, OSTypes, #TI(B, ISTypes -> OSTypes))
-        => .
-           ...
-       </k>
-       <script> _ => { #Exec(#TI(B, ISTypes -> OSTypes)) } </script>
-```
-
-This directive supplies all of the arguments to the `#TypeCheck` rule.
-
-```k
-  syntax KItem ::= "#TypeCheck"
-  rule <k> #TypeCheck
-        => #TypeCheck(B,PT,IS,OS)
-        ...
-       </k>
-       <script> B </script>
-       <paramtype> PT </paramtype>
-       <inputstack> IS </inputstack>
-       <expected> OS </expected>
 ```
 
 ```k
