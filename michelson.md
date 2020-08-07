@@ -432,8 +432,7 @@ Below are the rules for loading specific groups.
 #### Extended Unit Test Gruops
 
 ```k
-  rule <k> G ; Gs:Groups => G ~> Gs ... </k>
-  rule <k> G ; =>           G       ... </k>
+  rule <k> G:Group ; Gs:Groups => G:Group ~> Gs ... </k>
 
   rule <k> now I => .K ... </k>
        <mynow> #Timestamp(0 => I) </mynow>

@@ -10,6 +10,8 @@ module MICHELSON-SYNTAX
   imports MICHELSON-COMMON-SYNTAX
   imports MICHELSON-MACRO-SYNTAX
 
+  syntax Groups ::= Group ";" [klabel(groupSemicolon), symbol]
+
   syntax TypeAnnotation ::= r":([_a-zA-Z][_0-9a-zA-Z\\.]*)?" [token]
   syntax VariableAnnotation ::= r"@(%|%%|[_a-zA-Z][_0-9a-zA-Z\\.]*)?" [token]
   syntax FieldAnnotation ::= r"%(@|[_a-zA-Z][_0-9a-zA-Z\\.]*)?" [token]
@@ -375,7 +377,11 @@ These sorts define the *Loading Groups* for the contract.  Loading groups specif
                  | ContractsGroup
                  | BigMapGroup
 
-  syntax Groups ::= Group | Group ";" Groups | Group ";"
+  syntax Groups ::= Group
+                  | Group ";" Groups
+
+  syntax Groups ::= groupSemicolon(Group) [klabel(groupSemicolon), symbol]
+  rule groupSemicolon(G) => G [anywhere]
 ```
 
 Programs consist of sequences of these groups, potentially with an extra
@@ -492,7 +498,7 @@ instead, they can only be pushed on the stack by the Michelson
 ```
 
 - Nonce (`int`): A cryptographic nonce attached to each new `operation` literal
-  created; no two operations created separately will ever share the same nonce 
+  created; no two operations created separately will ever share the same nonce
 - Contract (`contract`): The source code of the contract to originate. The type
   of this contract will determine the expected type of the initial storage
 - Delegate (`option key_hash`): An optional delegate specified by key hash
@@ -523,7 +529,7 @@ instead, they can only be pushed on the stack by the Michelson
 ```
 
 - Nonce (`int`): A cryptographic nonce attached to each new `operation` literal
-  created; no two operations created separately will ever share the same nonce 
+  created; no two operations created separately will ever share the same nonce
 - Delegate (`option key_hash`): An optional new delegate specified by key hash;
   if `None`, then this operation clears the current delegate of the contract
 
