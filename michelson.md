@@ -341,9 +341,9 @@ of Michelson code. We list these configuration cells here:
    semantics. It is initially set to `1` and changes to `0` when the script
    executes successfully.
 
-    ```k
-                  <returncode exit=""> 1 </returncode>
-    ```
+   ```k
+                 <returncode exit=""> 1 </returncode>
+   ```
 
 7. The following cell is a debugging aid, indicating whether an `#Assume`
    statement failed. It is primarily used during Michelson code verification.
