@@ -10,15 +10,13 @@ Michelson Unparser
 The unparser converts from an internal representation to Michelson source.
 
 ```k
-requires "json.k"
+requires "json.md"
 requires "michelson.md"
 
 module MICHELSON-UNPARSER
   imports MICHELSON-MACRO-SYNTAX
-  imports MICHELSON-INTERNAL-SYNTAX
-  imports MICHELSON-COMMON
   imports UNIT-TEST-COMMON-SYNTAX
-  imports DOMAINS
+  imports MICHELSON-COMMON
 
   // We add sorts here to simplify when terms are primitive arguments
   syntax ApplicationData ::= Pair | OrData | OptionData
@@ -404,7 +402,7 @@ module MICHELSON-UNPARSER
   rule #doUnparse(big_maps { S }, _) => "big_maps {" +String #doUnparse(S, false) +String "}"
 
   rule #doUnparse(G:Group ; Gs:Groups, _) => #doUnparse(G, false) +String #doUnparse(Gs, false)
-  rule #doUnparse(G:Group, _)             => #doUnparse(Gs, false) +String ";"
+  rule #doUnparse(G:Group, _)             => #doUnparse(G, false) +String ";"
 
   rule #doUnparse(Stack_elt T D, _) =>
     "Stack_elt " +String
@@ -497,7 +495,7 @@ Here are common files shared between different compatibility semantics.
 ```k
 
 module COMPAT-COMMON
-  imports UNIT-TEST-SYNTAX
+  imports UNIT-TEST-COMMON-SYNTAX
   imports MICHELSON-UNPARSER
 
   configuration <k> $PGM:Pgm </k>
@@ -523,7 +521,6 @@ module CONTRACT-EXPANDER-SYNTAX
 endmodule
 
 module CONTRACT-EXPANDER
-  imports CONTRACT-EXPANDER-SYNTAX
   imports COMPAT-COMMON
 
   syntax Block ::= #StackEltToPush(StackElement) [function]
@@ -549,7 +546,7 @@ module CONTRACT-EXPANDER
   rule #CodeBlockEndsWithFail( { _:Instruction ; Is } ) => #CodeBlockEndsWithFail( { Is } )
 
   rule #FillTemplateContract(PushBlock, CodeBlock, ParamType) =>
-  parameter ParamType ; storage unit .AnnotationList ; code { DROP .AnnotationList ; PushBlock ; CodeBlock ; UNIT @exitToken ; FAILWITH .AnnotationList }  ;
+  parameter ParamType ; storage unit .AnnotationList ; code { DROP .AnnotationList ; PushBlock ; CodeBlock ; UNIT #token("@exitToken", "Annotation") ; FAILWITH .AnnotationList }  ;
   requires notBool #CodeBlockEndsWithFail(CodeBlock)
 
   rule #FillTemplateContract(PushBlock, CodeBlock, ParamType) =>
@@ -558,22 +555,18 @@ module CONTRACT-EXPANDER
 
   syntax LiteralStack ::= #FindInputGroup(Groups) [function]
   rule #FindInputGroup(input T) => T
-  rule #FindInputGroup(input T;) => T
   rule #FindInputGroup(input T ; _) => T
   rule #FindInputGroup(_ ; G) => #FindInputGroup(G) [owise]
 
   syntax Block ::= #FindCodeGroup(Groups) [function]
   rule #FindCodeGroup(code T) => { T }
-  rule #FindCodeGroup(code T;) => { T }
   rule #FindCodeGroup(code T ; _) => { T }
   rule #FindCodeGroup(_ ; G) => #FindCodeGroup(G) [owise]
 
   syntax Type ::= #FindParamType(Groups) [function]
   rule #FindParamType(parameter T) => T
-  rule #FindParamType(parameter T;) => T
   rule #FindParamType(parameter T ; Rs) => T
   rule #FindParamType(_:Group) => unit .AnnotationList [owise]
-  rule #FindParamType(_:Group ;) => unit .AnnotationList [owise]
   rule #FindParamType(_ ; Rs) => #FindParamType(Rs) [owise]
 
   rule <k> G:Groups => . </k>
@@ -591,7 +584,6 @@ endmodule
 
 module EXTRACTOR
   imports COMPAT-COMMON
-  imports EXTRACTOR-SYNTAX
   imports JSON
 
   syntax JSONKey ::= #KeyFromGroup(Group) [function]
@@ -640,7 +632,6 @@ module EXTRACTOR
 
   rule #GroupsToJsonInner(G ; Gs) => #GroupToJson(G) , #GroupsToJsonInner(Gs)
   rule #GroupsToJsonInner(G)      => #GroupToJson(G)
-  rule #GroupsToJsonInner(G ;)    => #GroupToJson(G)
 
   // check if we need to add braces around our output group
   rule #GroupToJson(G) => #GroupToJson(G, #KeyFromGroup(G) in SetItem("other_contracts") SetItem("big_maps"))
@@ -663,7 +654,6 @@ module INPUT-CREATOR-SYNTAX
 endmodule
 
 module INPUT-CREATOR
-  imports INPUT-CREATOR-SYNTAX
   imports COMPAT-COMMON
 
   syntax Data ::= #DataForType(Type) [function]
@@ -696,10 +686,8 @@ module INPUT-CREATOR
 
   syntax Type ::= #FindParamType(Pgm) [function]
   rule #FindParamType(parameter T) => T
-  rule #FindParamType(parameter T;) => T
   rule #FindParamType(parameter T ; Rs) => T
   rule #FindParamType(_:Group) => unit .AnnotationList [owise]
-  rule #FindParamType(_:Group;) => unit .AnnotationList [owise]
   rule #FindParamType(_ ; Rs) => #FindParamType(Rs) [owise]
 
   rule <k> G:Pgm => . </k>
@@ -711,14 +699,19 @@ Output Compare
 --------------
 
 ```k
-module OUTPUT-COMPARE-SYNTAX
-  imports UNIT-TEST-SYNTAX
+module OUTPUT-COMPARE-COMMON-SYNTAX
+  imports UNIT-TEST-COMMON-SYNTAX
   syntax RealOutputGroup ::= "real_output" OutputStack
   syntax Group ::= RealOutputGroup
 endmodule
 
+module OUTPUT-COMPARE-SYNTAX
+  imports UNIT-TEST-SYNTAX
+  imports OUTPUT-COMPARE-COMMON-SYNTAX
+endmodule
+
 module OUTPUT-COMPARE
-  imports OUTPUT-COMPARE-SYNTAX
+  imports OUTPUT-COMPARE-COMMON-SYNTAX
   imports COMPAT-COMMON
   imports K-REFLECTION
   imports MATCHER
@@ -780,9 +773,9 @@ module OUTPUT-COMPARE
                      )
        </out> [owise]
 
-  rule <k> other_contracts { M }; Gs => Gs </k>
+  rule <k> other_contracts { M } ; Gs => Gs </k>
        <knownaddrs> _ => #OtherContractsMapEntryListToKMap(M) </knownaddrs>
 
-  rule <k> real_output AOS ; output EOS ; => #CheckOutput(EOS, AOS) ... </k>
+  rule <k> real_output AOS ; output EOS => #CheckOutput(EOS, AOS) ... </k>
 endmodule
 ```
