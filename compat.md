@@ -545,7 +545,7 @@ module CONTRACT-EXPANDER
   rule #CodeBlockEndsWithFail( { _:Instruction ; Is } ) => #CodeBlockEndsWithFail( { Is } )
 
   rule #FillTemplateContract(PushBlock, CodeBlock, ParamType) =>
-  parameter ParamType ; storage unit .AnnotationList ; code { DROP .AnnotationList ; PushBlock ; CodeBlock ; UNIT #token("@exitToken", "Annotation") ; FAILWITH .AnnotationList }  ;
+  parameter ParamType ; storage unit .AnnotationList ; code { DROP .AnnotationList ; PushBlock ; CodeBlock ; UNIT #token("@exitToken", "VariableAnnotation") ; FAILWITH .AnnotationList }  ;
   requires notBool #CodeBlockEndsWithFail(CodeBlock)
 
   rule #FillTemplateContract(PushBlock, CodeBlock, ParamType) =>
