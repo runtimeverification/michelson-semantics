@@ -1877,11 +1877,19 @@ These operations are used internally for implementation purposes.
   rule <k> #Assume(true)  => .             ... </k>
   rule <k> #Assume(false) ~> _:K => . </k>
        <assumeFailed> _ => true </assumeFailed> [transition]
+```
 
+
+Note that the first value is a `KItem` and not heated/cooled. This is to work
+around the need for sort coersion in the map `GET` operation.
+
+```k
   syntax BoolExp ::= Bool
-                   | Data "==" Data [seqstrict]
-  rule <k> D1:Data == D2:Data => D1 ==K D2 ... </k>
-    requires isValue(D1) andBool isValue(D2)
+                   | KItem "==" Data [seqstrict(2)]
+  rule <k> D1 == D2 => D1 ==K D2 ... </k>
+    requires isValue(D2)
+
+  rule isBool(_L == _R) => false [simplification]
 ```
 
 ### `CUTPOINT` Instruction
