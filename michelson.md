@@ -1350,11 +1350,12 @@ For simplicity we implement this by repeatedly selecting the minimal element.
 ```symbolic
   rule <k> GET A
         => #HandleAnnotations(A)
-        ~> #Assume(isValue({M[X]}:>Data))
-        ~> #Assume(Some {M[X]}:>Data == Some #MakeFresh(int .AnnotationList))
+        ~> #Assume(?Val == #MakeFresh(int .AnnotationList))
+        ~> #Assume(M[X] == ?Val)
            ...
        </k>
-       <stack> (X ~> M:Map) => Some {M[X]}:>Data ... </stack>
+       <stack> (X ~> M:Map) => Some ?Val ... </stack>
+    requires X in_keys(M)
        // TODO: figure out how to support this in pre/post-conditions which are not typechecked
        // <stacktypes> KT:Type ; map _:AnnotationList KT VT:Type </stacktypes>
 ```
