@@ -1866,14 +1866,14 @@ These operations are used internally for implementation purposes.
 ```
 
 ```k
-  syntax KItem ::= #Assert(BoolExp) [strict, result(Data)]
+  syntax KItem ::= #Assert(BoolExp) [strict, result(Bool)]
   rule <k> #Assert(true)  => .             ... </k>
   rule <k> #Assert(false) => #AssertFailed ... </k>
   syntax KItem ::= "#AssertFailed" [klabel(#AssertFailed), symbol]
 ```
 
 ```k
-  syntax KItem ::= #Assume(BoolExp) [strict, result(Data)]
+  syntax KItem ::= #Assume(BoolExp) [strict, result(Bool)]
   rule <k> #Assume(true)  => .             ... </k>
   rule <k> #Assume(false) ~> _:K => . </k>
        <assumeFailed> _ => true </assumeFailed> [transition]
