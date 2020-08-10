@@ -2171,6 +2171,22 @@ The `isValue` predicate indicates if a `Data` has been fully evaluated.
     rule isValue(Pair L R) => isValue(L) andBool isValue(R) [simplification]
 ```
 
+```k
+    syntax Data ::= "#hole"
+
+    rule <k> Pair V1 V2 => (V1 ~> Pair #hole V2) ... </k> requires notBool isValue(V1)
+    rule <k> Pair V1 V2 => (V2 ~> Pair V1 #hole) ... </k> requires notBool isValue(V2) andBool isValue(V1)
+    rule <k> (V1 ~> Pair #hole V2) => Pair V1 V2 ... </k> requires isValue(V1)
+    rule <k> (V2 ~> Pair V1 #hole) => Pair V1 V2 ... </k> requires isValue(V2)
+
+    rule <k> Some V => (V ~> Some #hole) ... </k> requires notBool isValue(V)
+    rule <k> (V ~> Some #hole) => Some V ... </k> requires notBool isValue(V)
+    rule <k> Left V => (V ~> Left #hole) ... </k> requires notBool isValue(V)
+    rule <k> (V ~> Left #hole) => Left V ... </k> requires notBool isValue(V)
+    rule <k> Left V => (V ~> Left #hole) ... </k> requires notBool isValue(V)
+    rule <k> (V ~> Left #hole) => Left V ... </k> requires notBool isValue(V)
+```
+
 ### `#MakeFresh`
 
 `#MakeFresh` is responsible for generating a fresh value of a given type.
