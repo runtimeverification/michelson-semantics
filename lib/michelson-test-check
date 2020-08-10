@@ -100,7 +100,9 @@ symbolTable = pyk.buildSymbolTable(definition)
 def print_in_keys(map, key): return "%s in_keys(%s)" %(map, key)
 symbolTable['_in_keys(_)_MAP_Bool_KItem_Map'] = print_in_keys
 
-outputTerm = parseKastTerm(sys.stdin.read())
+term = sys.stdin.read()
+print('--------', term)
+outputTerm = parseKastTerm(term)
 success_count, failures, stucks = findFailingBranches(outputTerm)
 printStates("Stuck",stucks)
 printStates("Failure",failures)

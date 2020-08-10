@@ -23,3 +23,7 @@ tests/macros/cmpeq_00.tzt
 tests/macros/ifcmpeq.tzt
 tests/macros/pappaiir.tzt
 tests/macros/unpappaiir.tzt
+tests/macros/ifsome_optionint_00.tzt
+tests/macros/ifsome_optionint_01.tzt
+tests/macros/ifright_orintstring_00.tzt
+tests/macros/ifright_orstringint_00.tzt
