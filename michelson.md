@@ -1334,16 +1334,32 @@ For simplicity we implement this by repeatedly selecting the minimal element.
 ### Map Operations
 
 ```k
+   rule <k> GET A => #HandleAnnotations(A) ... </k>
+        <stack> X:Data ~> M => None ... </stack>
+     requires isValue(X)
+      andBool notBool(X in_keys(M))
+```
+
+```concrete
+   rule <k> GET A => #HandleAnnotations(A) ... </k>
+        <stack> X ~> M => Some {M[X]}:>Data ... </stack>
+     requires isValue(X)
+      andBool X in_keys(M)
+```
+
+```symbolic
+  rule <k> GET A
+        => #HandleAnnotations(A)
+        ~> #Assume(isValue({M[X]}:>Data))
+        ~> #Assume(Some {M[X]}:>Data == Some #MakeFresh(int .AnnotationList))
+           ...
+       </k>
+       <stack> (X ~> M:Map) => Some {M[X]}:>Data ... </stack>
+```
+
+```k
   rule <k> EMPTY_MAP A _ _ => #HandleAnnotations(A) ... </k>
        <stack> . => .Map ... </stack>
-
-  rule <k> GET A => #HandleAnnotations(A) ... </k>
-       <stack> X ~> M => Some {M[X]}:>Data ... </stack>
-       requires X in_keys(M)
-
-  rule <k> GET A => #HandleAnnotations(A) ... </k>
-       <stack> X ~> M => None ... </stack>
-       requires notBool(X in_keys(M))
 
   rule <k> MEM A => #HandleAnnotations(A) ~> . ... </k>
        <stack> X ~> M => X in_keys(M) ... </stack>
