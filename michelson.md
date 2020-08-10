@@ -1355,6 +1355,8 @@ For simplicity we implement this by repeatedly selecting the minimal element.
            ...
        </k>
        <stack> (X ~> M:Map) => Some {M[X]}:>Data ... </stack>
+       // TODO: figure out how to support this in pre/post-conditions which are not typechecked
+       // <stacktypes> KT:Type ; map _:AnnotationList KT VT:Type </stacktypes>
 ```
 
 ```k
