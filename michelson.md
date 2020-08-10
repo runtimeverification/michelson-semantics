@@ -1358,6 +1358,8 @@ For simplicity we implement this by repeatedly selecting the minimal element.
     requires X in_keys(M)
        // TODO: figure out how to support this in pre/post-conditions which are not typechecked
        // <stacktypes> KT:Type ; map _:AnnotationList KT VT:Type </stacktypes>
+
+  rule K1 in_keys(M:Map[ K2 <- _ ]) => K1 ==K K2 orBool K1 in_keys(M) [simplification]
 ```
 
 ```k
