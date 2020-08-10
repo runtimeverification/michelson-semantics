@@ -1862,6 +1862,7 @@ These operations are used internally for implementation purposes.
   syntax BoolExp ::= Bool
                    | Data "==" Data [seqstrict]
   rule <k> D1:Data == D2:Data => D1 ==K D2 ... </k>
+    requires isValue(D1) andBool isValue(D2)
 ```
 
 ### `CUTPOINT` Instruction
