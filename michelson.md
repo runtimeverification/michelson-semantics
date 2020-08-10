@@ -2149,6 +2149,15 @@ The `isValue` predicate indicates if a `Data` has been fully evaluated.
     rule isValue(_) => false [owise]
 ```
 
+```symbolic
+    rule isValue(D:SimpleData) => true [simplification]
+    rule isValue(None) => true [simplification]
+    rule isValue(Some V) => isValue(V) [simplification]
+    rule isValue(Left V) => isValue(V) [simplification]
+    rule isValue(Right V) => isValue(V) [simplification]
+    rule isValue(Pair L R) => isValue(L) andBool isValue(R) [simplification]
+```
+
 ### `#MakeFresh`
 
 `#MakeFresh` is responsible for generating a fresh value of a given type.
