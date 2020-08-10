@@ -379,9 +379,6 @@ These sorts define the *Loading Groups* for the contract.  Loading groups specif
 
   syntax Groups ::= Group
                   | Group ";" Groups
-
-  syntax Groups ::= groupSemicolon(Group) [klabel(groupSemicolon), symbol]
-  rule groupSemicolon(G) => G [anywhere]
 ```
 
 Programs consist of sequences of these groups, potentially with an extra
@@ -586,6 +583,16 @@ of Michelson sequences that produce a stack of the form `Stack_elt bool`.
 
 ```k
   syntax BlockList ::= List{Block, ";"} [klabel(BlockList)]
+```
+
+Trailing semicolons
+-------------------
+
+Trailing semicolons are optional removed:
+
+```k
+  syntax Groups ::= groupSemicolon(Group) [klabel(groupSemicolon), symbol]
+  rule groupSemicolon(G) => G [anywhere]
 ```
 
 ```k
