@@ -2090,6 +2090,18 @@ Symbolic Value Processing
        </k>
 ```
 
+```symbolic
+  syntax KItem ::= #CreateSymbol(SymbolicData, Type)
+  rule <k> (.K => #MakeFresh(T)) ~>  #CreateSymbol(_, T) ... </k>
+  rule <k> (V ~> #CreateSymbol(N, T)) => . ... </k>
+       <symbols> M => M[N <- #TypedSymbol(T, V)] </symbols>
+    requires isValue(V)
+```
+
+### "Evaluating" Data
+
+The `isValue` predicate indicates if a `Data` has been fully evaluated.
+
 ```k
     syntax Bool ::= isValue(Data) [function]
     rule isValue(D:SimpleData) => true
@@ -2097,14 +2109,6 @@ Symbolic Value Processing
     rule isValue(Left V) => isValue(V)
     rule isValue(Right V) => isValue(V)
     rule isValue(Pair L R) => isValue(L) andBool isValue(R)
-```
-
-```symbolic
-  syntax KItem ::= #CreateSymbol(SymbolicData, Type)
-  rule <k> (.K => #MakeFresh(T)) ~>  #CreateSymbol(_, T) ... </k>
-  rule <k> (V ~> #CreateSymbol(N, T)) => . ... </k>
-       <symbols> M => M[N <- #TypedSymbol(T, V)] </symbols>
-    requires isValue(V)
 ```
 
 ### `#MakeFresh`
