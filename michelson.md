@@ -2103,12 +2103,14 @@ Symbolic Value Processing
 The `isValue` predicate indicates if a `Data` has been fully evaluated.
 
 ```k
-    syntax Bool ::= isValue(Data) [function]
+    syntax Bool ::= isValue(Data) [function, functional]
     rule isValue(D:SimpleData) => true
+    rule isValue(None) => true
     rule isValue(Some V) => isValue(V)
     rule isValue(Left V) => isValue(V)
     rule isValue(Right V) => isValue(V)
     rule isValue(Pair L R) => isValue(L) andBool isValue(R)
+    rule isValue(_) => false [owise]
 ```
 
 ### `#MakeFresh`
