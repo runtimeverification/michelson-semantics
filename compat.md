@@ -401,8 +401,7 @@ module MICHELSON-UNPARSER
   rule #doUnparse(storage_value S, _) => "storage_value " +String #doUnparse(S, false)
   rule #doUnparse(big_maps { S }, _) => "big_maps {" +String #doUnparse(S, false) +String "}"
 
-  rule #doUnparse(G:Group ; Gs:Groups, _) => #doUnparse(G, false) +String #doUnparse(Gs, false)
-  rule #doUnparse(G:Group, _)             => #doUnparse(G, false) +String ";"
+  rule #doUnparse(G:Group ; Gs:Groups, _) => #doUnparse(G, false) +String ";\n" +String #doUnparse(Gs, false)
 
   rule #doUnparse(Stack_elt T D, _) =>
     "Stack_elt " +String
