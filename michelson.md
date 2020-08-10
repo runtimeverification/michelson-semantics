@@ -915,16 +915,35 @@ immediately rather than waiting for `I = 0`. Instead it is placed when `I = 0`.
   rule <k> #DoDug(-1, .K, _) => .K ... </k>
 ```
 
-`PUSH` needs to convert its argument to semantics form, but otherwise matches
-the documentation directly.
+#### `PUSH`-like Instructions
+
+`PUSH` puts its syntactic argument on the stack *when it is a `Value`*.
 
 ```k
   rule <k> PUSH A T X => #HandleAnnotations(A) ... </k>
-       <stack> . => #MichelineToNative(X, T, .Map, .Map) ... </stack>
+       <stack> . => X ... </stack>
+    requires isValue(X)
 ```
 
-`UNIT` and `LAMBDA` are implemented almost exactly as specified in the
-documentation.
+If it is not a `Value`, `PUSH` converts its argument to a `Value`, either by
+converting the parse-time representation to an internal one or else by looking
+up/creating a new symbol in the symbol table.
+
+```k
+  rule <k> PUSH A T (X => #MichelineToNative(X, T, .Map, .Map)) ... </k>
+    requires notBool isValue(X)
+     andBool notBool isSymbolicData(X)
+```
+
+```symbolic
+  rule <k> PUSH A T (X:SymbolicData => D)  ... </k>
+       <symbols> X |-> #TypedSymbol(T, D) ... </symbols>
+  rule <k> (.K => #CreateSymbol(X, T)) ~> PUSH A T X:SymbolicData  ... </k>
+       <symbols> Symbols  </symbols>
+    requires notBool X in_keys(Symbols)
+```
+
+`UNIT` and `LAMBDA` are specialized versions of `PUSH`.
 
 ```k
   rule <k> UNIT A => #HandleAnnotations(A) ... </k>
