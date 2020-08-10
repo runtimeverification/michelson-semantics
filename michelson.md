@@ -1893,12 +1893,13 @@ abstract out pieces of the stack which are non-invariant during loop execution.
            ...
        </k>
 
-  rule <k> ( V:SimpleData
+  rule <k> ( V
           ~> #GeneralizeStack(Stack_elt T D:SymbolicData ; Stack, KSeq)
            )
         =>   #GeneralizeStack(Stack_elt T V ; Stack, KSeq)
            ...
        </k>
+    requires isValue(V)
 ```
 
 ### `BIND` Instruction
@@ -2089,11 +2090,21 @@ Symbolic Value Processing
        </k>
 ```
 
+```k
+    syntax Bool ::= isValue(Data) [function]
+    rule isValue(D:SimpleData) => true
+    rule isValue(Some V) => isValue(V)
+    rule isValue(Left V) => isValue(V)
+    rule isValue(Right V) => isValue(V)
+    rule isValue(Pair L R) => isValue(L) andBool isValue(R)
+```
+
 ```symbolic
   syntax KItem ::= #CreateSymbol(SymbolicData, Type)
   rule <k> (.K => #MakeFresh(T)) ~>  #CreateSymbol(_, T) ... </k>
-  rule <k> (V:SimpleData ~> #CreateSymbol(N, T)) => . ... </k>
+  rule <k> (V ~> #CreateSymbol(N, T)) => . ... </k>
        <symbols> M => M[N <- #TypedSymbol(T, V)] </symbols>
+    requires isValue(V)
 ```
 
 ### `#MakeFresh`
