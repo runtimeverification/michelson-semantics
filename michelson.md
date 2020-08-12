@@ -278,13 +278,8 @@ state. We list the configuration cells storing this kind of state below.
    In the general case, the stack may be initialized to any well-typed
    Michelson stack.
 
-   Since currently, the Michelson stack values are stored in a way that loses
-   some type information, we have an additional cell to capture type
-   information precisely.
-
     ```k
                   <stack> .K </stack>
-                  <stacktypes> .TypeSeq </stacktypes>
     ```
 
 ### Additional Test State
@@ -404,7 +399,6 @@ Semantics Initialization
         ~> #ConvertParamToNative
         ~> #ConvertStorageToNative
         ~> #ExecutePreConditions
-        ~> #TypeCheck
         ~> #LoadInputStack
         ~> #ExecuteScript
         ~> #ExecutePostConditions
@@ -623,11 +617,11 @@ TODO: Consider best way to introduce type-checks to pre/post conditions
        <script> _ => { #Exec(#TI(B, ISTypes -> OSTypes)) } </script>
 
   syntax TypeSeq ::= #LiteralStackToTypes(LiteralStack, Type) [function]
-  rule #LiteralStackToTypes( { .StackElementList }, _) => .TypeSeq
-  rule #LiteralStackToTypes( { Stack_elt T D ; Gs:StackElementList }, PT)
+  rule #LiteralStackToTypes( { .Stack }, _) => .TypeSeq
+  rule #LiteralStackToTypes( { Stack_elt T D ; Gs:Stack }, PT)
     => T ; #LiteralStackToTypes({ Gs }, PT)
     requires #Typed(D, T) :=K #TypeData(PT, D, T)
-  rule #LiteralStackToTypes({ Stack_elt T _:SymbolicData ; Gs:StackElementList }, PT)
+  rule #LiteralStackToTypes({ Stack_elt T _:SymbolicData ; Gs:Stack }, PT)
     => T ; #LiteralStackToTypes({ Gs }, PT)
 ```
 
@@ -637,25 +631,41 @@ TODO: Consider best way to introduce type-checks to pre/post conditions
   syntax KItem ::= "#LoadInputStack"
   rule <k> #LoadInputStack => .K ... </k>
        <stack> _ => #LiteralStackToSemantics(Actual, KnownAddrs, BigMaps) </stack>
-       <stacktypes> _ => #LiteralStackToTypes(Actual,PT) </stacktypes>
        <inputstack> Actual </inputstack>
-       <paramtype> PT </paramtype>
        <knownaddrs> KnownAddrs </knownaddrs>
        <bigmaps> BigMaps </bigmaps>
 
-  syntax K ::= #LiteralStackToSemantics(LiteralStack, Map, Map) [function]
-  rule #LiteralStackToSemantics({ .StackElementList }, _KnownAddrs, _BigMaps) => .
-  rule #LiteralStackToSemantics({ Stack_elt T D ; Gs:StackElementList }, KnownAddrs, BigMaps)
-    => #MichelineToNative(D, T, KnownAddrs, BigMaps)
-    ~> #LiteralStackToSemantics({ Gs }, KnownAddrs, BigMaps)
+  syntax Stack ::= #LiteralStackToSemantics(LiteralStack, Map, Map)        [function]
+                            | #LiteralStackToSemanticsAux(Stack, Map, Map) [function]
+  // -------------------------------------------------------------------------------------------
+  rule #LiteralStackToSemantics({ Ls }, KnownAddrs, BigMaps)
+    => reverseStack( #LiteralStackToSemanticsAux(Ls, KnownAddrs, BigMaps ) )
+  rule #LiteralStackToSemanticsAux(.Stack, _KnownAddrs, _BigMaps)
+    => .Stack
+  rule #LiteralStackToSemanticsAux(Stack_elt T D ; Gs:Stack,
+                                   KnownAddrs,
+                                   BigMaps)
+    => Stack_elt T #MichelineToNative(D, T, KnownAddrs, BigMaps) ;
+       #LiteralStackToSemanticsAux(Gs, KnownAddrs, BigMaps)
+
+  syntax Stack ::= reverseStack( Stack )                   [function]
+                            | reverseStack( Stack, Stack ) [function]
+  // --------------------------------------------------------------------------------------
+  rule reverseStack( EL )                     => reverseStack( EL, .Stack )
+  rule reverseStack( E ; EL, EL' )            => reverseStack( EL, E ; EL' )
+  rule reverseStack( .Stack, EL' ) => EL'
 ```
 
 ```k
   syntax KItem ::= "#LoadDefaultContractStack"
   rule <k> #LoadDefaultContractStack ... </k>
-       <stack> .K => Pair P S </stack>
+       <stack> _
+            => Stack_elt (pair .AnnotationList PT ST) Pair P S ; .Stack
+       </stack>
        <paramvalue> P </paramvalue>
+       <paramtype> PT </paramtype>
        <storagevalue> S </storagevalue>
+       <storagetype> ST </storagetype>
 ```
 
 ### Code Execution
@@ -691,16 +701,9 @@ When the `<k>` cell is empty, we consider execution successful.
 We handle typed instruction wrappers and blocks here.
 
 ```k
-  rule #Exec(Is) => Is
-
-  rule TI:TypedInstruction ; TIS => TI ~> TIS
-
-  rule <k> #TI(I, T1 -> T2) => I ... </k>
-       <stacktypes> _ => T1 </stacktypes>
-
-  rule I:Instruction ; Is => I ~> Is
-  rule {} => .K [structrual]
-  rule { Is:DataList } => Is
+  rule I:Instruction ; Is => I ~> Is [structural]
+  rule {}                 => .K      [structrual]
+  rule { Is:DataList }    => Is      [structural]
 ```
 
 For now, annotations are ignored.
@@ -723,7 +726,7 @@ The `FAILWITH` instruction lets users terminate execution at any point.
         ~> Aborted("FAILWITH instruction reached", D, Rk, Rs)
         ~> Rk
        </k>
-       <stack> D ~> Rs => ( Failed D ) </stack>
+       <stack> Stack_elt T D ; Rs => ( Failed D ) </stack>
 ```
 
 `Aborted()` contains error information when a contract fails at runtime.
@@ -760,10 +763,10 @@ reasons, was a major design goal of the semantics.
 
 ```k
   rule <k> IF A BT BF => #HandleAnnotations(A) ~> BT ... </k>
-       <stack> true => . ... </stack>
+       <stack> Stack_elt bool _ true => .Stack ... </stack>
 
   rule <k> IF A BT BF => #HandleAnnotations(A) ~> BF ... </k>
-       <stack> false => . ... </stack>
+       <stack> Stack_elt bool _ false => .Stack ... </stack>
 ```
 
 ### Loops
@@ -775,9 +778,9 @@ Here we handle concrete loop semantics.
         => B ~> LOOP .AnnotationList B
            ...
        </k>
-       <stack> true => . ... </stack>
+       <stack> Stack_elt bool _ true => .Stack ... </stack>
   rule <k> LOOP .AnnotationList B => .K ... </k>
-       <stack> false => . ... </stack>
+       <stack> Stack_elt bool _ false => .Stack ... </stack>
 ```
 
 ```k
@@ -787,9 +790,9 @@ Here we handle concrete loop semantics.
         ~> LOOP_LEFT .AnnotationList B
            ...
         </k>
-       <stack> Left D => D ... </stack>
+       <stack> Stack_elt (or _ LX RX) Left D  => Stack_elt LX D ... </stack>
   rule <k> LOOP_LEFT A B => #HandleAnnotations(A) ... </k>
-       <stack> Right D => D ... </stack>
+       <stack> Stack_elt (or _ LX RX) Right D => Stack_elt RX D ... </stack>
 ```
 
 Here we handle symbolic loop semantics.
@@ -812,17 +815,17 @@ It is sometimes useful to create "pseudo-instructions" like this to schedule
 operations to happen in the future.
 
 ```k
-  syntax Instruction ::= #Push(Data)
-  rule <k> #Push(D) => . ... </k>
-       <stack> . => D ... </stack>
+  syntax Instruction ::= #Push(Type,Data)
+  rule <k> #Push(T,D) => . ... </k>
+       <stack> .Stack => Stack_elt T D ... </stack>
 ```
 
 The `DIP` instruction uses the `#Push` pseudo-instruction to replace the
 element it pops off for its block.
 
 ```k
-  rule <k> DIP A B => #HandleAnnotations(A) ~> B ~> #Push(D) ... </k>
-       <stack> D:Data => . ... </stack>
+  rule <k> DIP A B => #HandleAnnotations(A) ~> B ~> #Push(T,D) ... </k>
+       <stack> Stack_elt T D => .Stack ... </stack>
 ```
 
 The multiple `DIP` instruction is defined recursively
@@ -848,7 +851,7 @@ documentation.
 
 ```k
   rule <k> DROP A =>  #HandleAnnotations(A) ... </k>
-       <stack> _:Data => . ... </stack>
+       <stack> _:StackElement => . ... </stack>
 
   rule <k> DROP A I => #HandleAnnotations(A) ~> DROP .AnnotationList ~> DROP .AnnotationList I -Int 1 ... </k>
        requires I >Int 0
@@ -860,59 +863,62 @@ documentation.
 
 ```k
   rule <k> DUP A => #HandleAnnotations(A) ... </k>
-       <stack> X:Data => X ~> X ... </stack>
+       <stack> X:StackElement => X ; X ... </stack>
 
   rule <k> SWAP A => #HandleAnnotations(A) ... </k>
-       <stack> X:Data ~> Y:Data => Y ~> X ... </stack>
+       <stack> X:StackElement ; Y:StackElement => Y ; X ... </stack>
 ```
 
 `DIG` is implemented in 2 phases, digging down and building back up. This is
 implemented with the following production, which functions essentially like a
-FSM. When `I > 0`, we push elements into the internal stack after popping them
-from the main stack. When `I = 0`, we have found the element to move to the top
-and can save it. When `I = -1`, we need to start unwinding the inner stack and
-restoring the elements under the selected one.
+FSM.
+When `I > 0`, we push elements into the internal stack after popping them
+from the main stack.
 
 ```k
-  syntax Instruction ::= #DoDig(Int, K, OptionData)
+  syntax Instruction ::= #DIG(Int, Stack)
+                       | #DIG(Stack, StackElement)
 
-  rule <k> DIG A I => #HandleAnnotations(A) ~> #DoDig(I, .K, None) ... </k>
+  rule <k> DIG A 0 => #HandleAnnotations(A) ~> .K ... </k>
+
+  rule <k> DIG A I => #HandleAnnotations(A) ~> #DIG(I, .Stack) ... </k>
        <stack> S </stack>
+    requires I >Int 0
 
-  rule <k> #DoDig(I, A, None) => #DoDig(I -Int 1, F ~> A, None) ... </k>
-       <stack> F:Data => . ... </stack>
-       requires I >Int 0
+  rule <k> #DIG(I, A) => #DIG(I -Int 1, F ; A) ... </k>
+       <stack> F:StackElement => .Stack ... </stack>
+    requires I >Int 0
 
-  rule <k> #DoDig(0, A, None) => #DoDig(-1, A, Some F) ... </k>
-       <stack> F:Data => . ... </stack>
+  rule <k> #DIG(0, A) => #DIG(A, F) ... </k>
+       <stack> F:StackElement => .Stack ... </stack>
 
-  rule <k> #DoDig(-1, F:Data ~> A, Some T) => #DoDig(-1, A, Some T) ... </k>
-       <stack> . => F ... </stack>
+  rule <k> #DIG(F ; A, T) => #DIG(A, T) ... </k>
+       <stack> .Stack => F ... </stack>
 
-  rule <k> #DoDig(-1, .K, Some T) => . ... </k>
-       <stack> . => T ... </stack>
+  rule <k> #DIG(.Stack, T) => . ... </k>
+       <stack> .Stack => T ... </stack>
 ```
 
 `DUG` is implemented similar to `DIG`, except the element to move is saved
 immediately rather than waiting for `I = 0`. Instead it is placed when `I = 0`.
 
 ```k
-  syntax Instruction ::= #DoDug(Int, K, Data)
+  syntax Instruction ::= #DUG(Int, K, StackElement)
 
-  rule <k> DUG A I => #HandleAnnotations(A) ~> #DoDug(I, .K, T) ... </k>
-       <stack> T => .K ... </stack>
+  rule <k> DUG A I => #HandleAnnotations(A) ~> #DUG(I, .K, T) ... </k>
+       <stack> T => .Stack ... </stack>
 
-  rule <k> #DoDug(I, S, R) => #DoDug(I -Int 1, T ~> S, R) ... </k>
-       <stack> T:Data => .K ... </stack>
-       requires I >Int 0
+  rule <k> #DUG(I, S, R) => #DUG(I -Int 1, T ~> S, R) ... </k>
+       <stack> T:StackElement => .Stack ... </stack>
+    requires I >Int 0
 
-  rule <k> #DoDug(0, S, R) => #DoDug(-1, S, R) ... </k>
-       <stack> .K => R ... </stack>
+  rule <k> #DUG(0, S, R) => #DUG(-1, S, R) ... </k>
+       <stack> .Stack => R ... </stack>
 
-  rule <k> #DoDug(-1, T:Data ~> S, R) => #DoDug(-1, S, R) ... </k>
-       <stack> .K => T ... </stack>
+  rule <k> #DUG(-1, T:StackElement ~> S, R) => #DUG(-1, S, R) ... </k>
+       <stack> .Stack => T ... </stack>
 
-  rule <k> #DoDug(-1, .K, _) => .K ... </k>
+  rule <k> #DUG(-1, .K, _) => .K ... </k>
 ```
 
 `PUSH` needs to convert its argument to semantics form, but otherwise matches
@@ -920,7 +926,7 @@ the documentation directly.
 
 ```k
   rule <k> PUSH A T X => #HandleAnnotations(A) ... </k>
-       <stack> . => #MichelineToNative(X, T, .Map, .Map) ... </stack>
+       <stack> .Stack => #MichelineToNative(X, T, .Map, .Map) ... </stack>
 ```
 
 `UNIT` and `LAMBDA` are implemented almost exactly as specified in the
@@ -928,836 +934,836 @@ documentation.
 
 ```k
   rule <k> UNIT A => #HandleAnnotations(A) ... </k>
-       <stack> . => Unit ... </stack>
+       <stack> .Stack => Stack_elt (unit .AnnotationList) Unit ... </stack>
 
   rule <k> LAMBDA A T1 T2 C => #HandleAnnotations(A) ... </k>
-       <stack> . => #Lambda(T1, T2, C) ... </stack>
+       <stack> .Stack => Stack_elt (lambda A T1 T2) #Lambda(T1, T2, C) ... </stack>
 ```
 
-### Lambda Evaluation
-
-An `EXEC` instruction replaces the stack and schedules the restoration of the
-old stack after the completion of the lambda code.
-
-```k
-  rule <k> EXEC B => #HandleAnnotations(B) ~> C ~> #ReturnStack(Rs) ... </k>
-       <stack> A:Data ~> #Lambda(_, _, C):Data ~> Rs:K => A </stack>
-```
-
-`APPLY` demonstrates why lambdas have their type information preserved, as
-otherwise we would be unable to produce an appropriate `PUSH` instruction for
-the expanded lambda.
-
-```k
-  rule <k> APPLY A => #HandleAnnotations(A) ... </k>
-       <stack> D:Data ~> #Lambda(pair _:AnnotationList T0 T1, T2, { C } ) => #Lambda(T1, T2, { PUSH .AnnotationList T0 D ; PAIR .AnnotationList ; { C } } ) ... </stack>
-```
-
-Core Operations
----------------
-
-### Generic Comparison
-
-```k
-  rule <k> EQ A => #HandleAnnotations(A) ... </k>
-       <stack> I => I ==Int 0 ... </stack>
-
-  rule <k> NEQ A => #HandleAnnotations(A) ... </k>
-       <stack> I => I =/=Int 0 ... </stack>
-
-  rule <k> LT A => #HandleAnnotations(A) ... </k>
-       <stack> I => I <Int 0 ... </stack>
-
-  rule <k> GT A => #HandleAnnotations(A) ... </k>
-       <stack> I => I >Int 0 ... </stack>
-
-  rule <k> LE A => #HandleAnnotations(A) ... </k>
-       <stack> I => I <=Int 0 ... </stack>
-
-  rule <k> GE A => #HandleAnnotations(A) ... </k>
-       <stack> I => I >=Int 0 ... </stack>
-```
-
-```k
-    rule A  >Int B => notBool( A <=Int B ) [simplification]
-    rule A >=Int B => notBool( A  <Int B ) [simplification]
-```
-
-### Boolean Operations
-
-```k
-  rule <k> OR A => #HandleAnnotations(A) ... </k>
-       <stack> B1 ~> B2 => B1 orBool B2 ...  </stack>
-
-  rule <k> AND A => #HandleAnnotations(A) ... </k>
-       <stack> B1 ~> B2 => B1 andBool B2 ... </stack>
-
-  rule <k> XOR A => #HandleAnnotations(A) ... </k>
-       <stack> B1 ~> B2 => B1 xorBool B2 ... </stack>
-
-  rule <k> NOT A => #HandleAnnotations(A) ... </k>
-       <stack> B => notBool B ... </stack>
-```
-
-### Integer and Natural Operations
-
-Michelson `int` and `nat` datatypes are both represnted using the K `Int` type.
-These operations map directly to their K equivalents.
-
-```k
-  rule <k> NEG A => #HandleAnnotations(A) ... </k>
-       <stack> I => 0 -Int I ... </stack>
-
-  rule <k> ABS A => #HandleAnnotations(A) ... </k>
-       <stack> I => absInt(I) ... </stack>
-
-  rule <k> ISNAT A => #HandleAnnotations(A) ... </k>
-       <stack> I => Some I ... </stack>
-       requires I >=Int 0
-
-  rule <k> ISNAT A => #HandleAnnotations(A) ... </k>
-       <stack> I => None ... </stack>
-       requires I <Int 0
-
-  rule <k> INT A => #HandleAnnotations(A) ... </k>
-       <stack> I:Int ... </stack>
-
-  rule <k> ADD A => #HandleAnnotations(A) ... </k>
-       <stack> I1 ~> I2 => I1 +Int I2 ... </stack>
-
-  rule <k> SUB A => #HandleAnnotations(A) ... </k>
-       <stack> I1 ~> I2 => I1 -Int I2 ... </stack>
-
-  rule <k> MUL A => #HandleAnnotations(A) ... </k>
-       <stack> I1 ~> I2 => I1 *Int I2 ... </stack>
-
-  rule <k> EDIV A => #HandleAnnotations(A) ... </k>
-       <stack> I1:Int ~> 0 => None ... </stack>
-
-  rule <k> EDIV A  => #HandleAnnotations(A) ... </k>
-       <stack> I1 ~> I2 => Some (Pair (I1 /Int I2) (I1 %Int I2)) ... </stack>
-       requires I2 =/=Int 0
-```
-
-Bitwise operations on Michelson `int`s map directly onto K `Int` functions.
-The `LSL` and `LSR` operations produce exceptions when their shift arugment
-overflows.
-
-```k
-  rule <k> OR A => #HandleAnnotations(A)  ... </k>
-       <stack> I1 ~> I2 => I1 |Int I2 ... </stack>
-
-  rule <k> AND A => #HandleAnnotations(A) ... </k>
-       <stack> I1 ~> I2 => I1 &Int I2 ... </stack>
-
-  rule <k> XOR A => #HandleAnnotations(A) ... </k>
-       <stack> I1 ~> I2 => I1 xorInt I2 ... </stack>
-
-  rule <k> NOT A => #HandleAnnotations(A) ... </k>
-       <stack> I => ~Int I ... </stack>
-
-  rule <k> LSL A => #HandleAnnotations(A) ... </k>
-       <stack> X ~> S => X <<Int S ... </stack>
-       requires S <=Int 256
-
-  rule <k> LSL A ~> Rk
-        => #HandleAnnotations(A)
-        ~> Aborted("LSL out of range", S, Rk, Rs)
-        ~> Rk
-        </k>
-       <stack> C:Int ~> S:Int ~> Rs => ( GeneralOverflow C S )  </stack>
-       requires S >Int 256
-
-  rule <k> LSR A => #HandleAnnotations(A) ... </k>
-       <stack> X ~> S => X >>Int S ... </stack>
-       requires S <=Int 256
-
-  rule <k> LSR A ~> Rk
-        => #HandleAnnotations(A)
-        ~> Aborted("LSR out of range", S, Rk, Rs)
-        ~> Rk
-        </k>
-       <stack> X ~> S ~> Rs => ( GeneralOverflow X S ) </stack>
-       requires S >Int 256
-```
-
-### `COMPARE` Instruction
-
-The `COMPARE` instruction is defined over all comparable datatypes.
-
-```k
-  rule <k> COMPARE A => #HandleAnnotations(A) ... </k>
-       <stack> V1 ~> V2 => #DoCompare(V1, V2) ... </stack>
-```
-
-We define `COMPARE` in terms of a `#DoCompare` function.
-
-```k
-  syntax Int ::= #DoCompare(Data, Data) [function, functional]
-
-  rule #DoCompare(true, true) => 0
-  rule #DoCompare(false, false) => 0
-  rule #DoCompare(false, true) => -1
-  rule #DoCompare(true, false) => 1
-
-  rule #DoCompare(I1:Int, I2:Int) => -1 requires I1 <Int I2
-  rule #DoCompare(I1:Int, I2:Int) => 0 requires I1 ==Int I2
-  rule #DoCompare(I1:Int, I2:Int) => 1 requires I1 >Int I2
-
-  rule #DoCompare(S1:String, S2:String) => -1 requires S1 <String S2
-  rule #DoCompare(S1:String, S2:String) => 0 requires S1 ==String S2
-  rule #DoCompare(S1:String, S2:String) => 1 requires S1 >String S2
-
-  rule #DoCompare((Pair A1 A2), (Pair B1 B2)) => -1                 requires #DoCompare(A1, B1) ==Int -1
-  rule #DoCompare((Pair A1 A2), (Pair B1 B2)) => #DoCompare(A2, B2) requires #DoCompare(A1, B1) ==Int 0
-  rule #DoCompare((Pair A1 A2), (Pair B1 B2)) => 1                  requires #DoCompare(A1, B1) ==Int 1
-
-  rule #DoCompare(B1:Bytes, B2:Bytes) => #DoCompare(Bytes2Int(B1, BE, Unsigned), Bytes2Int(B2, BE, Unsigned))
-  rule #DoCompare(#KeyHash(S1), #KeyHash(S2)) => #DoCompare(S1, S2)
-  rule #DoCompare(#Mutez(I1), #Mutez(I2)) => #DoCompare(I1, I2)
-  rule #DoCompare(#Timestamp(I1), #Timestamp(I2)) => #DoCompare(I1, I2)
-  rule #DoCompare(#Address(S1), #Address(S2)) => #DoCompare(S1, S2)
-```
-
-The `#DoCompare` function requires additional lemmas for symbolic execution.
-
-```symbolic
-  rule #DoCompare(I1:Bool, I2:Bool) <Int 0  => (I1 ==Bool false) andBool (I2 ==Bool true)                       [simplification]
-  rule #DoCompare(I1:Bool, I2:Bool) <=Int 0 => ((I1 ==Bool false) andBool (I2 ==Bool true)) orBool I1 ==Bool I2 [simplification]
-  rule #DoCompare(I1:Bool, I2:Bool) ==Int 0 => I1 ==Bool I2                                                     [simplification]
-  rule #DoCompare(I1:Bool, I2:Bool) >=Int 0 => ((I1 ==Bool true) andBool (I2 ==Bool false)) orBool I1 ==Bool I2 [simplification]
-  rule #DoCompare(I1:Bool, I2:Bool) >Int 0  => (I1 ==Bool true) andBool (I2 ==Bool false)                       [simplification]
-
-  rule #DoCompare(I1:Int, I2:Int) <Int 0  => I1 <Int I2  [simplification]
-  rule #DoCompare(I1:Int, I2:Int) <=Int 0 => I1 <=Int I2 [simplification]
-  rule #DoCompare(I1:Int, I2:Int) ==Int 0 => I1 ==Int I2 [simplification]
-  rule #DoCompare(I1:Int, I2:Int) >=Int 0 => I1 >=Int I2 [simplification]
-  rule #DoCompare(I1:Int, I2:Int) >Int 0  => I1 >Int I2  [simplification]
-
-  rule #DoCompare(I1:String, I2:String) <Int 0  => I1 <String I2  [simplification]
-  rule #DoCompare(I1:String, I2:String) <=Int 0 => I1 <=String I2 [simplification]
-  rule #DoCompare(I1:String, I2:String) ==Int 0 => I1 ==String I2 [simplification]
-  rule #DoCompare(I1:String, I2:String) >=Int 0 => I1 >=String I2 [simplification]
-  rule #DoCompare(I1:String, I2:String) >Int 0  => I1 >String I2  [simplification]
-
-  // TODO: at some point this rule should be builtin
-  rule X ==String X => true [simplification]
-```
-
-### String Operations
-
-```k
-  syntax String ::= #ConcatStrings(List, String) [function]
-  rule #ConcatStrings(.List, A) => A
-  rule #ConcatStrings(ListItem(S1) DL, A) => #ConcatStrings(DL, A +String S1)
-
-  rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
-       <stack> S1 ~> S2 => S1 +String S2 ... </stack>
-
-  rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
-       <stack> L => #ConcatStrings(L, "") ... </stack>
-       <stacktypes> list _ string _ ; _ </stacktypes>
-
-  rule <k> SIZE A => #HandleAnnotations(A) ... </k>
-       <stack> S => lengthString(S) ... </stack>
-```
-
-The actual out of bounds conditions here are determined by experimentation.
-Earlier versions of the semantics didn't check if O was in bounds, resulting in
-`Slice("", 0, 0) => Some ""` rather than the correct
-`#SliceString("", 0, 0) => None`
-
-```k
-  rule <k> SLICE A => #HandleAnnotations(A) ... </k>
-       <stack> O ~> L ~> S => #SliceString(S, O, L)  ... </stack>
-
-  syntax OptionData ::= #SliceString(String, Int, Int) [function]
-
-  rule #SliceString(S, O, L) => Some substrString(S, O, O +Int L)
-    requires O >=Int 0
-     andBool L >=Int 0
-     andBool O <Int lengthString(S)
-     andBool (O +Int L) <=Int lengthString(S)
-
-  rule #SliceString(S, O, L) => None [owise]
-```
-
-### Bytes Operations
-
-The bytes instructions have a stubbed implementation for the time being, since
-the actual serialization format is not formally unspecified.
-
-```k
-  rule <k> PACK A => #HandleAnnotations(A) ... </k>
-       <stack> T => #Packed(T) ... </stack>
-
-  rule <k> UNPACK A _ => #HandleAnnotations(A) ... </k>
-       <stack> #Packed(T) => Some T ... </stack>
-```
-
-The `CONCAT` operation over two bytes is relatively straightforward since we
-already have helper functions to extract bytes content.
-
-```k
-  rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
-       <stack> B1:Bytes ~> B2:Bytes => B1 +Bytes B2 ... </stack>
-```
-
-`CONCAT` over lists of bytes is somewhat more involved, since we need to
-distinguish this case from lists of strings.
-
-```k
-  rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
-       <stack> L => #ConcatBytes(L, .Bytes) ... </stack>
-       <stacktypes> list _ bytes _ ; _ </stacktypes>
-
-  syntax Bytes ::= #ConcatBytes(List, Bytes) [function]
-  rule #ConcatBytes(.List, A) => A
-  rule #ConcatBytes(ListItem(B) DL, A) => #ConcatBytes(DL, A +Bytes B)
-```
-
-`SIZE` is relatively simple, except that we must remember to divide by two,
-since bytes length is measured in terms of number of bytes, not characters in
-the hex string.
-
-```k
-  rule <k> SIZE A => #HandleAnnotations(A) ... </k>
-       <stack> B => lengthBytes(B) ... </stack>
-```
-
-The remaining operations are defined in terms of the same operations on
-strings, allowing for code reuse.
-
-```k
-  rule <k> SLICE A => #HandleAnnotations(A) ... </k>
-       <stack> O:Int ~> L:Int ~> B:Bytes => #SliceBytes(B, O, L)  ... </stack>
-
-  syntax OptionData ::= #SliceBytes(Bytes, Int, Int) [function]
-
-  rule #SliceBytes(S, O, L) => Some substrBytes(S, O, O +Int L)
-    requires O >=Int 0
-     andBool L >=Int 0
-     andBool O <Int lengthBytes(S)
-     andBool (O +Int L) <=Int lengthBytes(S)
-
-  rule #SliceBytes(S, O, L) => None [owise]
-```
-
-### Pair Operations
-
-```k
-  rule <k> PAIR A => #HandleAnnotations(A) ... </k>
-       <stack> L ~> R => Pair L R ... </stack>
-
-  rule <k> UNPAIR A => #HandleAnnotations(A) ... </k>
-       <stack> Pair L R => L ~> R ... </stack>
-
-  rule <k> CAR A => #HandleAnnotations(A) ... </k>
-       <stack> Pair L _ => L ... </stack>
-
-  rule <k> CDR A => #HandleAnnotations(A) ... </k>
-       <stack> Pair _ R => R ... </stack>
-```
-
-### Set Operations
-
-```k
-  rule <k> EMPTY_SET A _ => #HandleAnnotations(A) ... </k>
-       <stack> . => .Set ... </stack>
-
-  rule <k> MEM A => #HandleAnnotations(A) ... </k>
-       <stack> X ~> S:Set => X in S ... </stack>
-
-  // True to insert, False to remove.
-  rule <k> UPDATE A => #HandleAnnotations(A) ... </k>
-       <stack> D ~> true ~> S => SetItem(D) S ... </stack>
-
-  rule <k> UPDATE A => #HandleAnnotations(A) ... </k>
-       <stack> D ~> false ~> SetItem(D) S => S ... </stack>
-
-  rule <k> UPDATE A => #HandleAnnotations(A) ... </k>
-       <stack> (D ~> false => .) ~> S:Set ... </stack>
-       requires notBool(D in S)
-
-  rule <k> SIZE A => #HandleAnnotations(A) ... </k>
-       <stack> S:Set => size(S) ... </stack>
-```
-
-Note that, according to the Michelson documentation, set iteration order is
-actually defined (the set is iterated over in ascending order).
-For simplicity we implement this by repeatedly selecting the minimal element.
-
-```k
-  rule <k> ITER A _ => #HandleAnnotations(A) ... </k>
-       <stack> .Set => . ... </stack>
-
-  rule <k> ITER A B
-        => #HandleAnnotations(A)
-        ~> B
-        ~> #Push(S -Set SetItem(#MinimalElement(Set2List(S))))
-        ~> ITER .AnnotationList B
-        ...
-        </k>
-       <stack> S => #MinimalElement(Set2List(S)) ... </stack>
-       requires size(S) >Int 0
-
-  syntax Data ::= #MinimalElement(List) [function]
-  syntax Data ::= #MinimalElementAux(List, Data) [function]
-
-  rule #MinimalElement(ListItem(H) L) => #MinimalElementAux(L, H)
-  rule #MinimalElementAux(.List, M) => M
-  rule #MinimalElementAux(ListItem(H) L, M)
-    => #MinimalElementAux(L, M) requires #DoCompare(M, H) <=Int 0
-  rule #MinimalElementAux(ListItem(H) L, M)
-    => #MinimalElementAux(L, H) requires #DoCompare(M, H) ==Int 1
-```
-
-### Map Operations
-
-```k
-  rule <k> EMPTY_MAP A _ _ => #HandleAnnotations(A) ... </k>
-       <stack> . => .Map ... </stack>
-
-  rule <k> GET A => #HandleAnnotations(A) ... </k>
-       <stack> X ~> M => Some {M[X]}:>Data ... </stack>
-       requires X in_keys(M)
-
-  rule <k> GET A => #HandleAnnotations(A) ... </k>
-       <stack> X ~> M => None ... </stack>
-       requires notBool(X in_keys(M))
-
-  rule <k> MEM A => #HandleAnnotations(A) ~> . ... </k>
-       <stack> X ~> M => X in_keys(M) ... </stack>
-
-  rule <k> UPDATE A => #HandleAnnotations(A)  ... </k>
-       <stack> K ~> Some V ~> M:Map => M[K <- V] ... </stack>
-
-  rule <k> UPDATE A => #HandleAnnotations(A)  ... </k>
-       <stack> K ~> None ~> M:Map => M[K <- undef] ... </stack>
-
-  rule <k> SIZE A => #HandleAnnotations(A)  ... </k>
-       <stack> M:Map => size(M) ... </stack>
-```
-
-The `MAP` operation, over maps, is somewhat more involved. We need to set up a
-stack without the actual map to execute the block on, and we need to keep track
-of the updated map as we do. We implement this by splitting the operation into
-multiple K items.
-
-```k
-  rule <k> MAP A B => #HandleAnnotations(A) ~> #PerformMap(M, .Map, B) ... </k>
-       <stack> M => . ... </stack>
-```
-
-`#PerformMap` holds the old map, the new map, and the block to execute.
-It sets up the new stack and queues up a `#PopNewVal` which removes
-the value produced by the MAP block and adds it to the second map argument.
-Like Sets, iteration order is actually defined, and we implement it by
-repeatedly selecting the minimal element in the list of keys in the map.
-
-```k
-  syntax Instruction ::= #PerformMap(Map, Map, Block)
-  // ------------------------------------------------
-  rule <k> #PerformMap(M1, M2, B)
-        => B
-        ~> #PopNewVal(#MinimalKey(M1))
-        ~> #PerformMap(M1[#MinimalKey(M1) <- undef], M2, B)
-           ...
-       </k>
-       <stack> . => Pair #MinimalKey(M1) {M1[#MinimalKey(M1)]}:>Data
-               ...
-       </stack>
-    requires size(M1) >Int 0
-
-  rule <k> #PerformMap(.Map, M, _) => . ... </k>
-       <stack> . => M ... </stack>
-
-  syntax Instruction ::= #PopNewVal(Data)
-  // ------------------------------------
-  rule <k> #PopNewVal(K) ~> #PerformMap(M1, M2, B)
-        => #PerformMap(M1, M2[K <- V], B)
-           ...
-       </k>
-       <stack> V => . ... </stack>
-
-  syntax Data ::= #MinimalKey(Map) [function]
-  // ----------------------------------------
-  rule #MinimalKey(M) => #MinimalElement(keys_list(M))
-```
-
-`ITER` is relatively easy to implement using a straightforward recursive style,
-since it does not need to track the new map while keeping it off the stack.
-
-```k
-  rule <k> ITER A B => #HandleAnnotations(A)  ... </k>
-       <stack> .Map => . ... </stack>
-
-  rule <k> ITER A B
-        => #HandleAnnotations(A)
-        ~> B
-        ~> #Push(M[#MinimalKey(M) <- undef])
-        ~> ITER .AnnotationList B
-           ...
-       </k>
-       <stack> M:Map
-            => Pair #MinimalKey(M) {M[#MinimalKey(M)]}:>Data
-               ...
-       </stack>
-    requires size(M) >Int 0
-```
-
-### Big Map Operations
-
-For the purposes of this semantics, `big_map`s are represented in the same way
-as maps, so they can reuse the same execution rules.
-
-```k
-  rule <k> EMPTY_BIG_MAP A _ _ => #HandleAnnotations(A)  ... </k>
-       <stack> . => .Map ... </stack>
-```
-
-The other operations are identical.
-
-### Option Operations
-
-```k
-  rule <k> SOME A => #HandleAnnotations(A)  ... </k>
-       <stack> X => Some X ... </stack>
-
-  rule <k> NONE A _ => #HandleAnnotations(A)  ... </k>
-       <stack> . => None ... </stack>
-
-  rule <k> IF_NONE A BT BF => #HandleAnnotations(A) ~> BT ... </k>
-       <stack> None => . ... </stack>
-
-  rule <k> IF_NONE A BT BF => #HandleAnnotations(A) ~> BF ... </k>
-       <stack> Some V => V ... </stack>
-```
-
-### Union Operations
-
-```k
-  rule <k> LEFT A _ => #HandleAnnotations(A)  ... </k>
-       <stack> X:Data => Left X ... </stack>
-
-  rule <k> RIGHT A _:Type => #HandleAnnotations(A) ... </k>
-       <stack> X:Data => Right X ... </stack>
-
-  rule <k> IF_LEFT A BT BF => #HandleAnnotations(A) ~> BT ... </k>
-       <stack> Left V => V ... </stack>
-
-  rule <k> IF_LEFT A BT BF => #HandleAnnotations(A) ~> BF ... </k>
-       <stack> Right V => V ... </stack>
-```
-
-### List Operations
-
-```k
-  rule <k> CONS A => #HandleAnnotations(A)  ... </k>
-       <stack> V ~> L:List => ListItem(V) L ... </stack>
-
-  rule <k> NIL A _ => #HandleAnnotations(A)  ... </k>
-       <stack> . => .List ... </stack>
-
-  rule <k> IF_CONS A BT BF => #HandleAnnotations(A) ~> BT ... </k>
-       <stack> ListItem(L1) Ls => L1 ~> Ls ... </stack>
-
-  rule <k> IF_CONS A BT BF => #HandleAnnotations(A) ~> BF ... </k>
-       <stack> .List => . ... </stack>
-
-  rule <k> SIZE A => #HandleAnnotations(A)  ... </k>
-       <stack> L:List => size(L) ... </stack>
-
-  rule <k> ITER A B =>  #HandleAnnotations(A) ~>. ... </k>
-       <stack> .List => . ... </stack>
-
-  rule <k> ITER A B
-        => #HandleAnnotations(A)
-        ~> B
-        ~> #Push(Ls)
-        ~> ITER .AnnotationList B
-           ...
-       </k>
-       <stack> ListItem(L) Ls => L ... </stack>
-```
-
-The `MAP` operation over `list`s is defined in terms of a helper function.
-
-```k
-  rule <k> MAP A B
-        => #HandleAnnotations(A)
-        ~> #PerformMapList(Ls, .List, B)
-           ...
-       </k>
-       <stack> Ls => . ... </stack>
-
-  syntax Instruction ::= #PerformMapList(List, List, Block)
-                       | #AddToList(List, List, Block)
-  // ------------------------------------------------------
-  rule <k> #PerformMapList(.List, Acc, B) => . ... </k>
-       <stack> . => #ReverseList(Acc) ... </stack>
-
-  rule <k> #PerformMapList(ListItem(L) Ls, Acc, B)
-        => B
-        ~> #AddToList(Ls, Acc, B)
-           ...
-       </k>
-       <stack> . => L ... </stack>
-
-  rule <k> #AddToList(Ls, Acc, B)
-        => #PerformMapList(Ls, ListItem(L) Acc, B)
-           ...
-       </k>
-       <stack> L => . ... </stack>
-
-  syntax List ::= #ReverseList(List) [function]
-  syntax List ::= #ReverseListAux(List, List) [function]
-  // ---------------------------------------------------
-  rule #ReverseList(L) => #ReverseListAux(L, .List)
-  rule #ReverseListAux(ListItem(L1) Ls, Acc)
-    => #ReverseListAux(Ls, ListItem(L1) Acc)
-  rule #ReverseListAux(.List, Acc) => Acc
-```
-
-Domain Specific operations
---------------------------
-
-### Timestamp Operations
-
-Timestamps are simply wrapped ints in Michelson, so the implementation of
-simple arithmetic over them is straightforward. The differing argument types
-however forces us to use two rules for each operation.
-
-```k
-  rule <k> ADD A => . ... </k>
-       <stack> #Timestamp(I1) ~> I2 => #Timestamp(I1 +Int I2) ... </stack>
-
-  rule <k> ADD A => . ... </k>
-       <stack> I1 ~> #Timestamp(I2) => #Timestamp(I1 +Int I2) ... </stack>
-
-  rule <k> SUB A => . ... </k>
-       <stack> #Timestamp(I1) ~> I2 => #Timestamp(I1 -Int I2) ... </stack>
-
-  rule <k> SUB A => . ... </k>
-       <stack> #Timestamp(I1) ~> #Timestamp(I2) => I1 -Int I2 ... </stack>
-```
-
-### Blockchain Operations
-
-```k
-  rule <k> CREATE_CONTRACT A:AnnotationList { C } => . ... </k>
-       <stack> Delegate:OptionData
-            ~> Initial:Mutez
-            ~> Storage:Data
-            => Create_contract(O, C, Delegate, Initial, Storage)
-            ~> #Address("@Address(" +String Int2String(!_:Int) +String ")")
-               ...
-       </stack>
-       <nonce> #Nonce(O) => #NextNonce(#Nonce(O)) </nonce>
-
-  rule <k> TRANSFER_TOKENS _ => . ... </k>
-       <stack> D ~> M ~> #Contract(A, _)
-            => Transfer_tokens(O, D, M, A)
-               ...
-       </stack>
-       <nonce> #Nonce(O) => #NextNonce(#Nonce(O)) </nonce>
-
-  rule <k> SET_DELEGATE A => . ... </k>
-       <stack> D => Set_delegate(O, D) ... </stack>
-       <nonce> #Nonce(O) => #NextNonce(#Nonce(O)) </nonce>
-```
-
-Each `operation` value must have a unique nonce.
-The nonce generation process is unspecified by the Michelson semantics.
-We implement it here.
-
-```k
-  syntax OperationNonce ::= #NextNonce(OperationNonce) [function]
-  rule #NextNonce(#Nonce(I)) => #Nonce(I +Int 1)
-```
-
-These instructions push fresh `contract` literals on the stack corresponding
-to the given addresses/key hashes.
-
-```k
-  rule <k> CONTRACT _ T => . ... </k>
-       <stack> A => Some {M[A]}:>Data ... </stack>
-       <knownaddrs> M </knownaddrs>
-    requires A in_keys(M)
-     andBool #TypeFromContractStruct({M[A]}:>Data) ==K T
-
-  rule <k> CONTRACT _ T => . ... </k>
-       <stack> A:Address => None ... </stack>
-       <knownaddrs> M </knownaddrs> [owise]
-
-  rule <k> IMPLICIT_ACCOUNT Ann => . ... </k>
-       <stack> #KeyHash(A)
-            => #Contract(#Address(A), unit .AnnotationList)
-               ...
-       </stack>
-
-  syntax Type ::= #TypeFromContractStruct(Data) [function]
-  rule #TypeFromContractStruct(#Contract(_, T)) => T
-```
-
-These instructions push blockchain state on the stack.
-
-```k
-  rule <k> BALANCE A => . ... </k>
-       <stack> . => B ... </stack>
-       <mybalance> B </mybalance>
-
-  rule <k> ADDRESS Ann => . ... </k>
-       <stack> #Contract(A, _) => A ... </stack>
-
-  rule <k> SOURCE Ann => . ... </k>
-       <stack> . => A ... </stack>
-       <sourceaddr> A </sourceaddr>
-
-  rule <k> SENDER Ann => . ... </k>
-       <stack> . => A ... </stack>
-       <senderaddr> A </senderaddr>
-
-  rule <k> SELF Ann => . ... </k>
-       <stack> . => #Contract(A, T) ... </stack>
-       <paramtype> T </paramtype>
-       <myaddr> A </myaddr>
-
-  rule <k> AMOUNT Ann => . ... </k>
-       <stack> . => M ... </stack>
-       <myamount> M </myamount>
-
-  rule <k> CHAIN_ID A => . ... </k>
-       <stack> . => C ... </stack>
-       <mychainid> C </mychainid>
-
-  rule <k> NOW A => . ... </k>
-       <stack> . => N ... </stack>
-       <mynow> N </mynow>
-```
-
-### Cryptographic Operations
-
-The cryptographic operations are simply stubbed for now.
-
-```k
-  syntax String ::= #Blake2BKeyHash(String) [function]
-  rule #Blake2BKeyHash(S) => S
-
-  rule <k> HASH_KEY A => #HandleAnnotations(A) ... </k>
-       <stack> #Key(S) => #KeyHash(#Blake2BKeyHash(S)) ... </stack>
-
-  rule <k> BLAKE2B A => #HandleAnnotations(A) ... </k>
-       <stack> B:MBytes => #Blake2B(B) ... </stack>
-
-  rule <k> SHA256 A => #HandleAnnotations(A) ... </k>
-       <stack> B:MBytes => #SHA256(B) ... </stack>
-
-  rule <k> SHA512 A => #HandleAnnotations(A) ... </k>
-       <stack> B:MBytes => #SHA512(B) ... </stack>
-
-  syntax MBytes ::= #SignedMBytes(Key, Signature, MBytes)
-
-  /*
-  // FIXME: The haskell backend does not support distinguishing these rules.
-  rule <k> CHECK_SIGNATURE A => #HandleAnnotations(A) ... </k>
-       <stack> #Key(K)
-            ~> #Signature(S)
-            ~> #SignedMBytes(#Key(K), #Signature(S), _)
-            => true
-               ...
-       </stack>
-
-  rule <k> CHECK_SIGNATURE A => #HandleAnnotations(A) ... </k>
-       <stack> #Key(_)
-            ~> #Signature(_)
-            ~> _:MBytes
-            => false
-               ...
-       </stack> [owise]
-  */
-```
-
-### Mutez Operations
-
-Mutez operations need to check their results since `mutez` is not an unlimited
-precision type.
-This internal instruction checks and produces the appropriate error case if the
-value is invalid.
-
-```k
-  syntax Instruction ::= #ValidateMutezAndPush(Mutez, Int, Int)
-  // ----------------------------------------------------------
-  rule <k> #ValidateMutezAndPush(#Mutez(I), _, _) => . ... </k>
-       <stack> . => #Mutez(I) ... </stack>
-       requires #IsLegalMutezValue(I)
-
-  rule <k> #ValidateMutezAndPush(#Mutez(I), I1, I2) ~> Rk
-        => Aborted("Mutez out of bounds", I, Rk, Rs) ~> Rk </k>
-       <stack> Rs => #FailureFromMutezValue(#Mutez(I), I1, I2) </stack>
-    requires notBool #IsLegalMutezValue(I)
-
-  syntax FailedStack ::= #FailureFromMutezValue(Mutez, Int, Int) [function]
-  // ----------------------------------------------------------------------
-  rule #FailureFromMutezValue(#Mutez(I), I1, I2)
-    => ( MutezOverflow I1 I2 ) requires I >=Int #MutezOverflowLimit
-  rule #FailureFromMutezValue(#Mutez(I), I1, I2)
-    => ( MutezUnderflow I1 I2 ) requires I <Int 0
-```
-
-Other than the mutez validation step, these arithmetic rules are essentially
-identical to those defined over integers.
-
-```k
-  rule <k> ADD A
-        => #ValidateMutezAndPush(#Mutez(I1 +Int I2), I1, I2)
-        ~> #HandleAnnotations(A)
-           ...
-       </k>
-       <stack> #Mutez(I1) ~> #Mutez(I2) => . ... </stack>
-
-  rule <k> SUB A
-        => #ValidateMutezAndPush(#Mutez(I1 -Int I2), I1, I2)
-        ~> #HandleAnnotations(A)
-           ...
-       </k>
-       <stack> #Mutez(I1) ~> #Mutez(I2) => . ... </stack>
-
-  rule <k> MUL A
-        => #ValidateMutezAndPush(#Mutez(I1 *Int I2), I1, I2)
-        ~> #HandleAnnotations(A)
-           ...
-       </k>
-       <stack> #Mutez(I1) ~> I2 => . ... </stack>
-
-  rule <k> MUL A
-        => #ValidateMutezAndPush(#Mutez(I1 *Int I2), I1, I2)
-        ~> #HandleAnnotations(A)
-           ...
-       </k>
-       <stack> I1 ~> #Mutez(I2) => . ... </stack>
-
-  rule <k> EDIV A => #HandleAnnotations(A) ... </k>
-       <stack> #Mutez(I1) ~> #Mutez(0) => None ... </stack>
-
-  rule <k> EDIV A => #HandleAnnotations(A) ... </k>
-       <stack> #Mutez(I1) ~> 0 => None ... </stack>
-
-  rule <k> EDIV A => #HandleAnnotations(A) ... </k>
-       <stack> #Mutez(I1)
-            ~> #Mutez(I2)
-            => Some (Pair (I1 /Int I2) #Mutez(I1 %Int I2))
-               ...
-       </stack>
-    requires I2 >Int 0
-
-  rule <k> EDIV A => #HandleAnnotations(A) ... </k>
-       <stack> #Mutez(I1)
-            ~> I2
-            => Some (Pair #Mutez(I1 /Int I2) #Mutez(I1 %Int I2))
-       </stack>
-       requires I2 >Int 0
-```
+# ### Lambda Evaluation
+# 
+# An `EXEC` instruction replaces the stack and schedules the restoration of the
+# old stack after the completion of the lambda code.
+# 
+# ```k
+#   rule <k> EXEC B => #HandleAnnotations(B) ~> C ~> #ReturnStack(Rs) ... </k>
+#        <stack> A:Data ~> #Lambda(_, _, C):Data ~> Rs:K => A </stack>
+# ```
+# 
+# `APPLY` demonstrates why lambdas have their type information preserved, as
+# otherwise we would be unable to produce an appropriate `PUSH` instruction for
+# the expanded lambda.
+# 
+# ```k
+#   rule <k> APPLY A => #HandleAnnotations(A) ... </k>
+#        <stack> D:Data ~> #Lambda(pair _:AnnotationList T0 T1, T2, { C } ) => #Lambda(T1, T2, { PUSH .AnnotationList T0 D ; PAIR .AnnotationList ; { C } } ) ... </stack>
+# ```
+# 
+# Core Operations
+# ---------------
+# 
+# ### Generic Comparison
+# 
+# ```k
+#   rule <k> EQ A => #HandleAnnotations(A) ... </k>
+#        <stack> I => I ==Int 0 ... </stack>
+# 
+#   rule <k> NEQ A => #HandleAnnotations(A) ... </k>
+#        <stack> I => I =/=Int 0 ... </stack>
+# 
+#   rule <k> LT A => #HandleAnnotations(A) ... </k>
+#        <stack> I => I <Int 0 ... </stack>
+# 
+#   rule <k> GT A => #HandleAnnotations(A) ... </k>
+#        <stack> I => I >Int 0 ... </stack>
+# 
+#   rule <k> LE A => #HandleAnnotations(A) ... </k>
+#        <stack> I => I <=Int 0 ... </stack>
+# 
+#   rule <k> GE A => #HandleAnnotations(A) ... </k>
+#        <stack> I => I >=Int 0 ... </stack>
+# ```
+# 
+# ```k
+#     rule A  >Int B => notBool( A <=Int B ) [simplification]
+#     rule A >=Int B => notBool( A  <Int B ) [simplification]
+# ```
+# 
+# ### Boolean Operations
+# 
+# ```k
+#   rule <k> OR A => #HandleAnnotations(A) ... </k>
+#        <stack> B1 ~> B2 => B1 orBool B2 ...  </stack>
+# 
+#   rule <k> AND A => #HandleAnnotations(A) ... </k>
+#        <stack> B1 ~> B2 => B1 andBool B2 ... </stack>
+# 
+#   rule <k> XOR A => #HandleAnnotations(A) ... </k>
+#        <stack> B1 ~> B2 => B1 xorBool B2 ... </stack>
+# 
+#   rule <k> NOT A => #HandleAnnotations(A) ... </k>
+#        <stack> B => notBool B ... </stack>
+# ```
+# 
+# ### Integer and Natural Operations
+# 
+# Michelson `int` and `nat` datatypes are both represnted using the K `Int` type.
+# These operations map directly to their K equivalents.
+# 
+# ```k
+#   rule <k> NEG A => #HandleAnnotations(A) ... </k>
+#        <stack> I => 0 -Int I ... </stack>
+# 
+#   rule <k> ABS A => #HandleAnnotations(A) ... </k>
+#        <stack> I => absInt(I) ... </stack>
+# 
+#   rule <k> ISNAT A => #HandleAnnotations(A) ... </k>
+#        <stack> I => Some I ... </stack>
+#        requires I >=Int 0
+# 
+#   rule <k> ISNAT A => #HandleAnnotations(A) ... </k>
+#        <stack> I => None ... </stack>
+#        requires I <Int 0
+# 
+#   rule <k> INT A => #HandleAnnotations(A) ... </k>
+#        <stack> I:Int ... </stack>
+# 
+#   rule <k> ADD A => #HandleAnnotations(A) ... </k>
+#        <stack> I1 ~> I2 => I1 +Int I2 ... </stack>
+# 
+#   rule <k> SUB A => #HandleAnnotations(A) ... </k>
+#        <stack> I1 ~> I2 => I1 -Int I2 ... </stack>
+# 
+#   rule <k> MUL A => #HandleAnnotations(A) ... </k>
+#        <stack> I1 ~> I2 => I1 *Int I2 ... </stack>
+# 
+#   rule <k> EDIV A => #HandleAnnotations(A) ... </k>
+#        <stack> I1:Int ~> 0 => None ... </stack>
+# 
+#   rule <k> EDIV A  => #HandleAnnotations(A) ... </k>
+#        <stack> I1 ~> I2 => Some (Pair (I1 /Int I2) (I1 %Int I2)) ... </stack>
+#        requires I2 =/=Int 0
+# ```
+# 
+# Bitwise operations on Michelson `int`s map directly onto K `Int` functions.
+# The `LSL` and `LSR` operations produce exceptions when their shift arugment
+# overflows.
+# 
+# ```k
+#   rule <k> OR A => #HandleAnnotations(A)  ... </k>
+#        <stack> I1 ~> I2 => I1 |Int I2 ... </stack>
+# 
+#   rule <k> AND A => #HandleAnnotations(A) ... </k>
+#        <stack> I1 ~> I2 => I1 &Int I2 ... </stack>
+# 
+#   rule <k> XOR A => #HandleAnnotations(A) ... </k>
+#        <stack> I1 ~> I2 => I1 xorInt I2 ... </stack>
+# 
+#   rule <k> NOT A => #HandleAnnotations(A) ... </k>
+#        <stack> I => ~Int I ... </stack>
+# 
+#   rule <k> LSL A => #HandleAnnotations(A) ... </k>
+#        <stack> X ~> S => X <<Int S ... </stack>
+#        requires S <=Int 256
+# 
+#   rule <k> LSL A ~> Rk
+#         => #HandleAnnotations(A)
+#         ~> Aborted("LSL out of range", S, Rk, Rs)
+#         ~> Rk
+#         </k>
+#        <stack> C:Int ~> S:Int ~> Rs => ( GeneralOverflow C S )  </stack>
+#        requires S >Int 256
+# 
+#   rule <k> LSR A => #HandleAnnotations(A) ... </k>
+#        <stack> X ~> S => X >>Int S ... </stack>
+#        requires S <=Int 256
+# 
+#   rule <k> LSR A ~> Rk
+#         => #HandleAnnotations(A)
+#         ~> Aborted("LSR out of range", S, Rk, Rs)
+#         ~> Rk
+#         </k>
+#        <stack> X ~> S ~> Rs => ( GeneralOverflow X S ) </stack>
+#        requires S >Int 256
+# ```
+# 
+# ### `COMPARE` Instruction
+# 
+# The `COMPARE` instruction is defined over all comparable datatypes.
+# 
+# ```k
+#   rule <k> COMPARE A => #HandleAnnotations(A) ... </k>
+#        <stack> V1 ~> V2 => #DoCompare(V1, V2) ... </stack>
+# ```
+# 
+# We define `COMPARE` in terms of a `#DoCompare` function.
+# 
+# ```k
+#   syntax Int ::= #DoCompare(Data, Data) [function, functional]
+# 
+#   rule #DoCompare(true, true) => 0
+#   rule #DoCompare(false, false) => 0
+#   rule #DoCompare(false, true) => -1
+#   rule #DoCompare(true, false) => 1
+# 
+#   rule #DoCompare(I1:Int, I2:Int) => -1 requires I1 <Int I2
+#   rule #DoCompare(I1:Int, I2:Int) => 0 requires I1 ==Int I2
+#   rule #DoCompare(I1:Int, I2:Int) => 1 requires I1 >Int I2
+# 
+#   rule #DoCompare(S1:String, S2:String) => -1 requires S1 <String S2
+#   rule #DoCompare(S1:String, S2:String) => 0 requires S1 ==String S2
+#   rule #DoCompare(S1:String, S2:String) => 1 requires S1 >String S2
+# 
+#   rule #DoCompare((Pair A1 A2), (Pair B1 B2)) => -1                 requires #DoCompare(A1, B1) ==Int -1
+#   rule #DoCompare((Pair A1 A2), (Pair B1 B2)) => #DoCompare(A2, B2) requires #DoCompare(A1, B1) ==Int 0
+#   rule #DoCompare((Pair A1 A2), (Pair B1 B2)) => 1                  requires #DoCompare(A1, B1) ==Int 1
+# 
+#   rule #DoCompare(B1:Bytes, B2:Bytes) => #DoCompare(Bytes2Int(B1, BE, Unsigned), Bytes2Int(B2, BE, Unsigned))
+#   rule #DoCompare(#KeyHash(S1), #KeyHash(S2)) => #DoCompare(S1, S2)
+#   rule #DoCompare(#Mutez(I1), #Mutez(I2)) => #DoCompare(I1, I2)
+#   rule #DoCompare(#Timestamp(I1), #Timestamp(I2)) => #DoCompare(I1, I2)
+#   rule #DoCompare(#Address(S1), #Address(S2)) => #DoCompare(S1, S2)
+# ```
+# 
+# The `#DoCompare` function requires additional lemmas for symbolic execution.
+# 
+# ```symbolic
+#   rule #DoCompare(I1:Bool, I2:Bool) <Int 0  => (I1 ==Bool false) andBool (I2 ==Bool true)                       [simplification]
+#   rule #DoCompare(I1:Bool, I2:Bool) <=Int 0 => ((I1 ==Bool false) andBool (I2 ==Bool true)) orBool I1 ==Bool I2 [simplification]
+#   rule #DoCompare(I1:Bool, I2:Bool) ==Int 0 => I1 ==Bool I2                                                     [simplification]
+#   rule #DoCompare(I1:Bool, I2:Bool) >=Int 0 => ((I1 ==Bool true) andBool (I2 ==Bool false)) orBool I1 ==Bool I2 [simplification]
+#   rule #DoCompare(I1:Bool, I2:Bool) >Int 0  => (I1 ==Bool true) andBool (I2 ==Bool false)                       [simplification]
+# 
+#   rule #DoCompare(I1:Int, I2:Int) <Int 0  => I1 <Int I2  [simplification]
+#   rule #DoCompare(I1:Int, I2:Int) <=Int 0 => I1 <=Int I2 [simplification]
+#   rule #DoCompare(I1:Int, I2:Int) ==Int 0 => I1 ==Int I2 [simplification]
+#   rule #DoCompare(I1:Int, I2:Int) >=Int 0 => I1 >=Int I2 [simplification]
+#   rule #DoCompare(I1:Int, I2:Int) >Int 0  => I1 >Int I2  [simplification]
+# 
+#   rule #DoCompare(I1:String, I2:String) <Int 0  => I1 <String I2  [simplification]
+#   rule #DoCompare(I1:String, I2:String) <=Int 0 => I1 <=String I2 [simplification]
+#   rule #DoCompare(I1:String, I2:String) ==Int 0 => I1 ==String I2 [simplification]
+#   rule #DoCompare(I1:String, I2:String) >=Int 0 => I1 >=String I2 [simplification]
+#   rule #DoCompare(I1:String, I2:String) >Int 0  => I1 >String I2  [simplification]
+# 
+#   // TODO: at some point this rule should be builtin
+#   rule X ==String X => true [simplification]
+# ```
+# 
+# ### String Operations
+# 
+# ```k
+#   syntax String ::= #ConcatStrings(List, String) [function]
+#   rule #ConcatStrings(.List, A) => A
+#   rule #ConcatStrings(ListItem(S1) DL, A) => #ConcatStrings(DL, A +String S1)
+# 
+#   rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
+#        <stack> S1 ~> S2 => S1 +String S2 ... </stack>
+# 
+#   rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
+#        <stack> L => #ConcatStrings(L, "") ... </stack>
+#        <stacktypes> list _ string _ ; _ </stacktypes>
+# 
+#   rule <k> SIZE A => #HandleAnnotations(A) ... </k>
+#        <stack> S => lengthString(S) ... </stack>
+# ```
+# 
+# The actual out of bounds conditions here are determined by experimentation.
+# Earlier versions of the semantics didn't check if O was in bounds, resulting in
+# `Slice("", 0, 0) => Some ""` rather than the correct
+# `#SliceString("", 0, 0) => None`
+# 
+# ```k
+#   rule <k> SLICE A => #HandleAnnotations(A) ... </k>
+#        <stack> O ~> L ~> S => #SliceString(S, O, L)  ... </stack>
+# 
+#   syntax OptionData ::= #SliceString(String, Int, Int) [function]
+# 
+#   rule #SliceString(S, O, L) => Some substrString(S, O, O +Int L)
+#     requires O >=Int 0
+#      andBool L >=Int 0
+#      andBool O <Int lengthString(S)
+#      andBool (O +Int L) <=Int lengthString(S)
+# 
+#   rule #SliceString(S, O, L) => None [owise]
+# ```
+# 
+# ### Bytes Operations
+# 
+# The bytes instructions have a stubbed implementation for the time being, since
+# the actual serialization format is not formally unspecified.
+# 
+# ```k
+#   rule <k> PACK A => #HandleAnnotations(A) ... </k>
+#        <stack> T => #Packed(T) ... </stack>
+# 
+#   rule <k> UNPACK A _ => #HandleAnnotations(A) ... </k>
+#        <stack> #Packed(T) => Some T ... </stack>
+# ```
+# 
+# The `CONCAT` operation over two bytes is relatively straightforward since we
+# already have helper functions to extract bytes content.
+# 
+# ```k
+#   rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
+#        <stack> B1:Bytes ~> B2:Bytes => B1 +Bytes B2 ... </stack>
+# ```
+# 
+# `CONCAT` over lists of bytes is somewhat more involved, since we need to
+# distinguish this case from lists of strings.
+# 
+# ```k
+#   rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
+#        <stack> L => #ConcatBytes(L, .Bytes) ... </stack>
+#        <stacktypes> list _ bytes _ ; _ </stacktypes>
+# 
+#   syntax Bytes ::= #ConcatBytes(List, Bytes) [function]
+#   rule #ConcatBytes(.List, A) => A
+#   rule #ConcatBytes(ListItem(B) DL, A) => #ConcatBytes(DL, A +Bytes B)
+# ```
+# 
+# `SIZE` is relatively simple, except that we must remember to divide by two,
+# since bytes length is measured in terms of number of bytes, not characters in
+# the hex string.
+# 
+# ```k
+#   rule <k> SIZE A => #HandleAnnotations(A) ... </k>
+#        <stack> B => lengthBytes(B) ... </stack>
+# ```
+# 
+# The remaining operations are defined in terms of the same operations on
+# strings, allowing for code reuse.
+# 
+# ```k
+#   rule <k> SLICE A => #HandleAnnotations(A) ... </k>
+#        <stack> O:Int ~> L:Int ~> B:Bytes => #SliceBytes(B, O, L)  ... </stack>
+# 
+#   syntax OptionData ::= #SliceBytes(Bytes, Int, Int) [function]
+# 
+#   rule #SliceBytes(S, O, L) => Some substrBytes(S, O, O +Int L)
+#     requires O >=Int 0
+#      andBool L >=Int 0
+#      andBool O <Int lengthBytes(S)
+#      andBool (O +Int L) <=Int lengthBytes(S)
+# 
+#   rule #SliceBytes(S, O, L) => None [owise]
+# ```
+# 
+# ### Pair Operations
+# 
+# ```k
+#   rule <k> PAIR A => #HandleAnnotations(A) ... </k>
+#        <stack> L ~> R => Pair L R ... </stack>
+# 
+#   rule <k> UNPAIR A => #HandleAnnotations(A) ... </k>
+#        <stack> Pair L R => L ~> R ... </stack>
+# 
+#   rule <k> CAR A => #HandleAnnotations(A) ... </k>
+#        <stack> Pair L _ => L ... </stack>
+# 
+#   rule <k> CDR A => #HandleAnnotations(A) ... </k>
+#        <stack> Pair _ R => R ... </stack>
+# ```
+# 
+# ### Set Operations
+# 
+# ```k
+#   rule <k> EMPTY_SET A _ => #HandleAnnotations(A) ... </k>
+#        <stack> . => .Set ... </stack>
+# 
+#   rule <k> MEM A => #HandleAnnotations(A) ... </k>
+#        <stack> X ~> S:Set => X in S ... </stack>
+# 
+#   // True to insert, False to remove.
+#   rule <k> UPDATE A => #HandleAnnotations(A) ... </k>
+#        <stack> D ~> true ~> S => SetItem(D) S ... </stack>
+# 
+#   rule <k> UPDATE A => #HandleAnnotations(A) ... </k>
+#        <stack> D ~> false ~> SetItem(D) S => S ... </stack>
+# 
+#   rule <k> UPDATE A => #HandleAnnotations(A) ... </k>
+#        <stack> (D ~> false => .) ~> S:Set ... </stack>
+#        requires notBool(D in S)
+# 
+#   rule <k> SIZE A => #HandleAnnotations(A) ... </k>
+#        <stack> S:Set => size(S) ... </stack>
+# ```
+# 
+# Note that, according to the Michelson documentation, set iteration order is
+# actually defined (the set is iterated over in ascending order).
+# For simplicity we implement this by repeatedly selecting the minimal element.
+# 
+# ```k
+#   rule <k> ITER A _ => #HandleAnnotations(A) ... </k>
+#        <stack> .Set => . ... </stack>
+# 
+#   rule <k> ITER A B
+#         => #HandleAnnotations(A)
+#         ~> B
+#         ~> #Push(S -Set SetItem(#MinimalElement(Set2List(S))))
+#         ~> ITER .AnnotationList B
+#         ...
+#         </k>
+#        <stack> S => #MinimalElement(Set2List(S)) ... </stack>
+#        requires size(S) >Int 0
+# 
+#   syntax Data ::= #MinimalElement(List) [function]
+#   syntax Data ::= #MinimalElementAux(List, Data) [function]
+# 
+#   rule #MinimalElement(ListItem(H) L) => #MinimalElementAux(L, H)
+#   rule #MinimalElementAux(.List, M) => M
+#   rule #MinimalElementAux(ListItem(H) L, M)
+#     => #MinimalElementAux(L, M) requires #DoCompare(M, H) <=Int 0
+#   rule #MinimalElementAux(ListItem(H) L, M)
+#     => #MinimalElementAux(L, H) requires #DoCompare(M, H) ==Int 1
+# ```
+# 
+# ### Map Operations
+# 
+# ```k
+#   rule <k> EMPTY_MAP A _ _ => #HandleAnnotations(A) ... </k>
+#        <stack> . => .Map ... </stack>
+# 
+#   rule <k> GET A => #HandleAnnotations(A) ... </k>
+#        <stack> X ~> M => Some {M[X]}:>Data ... </stack>
+#        requires X in_keys(M)
+# 
+#   rule <k> GET A => #HandleAnnotations(A) ... </k>
+#        <stack> X ~> M => None ... </stack>
+#        requires notBool(X in_keys(M))
+# 
+#   rule <k> MEM A => #HandleAnnotations(A) ~> . ... </k>
+#        <stack> X ~> M => X in_keys(M) ... </stack>
+# 
+#   rule <k> UPDATE A => #HandleAnnotations(A)  ... </k>
+#        <stack> K ~> Some V ~> M:Map => M[K <- V] ... </stack>
+# 
+#   rule <k> UPDATE A => #HandleAnnotations(A)  ... </k>
+#        <stack> K ~> None ~> M:Map => M[K <- undef] ... </stack>
+# 
+#   rule <k> SIZE A => #HandleAnnotations(A)  ... </k>
+#        <stack> M:Map => size(M) ... </stack>
+# ```
+# 
+# The `MAP` operation, over maps, is somewhat more involved. We need to set up a
+# stack without the actual map to execute the block on, and we need to keep track
+# of the updated map as we do. We implement this by splitting the operation into
+# multiple K items.
+# 
+# ```k
+#   rule <k> MAP A B => #HandleAnnotations(A) ~> #PerformMap(M, .Map, B) ... </k>
+#        <stack> M => . ... </stack>
+# ```
+# 
+# `#PerformMap` holds the old map, the new map, and the block to execute.
+# It sets up the new stack and queues up a `#PopNewVal` which removes
+# the value produced by the MAP block and adds it to the second map argument.
+# Like Sets, iteration order is actually defined, and we implement it by
+# repeatedly selecting the minimal element in the list of keys in the map.
+# 
+# ```k
+#   syntax Instruction ::= #PerformMap(Map, Map, Block)
+#   // ------------------------------------------------
+#   rule <k> #PerformMap(M1, M2, B)
+#         => B
+#         ~> #PopNewVal(#MinimalKey(M1))
+#         ~> #PerformMap(M1[#MinimalKey(M1) <- undef], M2, B)
+#            ...
+#        </k>
+#        <stack> . => Pair #MinimalKey(M1) {M1[#MinimalKey(M1)]}:>Data
+#                ...
+#        </stack>
+#     requires size(M1) >Int 0
+# 
+#   rule <k> #PerformMap(.Map, M, _) => . ... </k>
+#        <stack> . => M ... </stack>
+# 
+#   syntax Instruction ::= #PopNewVal(Data)
+#   // ------------------------------------
+#   rule <k> #PopNewVal(K) ~> #PerformMap(M1, M2, B)
+#         => #PerformMap(M1, M2[K <- V], B)
+#            ...
+#        </k>
+#        <stack> V => . ... </stack>
+# 
+#   syntax Data ::= #MinimalKey(Map) [function]
+#   // ----------------------------------------
+#   rule #MinimalKey(M) => #MinimalElement(keys_list(M))
+# ```
+# 
+# `ITER` is relatively easy to implement using a straightforward recursive style,
+# since it does not need to track the new map while keeping it off the stack.
+# 
+# ```k
+#   rule <k> ITER A B => #HandleAnnotations(A)  ... </k>
+#        <stack> .Map => . ... </stack>
+# 
+#   rule <k> ITER A B
+#         => #HandleAnnotations(A)
+#         ~> B
+#         ~> #Push(M[#MinimalKey(M) <- undef])
+#         ~> ITER .AnnotationList B
+#            ...
+#        </k>
+#        <stack> M:Map
+#             => Pair #MinimalKey(M) {M[#MinimalKey(M)]}:>Data
+#                ...
+#        </stack>
+#     requires size(M) >Int 0
+# ```
+# 
+# ### Big Map Operations
+# 
+# For the purposes of this semantics, `big_map`s are represented in the same way
+# as maps, so they can reuse the same execution rules.
+# 
+# ```k
+#   rule <k> EMPTY_BIG_MAP A _ _ => #HandleAnnotations(A)  ... </k>
+#        <stack> . => .Map ... </stack>
+# ```
+# 
+# The other operations are identical.
+# 
+# ### Option Operations
+# 
+# ```k
+#   rule <k> SOME A => #HandleAnnotations(A)  ... </k>
+#        <stack> X => Some X ... </stack>
+# 
+#   rule <k> NONE A _ => #HandleAnnotations(A)  ... </k>
+#        <stack> . => None ... </stack>
+# 
+#   rule <k> IF_NONE A BT BF => #HandleAnnotations(A) ~> BT ... </k>
+#        <stack> None => . ... </stack>
+# 
+#   rule <k> IF_NONE A BT BF => #HandleAnnotations(A) ~> BF ... </k>
+#        <stack> Some V => V ... </stack>
+# ```
+# 
+# ### Union Operations
+# 
+# ```k
+#   rule <k> LEFT A _ => #HandleAnnotations(A)  ... </k>
+#        <stack> X:Data => Left X ... </stack>
+# 
+#   rule <k> RIGHT A _:Type => #HandleAnnotations(A) ... </k>
+#        <stack> X:Data => Right X ... </stack>
+# 
+#   rule <k> IF_LEFT A BT BF => #HandleAnnotations(A) ~> BT ... </k>
+#        <stack> Left V => V ... </stack>
+# 
+#   rule <k> IF_LEFT A BT BF => #HandleAnnotations(A) ~> BF ... </k>
+#        <stack> Right V => V ... </stack>
+# ```
+# 
+# ### List Operations
+# 
+# ```k
+#   rule <k> CONS A => #HandleAnnotations(A)  ... </k>
+#        <stack> V ~> L:List => ListItem(V) L ... </stack>
+# 
+#   rule <k> NIL A _ => #HandleAnnotations(A)  ... </k>
+#        <stack> . => .List ... </stack>
+# 
+#   rule <k> IF_CONS A BT BF => #HandleAnnotations(A) ~> BT ... </k>
+#        <stack> ListItem(L1) Ls => L1 ~> Ls ... </stack>
+# 
+#   rule <k> IF_CONS A BT BF => #HandleAnnotations(A) ~> BF ... </k>
+#        <stack> .List => . ... </stack>
+# 
+#   rule <k> SIZE A => #HandleAnnotations(A)  ... </k>
+#        <stack> L:List => size(L) ... </stack>
+# 
+#   rule <k> ITER A B =>  #HandleAnnotations(A) ~>. ... </k>
+#        <stack> .List => . ... </stack>
+# 
+#   rule <k> ITER A B
+#         => #HandleAnnotations(A)
+#         ~> B
+#         ~> #Push(Ls)
+#         ~> ITER .AnnotationList B
+#            ...
+#        </k>
+#        <stack> ListItem(L) Ls => L ... </stack>
+# ```
+# 
+# The `MAP` operation over `list`s is defined in terms of a helper function.
+# 
+# ```k
+#   rule <k> MAP A B
+#         => #HandleAnnotations(A)
+#         ~> #PerformMapList(Ls, .List, B)
+#            ...
+#        </k>
+#        <stack> Ls => . ... </stack>
+# 
+#   syntax Instruction ::= #PerformMapList(List, List, Block)
+#                        | #AddToList(List, List, Block)
+#   // ------------------------------------------------------
+#   rule <k> #PerformMapList(.List, Acc, B) => . ... </k>
+#        <stack> . => #ReverseList(Acc) ... </stack>
+# 
+#   rule <k> #PerformMapList(ListItem(L) Ls, Acc, B)
+#         => B
+#         ~> #AddToList(Ls, Acc, B)
+#            ...
+#        </k>
+#        <stack> . => L ... </stack>
+# 
+#   rule <k> #AddToList(Ls, Acc, B)
+#         => #PerformMapList(Ls, ListItem(L) Acc, B)
+#            ...
+#        </k>
+#        <stack> L => . ... </stack>
+# 
+#   syntax List ::= #ReverseList(List) [function]
+#   syntax List ::= #ReverseListAux(List, List) [function]
+#   // ---------------------------------------------------
+#   rule #ReverseList(L) => #ReverseListAux(L, .List)
+#   rule #ReverseListAux(ListItem(L1) Ls, Acc)
+#     => #ReverseListAux(Ls, ListItem(L1) Acc)
+#   rule #ReverseListAux(.List, Acc) => Acc
+# ```
+# 
+# Domain Specific operations
+# --------------------------
+# 
+# ### Timestamp Operations
+# 
+# Timestamps are simply wrapped ints in Michelson, so the implementation of
+# simple arithmetic over them is straightforward. The differing argument types
+# however forces us to use two rules for each operation.
+# 
+# ```k
+#   rule <k> ADD A => . ... </k>
+#        <stack> #Timestamp(I1) ~> I2 => #Timestamp(I1 +Int I2) ... </stack>
+# 
+#   rule <k> ADD A => . ... </k>
+#        <stack> I1 ~> #Timestamp(I2) => #Timestamp(I1 +Int I2) ... </stack>
+# 
+#   rule <k> SUB A => . ... </k>
+#        <stack> #Timestamp(I1) ~> I2 => #Timestamp(I1 -Int I2) ... </stack>
+# 
+#   rule <k> SUB A => . ... </k>
+#        <stack> #Timestamp(I1) ~> #Timestamp(I2) => I1 -Int I2 ... </stack>
+# ```
+# 
+# ### Blockchain Operations
+# 
+# ```k
+#   rule <k> CREATE_CONTRACT A:AnnotationList { C } => . ... </k>
+#        <stack> Delegate:OptionData
+#             ~> Initial:Mutez
+#             ~> Storage:Data
+#             => Create_contract(O, C, Delegate, Initial, Storage)
+#             ~> #Address("@Address(" +String Int2String(!_:Int) +String ")")
+#                ...
+#        </stack>
+#        <nonce> #Nonce(O) => #NextNonce(#Nonce(O)) </nonce>
+# 
+#   rule <k> TRANSFER_TOKENS _ => . ... </k>
+#        <stack> D ~> M ~> #Contract(A, _)
+#             => Transfer_tokens(O, D, M, A)
+#                ...
+#        </stack>
+#        <nonce> #Nonce(O) => #NextNonce(#Nonce(O)) </nonce>
+# 
+#   rule <k> SET_DELEGATE A => . ... </k>
+#        <stack> D => Set_delegate(O, D) ... </stack>
+#        <nonce> #Nonce(O) => #NextNonce(#Nonce(O)) </nonce>
+# ```
+# 
+# Each `operation` value must have a unique nonce.
+# The nonce generation process is unspecified by the Michelson semantics.
+# We implement it here.
+# 
+# ```k
+#   syntax OperationNonce ::= #NextNonce(OperationNonce) [function]
+#   rule #NextNonce(#Nonce(I)) => #Nonce(I +Int 1)
+# ```
+# 
+# These instructions push fresh `contract` literals on the stack corresponding
+# to the given addresses/key hashes.
+# 
+# ```k
+#   rule <k> CONTRACT _ T => . ... </k>
+#        <stack> A => Some {M[A]}:>Data ... </stack>
+#        <knownaddrs> M </knownaddrs>
+#     requires A in_keys(M)
+#      andBool #TypeFromContractStruct({M[A]}:>Data) ==K T
+# 
+#   rule <k> CONTRACT _ T => . ... </k>
+#        <stack> A:Address => None ... </stack>
+#        <knownaddrs> M </knownaddrs> [owise]
+# 
+#   rule <k> IMPLICIT_ACCOUNT Ann => . ... </k>
+#        <stack> #KeyHash(A)
+#             => #Contract(#Address(A), unit .AnnotationList)
+#                ...
+#        </stack>
+# 
+#   syntax Type ::= #TypeFromContractStruct(Data) [function]
+#   rule #TypeFromContractStruct(#Contract(_, T)) => T
+# ```
+# 
+# These instructions push blockchain state on the stack.
+# 
+# ```k
+#   rule <k> BALANCE A => . ... </k>
+#        <stack> . => B ... </stack>
+#        <mybalance> B </mybalance>
+# 
+#   rule <k> ADDRESS Ann => . ... </k>
+#        <stack> #Contract(A, _) => A ... </stack>
+# 
+#   rule <k> SOURCE Ann => . ... </k>
+#        <stack> . => A ... </stack>
+#        <sourceaddr> A </sourceaddr>
+# 
+#   rule <k> SENDER Ann => . ... </k>
+#        <stack> . => A ... </stack>
+#        <senderaddr> A </senderaddr>
+# 
+#   rule <k> SELF Ann => . ... </k>
+#        <stack> . => #Contract(A, T) ... </stack>
+#        <paramtype> T </paramtype>
+#        <myaddr> A </myaddr>
+# 
+#   rule <k> AMOUNT Ann => . ... </k>
+#        <stack> . => M ... </stack>
+#        <myamount> M </myamount>
+# 
+#   rule <k> CHAIN_ID A => . ... </k>
+#        <stack> . => C ... </stack>
+#        <mychainid> C </mychainid>
+# 
+#   rule <k> NOW A => . ... </k>
+#        <stack> . => N ... </stack>
+#        <mynow> N </mynow>
+# ```
+# 
+# ### Cryptographic Operations
+# 
+# The cryptographic operations are simply stubbed for now.
+# 
+# ```k
+#   syntax String ::= #Blake2BKeyHash(String) [function]
+#   rule #Blake2BKeyHash(S) => S
+# 
+#   rule <k> HASH_KEY A => #HandleAnnotations(A) ... </k>
+#        <stack> #Key(S) => #KeyHash(#Blake2BKeyHash(S)) ... </stack>
+# 
+#   rule <k> BLAKE2B A => #HandleAnnotations(A) ... </k>
+#        <stack> B:MBytes => #Blake2B(B) ... </stack>
+# 
+#   rule <k> SHA256 A => #HandleAnnotations(A) ... </k>
+#        <stack> B:MBytes => #SHA256(B) ... </stack>
+# 
+#   rule <k> SHA512 A => #HandleAnnotations(A) ... </k>
+#        <stack> B:MBytes => #SHA512(B) ... </stack>
+# 
+#   syntax MBytes ::= #SignedMBytes(Key, Signature, MBytes)
+# 
+#   /*
+#   // FIXME: The haskell backend does not support distinguishing these rules.
+#   rule <k> CHECK_SIGNATURE A => #HandleAnnotations(A) ... </k>
+#        <stack> #Key(K)
+#             ~> #Signature(S)
+#             ~> #SignedMBytes(#Key(K), #Signature(S), _)
+#             => true
+#                ...
+#        </stack>
+# 
+#   rule <k> CHECK_SIGNATURE A => #HandleAnnotations(A) ... </k>
+#        <stack> #Key(_)
+#             ~> #Signature(_)
+#             ~> _:MBytes
+#             => false
+#                ...
+#        </stack> [owise]
+#   */
+# ```
+# 
+# ### Mutez Operations
+# 
+# Mutez operations need to check their results since `mutez` is not an unlimited
+# precision type.
+# This internal instruction checks and produces the appropriate error case if the
+# value is invalid.
+# 
+# ```k
+#   syntax Instruction ::= #ValidateMutezAndPush(Mutez, Int, Int)
+#   // ----------------------------------------------------------
+#   rule <k> #ValidateMutezAndPush(#Mutez(I), _, _) => . ... </k>
+#        <stack> . => #Mutez(I) ... </stack>
+#        requires #IsLegalMutezValue(I)
+# 
+#   rule <k> #ValidateMutezAndPush(#Mutez(I), I1, I2) ~> Rk
+#         => Aborted("Mutez out of bounds", I, Rk, Rs) ~> Rk </k>
+#        <stack> Rs => #FailureFromMutezValue(#Mutez(I), I1, I2) </stack>
+#     requires notBool #IsLegalMutezValue(I)
+# 
+#   syntax FailedStack ::= #FailureFromMutezValue(Mutez, Int, Int) [function]
+#   // ----------------------------------------------------------------------
+#   rule #FailureFromMutezValue(#Mutez(I), I1, I2)
+#     => ( MutezOverflow I1 I2 ) requires I >=Int #MutezOverflowLimit
+#   rule #FailureFromMutezValue(#Mutez(I), I1, I2)
+#     => ( MutezUnderflow I1 I2 ) requires I <Int 0
+# ```
+# 
+# Other than the mutez validation step, these arithmetic rules are essentially
+# identical to those defined over integers.
+# 
+# ```k
+#   rule <k> ADD A
+#         => #ValidateMutezAndPush(#Mutez(I1 +Int I2), I1, I2)
+#         ~> #HandleAnnotations(A)
+#            ...
+#        </k>
+#        <stack> #Mutez(I1) ~> #Mutez(I2) => . ... </stack>
+# 
+#   rule <k> SUB A
+#         => #ValidateMutezAndPush(#Mutez(I1 -Int I2), I1, I2)
+#         ~> #HandleAnnotations(A)
+#            ...
+#        </k>
+#        <stack> #Mutez(I1) ~> #Mutez(I2) => . ... </stack>
+# 
+#   rule <k> MUL A
+#         => #ValidateMutezAndPush(#Mutez(I1 *Int I2), I1, I2)
+#         ~> #HandleAnnotations(A)
+#            ...
+#        </k>
+#        <stack> #Mutez(I1) ~> I2 => . ... </stack>
+# 
+#   rule <k> MUL A
+#         => #ValidateMutezAndPush(#Mutez(I1 *Int I2), I1, I2)
+#         ~> #HandleAnnotations(A)
+#            ...
+#        </k>
+#        <stack> I1 ~> #Mutez(I2) => . ... </stack>
+# 
+#   rule <k> EDIV A => #HandleAnnotations(A) ... </k>
+#        <stack> #Mutez(I1) ~> #Mutez(0) => None ... </stack>
+# 
+#   rule <k> EDIV A => #HandleAnnotations(A) ... </k>
+#        <stack> #Mutez(I1) ~> 0 => None ... </stack>
+# 
+#   rule <k> EDIV A => #HandleAnnotations(A) ... </k>
+#        <stack> #Mutez(I1)
+#             ~> #Mutez(I2)
+#             => Some (Pair (I1 /Int I2) #Mutez(I1 %Int I2))
+#                ...
+#        </stack>
+#     requires I2 >Int 0
+# 
+#   rule <k> EDIV A => #HandleAnnotations(A) ... </k>
+#        <stack> #Mutez(I1)
+#             ~> I2
+#             => Some (Pair #Mutez(I1 /Int I2) #Mutez(I1 %Int I2))
+#        </stack>
+#        requires I2 >Int 0
+# ```
 
 Debugging Operations
 --------------------
@@ -1877,8 +1883,8 @@ In stack-based languages like Michelson, state generalization means that we
 abstract out pieces of the stack which are non-invariant during loop execution.
 
 ```symbolic
-  syntax KItem ::= #GeneralizeStack(StackElementList, K)
-  rule <k> #GeneralizeStack(.StackElementList, Stack) => . ... </k>
+  syntax KItem ::= #GeneralizeStack(Stack, K)
+  rule <k> #GeneralizeStack(.Stack, Stack) => . ... </k>
        <stack> .K => Stack </stack>
 
   rule <k> #GeneralizeStack(Stack_elt T D ; Stack, KSeq:K)
@@ -1919,7 +1925,7 @@ abstract out pieces of the stack which are non-invariant during loop execution.
 ```k
   syntax KItem ::= #Bind(OutputStack, K)
 
-  rule <k> #Bind({ .StackElementList }, .K) => .K ... </k>
+  rule <k> #Bind({ .Stack }, .K) => .K ... </k>
 
   rule <k> #Bind(S1:FailedStack, S2:FailedStack) => .K ... </k>
     requires #Matches(S1, S2)
@@ -2005,9 +2011,9 @@ Symbolic Value Processing
   rule #FindSymbolsI(PUSH _ T D) => #FindSymbolsIn(D, T)
   rule #FindSymbolsI(_)          => .Set [owise]
 
-  syntax Set ::= #FindSymbolsS(StackElementList) [function, functional]
-  rule #FindSymbolsS(.StackElementList) => .Set
-  rule #FindSymbolsS((Stack_elt T D ); Ss:StackElementList)
+  syntax Set ::= #FindSymbolsS(Stack) [function, functional]
+  rule #FindSymbolsS(.Stack) => .Set
+  rule #FindSymbolsS((Stack_elt T D ); Ss:Stack)
     => #FindSymbolsIn(D, T) |Set #FindSymbolsS(Ss)
 ```
 
