@@ -85,16 +85,11 @@ deps-tezos: $(TEZOS_SUBMODULE)/make.timestamp
 # Building
 # --------
 
-SOURCE_FILES       := compat                    \
-                      michelson/common          \
-                      michelson/configuration   \
-                      michelson/internal-syntax \
-                      michelson/michelson       \
-                      michelson/syntax          \
-                      michelson/types           \
-                      michelson-unparser        \
-                      unit-test/unit-test       \
-                      unit-test/syntax
+SOURCE_FILES       := compat    \
+                      common    \
+                      michelson \
+                      syntax    \
+                      types
 EXTRA_SOURCE_FILES :=
 ALL_FILES          := $(patsubst %, %.md, $(SOURCE_FILES) $(EXTRA_SOURCE_FILES))
 
@@ -142,8 +137,8 @@ build-compat: build-contract-expander build-extractor build-input-creator build-
 
 llvm_dir           := $(DEFN_DIR)/llvm
 llvm_files         := $(ALL_FILES)
-llvm_main_file     := unit-test/unit-test
-llvm_main_module   := UNIT-TEST-DRIVER
+llvm_main_file     := michelson
+llvm_main_module   := MICHELSON
 llvm_syntax_module := UNIT-TEST-SYNTAX
 llvm_kompiled      := $(llvm_dir)/$(notdir $(llvm_main_file))-kompiled/interpreter
 
@@ -160,8 +155,8 @@ $(llvm_kompiled): $(llvm_files)
 
 symbolic_dir           := $(DEFN_DIR)/symbolic
 symbolic_files         := $(ALL_FILES)
-symbolic_main_file     := unit-test/unit-test
-symbolic_main_module   := UNIT-TEST-DRIVER
+symbolic_main_file     := michelson
+symbolic_main_module   := MICHELSON
 symbolic_syntax_module := SYMBOLIC-UNIT-TEST-SYNTAX
 symbolic_kompiled      := $(symbolic_dir)/$(notdir $(symbolic_main_file))-kompiled/definition.kore
 

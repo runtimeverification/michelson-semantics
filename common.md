@@ -6,10 +6,10 @@ representations of certain productions (e.g. by reordering them and
 adding/removing extra semicolons).
 
 ```k
-requires "michelson/internal-syntax.md"
+requires "syntax.md"
 
 module MICHELSON-COMMON
-  imports MICHELSON-INTERNAL-SYNTAX
+  imports SYMBOLIC-UNIT-TEST-COMMON-SYNTAX
   imports BYTES
   imports DOMAINS
   imports COLLECTIONS
@@ -403,6 +403,12 @@ already been converted to K-internal form, so there is no need to recurse here.
 
 ```k
   rule #MichelineToNative(I:Int, big_map _:AnnotationList _K _V, _KnownAddrs, BigMaps) => {BigMaps[I]}:>Data
+```
+
+The `#Any` value maps to itself.
+
+```k
+  rule #MichelineToNative(#Any, _, _, _) => #Any
 ```
 
 ```k
