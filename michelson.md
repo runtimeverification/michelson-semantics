@@ -1357,7 +1357,7 @@ For simplicity we implement this by repeatedly selecting the minimal element.
        <stack> X ~> M => lookupMap(M, X) =/=K None ... </stack>
        
   rule <k> UPDATE A => #HandleAnnotations(A)  ... </k>
-       <stack> K ~> None ~> M:Map => unset(M, K) ... </stack>
+       <stack> K ~> None ~> M => unset(M, K) ... </stack>
 
   rule <k> UPDATE A => #HandleAnnotations(A)  ... </k>
        <stack> K ~> Some V ~> M => update(M, K, V) ... </stack>
