@@ -15,6 +15,12 @@ module MICHELSON-COMMON
   imports COLLECTIONS
 ```
 
+```k
+  syntax StackElement ::= "(" Type Data ")"
+  syntax Stack ::= List{StackElement, ";"}
+  syntax InternalStack ::= Stack | FailedStack
+```
+
 The internal representation of Michelson sets, lists and maps are simply K sets,
 lists and maps respectively.
 
