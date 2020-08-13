@@ -2347,7 +2347,6 @@ It has an untyped and typed variant.
   rule <k> #MakeFresh(set       _:AnnotationList _:Type)        => ?_:Set                                ... </k>
   rule <k> #MakeFresh(map       _:AnnotationList _:Type _:Type) => ?_:Map                                ... </k>
   rule <k> #MakeFresh(big_map   _:AnnotationList _:Type _:Type) => ?_:Map                                ... </k>
-  rule <k> #MakeFresh(lambda    _:AnnotationList T1 T2)         => #Lambda(#Name(T1),#Name(T2),?_:Block) ... </k>
   rule <k> #MakeFresh(contract  _:AnnotationList T)             => #Contract(#Address(?_:String),T)      ... </k>
 
   rule <k> #MakeFresh(pair _:AnnotationList T1 T2)
@@ -2360,6 +2359,24 @@ It has an untyped and typed variant.
 
   rule <k> #MakeFresh(or _:AnnotationList T1 T2) => Left  #MakeFresh(T1) ... </k>
   rule <k> #MakeFresh(or _:AnnotationList T1 T2) => Right #MakeFresh(T2) ... </k>
+```
+
+```symbolic
+  rule <k> #MakeFresh(lambda    _:AnnotationList T1 T2)
+        => #Lambda(T1,T2, { #Uninterpreted(!Id, T1, T2) })
+           ...
+       </k>
+
+  syntax Instruction ::= #Uninterpreted(id: Int, arg: Type, return: Type)
+  rule <k> #Uninterpreted(Id, ArgT, RetT)
+        => #Assume(?Ret == #MakeFresh(RetT))
+        ~> #Assume(uninterpreted(Id, Arg) == ?Ret)
+           ...
+       </k>
+       <stack> Arg => ?Ret:Data ... </stack>
+    requires isValue(Arg)
+
+  syntax Data ::= uninterpreted(id: Int, arg: Data) [function, functional, no-evaluators]
 ```
 
 ```k
