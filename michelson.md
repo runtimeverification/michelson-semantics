@@ -2239,11 +2239,10 @@ The `isValue` predicate indicates if a `Data` has been fully evaluated.
 
   syntax Instruction ::= #Uninterpreted(id: Int, arg: Type, return: Type)
   rule <k> #Uninterpreted(Id, ArgT, RetT)
-        => #Assume(?Ret == #MakeFresh(RetT))
-        ~> #Assume(uninterpreted(Id, Arg) == ?Ret)
+        => #Assume(uninterpreted(Id, Arg) == #MakeFresh(RetT))
            ...
        </k>
-       <stack> Arg => ?Ret:Data ... </stack>
+       <stack> Arg => uninterpreted(Id, Arg):Data ... </stack>
     requires isValue(Arg)
 
   syntax Data ::= uninterpreted(id: Int, arg: Data) [function, functional, no-evaluators]
