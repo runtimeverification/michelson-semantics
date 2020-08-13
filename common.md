@@ -329,12 +329,20 @@ exists between maps and `big_map`s in K-Michelson.
   syntax Data ::= MapValue
   syntax MapValue ::= "emptyMap"
                     | update(map: MapValue, key: Data, value: Data)
+
   syntax OptionData ::= lookupMap(MapValue, Data) [function, functional]
   rule lookupMap(emptyMap, _Key) => None
   rule lookupMap(update(_M, Key , Value), Key) => Value
   rule lookupMap(update(_M, Key , Value), Key) => Value [simplification]
   rule lookupMap(update( M, Key', Value), Key) => lookupMap(update(M, Key', Value), Key) requires notBool Key ==K Key'
   rule lookupMap(update( M, Key', Value), Key) => lookupMap(update(M, Key', Value), Key) requires notBool Key ==K Key' [simplification]
+
+  syntax MapValue ::= unset(MapValue, key: Data) [function, functional]
+  rule unset(emptyMap, _Key) => emptyMap
+  rule unset(update(M, Key , Value), Key) => unset(M, Key)
+  rule unset(update(M, Key , Value), Key) => unset(M, Key) [simplification]
+  rule unset(update(M, Key', Value), Key) => update(unset(M, Key), Key', Value)
+  rule unset(update(M, Key', Value), Key) => update(unset(M, Key), Key', Value) [simplification]
 ```
 
 ```k
