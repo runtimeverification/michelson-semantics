@@ -630,23 +630,22 @@ TODO: Consider best way to introduce type-checks to pre/post conditions
 ```k
   syntax KItem ::= "#LoadInputStack"
   rule <k> #LoadInputStack => .K ... </k>
-       <stack> _ => #LiteralStackToSemantics(Actual, KnownAddrs, BigMaps) </stack>
+       <stack> _ => #StackToNative(Actual, Addrs, BigMaps) </stack>
        <inputstack> Actual </inputstack>
-       <knownaddrs> KnownAddrs </knownaddrs>
+       <knownaddrs> Addrs </knownaddrs>
        <bigmaps> BigMaps </bigmaps>
 
-  syntax Stack ::= #LiteralStackToSemantics(LiteralStack, Map, Map)        [function]
-                 | #LiteralStackToSemanticsAux(StackElementList, Map, Map) [function]
-  // --------------------------------------------------------------------------------
-  rule #LiteralStackToSemantics( { Ls }, KnownAddrs, BigMaps )
-    => #LiteralStackToSemanticsAux( Ls, KnownAddrs, BigMaps )
-
-  rule #LiteralStackToSemanticsAux(.StackElementList, _KnownAddrs, _BigMaps) => .Stack
-  rule #LiteralStackToSemanticsAux(Stack_elt T D ; Gs:Stack,
-                                   KnownAddrs,
-                                   BigMaps)
-    => ( T #MichelineToNative(D, T, KnownAddrs, BigMaps) ) ;
-       #LiteralStackToSemanticsAux(Gs, KnownAddrs, BigMaps)
+  syntax InternalStack ::= #StackToNative(OutputStack, Map, Map) [function]
+  syntax Stack ::= #StackToNativeAux(StackElementList, Map, Map) [function]
+//   // ----------------------------------------------------------------------
+//   rule #StackToNative( { Ls }, Addrs, BigMaps )
+//     => #StackToNativeAux( Ls, Addrs, BigMaps )
+//   rule #StackToNative( FS:FailedStack, _, _ ) => FS
+// 
+//   rule #StackToNativeAux(.StackElementList, _Addrs, _BigMaps) => .Stack
+//   rule #StackToNativeAux(Stack_elt T D ; Gs, Addrs, BigMaps)
+//     => ( T #MichelineToNative(D, T, Addrs, BigMaps) ) ;
+//        #StackToNativeAux(Gs, Addrs, BigMaps)
 
   syntax Stack ::= reverseStack( Stack )        [function]
                  | reverseStack( Stack, Stack ) [function]
@@ -688,369 +687,369 @@ TODO: Consider best way to introduce type-checks to pre/post conditions
        <script> Script </script>
 ```
 
-Execution Semantics
-===================
-
-When the `<k>` cell is empty, we consider execution successful.
-
-```k
-  rule <k> . </k>
-       <returncode> 1 => 0 </returncode>
-```
-
-We handle typed instruction wrappers and blocks here.
-
-```k
-  rule I:Instruction ; Is => I ~> Is [structural]
-  rule {}                 => .K      [structrual]
-  rule { Is:DataList }    => Is      [structural]
-```
-
-For now, annotations are ignored.
-
-```k
-  syntax Instruction ::= #HandleAnnotations(AnnotationList)
-  rule #HandleAnnotations(_) => .
-```
-
-Control Structures
-------------------
-
-### User-defined Exceptions
-
-The `FAILWITH` instruction lets users terminate execution at any point.
-
-```k
-  rule <k> FAILWITH A ~> Rk
-        => #HandleAnnotations(A)
-        ~> Aborted("FAILWITH instruction reached", D, Rk, Rs)
-        ~> Rk
-       </k>
-       <stack> ( T D ) ; Rs => ( Failed D ) </stack>
-```
-
-`Aborted()` contains error information when a contract fails at runtime.
-
-```k
-  syntax Error ::= Aborted(message: String,
-                           stackTop: KItem,
-                           restOfStack: K,
-                           restOfContinuation: K)
-```
-
-It then consumes the rest of the program:
-
-```k
-  rule <k> Aborted(_, _, _, _) ~> (_:TypedInstruction => .K) ... </k>
-  rule <k> Aborted(_, _, _, _) ~> (_:DataList => .K) ... </k>
-  rule <k> Aborted(_, _, _, _) ~> (_:Data => .K) ... </k>
-```
-
-Currently, if a program aborts due to the FAILWITH instruction, we throw away
-the abortion debug info:
-
-```k
-  rule <k> (Aborted(_, _, _, _) => .K) ~> #ExecutePostConditions ... </k>
-```
-
-### Conditionals
-
-The control flow instruction's implementations in K should look extremely
-similar to their formal description in the [Michelson
-documentation](https://tezos.gitlab.io/whitedoc/michelson.html#control-structures).
-Keeping this similarity, unless absolutely prevented for performance or K style
-reasons, was a major design goal of the semantics.
-
-```k
-  rule <k> IF A BT BF => #HandleAnnotations(A) ~> BT ... </k>
-       <stack> ( bool _ true  ) ; SS => SS </stack>
-
-  rule <k> IF A BT BF => #HandleAnnotations(A) ~> BF ... </k>
-       <stack> ( bool _ false ) ; SS => SS </stack>
-```
-
-### Loops
-
-Here we handle concrete loop semantics.
-
-```k
-  rule <k> LOOP .AnnotationList B
-        => B ~> LOOP .AnnotationList B
-           ...
-       </k>
-       <stack> ( bool _ true  ) ; SS => SS </stack>
-  rule <k> LOOP .AnnotationList B => .K ... </k>
-       <stack> ( bool _ false ) ; SS => SS </stack>
-```
-
-```k
-  rule <k> LOOP_LEFT A B
-        => #HandleAnnotations(A)
-        ~> B
-        ~> LOOP_LEFT .AnnotationList B
-           ...
-        </k>
-       <stack> ( (or _ LX RX) Left D ) ; SS
-           =>  ( LX D ) ; SS
-       </stack>
-  rule <k> LOOP_LEFT A B => #HandleAnnotations(A) ... </k>
-       <stack> ( (or _ LX RX) Right D ) ; SS
-            => ( RX D ) ; SS
-       </stack>
-```
-
-Here we handle symbolic loop semantics.
-
-```symbolic
-  rule <k> LOOP A .AnnotationList Body
-        => CUTPOINT(!Id, Invariant) ;
-           LOOP .AnnotationList {
-             Body ;
-             CUTPOINT(!Id, Invariant)
-           }
-           ...
-       </k>
-       <invs> A |-> Invariant ... </invs>
-```
-
-### Stack Manipulation
-
-It is sometimes useful to create "pseudo-instructions" like this to schedule
-operations to happen in the future.
-
-```k
-  syntax Instruction ::= #Push(Type,Data)
-  rule <k> #Push(T,D) => . ... </k>
-       <stack> SS => ( T D ) ; SS </stack>
-```
-
-The `DIP` instruction uses the `#Push` pseudo-instruction to replace the
-element it pops off for its block.
-
-```k
-  rule <k> DIP A B => #HandleAnnotations(A) ~> B ~> #Push(T,D) ... </k>
-       <stack> ( T D ) ; SS => SS </stack>
-
-  rule <k> DIP A 0 B => #HandleAnnotations(A) ~> B ... </k>
-
-  rule <k> DIP A N B
-         => #HandleAnnotations(A)
-         ~> DIP .AnnotationList { DIP .AnnotationList N -Int 1 B }
-            ...
-       </k>
-    requires N >Int 0
-```
-
-This pseudo-instruction implements the behavior of restoring the previous stack
-when a lambda completes execution.
-
-```k
-  syntax Instruction ::= #ReturnStack(Stack)
-
-  rule <k> #ReturnStack(SS) => . ... </k>
-       <stack> E ; _ => E ; SS </stack>
-```
-
-`DROP n` is implemented in a recursive style, like in the Michelson
-documentation.
-
-```k
-  rule <k> DROP A =>  #HandleAnnotations(A) ... </k>
-       <stack> _:StackElement ; SS => SS ... </stack>
-
-  rule <k> DROP A I
-        => #HandleAnnotations(A)
-        ~> DROP .AnnotationList
-        ~> DROP .AnnotationList I -Int 1
-           ...
-       </k>
-    requires I >Int 0
-
-  rule <k> DROP A 0 => #HandleAnnotations(A) ... </k>
-```
-
-`DUP` and `SWAP` are essentially lifted directly from the docs.
-
-```k
-  rule <k> DUP A => #HandleAnnotations(A) ... </k>
-       <stack> X:StackElement ; SS => X ; X ; SS </stack>
-
-  rule <k> SWAP A => #HandleAnnotations(A) ... </k>
-       <stack> X:StackElement ; Y:StackElement ; SS
-            => Y ; X ; SS
-       </stack>
-```
-
-`DIG n` and `DUG n` are both implemented using two internal instructions:
-`X_DOWN` and `X_UP` which descend down to the `n`th stack position and then
-climb back up, respectively.
-
-```k
-  rule <k> DIG A N => #HandleAnnotations(A) ~> DIG_DOWN(N, .Stack) ... </k>
-
-  syntax Instruction ::= "DIG_DOWN" "(" Int "," Stack ")"
-                       | "DIG_UP" "(" Stack "," StackElement ")"
-  // -----------------------------------------------------------
-  rule <k> DIG_DOWN(N, A) => DIG_DOWN(N -Int 1, F ; A) ... </k>
-       <stack> F ; SS => SS </stack>
-    requires N >Int 0
-
-  rule <k> DIG_DOWN(0, A) => DIG_UP(A, F) ... </k>
-       <stack> F ; SS => SS </stack>
-
-  rule <k> DIG_UP(F ; A, T) => DIG_UP(A, T) ... </k>
-       <stack> SS => F ; SS </stack>
-
-  rule <k> DIG_UP(.Stack, T) => . ... </k>
-       <stack> SS => T ; SS </stack>
-
-  rule <k> DUG A N => #HandleAnnotations(A) ~> DUG_DOWN(N, .Stack, T) ... </k>
-       <stack> T ; SS => SS </stack>
-
-  syntax Instruction ::= "DUG_DOWN" "(" Int "," Stack "," StackElement ")"
-                       | "DUG_UP" "(" K ")"
-  // ---------------------------------------------------------------------
-  rule <k> DUG_DOWN(N, S, R) => DUG_DOWN(N -Int 1, T ; S, R) ... </k>
-       <stack> T ; SS => SS </stack>
-    requires N >Int 0
-
-  rule <k> DUG_DOWN(0, S, R) => DUG_UP(S) ... </k>
-       <stack> SS => R ; SS </stack>
-
-  rule <k> DUG_UP(T:StackElement ; S) => DUG_UP(S) ... </k>
-       <stack> SS => T ; SS </stack>
-
-  rule <k> DUG_UP(.Stack) => .K ... </k>
-```
-
-`PUSH` needs to convert its argument to semantics form, but otherwise matches
-the documentation directly.
-
-```k
-  rule <k> PUSH A T X => #HandleAnnotations(A) ... </k>
-       <stack> SS
-            => ( T #MichelineToNative(X, T, .Map, .Map) ) ; SS
-       </stack>
-```
-
-`UNIT` and `LAMBDA` are implemented almost exactly as specified in the
-documentation.
-
-```k
-  rule <k> UNIT A => #HandleAnnotations(A) ... </k>
-       <stack> SS => ( (unit .AnnotationList) Unit ) ; SS </stack>
-
-  rule <k> LAMBDA A T1 T2 C => #HandleAnnotations(A) ... </k>
-       <stack> SS
-            => ( (lambda A T1 T2) #Lambda(T1, T2, C) ) ; SS
-       </stack>
-```
-
-### Lambda Evaluation
-
-An `EXEC` instruction replaces the stack and schedules the restoration of the
-old stack after the completion of the lambda code.
-
-```k
-  rule <k> EXEC B => #HandleAnnotations(B) ~> C ~> #ReturnStack(SS) ... </k>
-       <stack> ( T1 D )
-             ; ( (lambda _ T1 T2) #Lambda(T1, T2, C) )
-             ; SS
-            => ( T1 D )
-       </stack>
-```
-
-`APPLY` demonstrates why lambdas have their type information preserved, as
-otherwise we would be unable to produce an appropriate `PUSH` instruction for
-the expanded lambda.
-
-```k
-  rule <k> APPLY A => #HandleAnnotations(A) ... </k>
-       <stack> ( T0 D )
-             ; ( (lambda A1 (pair A2 T0 T1) T2)
-                 #Lambda((pair A2 T0 T1), T2, { C } ) )
-            => ( (lambda A1 T1 T2)
-                 #Lambda(T1, T2, {
-                   PUSH .AnnotationList T0 D ;
-                   PAIR .AnnotationList ;
-                   { C }
-                 } ) )
-               ...
-       </stack>
-```
-
-Core Operations
----------------
-
-### Generic Comparison
-
-```k
-  rule <k> EQ A => #HandleAnnotations(A) ... </k>
-       <stack> ( int _ I ) ; SS
-            => ( bool .AnnotationList I ==Int 0 ) ; SS
-       </stack>
-
-  rule <k> NEQ A => #HandleAnnotations(A) ... </k>
-       <stack> ( int _ I ) ; SS
-            => ( bool .AnnotationList I =/=Int 0 ) ; SS
-       </stack>
-
-  rule <k> LT A => #HandleAnnotations(A) ... </k>
-       <stack> ( int _ I ) ; SS
-            => ( bool .AnnotationList I <Int 0 ) ; SS
-       </stack>
-
-  rule <k> GT A => #HandleAnnotations(A) ... </k>
-       <stack> ( int _ I ) ; SS
-            => ( bool .AnnotationList I >Int 0 ) ; SS
-       </stack>
-
-  rule <k> LE A => #HandleAnnotations(A) ... </k>
-       <stack> ( int _ I ) ; SS
-            => ( bool .AnnotationList I <=Int 0 ) ; SS
-       </stack>
-
-  rule <k> GE A => #HandleAnnotations(A) ... </k>
-       <stack> ( int _ I ) ; SS
-            => ( bool .AnnotationList I >=Int 0 ) ; SS
-       </stack>
-```
-
-```k
-    rule A  >Int B => notBool( A <=Int B ) [simplification]
-    rule A >=Int B => notBool( A  <Int B ) [simplification]
-```
-
-### Boolean Operations
-
-```k
-  rule <k> OR A => #HandleAnnotations(A) ... </k>
-       <stack> ( bool _ B1 )
-             ; ( bool _ B2 )
-	     ; SS
-	    => ( bool .AnnotationList (B1 orBool B2) ) ; SS
-       </stack>
-
-  rule <k> AND A => #HandleAnnotations(A) ... </k>
-       <stack> ( bool _ B1 )
-             ; ( bool _ B2 )
-	     ; SS
-	    => ( bool .AnnotationList (B1 andBool B2) ) ; SS
-       </stack>
-
-  rule <k> XOR A => #HandleAnnotations(A) ... </k>
-       <stack> ( bool _ B1 )
-             ; ( bool _ B2 )
-	     ; SS
-	    => ( bool .AnnotationList (B1 xorBool B2) ) ; SS
-       </stack>
-
-  rule <k> NOT A => #HandleAnnotations(A) ... </k>
-       <stack> ( bool _ B ) ; SS
-            => ( bool .AnnotationList (notBool B) ) ; SS
-       </stack>
-```
-
+# Execution Semantics
+# ===================
+# 
+# When the `<k>` cell is empty, we consider execution successful.
+# 
+# ```k
+#   rule <k> . </k>
+#        <returncode> 1 => 0 </returncode>
+# ```
+# 
+# We handle typed instruction wrappers and blocks here.
+# 
+# ```k
+#   rule I:Instruction ; Is => I ~> Is [structural]
+#   rule {}                 => .K      [structrual]
+#   rule { Is:DataList }    => Is      [structural]
+# ```
+# 
+# For now, annotations are ignored.
+# 
+# ```k
+#   syntax Instruction ::= #HandleAnnotations(AnnotationList)
+#   rule #HandleAnnotations(_) => .
+# ```
+# 
+# Control Structures
+# ------------------
+# 
+# ### User-defined Exceptions
+# 
+# The `FAILWITH` instruction lets users terminate execution at any point.
+# 
+# ```k
+#   rule <k> FAILWITH A ~> Rk
+#         => #HandleAnnotations(A)
+#         ~> Aborted("FAILWITH instruction reached", D, Rk, Rs)
+#         ~> Rk
+#        </k>
+#        <stack> ( T D:Data ) ; Rs => ( Failed D ) </stack>
+# ```
+# 
+# `Aborted()` contains error information when a contract fails at runtime.
+# 
+# ```k
+#   syntax Error ::= Aborted(message: String,
+#                            stackTop: KItem,
+#                            restOfStack: K,
+#                            restOfContinuation: K)
+# ```
+# 
+# It then consumes the rest of the program:
+# 
+# ```k
+#   rule <k> Aborted(_, _, _, _) ~> (_:TypedInstruction => .K) ... </k>
+#   rule <k> Aborted(_, _, _, _) ~> (_:DataList => .K) ... </k>
+#   rule <k> Aborted(_, _, _, _) ~> (_:Data => .K) ... </k>
+# ```
+# 
+# Currently, if a program aborts due to the FAILWITH instruction, we throw away
+# the abortion debug info:
+# 
+# ```k
+#   rule <k> (Aborted(_, _, _, _) => .K) ~> #ExecutePostConditions ... </k>
+# ```
+# 
+# ### Conditionals
+# 
+# The control flow instruction's implementations in K should look extremely
+# similar to their formal description in the [Michelson
+# documentation](https://tezos.gitlab.io/whitedoc/michelson.html#control-structures).
+# Keeping this similarity, unless absolutely prevented for performance or K style
+# reasons, was a major design goal of the semantics.
+# 
+# ```k
+#   rule <k> IF A BT BF => #HandleAnnotations(A) ~> BT ... </k>
+#        <stack> ( bool _ true  ) ; SS => SS </stack>
+# 
+#   rule <k> IF A BT BF => #HandleAnnotations(A) ~> BF ... </k>
+#        <stack> ( bool _ false ) ; SS => SS </stack>
+# ```
+# 
+# ### Loops
+# 
+# Here we handle concrete loop semantics.
+# 
+# ```k
+#   rule <k> LOOP .AnnotationList B
+#         => B ~> LOOP .AnnotationList B
+#            ...
+#        </k>
+#        <stack> ( bool _ true  ) ; SS => SS </stack>
+#   rule <k> LOOP .AnnotationList B => .K ... </k>
+#        <stack> ( bool _ false ) ; SS => SS </stack>
+# ```
+# 
+# ```k
+#   rule <k> LOOP_LEFT A B
+#         => #HandleAnnotations(A)
+#         ~> B
+#         ~> LOOP_LEFT .AnnotationList B
+#            ...
+#         </k>
+#        <stack> ( (or _ LX RX) Left D ) ; SS
+#            =>  ( LX D ) ; SS
+#        </stack>
+#   rule <k> LOOP_LEFT A B => #HandleAnnotations(A) ... </k>
+#        <stack> ( (or _ LX RX) Right D ) ; SS
+#             => ( RX D ) ; SS
+#        </stack>
+# ```
+# 
+# Here we handle symbolic loop semantics.
+# 
+# ```symbolic
+#   rule <k> LOOP A .AnnotationList Body
+#         => CUTPOINT(!Id, Invariant) ;
+#            LOOP .AnnotationList {
+#              Body ;
+#              CUTPOINT(!Id, Invariant)
+#            }
+#            ...
+#        </k>
+#        <invs> A |-> Invariant ... </invs>
+# ```
+# 
+# ### Stack Manipulation
+# 
+# It is sometimes useful to create "pseudo-instructions" like this to schedule
+# operations to happen in the future.
+# 
+# ```k
+#   syntax Instruction ::= #Push(Type,Data)
+#   rule <k> #Push(T,D) => . ... </k>
+#        <stack> SS => ( T D ) ; SS </stack>
+# ```
+# 
+# The `DIP` instruction uses the `#Push` pseudo-instruction to replace the
+# element it pops off for its block.
+# 
+# ```k
+#   rule <k> DIP A B => #HandleAnnotations(A) ~> B ~> #Push(T,D) ... </k>
+#        <stack> ( T D ) ; SS => SS </stack>
+# 
+#   rule <k> DIP A 0 B => #HandleAnnotations(A) ~> B ... </k>
+# 
+#   rule <k> DIP A N B
+#          => #HandleAnnotations(A)
+#          ~> DIP .AnnotationList { DIP .AnnotationList N -Int 1 B }
+#             ...
+#        </k>
+#     requires N >Int 0
+# ```
+# 
+# This pseudo-instruction implements the behavior of restoring the previous stack
+# when a lambda completes execution.
+# 
+# ```k
+#   syntax Instruction ::= #ReturnStack(Stack)
+# 
+#   rule <k> #ReturnStack(SS) => . ... </k>
+#        <stack> E ; _ => E ; SS </stack>
+# ```
+# 
+# `DROP n` is implemented in a recursive style, like in the Michelson
+# documentation.
+# 
+# ```k
+#   rule <k> DROP A =>  #HandleAnnotations(A) ... </k>
+#        <stack> _:StackElement ; SS => SS ... </stack>
+# 
+#   rule <k> DROP A I
+#         => #HandleAnnotations(A)
+#         ~> DROP .AnnotationList
+#         ~> DROP .AnnotationList I -Int 1
+#            ...
+#        </k>
+#     requires I >Int 0
+# 
+#   rule <k> DROP A 0 => #HandleAnnotations(A) ... </k>
+# ```
+# 
+# `DUP` and `SWAP` are essentially lifted directly from the docs.
+# 
+# ```k
+#   rule <k> DUP A => #HandleAnnotations(A) ... </k>
+#        <stack> X:StackElement ; SS => X ; X ; SS </stack>
+# 
+#   rule <k> SWAP A => #HandleAnnotations(A) ... </k>
+#        <stack> X:StackElement ; Y:StackElement ; SS
+#             => Y ; X ; SS
+#        </stack>
+# ```
+# 
+# `DIG n` and `DUG n` are both implemented using two internal instructions:
+# `X_DOWN` and `X_UP` which descend down to the `n`th stack position and then
+# climb back up, respectively.
+# 
+# ```k
+#   rule <k> DIG A N => #HandleAnnotations(A) ~> DIG_DOWN(N, .Stack) ... </k>
+# 
+#   syntax Instruction ::= "DIG_DOWN" "(" Int "," Stack ")"
+#                        | "DIG_UP" "(" Stack "," StackElement ")"
+#   // -----------------------------------------------------------
+#   rule <k> DIG_DOWN(N, A) => DIG_DOWN(N -Int 1, F ; A) ... </k>
+#        <stack> F ; SS => SS </stack>
+#     requires N >Int 0
+# 
+#   rule <k> DIG_DOWN(0, A) => DIG_UP(A, F) ... </k>
+#        <stack> F ; SS => SS </stack>
+# 
+#   rule <k> DIG_UP(F ; A, T) => DIG_UP(A, T) ... </k>
+#        <stack> SS => F ; SS </stack>
+# 
+#   rule <k> DIG_UP(.Stack, T) => . ... </k>
+#        <stack> SS => T ; SS </stack>
+# 
+#   rule <k> DUG A N => #HandleAnnotations(A) ~> DUG_DOWN(N, .Stack, T) ... </k>
+#        <stack> T ; SS => SS </stack>
+# 
+#   syntax Instruction ::= "DUG_DOWN" "(" Int "," Stack "," StackElement ")"
+#                        | "DUG_UP" "(" K ")"
+#   // ---------------------------------------------------------------------
+#   rule <k> DUG_DOWN(N, S, R) => DUG_DOWN(N -Int 1, T ; S, R) ... </k>
+#        <stack> T ; SS => SS </stack>
+#     requires N >Int 0
+# 
+#   rule <k> DUG_DOWN(0, S, R) => DUG_UP(S) ... </k>
+#        <stack> SS => R ; SS </stack>
+# 
+#   rule <k> DUG_UP(T:StackElement ; S) => DUG_UP(S) ... </k>
+#        <stack> SS => T ; SS </stack>
+# 
+#   rule <k> DUG_UP(.Stack) => .K ... </k>
+# ```
+# 
+# `PUSH` needs to convert its argument to semantics form, but otherwise matches
+# the documentation directly.
+# 
+# ```k
+#   rule <k> PUSH A T X => #HandleAnnotations(A) ... </k>
+#        <stack> SS
+#             => ( T #MichelineToNative(X, T, .Map, .Map) ) ; SS
+#        </stack>
+# ```
+# 
+# `UNIT` and `LAMBDA` are implemented almost exactly as specified in the
+# documentation.
+# 
+# ```k
+#   rule <k> UNIT A => #HandleAnnotations(A) ... </k>
+#        <stack> SS => ( (unit .AnnotationList) Unit ) ; SS </stack>
+# 
+#   rule <k> LAMBDA A T1 T2 C => #HandleAnnotations(A) ... </k>
+#        <stack> SS
+#             => ( (lambda A T1 T2) #Lambda(T1, T2, C) ) ; SS
+#        </stack>
+# ```
+# 
+# ### Lambda Evaluation
+# 
+# An `EXEC` instruction replaces the stack and schedules the restoration of the
+# old stack after the completion of the lambda code.
+# 
+# ```k
+#   rule <k> EXEC B => #HandleAnnotations(B) ~> C ~> #ReturnStack(SS) ... </k>
+#        <stack> ( T1 D )
+#              ; ( (lambda _ T1 T2) #Lambda(T1, T2, C) )
+#              ; SS
+#             => ( T1 D )
+#        </stack>
+# ```
+# 
+# `APPLY` demonstrates why lambdas have their type information preserved, as
+# otherwise we would be unable to produce an appropriate `PUSH` instruction for
+# the expanded lambda.
+# 
+# ```k
+#   rule <k> APPLY A => #HandleAnnotations(A) ... </k>
+#        <stack> ( T0 D )
+#              ; ( (lambda A1 (pair A2 T0 T1) T2)
+#                  #Lambda((pair A2 T0 T1), T2, { C } ) )
+#             => ( (lambda A1 T1 T2)
+#                  #Lambda(T1, T2, {
+#                    PUSH .AnnotationList T0 D ;
+#                    PAIR .AnnotationList ;
+#                    { C }
+#                  } ) )
+#                ...
+#        </stack>
+# ```
+# 
+# Core Operations
+# ---------------
+# 
+# ### Generic Comparison
+# 
+# ```k
+#   rule <k> EQ A => #HandleAnnotations(A) ... </k>
+#        <stack> ( int _ I ) ; SS
+#             => ( bool .AnnotationList I ==Int 0 ) ; SS
+#        </stack>
+# 
+#   rule <k> NEQ A => #HandleAnnotations(A) ... </k>
+#        <stack> ( int _ I ) ; SS
+#             => ( bool .AnnotationList I =/=Int 0 ) ; SS
+#        </stack>
+# 
+#   rule <k> LT A => #HandleAnnotations(A) ... </k>
+#        <stack> ( int _ I ) ; SS
+#             => ( bool .AnnotationList I <Int 0 ) ; SS
+#        </stack>
+# 
+#   rule <k> GT A => #HandleAnnotations(A) ... </k>
+#        <stack> ( int _ I ) ; SS
+#             => ( bool .AnnotationList I >Int 0 ) ; SS
+#        </stack>
+# 
+#   rule <k> LE A => #HandleAnnotations(A) ... </k>
+#        <stack> ( int _ I ) ; SS
+#             => ( bool .AnnotationList I <=Int 0 ) ; SS
+#        </stack>
+# 
+#   rule <k> GE A => #HandleAnnotations(A) ... </k>
+#        <stack> ( int _ I ) ; SS
+#             => ( bool .AnnotationList I >=Int 0 ) ; SS
+#        </stack>
+# ```
+# 
+# ```k
+#     rule A  >Int B => notBool( A <=Int B ) [simplification]
+#     rule A >=Int B => notBool( A  <Int B ) [simplification]
+# ```
+# 
+# ### Boolean Operations
+# 
+# ```k
+#   rule <k> OR A => #HandleAnnotations(A) ... </k>
+#        <stack> ( bool _ B1 )
+#              ; ( bool _ B2 )
+# 	     ; SS
+# 	    => ( bool .AnnotationList (B1 orBool B2) ) ; SS
+#        </stack>
+# 
+#   rule <k> AND A => #HandleAnnotations(A) ... </k>
+#        <stack> ( bool _ B1 )
+#              ; ( bool _ B2 )
+# 	     ; SS
+# 	    => ( bool .AnnotationList (B1 andBool B2) ) ; SS
+#        </stack>
+# 
+#   rule <k> XOR A => #HandleAnnotations(A) ... </k>
+#        <stack> ( bool _ B1 )
+#              ; ( bool _ B2 )
+# 	     ; SS
+# 	    => ( bool .AnnotationList (B1 xorBool B2) ) ; SS
+#        </stack>
+# 
+#   rule <k> NOT A => #HandleAnnotations(A) ... </k>
+#        <stack> ( bool _ B ) ; SS
+#             => ( bool .AnnotationList (notBool B) ) ; SS
+#        </stack>
+# ```
+# 
 # ### Integer and Natural Operations
 # 
 # Michelson `int` and `nat` datatypes are both represnted using the K `Int` type.
@@ -1958,48 +1957,50 @@ abstract out pieces of the stack which are non-invariant during loop execution.
 ```k
   syntax Instruction ::= "BIND" OutputStack Block
   rule <k> BIND Shape Block
-        => #Bind(Shape, Stack)
+        => #Bind(#StackToNative(Shape, Addrs, BigMaps), Stack)
         ~> Block
         ~> #RestoreSymbols(Symbols)
            ...
        </k>
+       <knownaddrs> Addrs </knownaddrs>
+       <bigmaps> BigMaps </bigmaps>
        <symbols> Symbols </symbols>
        <stack> Stack </stack>
 ```
 
 ```k
-  syntax KItem ::= #Bind(OutputStack, InternalStack)
-
-  rule <k> #Bind({ .Stack }, .Stack ) => .K ... </k>
-
-  rule <k> #Bind(S1:FailedStack, S2:FailedStack) => .K ... </k>
-    requires #Matches(S1, S2)
-
-  rule <k> #Bind( { Stack_elt T S:SymbolicData ; SS  } => { SS  }
-                ,   ( T D )                    ; SS'   =>   SS'
-                )
-           ...
-       </k>
-       <paramtype> PT </paramtype>
-       <symbols> .Map => S |-> #TypedSymbol(T, D) ... </symbols>
-
-  rule <k> #Bind( { Stack_elt T S:SymbolicData ; SS  } => { SS  }
-                ,   ( T D )                    ; SS'   =>   SS'
-                )
-           ...
-       </k>
-       <paramtype> PT </paramtype>
-       <symbols> S |-> #TypedSymbol(T, D) ... </symbols>
-
-  rule <k> #Bind( { Stack_elt T ED ; SS  } => { SS  }
-                ,   ( T AD )       ; SS'   =>   SS'
-                )
-           ...
-       </k>
-       <knownaddrs> KnownAddrs </knownaddrs>
-       <bigmaps> BigMaps </bigmaps>
-    requires ( notBool isSymbolicData(ED) )
-     andBool #Matches(#MichelineToNative(ED,T,KnownAddrs,BigMaps),AD)
+  syntax KItem ::= #Bind(InternalStack, InternalStack)
+// 
+//   rule <k> #Bind(.Stack, .Stack) => .K ... </k>
+// 
+//   rule <k> #Bind(S1:FailedStack, S2:FailedStack) => .K ... </k>
+//     requires #Matches(S1, S2)
+// 
+//   rule <k> #Bind( ( T S:SymbolicData ) ; SS  => SS
+//                 , ( T D )              ; SS' => SS'
+//                 )
+//            ...
+//        </k>
+//        <paramtype> PT </paramtype>
+//        <symbols> .Map => S |-> #TypedSymbol(T, D) ... </symbols>
+// 
+//   rule <k> #Bind( ( T S:SymbolicData ) ; SS  => SS
+//                 , ( T D )              ; SS' => SS'
+//                 )
+//            ...
+//        </k>
+//        <paramtype> PT </paramtype>
+//        <symbols> S |-> #TypedSymbol(T, D) ... </symbols>
+// 
+//   rule <k> #Bind( ( T ED ) ; SS  => SS
+//                 , ( T AD ) ; SS' => SS'
+//                 )
+//            ...
+//        </k>
+//        <knownaddrs> KnownAddrs </knownaddrs>
+//        <bigmaps> BigMaps </bigmaps>
+//     requires ( notBool isSymbolicData(ED) )
+//      andBool #Matches(ED,AD)
 ```
 
 ```k
@@ -2055,9 +2056,9 @@ Symbolic Value Processing
   rule #FindSymbolsI(PUSH _ T D) => #FindSymbolsIn(D, T)
   rule #FindSymbolsI(_)          => .Set [owise]
 
-  syntax Set ::= #FindSymbolsS(Stack) [function, functional]
-  rule #FindSymbolsS(.Stack) => .Set
-  rule #FindSymbolsS((Stack_elt T D ); Ss:Stack)
+  syntax Set ::= #FindSymbolsS(StackElementList) [function, functional]
+  rule #FindSymbolsS(.StackElementList) => .Set
+  rule #FindSymbolsS((Stack_elt T D ); Ss:StackElementList)
     => #FindSymbolsIn(D, T) |Set #FindSymbolsS(Ss)
 ```
 
