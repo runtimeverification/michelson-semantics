@@ -1333,50 +1333,37 @@ For simplicity we implement this by repeatedly selecting the minimal element.
 
 ### Map Operations
 
-```k
-   rule <k> GET A => #HandleAnnotations(A) ... </k>
-        <stack> X:Data ~> M => None ... </stack>
-     requires isValue(X)
-      andBool notBool(X in_keys(M))
-```
-
 ```concrete
-   rule <k> GET A => #HandleAnnotations(A) ... </k>
-        <stack> X ~> M => Some {M[X]}:>Data ... </stack>
-     requires isValue(X)
-      andBool X in_keys(M)
+  rule <k> GET A => #HandleAnnotations(A) ... </k>
+       <stack> X ~> M => lookupMap(M, X) ... </stack>
+    requires isValue(X)
 ```
 
 ```symbolic
   rule <k> GET A
         => #HandleAnnotations(A)
         ~> #Assume(?Val == #MakeFresh(int .AnnotationList))
-        ~> #Assume(M[X] == ?Val)
+        ~> #Assume(lookupMap(M, X) == ?Val)
            ...
        </k>
-       <stack> (X ~> M:Map) => Some ?Val ... </stack>
-    requires X in_keys(M)
-       // TODO: figure out how to support this in pre/post-conditions which are not typechecked
-       // <stacktypes> KT:Type ; map _:AnnotationList KT VT:Type </stacktypes>
-
-  rule K1 in_keys(M:Map[ K2 <- _ ]) => K1 ==K K2 orBool K1 in_keys(M) [simplification]
+       <stack> X ~> M => lookupMap(M, X) ... </stack>
 ```
 
 ```k
   rule <k> EMPTY_MAP A _ _ => #HandleAnnotations(A) ... </k>
-       <stack> . => .Map ... </stack>
+       <stack> . => emptyMap ... </stack>
 
   rule <k> MEM A => #HandleAnnotations(A) ~> . ... </k>
-       <stack> X ~> M => X in_keys(M) ... </stack>
+       <stack> X ~> M => lookupMap(M, X) =/=K None ... </stack>
 
   rule <k> UPDATE A => #HandleAnnotations(A)  ... </k>
-       <stack> K ~> Some V ~> M:Map => M[K <- V] ... </stack>
+       <stack> K ~> Some V ~> M => (update K, V, M) ... </stack>
 
-  rule <k> UPDATE A => #HandleAnnotations(A)  ... </k>
-       <stack> K ~> None ~> M:Map => M[K <- undef] ... </stack>
+//  rule <k> UPDATE A => #HandleAnnotations(A)  ... </k>
+//       <stack> K ~> None ~> M:Map => M[K <- undef] ... </stack>
 
-  rule <k> SIZE A => #HandleAnnotations(A)  ... </k>
-       <stack> M:Map => size(M) ... </stack>
+//  rule <k> SIZE A => #HandleAnnotations(A)  ... </k>
+//       <stack> M:Map => size(M) ... </stack>
 ```
 
 The `MAP` operation, over maps, is somewhat more involved. We need to set up a
@@ -2161,6 +2148,7 @@ The `isValue` predicate indicates if a `Data` has been fully evaluated.
     rule isValue(Left V) => isValue(V)
     rule isValue(Right V) => isValue(V)
     rule isValue(Pair L R) => isValue(L) andBool isValue(R)
+    rule isValue(_:MapValue) => true
     rule isValue(_) => false [owise]
 ```
 
@@ -2215,8 +2203,8 @@ The `isValue` predicate indicates if a `Data` has been fully evaluated.
 
   rule <k> #MakeFresh(list      _:AnnotationList _:Type)        => ?_:List                                 ... </k>
   rule <k> #MakeFresh(set       _:AnnotationList _:Type)        => ?_:Set                                  ... </k>
-  rule <k> #MakeFresh(map       _:AnnotationList _:Type _:Type) => ?_:Map                                  ... </k>
-  rule <k> #MakeFresh(big_map   _:AnnotationList _:Type _:Type) => ?_:Map                                  ... </k>
+  rule <k> #MakeFresh(map       _:AnnotationList _:Type _:Type) => ?_:MapValue                             ... </k>
+  rule <k> #MakeFresh(big_map   _:AnnotationList _:Type _:Type) => ?_:MapValue                             ... </k>
   rule <k> #MakeFresh(contract  _:AnnotationList T)             => #Contract(#Address(?_:String),T) ... </k>
 
   rule <k> #MakeFresh(pair _:AnnotationList T1 T2)
