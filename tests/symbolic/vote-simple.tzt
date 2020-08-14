@@ -40,8 +40,8 @@ postcondition { { PUSH (pair int (map int int)) $I                            //
                   ; PUSH (pair int (map int int)) $I                          // (M,S) K    M[K]  M'[K]
                   ; CAR                                                       // S K      M[K]  M'[K]
                   ; COMPARE ; EQ                                              // S=K      M[K]  M'[K]
-                  ; IF { TRACE("1") ; PUSH nat 1; ADD ; COMPARE ; EQ }        // M[K]+1=M'[K]
-                       { TRACE("2") ;                   COMPARE ; EQ }        // M[K] = M'[K]
+                  ; IF { PUSH nat 1; ADD ; COMPARE ; EQ }                     // M[K]+1=M'[K]
+                       {                   COMPARE ; EQ }                     // M[K] = M'[K]
                   }
                 }
              }
