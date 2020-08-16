@@ -2183,8 +2183,8 @@ The `isValue` predicate indicates if a `Data` has been fully evaluated.
     rule <k> (V ~> Some #hole) => Some V ... </k> requires notBool isValue(V)
     rule <k> Left V => (V ~> Left #hole) ... </k> requires notBool isValue(V)
     rule <k> (V ~> Left #hole) => Left V ... </k> requires notBool isValue(V)
-    rule <k> Left V => (V ~> Left #hole) ... </k> requires notBool isValue(V)
-    rule <k> (V ~> Left #hole) => Left V ... </k> requires notBool isValue(V)
+    rule <k> Right V => (V ~> Right #hole) ... </k> requires notBool isValue(V)
+    rule <k> (V ~> Right #hole) => Right V ... </k> requires notBool isValue(V)
 ```
 
 ### `#MakeFresh`
