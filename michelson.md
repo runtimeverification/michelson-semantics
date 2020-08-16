@@ -1343,7 +1343,7 @@ For simplicity we implement this by repeatedly selecting the minimal element.
   rule <k> GET A
         => #HandleAnnotations(A)
         ~> #Assume(?Val == #MakeFresh(int .AnnotationList))
-        ~> #Assume(lookupMap(M, X) == ?Val)
+        ~> #Assume(lookupMap(M, X) == Some ?Val)
            ...
        </k>
        <stack> X ~> M => lookupMap(M, X) ... </stack>
