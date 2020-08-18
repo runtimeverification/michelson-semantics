@@ -16,8 +16,8 @@ module MICHELSON-COMMON
 ```
 
 ```k
-  syntax StackElement ::= "(" Type Data ")"
-  syntax Stack ::= List{StackElement, ";"}
+  syntax StackElement ::= "[" Type Data "]"
+  syntax Stack ::= List{StackElement, ";"} [klabel(Stack)]
   syntax InternalStack ::= Stack | FailedStack
 ```
 
