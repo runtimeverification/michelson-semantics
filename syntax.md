@@ -647,8 +647,8 @@ nat 42 }`` is a concrete stack of length 2 whose top element is the
 boolean ``True`` and the bottom element is the natural number ``42``.
 
 ```k
-  syntax ExternalStackElement ::= "Stack_elt" Type Data
-  syntax StackElementList ::= List{ ExternalStackElement, ";" } [klabel(StackElementList)]
+  syntax StackElementLiteral ::= "Stack_elt" Type Data
+  syntax StackElementList ::= List{ StackElementLiteral, ";" } [klabel(StackElementList)]
   syntax LiteralStack ::= "{" StackElementList "}"
 ```
 
