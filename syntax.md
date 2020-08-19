@@ -153,40 +153,38 @@ K offers the bracket attribute for productions that should not actually be retai
 
 [//]: # (If you want to forbid { (prim arg) }, you should probably have a complete intermediate representation corresponding to Micheline.)
 
-In Michelson a simple type can be any of the following list, followed by an optional AnnotationList.
+Michelson types (like other Micheline primitives) have optional annotations.
 
 ```k
-  syntax UnannotatedSimpleType ::= "int"
-                                 | "nat"
-                                 | "string"
-                                 | "bytes"
-                                 | "mutez"
-                                 | "bool"
-                                 | "key_hash"
-                                 | "timestamp"
-                                 | "address"
-                                 | "key"
-                                 | "unit"
-                                 | "signature"
-                                 | "operation"
-                                 | "chain_id"
+  syntax NullaryTypeName ::= "int"
+                           | "nat"
+                           | "string"
+                           | "bytes"
+                           | "mutez"
+                           | "bool"
+                           | "key_hash"
+                           | "timestamp"
+                           | "address"
+                           | "key"
+                           | "unit"
+                           | "signature"
+                           | "operation"
+                           | "chain_id"
 
-  syntax SimpleType ::= UnannotatedSimpleType AnnotationList
-```
+  syntax UnaryTypeName   ::= "option"
+                           | "list"
+                           | "set"
+                           | "contract"
 
-Note the positioning of the AnnotationList.
+  syntax BinaryTypeName  ::= "pair"
+                           | "or"
+                           | "lambda"
+                           | "map"
+                           | "big_map"
 
-```k
-  syntax Type ::= SimpleType
-                | "pair" AnnotationList Type Type
-                | "option" AnnotationList Type
-                | "list" AnnotationList Type
-                | "set" AnnotationList Type
-                | "contract" AnnotationList Type
-                | "or" AnnotationList Type Type
-                | "lambda" AnnotationList Type Type
-                | "map" AnnotationList Type Type
-                | "big_map" AnnotationList Type Type
+  syntax Type ::= NullaryTypeName AnnotationList
+                | UnaryTypeName   AnnotationList Type
+                | BinaryTypeName  AnnotationList Type Type
 ```
 
 We now specify the MICHELSON instruction set.

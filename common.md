@@ -19,6 +19,16 @@ module MICHELSON-COMMON
   syntax StackElement ::= "[" Type Data "]"
   syntax Stack ::= List{StackElement, ";"} [klabel(Stack)]
   syntax InternalStack ::= Stack | FailedStack
+
+  syntax TypeName ::= NullaryTypeName
+                    | UnaryTypeName Type
+		    | BinaryTypeName Type Type
+
+  syntax StackElement ::= "[" TypeName Data "]"
+
+  macro [ T:NullaryTypeName                 D:Data ] => [ T .AnnotationList       D ]
+  macro [ T:UnaryTypeName   T1:Type         D:Data ] => [ T .AnnotationList T1    D ]
+  macro [ T:BinaryTypeName  T1:Type T2:Type D:Data ] => [ T .AnnotationList T1 T2 D ]
 ```
 
 The internal representation of Michelson sets, lists and maps are simply K sets,

@@ -929,23 +929,23 @@ Core Operations
 
 ```k
   rule <k> EQ A => #HandleAnnotations(A) ... </k>
-       <stack> ( [ int _ I ] => [ bool .AnnotationList I ==Int 0 ] ) ; SS </stack>
+       <stack> [ int _ I ] ; SS => [ bool I ==Int 0 ] ; SS </stack>
 
   rule <k> NEQ A => #HandleAnnotations(A) ... </k>
-       <stack> ( [ int _ I ] => [ bool .AnnotationList I =/=Int 0 ] ) ; SS </stack>
+       <stack> [ int _ I ] ; SS => [ bool I =/=Int 0 ] ; SS </stack>
 
   rule <k> LT A => #HandleAnnotations(A) ... </k>
-       <stack> ( [ int _ I ] => [ bool .AnnotationList I <Int 0 ] ) ; SS </stack>
+       <stack> [ int _ I ] ; SS => [ bool I <Int 0 ] ; SS </stack>
        </stack>
 
   rule <k> GT A => #HandleAnnotations(A) ... </k>
-       <stack> ( [ int _ I ] => [ bool .AnnotationList I >Int 0 ] ) ; SS </stack>
+       <stack> [ int _ I ] ; SS => [ bool I >Int 0 ] ; SS </stack>
 
   rule <k> LE A => #HandleAnnotations(A) ... </k>
-       <stack> ( [ int _ I ] => [ bool .AnnotationList I <=Int 0 ] ) ; SS </stack>
+       <stack> [ int _ I ] ; SS => [ bool I <=Int 0 ] ; SS </stack>
 
   rule <k> GE A => #HandleAnnotations(A) ... </k>
-       <stack> ( [ int _ I ] => [ bool .AnnotationList I >=Int 0 ] ) ; SS </stack>
+       <stack> [ int _ I ] ; SS => [ bool I >=Int 0 ] ; SS </stack>
 ```
 
 ```k
@@ -957,29 +957,29 @@ Core Operations
 
 ```k
   rule <k> OR A => #HandleAnnotations(A) ... </k>
-       <stack> ( bool _ B1 )
-             ; ( bool _ B2 )
+       <stack> [ bool _ B1 ]
+             ; [ bool _ B2 ]
              ; SS
-            => ( bool .AnnotationList (B1 orBool B2) ) ; SS
+            => [ bool (B1 orBool B2) ] ; SS
        </stack>
 
   rule <k> AND A => #HandleAnnotations(A) ... </k>
-       <stack> ( bool _ B1 )
-             ; ( bool _ B2 )
+       <stack> [ bool _ B1 ]
+             ; [ bool _ B2 ]
              ; SS
-            => ( bool .AnnotationList (B1 andBool B2) ) ; SS
+            => [ bool (B1 andBool B2) ] ; SS
        </stack>
 
   rule <k> XOR A => #HandleAnnotations(A) ... </k>
-       <stack> ( bool _ B1 )
-             ; ( bool _ B2 )
+       <stack> [ bool _ B1 ]
+             ; [ bool _ B2 ]
              ; SS
-             => ( bool .AnnotationList (B1 xorBool B2) ) ; SS
+             => [ bool .AnnotationList (B1 xorBool B2) ] ; SS
        </stack>
 
   rule <k> NOT A => #HandleAnnotations(A) ... </k>
-       <stack> ( bool _ B ) ; SS
-            => ( bool .AnnotationList (notBool B) ) ; SS
+       <stack> [ bool _ B ] ; SS
+            => [ bool (notBool B) ] ; SS
        </stack>
 ```
 
@@ -990,17 +990,17 @@ These operations map directly to their K equivalents.
 
 ```k
   rule <k> NEG A => #HandleAnnotations(A) ... </k>
-       <stack> (int I => 0 -Int I) ; SS </stack>
+       <stack> [ int _ I ] ; SS => [ int 0 -Int I ] ; SS </stack>
 
   rule <k> ABS A => #HandleAnnotations(A) ... </k>
-       <stack> (int I => absInt(I)) ; SS </stack>
+       <stack> [ int _ I ] ; SS => [ int absInt(I)) ] ; SS </stack>
 
   rule <k> ISNAT A => #HandleAnnotations(A) ... </k>
-       <stack> I => Some I ... </stack>
+       <stack> [ int _ I ] => [ option nat Some I ] ... </stack>
        requires I >=Int 0
 
   rule <k> ISNAT A => #HandleAnnotations(A) ... </k>
-       <stack> I => None ... </stack>
+       <stack> [ int I ] => None ... </stack>
        requires I <Int 0
 
   rule <k> INT A => #HandleAnnotations(A) ... </k>
