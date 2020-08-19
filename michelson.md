@@ -1885,9 +1885,11 @@ around the need for sort coersion in the map `GET` operation.
 
 ```k
   syntax BoolExp ::= Bool
-                   | KItem "==" Data [seqstrict(2)]
-  rule <k> D1 == D2 => D1 ==K D2 ... </k>
-    requires isValue(D2)
+                   | KItem "==" Data
+
+  rule <k> D1 == D2 => (D2 ~> D1 == #hole) ... </k> requires notBool isValue(D2)
+  rule <k> (D2 ~> D1 == #hole) => D1 == D2 ... </k> requires isValue(D2)
+  rule <k> D1 == D2 => D1 ==K D2 ... </k>           requires isValue(D2)
 
   rule isBool(_L == _R) => false [simplification]
 ```
