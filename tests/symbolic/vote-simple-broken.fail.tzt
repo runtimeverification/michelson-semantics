@@ -42,7 +42,7 @@ postcondition { { PUSH (pair int (map int int)) $I                            //
                   ; PUSH (pair int (map int int)) $I                          // (M,S) K    M[K]  M'[K]
                   ; CAR                                                       // S K      M[K]  M'[K]
                   ; COMPARE ; EQ                                              // S=K      M[K]  M'[K]
-                  ; IF {             ADD ; COMPARE ; EQ }                     // M[K]  =M'[K]  // (1)
+                  ; IF {                   COMPARE ; EQ }                     // M[K]  =M'[K]  // (1)
                        { PUSH nat 1; ADD ; COMPARE ; EQ }                     // M[K]+1=M'[K]  // (2)
                   }
                 }
