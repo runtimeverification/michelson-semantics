@@ -1346,7 +1346,7 @@ For simplicity we implement this by repeatedly selecting the minimal element.
         ~> #Assume(lookupMap(M, X) == Some ?Val)
            ...
        </k>
-       <stack> X ~> M => lookupMap(M, X) ... </stack>
+       <stack> X ~> M => Some ?Val ... </stack>
 ```
 
 ```k
