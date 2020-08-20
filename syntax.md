@@ -94,12 +94,12 @@ Here we specify the various complex types offered by Michelson, making the best 
 
 ```k
   syntax Data ::= Pair | OrData | OptionData
-  syntax Pair ::= "Pair" Data Data [seqstrict]
+  syntax Pair ::= "Pair" Data Data
 
-  syntax OrData ::= "Left" Data [seqstrict]
-                  | "Right" Data [seqstrict]
+  syntax OrData ::= "Left" Data
+                  | "Right" Data
 
-  syntax OptionData ::= "Some" Data [seqstrict]
+  syntax OptionData ::= "Some" Data
                       | "None"
 ```
 

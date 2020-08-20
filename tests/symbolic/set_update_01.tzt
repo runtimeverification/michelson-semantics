@@ -1,0 +1,15 @@
+code { UPDATE } ;
+input { Stack_elt int $V1 ; Stack_elt bool $B ; Stack_elt (set int) $S1 } ;
+output { Stack_elt (set int) $S2 } ;
+postcondition {
+  //
+  // check that all values besides $V1 are unchanged between $S1 and $S2
+  // also tests symbolic PUSH in postcondition
+  //
+  { PUSH int $V1 ; PUSH int $V2 ; COMPARE ; EQ ;
+    IF { PUSH bool True }
+       { PUSH (set int) $S1 ; PUSH int $V2 ; MEM ;
+         PUSH (set int) $S2 ; PUSH int $V2 ; MEM ;
+	 COMPARE ; EQ }
+  }
+}

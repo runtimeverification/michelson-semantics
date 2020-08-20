@@ -341,9 +341,9 @@ of Michelson code. We list these configuration cells here:
    semantics. It is initially set to `1` and changes to `0` when the script
    executes successfully.
 
-    ```k
-                  <returncode exit=""> 1 </returncode>
-    ```
+   ```k
+                 <returncode exit=""> 1 </returncode>
+   ```
 
 7. The following cell is a debugging aid, indicating whether an `#Assume`
    statement failed. It is primarily used during Michelson code verification.
@@ -915,16 +915,35 @@ immediately rather than waiting for `I = 0`. Instead it is placed when `I = 0`.
   rule <k> #DoDug(-1, .K, _) => .K ... </k>
 ```
 
-`PUSH` needs to convert its argument to semantics form, but otherwise matches
-the documentation directly.
+#### `PUSH`-like Instructions
+
+`PUSH` puts its syntactic argument on the stack *when it is a `Value`*.
 
 ```k
   rule <k> PUSH A T X => #HandleAnnotations(A) ... </k>
-       <stack> . => #MichelineToNative(X, T, .Map, .Map) ... </stack>
+       <stack> . => X ... </stack>
+    requires isValue(X)
 ```
 
-`UNIT` and `LAMBDA` are implemented almost exactly as specified in the
-documentation.
+If it is not a `Value`, `PUSH` converts its argument to a `Value`, either by
+converting the parse-time representation to an internal one or else by looking
+up/creating a new symbol in the symbol table.
+
+```k
+  rule <k> PUSH A T (X => #MichelineToNative(X, T, .Map, .Map)) ... </k>
+    requires notBool isValue(X)
+     andBool notBool isSymbolicData(X)
+```
+
+```symbolic
+  rule <k> PUSH A T (X:SymbolicData => D)  ... </k>
+       <symbols> X |-> #TypedSymbol(T, D) ... </symbols>
+  rule <k> (.K => #CreateSymbol(X, T)) ~> PUSH A T X:SymbolicData  ... </k>
+       <symbols> Symbols  </symbols>
+    requires notBool X in_keys(Symbols)
+```
+
+`UNIT` and `LAMBDA` are specialized versions of `PUSH`.
 
 ```k
   rule <k> UNIT A => #HandleAnnotations(A) ... </k>
@@ -1315,16 +1334,37 @@ For simplicity we implement this by repeatedly selecting the minimal element.
 ### Map Operations
 
 ```k
+   rule <k> GET A => #HandleAnnotations(A) ... </k>
+        <stack> X:Data ~> M => None ... </stack>
+     requires isValue(X)
+      andBool notBool(X in_keys(M))
+```
+
+```concrete
+   rule <k> GET A => #HandleAnnotations(A) ... </k>
+        <stack> X ~> M => Some {M[X]}:>Data ... </stack>
+     requires isValue(X)
+      andBool X in_keys(M)
+```
+
+```symbolic
+  rule <k> GET A
+        => #HandleAnnotations(A)
+        ~> #Assume(?Val == #MakeFresh(int .AnnotationList))
+        ~> #Assume(M[X] == ?Val)
+           ...
+       </k>
+       <stack> (X ~> M:Map) => Some ?Val ... </stack>
+    requires X in_keys(M)
+       // TODO: figure out how to support this in pre/post-conditions which are not typechecked
+       // <stacktypes> KT:Type ; map _:AnnotationList KT VT:Type </stacktypes>
+
+  rule K1 in_keys(M:Map[ K2 <- _ ]) => K1 ==K K2 orBool K1 in_keys(M) [simplification]
+```
+
+```k
   rule <k> EMPTY_MAP A _ _ => #HandleAnnotations(A) ... </k>
        <stack> . => .Map ... </stack>
-
-  rule <k> GET A => #HandleAnnotations(A) ... </k>
-       <stack> X ~> M => Some {M[X]}:>Data ... </stack>
-       requires X in_keys(M)
-
-  rule <k> GET A => #HandleAnnotations(A) ... </k>
-       <stack> X ~> M => None ... </stack>
-       requires notBool(X in_keys(M))
 
   rule <k> MEM A => #HandleAnnotations(A) ~> . ... </k>
        <stack> X ~> M => X in_keys(M) ... </stack>
@@ -1828,21 +1868,32 @@ These operations are used internally for implementation purposes.
 ```
 
 ```k
-  syntax KItem ::= #Assert(BoolExp) [strict, result(Data)]
+  syntax KItem ::= #Assert(BoolExp) [strict, result(Bool)]
   rule <k> #Assert(true)  => .             ... </k>
   rule <k> #Assert(false) => #AssertFailed ... </k>
   syntax KItem ::= "#AssertFailed" [klabel(#AssertFailed), symbol]
 ```
 
 ```k
-  syntax KItem ::= #Assume(BoolExp) [strict, result(Data)]
+  syntax KItem ::= #Assume(BoolExp) [strict, result(Bool)]
   rule <k> #Assume(true)  => .             ... </k>
   rule <k> #Assume(false) ~> _:K => . </k>
        <assumeFailed> _ => true </assumeFailed> [transition]
+```
 
+
+Note that the first value is a `KItem` and not heated/cooled. This is to work
+around the need for sort coersion in the map `GET` operation.
+
+```k
   syntax BoolExp ::= Bool
-                   | Data "==" Data [seqstrict]
-  rule <k> D1:Data == D2:Data => D1 ==K D2 ... </k>
+                   | KItem "==" Data
+
+  rule <k> D1 == D2 => (D2 ~> D1 == #hole) ... </k> requires notBool isValue(D2)
+  rule <k> (D2 ~> D1 == #hole) => D1 == D2 ... </k> requires isValue(D2)
+  rule <k> D1 == D2 => D1 ==K D2 ... </k>           requires isValue(D2)
+
+  rule isBool(_L == _R) => false [simplification]
 ```
 
 ### `CUTPOINT` Instruction
@@ -1930,26 +1981,33 @@ abstract out pieces of the stack which are non-invariant during loop execution.
            ...
        </k>
        <paramtype> PT </paramtype>
-       <symbols> .Map => S |-> #TypedSymbol(T, D) ... </symbols>
+       <symbols> Syms => S |-> #TypedSymbol(T, D) Syms </symbols>
+    requires notBool S in_keys(Syms)
 
   rule <k> #Bind( { Stack_elt T S:SymbolicData ; Ss } => { Ss }
-                , ( (D ~> K:K)                        => K )
+                , ( (D1 ~> K:K)                       => K )
                 )
            ...
        </k>
        <paramtype> PT </paramtype>
-       <symbols> S |-> #TypedSymbol(T, D) ... </symbols>
+       <symbols> S |-> #TypedSymbol(T, D2) ... </symbols>
+    requires D1 ==K D2
 
   rule <k> #Bind( { Stack_elt T ED ; Ss } => { Ss }
-                , ( (AD ~> K:K)             => K )
+                , ( (AD ~> K:K)           => K )
                 )
            ...
        </k>
        <knownaddrs> KnownAddrs </knownaddrs>
        <bigmaps> BigMaps </bigmaps>
        <stack> AD => .K ... </stack>
-    requires #Matches(#MichelineToNative(ED,T,KnownAddrs,BigMaps),AD)
-     andBool notBool isSymbolicData(ED)
+    requires #ConcreteMatch(ED, T, KnownAddrs, BigMaps, AD)
+
+  // NOTE: this function protects against unification errors
+  syntax Bool ::= #ConcreteMatch(Data, Type, Map, Map, Data) [function]
+  rule #ConcreteMatch(S:SymbolicData, _, _, _, _) => false
+  rule #ConcreteMatch(ED, T, Addrs, BigMaps, AD) => #Matches(#MichelineToNative(ED,T,Addrs,BigMaps),AD)
+    requires notBool isSymbolicData(ED)
 ```
 
 ```k
@@ -2111,6 +2169,31 @@ The `isValue` predicate indicates if a `Data` has been fully evaluated.
     rule isValue(Right V) => isValue(V)
     rule isValue(Pair L R) => isValue(L) andBool isValue(R)
     rule isValue(_) => false [owise]
+```
+
+```symbolic
+    rule isValue(D:SimpleData) => true [simplification]
+    rule isValue(None) => true [simplification]
+    rule isValue(Some V) => isValue(V) [simplification]
+    rule isValue(Left V) => isValue(V) [simplification]
+    rule isValue(Right V) => isValue(V) [simplification]
+    rule isValue(Pair L R) => isValue(L) andBool isValue(R) [simplification]
+```
+
+```k
+    syntax Data ::= "#hole"
+
+    rule <k> Pair V1 V2 => (V1 ~> Pair #hole V2) ... </k> requires notBool isValue(V1)
+    rule <k> Pair V1 V2 => (V2 ~> Pair V1 #hole) ... </k> requires isValue(V1) andBool notBool isValue(V2)
+    rule <k> (V1 ~> Pair #hole V2) => Pair V1 V2 ... </k> requires isValue(V1)
+    rule <k> (V2 ~> Pair V1 #hole) => Pair V1 V2 ... </k> requires isValue(V2)
+
+    rule <k> Some V => (V ~> Some #hole) ... </k> requires notBool isValue(V)
+    rule <k> (V ~> Some #hole) => Some V ... </k> requires isValue(V)
+    rule <k> Left V => (V ~> Left #hole) ... </k> requires notBool isValue(V)
+    rule <k> (V ~> Left #hole) => Left V ... </k> requires isValue(V)
+    rule <k> Right V => (V ~> Right #hole) ... </k> requires notBool isValue(V)
+    rule <k> (V ~> Right #hole) => Right V ... </k> requires isValue(V)
 ```
 
 ### `#MakeFresh`
