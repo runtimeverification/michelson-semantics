@@ -356,9 +356,9 @@ Type Checking Rules
 
   syntax TypedInstruction ::= #LoopLeftAux(Instruction, TypedInstruction, TypeSeq) [function, functional]
 
-  rule #LoopLeftAux(LOOP_LEFT _ _, #TI(_, TL ; Ts -> (or _ TL TR) ; Ts) #as B, ((or _ TL TR) ; Ts) #as OS) => #TI((LOOP_LEFT .AnnotationList { #Exec(B) }), OS -> TR ; Ts)
+  rule #LoopLeftAux(LOOP_LEFT A _, #TI(_, TL ; Ts -> (or _ TL TR) ; Ts) #as B, ((or _ TL TR) ; Ts) #as OS) => #TI((LOOP_LEFT A { #Exec(B) }), OS -> TR ; Ts)
   rule #LoopLeftAux(I, #TI(_, _ -> Ts1), Ts2) => #TI(I, #InvalidPostIterationStack(I, Ts1, Ts2)) requires Ts1 =/=K Ts2
-  rule #LoopLeftAux(_, #TI(_, #ContractFailed) #as B,  ((or _ _ TR) ; Ts) #as OS) => #TI((LOOP_LEFT .AnnotationList { #Exec(B) }), OS -> TR ; Ts)
+  rule #LoopLeftAux(LOOP_LEFT A _, #TI(_, #ContractFailed) #as B,  ((or _ _ TR) ; Ts) #as OS) => #TI((LOOP_LEFT A { #Exec(B) }), OS -> TR ; Ts)
   rule #LoopLeftAux(I, #TI(_, TE:TypeError),  _) => #TI(I, TE)
   rule #LoopLeftAux(I, _, _) => #TI(I, #InternalError) [owise]
 

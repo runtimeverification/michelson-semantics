@@ -781,14 +781,13 @@ Here we handle concrete loop semantics.
 ```
 
 ```k
-  rule <k> LOOP_LEFT A B
-        => #HandleAnnotations(A)
-        ~> B
+  rule <k> LOOP_LEFT .AnnotationList B
+        => B
         ~> LOOP_LEFT .AnnotationList B
            ...
         </k>
        <stack> Left D => D ... </stack>
-  rule <k> LOOP_LEFT A B => #HandleAnnotations(A) ... </k>
+  rule <k> LOOP_LEFT .AnnotationList B => .K ... </k>
        <stack> Right D => D ... </stack>
 ```
 
@@ -798,6 +797,16 @@ Here we handle symbolic loop semantics.
   rule <k> LOOP A .AnnotationList Body
         => CUTPOINT(!Id, Invariant) ;
            LOOP .AnnotationList {
+             Body ;
+             CUTPOINT(!Id, Invariant)
+           }
+           ...
+       </k>
+       <invs> A |-> Invariant ... </invs>
+
+  rule <k> LOOP_LEFT A .AnnotationList Body
+        => CUTPOINT(!Id, Invariant) ;
+           LOOP_LEFT .AnnotationList {
              Body ;
              CUTPOINT(!Id, Invariant)
            }
