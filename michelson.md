@@ -1994,15 +1994,20 @@ abstract out pieces of the stack which are non-invariant during loop execution.
     requires D1 ==K D2
 
   rule <k> #Bind( { Stack_elt T ED ; Ss } => { Ss }
-                , ( (AD ~> K:K)             => K )
+                , ( (AD ~> K:K)           => K )
                 )
            ...
        </k>
        <knownaddrs> KnownAddrs </knownaddrs>
        <bigmaps> BigMaps </bigmaps>
        <stack> AD => .K ... </stack>
-    requires #Matches(#MichelineToNative(ED,T,KnownAddrs,BigMaps),AD)
-     andBool notBool isSymbolicData(ED)
+    requires #ConcreteMatch(ED, T, KnownAddrs, BigMaps, AD)
+
+  // NOTE: this function protects against unification errors
+  syntax Bool ::= #ConcreteMatch(Data, Type, Map, Map, Data) [function]
+  rule #ConcreteMatch(S:SymbolicData, _, _, _, _) => false
+  rule #ConcreteMatch(ED, T, Addrs, BigMaps, AD) => #Matches(#MichelineToNative(ED,T,Addrs,BigMaps),AD)
+    requires notBool isSymbolicData(ED)
 ```
 
 ```k
