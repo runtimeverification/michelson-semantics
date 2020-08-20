@@ -1,11 +1,11 @@
 // Map Update Test
 //
 // Check that if:
-//   M2 == M1 [ K <- V ]
+//   M2 == M1 [ K <- V1 ]
 // Then:
-//   M2 [ K ] == V
+//   M2 [ K ] == V1
 //
-input { Stack_elt int $K ; Stack_elt (option int) $VOPT ; Stack_elt (map int int) $M1 } ;
+input { Stack_elt int $K ; Stack_elt (option int) $V1 ; Stack_elt (map int int) $M1 } ;
 code { UPDATE } ;
 output { Stack_elt (map int int) $M2 } ;
 postcondition {
@@ -15,7 +15,7 @@ postcondition {
 // { None    - None } => True  { None    - Some V2 } => True
 // { Some V1 - None } => False { Some V1 - Some V2 } => V1 =? V2
 //
-  { PUSH (option int) $VOPT ;
+  { PUSH (option int) $V1 ;
                   IF_NONE { PUSH (map int int) $M2 ; PUSH int $K ; GET ; IF_NONE { PUSH bool True  } { PUSH bool False } }
                           { PUSH (map int int) $M2 ; PUSH int $K ; GET ; IF_NONE { PUSH bool False } { COMPARE ; EQ    } }
   }
