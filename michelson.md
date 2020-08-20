@@ -1981,15 +1981,17 @@ abstract out pieces of the stack which are non-invariant during loop execution.
            ...
        </k>
        <paramtype> PT </paramtype>
-       <symbols> .Map => S |-> #TypedSymbol(T, D) ... </symbols>
+       <symbols> Syms => S |-> #TypedSymbol(T, D) Syms </symbols>
+    requires notBool S in_keys(Syms)
 
   rule <k> #Bind( { Stack_elt T S:SymbolicData ; Ss } => { Ss }
-                , ( (D ~> K:K)                        => K )
+                , ( (D1 ~> K:K)                       => K )
                 )
            ...
        </k>
        <paramtype> PT </paramtype>
-       <symbols> S |-> #TypedSymbol(T, D) ... </symbols>
+       <symbols> S |-> #TypedSymbol(T, D2) ... </symbols>
+    requires D1 ==K D2
 
   rule <k> #Bind( { Stack_elt T ED ; Ss } => { Ss }
                 , ( (AD ~> K:K)             => K )
