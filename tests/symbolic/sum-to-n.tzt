@@ -1,52 +1,67 @@
-code { PAIR ;
-       LEFT nat ;
-       LOOP_LEFT @I { UNPAIR ;
-                      DUP ;
-                      DIP { ADD } ;
-                      PUSH nat 1 ;
-                      SWAP ;
-                      SUB ;
-                      ISNAT ;
-                      IF_NONE { RIGHT (pair nat nat) } { PAIR ; LEFT nat } } } ;
-input { Stack_elt nat $I1 ; Stack_elt nat $I2 } ;
-output { Stack_elt nat $I3 } ;
+input { Stack_elt nat $NINIT ; Stack_elt nat $SUMINIT } ;                           // NINIT SUMINIT
+code { PAIR ;                                                                       // <NINIT,SUMINIT>
+       LEFT nat ;                                                                   // Left<NINIT,SUMINIT>
+
+       LOOP_LEFT @I { UNPAIR ;                                                      // N SUM
+                      DUP ;                                                         // N N SUM
+                      DIP { ADD } ;                                                 // N N+SUM
+                      PUSH nat 1 ;                                                  // 1 N N+SUM
+                      SWAP ;                                                        // N 1 N+SUM
+                      SUB ;                                                         // N-1 N+SUM
+                      ISNAT ;                                                       // N-1 N+SUM                if N-1>=0
+                                                                                    // None N+SUM               if N-1 <0
+                      IF_NONE { RIGHT (pair nat nat) }                              // Right(SUM)
+                              { PAIR ; LEFT nat }                                   // Left(<N-1,N+SUM>)
+                   }
+     } ;
+output { Stack_elt nat $SUMFINAL } ;
 // TODO: fix typing issue
 invariant @I { Stack_elt (or (pair nat nat) nat) $LC }
 { { PUSH (or (pair nat nat) nat) $LC ;
-    IF_LEFT { UNPAIR ;
-              DIP { DUP ;
-                    PUSH nat 1 ;
-                    ADD ;
-                    MUL ;
-                    PUSH nat 2 ;
-                    EDIV ;
-                    IF_NONE { UNIT ; FAILWITH } { }
-              } ;
-              ADD ;
-              PUSH nat $I2 ;
-              PUSH nat $I1 ;
-              DIP { DUP ;
-                    PUSH nat 1 ;
-                    ADD ;
-                    MUL ;
-                    PUSH nat 2 ;
-                    EDIV ;
-                    IF_NONE { UNIT ; FAILWITH } {  }
-              }
-    } { }
-} } ;
-postcondition {
-  { PUSH nat $I1 ;
+    IF_LEFT { UNPAIR }        //
+            { PUSH nat 0 } ;  //  Right implies N == 0
+                                                                          // N SUM
+    DUP ;                                                                 // N N SUM
+    PUSH nat 1 ;                                                          // 1 N N SUM
+    ADD ;                                                                 // 1+N N SUM
+    MUL ;                                                                 // N*(N+1) SUM
+    PUSH nat 2 ;                                                          // 2 N*N+1 SUM
+    SWAP ;                                                                // N*N+1 2 SUM
+    EDIV ;                                                                // ...
+    IF_NONE { UNIT ; FAILWITH } { } ;                                     // Pair(N*N+1/2,N*N+1/2) SUM
+    CAR ;                                                                 // N*N+1/2 SUM
+    ADD ;                                                                 // N*N+1/2+SUM
+
+    PUSH nat $SUMINIT ;
+    PUSH nat $NINIT ;
     DUP ;
     PUSH nat 1 ;
     ADD ;
     MUL ;
     PUSH nat 2 ;
+    SWAP ;
+    EDIV ;
+    IF_NONE { UNIT ; FAILWITH } {  } ;
+    CAR ;
+    ADD ;                                                          // NINIT*NINIT+1/2+SUMINIT N*N+1/2+SUM
+
+    COMPARE ;
+    EQ
+} } ;
+postcondition {
+  { PUSH nat $NINIT ;
+    DUP ;
+    PUSH nat 1 ;
+    ADD ;
+    MUL ;
+    PUSH nat 2 ;
+    SWAP ;
     EDIV ;
     IF_NONE { UNIT ; FAILWITH } { } ;
-    PUSH nat $I2 ;
+    CAR ;
+    PUSH nat $SUMINIT ;
     ADD ;
-    PUSH nat $I3 ;
+    PUSH nat $SUMFINAL ;
     COMPARE ;
     EQ
   }
