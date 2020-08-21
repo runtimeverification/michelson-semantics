@@ -15,6 +15,27 @@ module MICHELSON-COMMON
   imports COLLECTIONS
 ```
 
+```k
+  syntax TypeName ::= NullaryTypeName
+                    | UnaryTypeName TypeName
+		    | BinaryTypeName TypeName TypeName
+
+  syntax StackElement ::= "[" TypeName Data "]"
+  syntax Stack ::= List{StackElement, ";"} [klabel(Stack)]
+  syntax InternalStack ::= Stack | FailedStack
+
+  syntax TypeName ::= #Name(Type) [function, functional]
+  syntax Type ::= #Type(TypeName) [function, functional]
+
+  rule #Name(T:NullaryTypeName _:AnnotationList) => T
+  rule #Name(T:UnaryTypeName _:AnnotationList ArgT) => T #Name(ArgT)
+  rule #Name(T:BinaryTypeName _:AnnotationList ArgT1 ArgT2) => T #Name(ArgT1) #Name(ArgT2)
+
+  rule #Type(T:NullaryTypeName) => T .AnnotationList
+  rule #Type(T:UnaryTypeName ArgT) => T .AnnotationList #Type(ArgT)
+  rule #Type(T:BinaryTypeName ArgT1 ArgT2) => T .AnnotationList #Type(ArgT1) #Type(ArgT2)
+```
+
 The internal representation of Michelson sets, lists and maps are simply K sets,
 lists and maps respectively.
 
@@ -58,7 +79,7 @@ timestamps and naturals.
   syntax Key ::= #Key(String)
   syntax Signature ::= #Signature(String)
   syntax OperationNonce ::= #Nonce(Int)
-  syntax LambdaData ::= #Lambda(Type, Type, Block)
+  syntax LambdaData ::= #Lambda(TypeName, TypeName, Block)
 ```
 
 We extend the `SimpleData` sort to contain internal datatypes.
@@ -76,7 +97,7 @@ now.
 
 ```k
   syntax MBytes ::= MBytesLiteral
-                  | #Packed(Data)
+                  | #Packed(TypeName,Data)
                   | #Blake2B(MBytes)
                   | #SHA256(MBytes)
                   | #SHA512(MBytes)
@@ -287,7 +308,7 @@ We recursively convert the contents of pairs, ors and options, if applicable.
 We wrap Lambdas appropriately and save their type information.  Note that we do *not* recurse into the Block.
 
 ```k
-  rule #MichelineToNative(B:Block, lambda _:AnnotationList T1 T2, _KnownAddrs, _BigMaps) => #Lambda(T1, T2, B)
+  rule #MichelineToNative(B:Block, lambda _:AnnotationList T1 T2, _KnownAddrs, _BigMaps) => #Lambda(#Name(T1), #Name(T2), B)
 ```
 
 Collections are converted one element at a time. We need to handle the cases of
