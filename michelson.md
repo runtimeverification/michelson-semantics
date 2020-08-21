@@ -808,7 +808,7 @@ documentation.
 
 ```k
   rule <k> DROP A =>  #HandleAnnotations(A) ... </k>
-       <stack> _:StackElement ; SS => SS ... </stack>
+       <stack> _:StackElement ; SS => SS </stack>
 
   rule <k> DROP A I
         => #HandleAnnotations(A)
@@ -937,16 +937,17 @@ the expanded lambda.
 
 ```k
   rule <k> APPLY A => #HandleAnnotations(A) ... </k>
-       <stack> [ T0 D ]
-             ; [ (lambda (pair T0 T1) T2)
+       <stack> [ T0 D ] ;
+               [ (lambda (pair T0 T1) T2)
                  #Lambda((pair T0 T1), T2, { C } )
-               ]
+               ] ;
+	       SS
             => [ (lambda T1 T2) #Lambda(T1, T2, { PUSH .AnnotationList #Type(T0) D ;
                                                   PAIR .AnnotationList ;
                                                   { C }
                                                 } )
-               ]
-               ...
+               ] ;
+	       SS
        </stack>
 ```
 
@@ -1303,7 +1304,7 @@ strings, allowing for code reuse.
 
 ```k
   rule <k> SLICE A => #HandleAnnotations(A) ... </k>
-       <stack> [nat O:Int] ; [nat L:Int] ; [bytes B:Bytes] ; SS => [bytes #SliceBytes(B, O, L)] </stack>
+       <stack> [nat O:Int] ; [nat L:Int] ; [bytes B:Bytes] ; SS => [bytes #SliceBytes(B, O, L)] ; SS </stack>
 
   syntax OptionData ::= #SliceBytes(Bytes, Int, Int) [function]
   // ----------------------------------------------------------
@@ -1909,13 +1910,13 @@ These operations are used internally for implementation purposes.
 ```k
   syntax Instruction ::= "#AssertTrue"
   rule <k> #AssertTrue => #Assert(B) ... </k>
-       <stack> B:Bool ; SS => SS </stack>
+       <stack> [bool B:Bool] ; SS => SS </stack>
 ```
 
 ```k
   syntax Instruction ::= "#AssumeTrue"
   rule <k> #AssumeTrue => #Assume(B) ... </k>
-       <stack> B:Bool ; SS => SS </stack>
+       <stack> [bool B:Bool] ; SS => SS </stack>
 ```
 
 ```k
@@ -2045,8 +2046,8 @@ abstract out pieces of the stack which are non-invariant during loop execution.
        <symbols> S |-> #TypedSymbol(T, D2) ... </symbols>
     requires D1 ==K D2
 
-  rule <k> #Bind( [ T ED ] ; SS:Stack  => SS
-                , [ T AD ] ; SS':Stack => SS'
+  rule <k> #Bind( [ T ED ] ; SS  => SS
+                , [ T AD ] ; SS' => SS'
                 )
            ...
        </k>
