@@ -1191,313 +1191,308 @@ The `#DoCompare` function requires additional lemmas for symbolic execution.
   // TODO: at some point this rule should be builtin
   rule X ==String X => true [simplification]
 ```
- 
-# ### String Operations
-# 
-# ```k
-#   syntax String ::= #ConcatStrings(List, String) [function]
-#   rule #ConcatStrings(.List, A) => A
-#   rule #ConcatStrings(ListItem(S1) DL, A) => #ConcatStrings(DL, A +String S1)
-# 
-#   rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
-#        <stack> S1 ~> S2 => S1 +String S2 ... </stack>
-# 
-#   rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
-#        <stack> L => #ConcatStrings(L, "") ... </stack>
-#        <stacktypes> list _ string _ ; _ </stacktypes>
-# 
-#   rule <k> SIZE A => #HandleAnnotations(A) ... </k>
-#        <stack> S => lengthString(S) ... </stack>
-# ```
-# 
-# The actual out of bounds conditions here are determined by experimentation.
-# Earlier versions of the semantics didn't check if O was in bounds, resulting in
-# `Slice("", 0, 0) => Some ""` rather than the correct
-# `#SliceString("", 0, 0) => None`
-# 
-# ```k
-#   rule <k> SLICE A => #HandleAnnotations(A) ... </k>
-#        <stack> O ~> L ~> S => #SliceString(S, O, L)  ... </stack>
-# 
-#   syntax OptionData ::= #SliceString(String, Int, Int) [function]
-# 
-#   rule #SliceString(S, O, L) => Some substrString(S, O, O +Int L)
-#     requires O >=Int 0
-#      andBool L >=Int 0
-#      andBool O <Int lengthString(S)
-#      andBool (O +Int L) <=Int lengthString(S)
-# 
-#   rule #SliceString(S, O, L) => None [owise]
-# ```
-# 
-# ### Bytes Operations
-# 
-# The bytes instructions have a stubbed implementation for the time being, since
-# the actual serialization format is not formally unspecified.
-# 
-# ```k
-#   rule <k> PACK A => #HandleAnnotations(A) ... </k>
-#        <stack> T => #Packed(T) ... </stack>
-# 
-#   rule <k> UNPACK A _ => #HandleAnnotations(A) ... </k>
-#        <stack> #Packed(T) => Some T ... </stack>
-# ```
-# 
-# The `CONCAT` operation over two bytes is relatively straightforward since we
-# already have helper functions to extract bytes content.
-# 
-# ```k
-#   rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
-#        <stack> B1:Bytes ~> B2:Bytes => B1 +Bytes B2 ... </stack>
-# ```
-# 
-# `CONCAT` over lists of bytes is somewhat more involved, since we need to
-# distinguish this case from lists of strings.
-# 
-# ```k
-#   rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
-#        <stack> L => #ConcatBytes(L, .Bytes) ... </stack>
-#        <stacktypes> list _ bytes _ ; _ </stacktypes>
-# 
-#   syntax Bytes ::= #ConcatBytes(List, Bytes) [function]
-#   rule #ConcatBytes(.List, A) => A
-#   rule #ConcatBytes(ListItem(B) DL, A) => #ConcatBytes(DL, A +Bytes B)
-# ```
-# 
-# `SIZE` is relatively simple, except that we must remember to divide by two,
-# since bytes length is measured in terms of number of bytes, not characters in
-# the hex string.
-# 
-# ```k
-#   rule <k> SIZE A => #HandleAnnotations(A) ... </k>
-#        <stack> B => lengthBytes(B) ... </stack>
-# ```
-# 
-# The remaining operations are defined in terms of the same operations on
-# strings, allowing for code reuse.
-# 
-# ```k
-#   rule <k> SLICE A => #HandleAnnotations(A) ... </k>
-#        <stack> O:Int ~> L:Int ~> B:Bytes => #SliceBytes(B, O, L)  ... </stack>
-# 
-#   syntax OptionData ::= #SliceBytes(Bytes, Int, Int) [function]
-# 
-#   rule #SliceBytes(S, O, L) => Some substrBytes(S, O, O +Int L)
-#     requires O >=Int 0
-#      andBool L >=Int 0
-#      andBool O <Int lengthBytes(S)
-#      andBool (O +Int L) <=Int lengthBytes(S)
-# 
-#   rule #SliceBytes(S, O, L) => None [owise]
-# ```
-# 
-# ### Pair Operations
-# 
-# ```k
-#   rule <k> PAIR A => #HandleAnnotations(A) ... </k>
-#        <stack> L ~> R => Pair L R ... </stack>
-# 
-#   rule <k> UNPAIR A => #HandleAnnotations(A) ... </k>
-#        <stack> Pair L R => L ~> R ... </stack>
-# 
-#   rule <k> CAR A => #HandleAnnotations(A) ... </k>
-#        <stack> Pair L _ => L ... </stack>
-# 
-#   rule <k> CDR A => #HandleAnnotations(A) ... </k>
-#        <stack> Pair _ R => R ... </stack>
-# ```
-# 
-# ### Set Operations
-# 
-# ```k
-#   rule <k> EMPTY_SET A _ => #HandleAnnotations(A) ... </k>
-#        <stack> . => .Set ... </stack>
-# 
-#   rule <k> MEM A => #HandleAnnotations(A) ... </k>
-#        <stack> X ~> S:Set => X in S ... </stack>
-# 
-#   // True to insert, False to remove.
-#   rule <k> UPDATE A => #HandleAnnotations(A) ... </k>
-#        <stack> D ~> true ~> S => SetItem(D) S ... </stack>
-# 
-#   rule <k> UPDATE A => #HandleAnnotations(A) ... </k>
-#        <stack> D ~> false ~> SetItem(D) S => S ... </stack>
-# 
-#   rule <k> UPDATE A => #HandleAnnotations(A) ... </k>
-#        <stack> (D ~> false => .) ~> S:Set ... </stack>
-#        requires notBool(D in S)
-# 
-#   rule <k> SIZE A => #HandleAnnotations(A) ... </k>
-#        <stack> S:Set => size(S) ... </stack>
-# ```
-# 
-# Note that, according to the Michelson documentation, set iteration order is
-# actually defined (the set is iterated over in ascending order).
-# For simplicity we implement this by repeatedly selecting the minimal element.
-# 
-# ```k
-#   rule <k> ITER A _ => #HandleAnnotations(A) ... </k>
-#        <stack> .Set => . ... </stack>
-# 
-#   rule <k> ITER A B
-#         => #HandleAnnotations(A)
-#         ~> B
-#         ~> #Push(S -Set SetItem(#MinimalElement(Set2List(S))))
-#         ~> ITER .AnnotationList B
-#         ...
-#         </k>
-#        <stack> S => #MinimalElement(Set2List(S)) ... </stack>
-#        requires size(S) >Int 0
-# 
-#   syntax Data ::= #MinimalElement(List) [function]
-#   syntax Data ::= #MinimalElementAux(List, Data) [function]
-# 
-#   rule #MinimalElement(ListItem(H) L) => #MinimalElementAux(L, H)
-#   rule #MinimalElementAux(.List, M) => M
-#   rule #MinimalElementAux(ListItem(H) L, M)
-#     => #MinimalElementAux(L, M) requires #DoCompare(M, H) <=Int 0
-#   rule #MinimalElementAux(ListItem(H) L, M)
-#     => #MinimalElementAux(L, H) requires #DoCompare(M, H) ==Int 1
-# ```
-# 
-# ### Map Operations
-# 
-# ```k
-#   rule <k> EMPTY_MAP A _ _ => #HandleAnnotations(A) ... </k>
-#        <stack> . => .Map ... </stack>
-# 
-#   rule <k> GET A => #HandleAnnotations(A) ... </k>
-#        <stack> X ~> M => Some {M[X]}:>Data ... </stack>
-#        requires X in_keys(M)
-# 
-#   rule <k> GET A => #HandleAnnotations(A) ... </k>
-#        <stack> X ~> M => None ... </stack>
-#        requires notBool(X in_keys(M))
-# 
-#   rule <k> MEM A => #HandleAnnotations(A) ~> . ... </k>
-#        <stack> X ~> M => X in_keys(M) ... </stack>
-# 
-#   rule <k> UPDATE A => #HandleAnnotations(A)  ... </k>
-#        <stack> K ~> Some V ~> M:Map => M[K <- V] ... </stack>
-# 
-#   rule <k> UPDATE A => #HandleAnnotations(A)  ... </k>
-#        <stack> K ~> None ~> M:Map => M[K <- undef] ... </stack>
-# 
-#   rule <k> SIZE A => #HandleAnnotations(A)  ... </k>
-#        <stack> M:Map => size(M) ... </stack>
-# ```
-# 
-# The `MAP` operation, over maps, is somewhat more involved. We need to set up a
-# stack without the actual map to execute the block on, and we need to keep track
-# of the updated map as we do. We implement this by splitting the operation into
-# multiple K items.
-# 
-# ```k
-#   rule <k> MAP A B => #HandleAnnotations(A) ~> #PerformMap(M, .Map, B) ... </k>
-#        <stack> M => . ... </stack>
-# ```
-# 
-# `#PerformMap` holds the old map, the new map, and the block to execute.
-# It sets up the new stack and queues up a `#PopNewVal` which removes
-# the value produced by the MAP block and adds it to the second map argument.
-# Like Sets, iteration order is actually defined, and we implement it by
-# repeatedly selecting the minimal element in the list of keys in the map.
-# 
-# ```k
-#   syntax Instruction ::= #PerformMap(Map, Map, Block)
-#   // ------------------------------------------------
-#   rule <k> #PerformMap(M1, M2, B)
-#         => B
-#         ~> #PopNewVal(#MinimalKey(M1))
-#         ~> #PerformMap(M1[#MinimalKey(M1) <- undef], M2, B)
-#            ...
-#        </k>
-#        <stack> . => Pair #MinimalKey(M1) {M1[#MinimalKey(M1)]}:>Data
-#                ...
-#        </stack>
-#     requires size(M1) >Int 0
-# 
-#   rule <k> #PerformMap(.Map, M, _) => . ... </k>
-#        <stack> . => M ... </stack>
-# 
-#   syntax Instruction ::= #PopNewVal(Data)
-#   // ------------------------------------
-#   rule <k> #PopNewVal(K) ~> #PerformMap(M1, M2, B)
-#         => #PerformMap(M1, M2[K <- V], B)
-#            ...
-#        </k>
-#        <stack> V => . ... </stack>
-# 
-#   syntax Data ::= #MinimalKey(Map) [function]
-#   // ----------------------------------------
-#   rule #MinimalKey(M) => #MinimalElement(keys_list(M))
-# ```
-# 
-# `ITER` is relatively easy to implement using a straightforward recursive style,
-# since it does not need to track the new map while keeping it off the stack.
-# 
-# ```k
-#   rule <k> ITER A B => #HandleAnnotations(A)  ... </k>
-#        <stack> .Map => . ... </stack>
-# 
-#   rule <k> ITER A B
-#         => #HandleAnnotations(A)
-#         ~> B
-#         ~> #Push(M[#MinimalKey(M) <- undef])
-#         ~> ITER .AnnotationList B
-#            ...
-#        </k>
-#        <stack> M:Map
-#             => Pair #MinimalKey(M) {M[#MinimalKey(M)]}:>Data
-#                ...
-#        </stack>
-#     requires size(M) >Int 0
-# ```
-# 
-# ### Big Map Operations
-# 
-# For the purposes of this semantics, `big_map`s are represented in the same way
-# as maps, so they can reuse the same execution rules.
-# 
-# ```k
-#   rule <k> EMPTY_BIG_MAP A _ _ => #HandleAnnotations(A)  ... </k>
-#        <stack> . => .Map ... </stack>
-# ```
-# 
-# The other operations are identical.
-# 
-# ### Option Operations
-# 
-# ```k
-#   rule <k> SOME A => #HandleAnnotations(A)  ... </k>
-#        <stack> X => Some X ... </stack>
-# 
-#   rule <k> NONE A _ => #HandleAnnotations(A)  ... </k>
-#        <stack> . => None ... </stack>
-# 
-#   rule <k> IF_NONE A BT BF => #HandleAnnotations(A) ~> BT ... </k>
-#        <stack> None => . ... </stack>
-# 
-#   rule <k> IF_NONE A BT BF => #HandleAnnotations(A) ~> BF ... </k>
-#        <stack> Some V => V ... </stack>
-# ```
-# 
-# ### Union Operations
-# 
-# ```k
-#   rule <k> LEFT A _ => #HandleAnnotations(A)  ... </k>
-#        <stack> X:Data => Left X ... </stack>
-# 
-#   rule <k> RIGHT A _:Type => #HandleAnnotations(A) ... </k>
-#        <stack> X:Data => Right X ... </stack>
-# 
-#   rule <k> IF_LEFT A BT BF => #HandleAnnotations(A) ~> BT ... </k>
-#        <stack> Left V => V ... </stack>
-# 
-#   rule <k> IF_LEFT A BT BF => #HandleAnnotations(A) ~> BF ... </k>
-#        <stack> Right V => V ... </stack>
-# ```
-# 
+
+### String Operations
+
+```k
+  syntax String ::= #ConcatStrings(List, String) [function]
+  rule #ConcatStrings(.List, A) => A
+  rule #ConcatStrings(ListItem(S1) DL, A) => #ConcatStrings(DL, A +String S1)
+
+  rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
+       <stack> [string _ S1] ; [string _ S2] ; SS => [string S1 +String S2] ; SS </stack>
+
+  rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
+       <stack> [(list _ string) L] ; SS => [string _ #ConcatStrings(L, "")] ; SS </stack>
+
+  rule <k> SIZE A => #HandleAnnotations(A) ... </k>
+       <stack> [string _ S] ; SS => [nat lengthString(S)] ; SS </stack>
+```
+
+The actual out of bounds conditions here are determined by experimentation.
+Earlier versions of the semantics didn't check if O was in bounds, resulting in
+`Slice("", 0, 0) => Some ""` rather than the correct
+`#SliceString("", 0, 0) => None`
+
+```k
+  rule <k> SLICE A => #HandleAnnotations(A) ... </k>
+       <stack> [nat _ O] ; [nat _ L] ; [string _ S] ; SS => [string #SliceString(S, O, L)] ; SS </stack>
+
+  syntax OptionData ::= #SliceString(String, Int, Int) [function]
+
+  rule #SliceString(S, O, L) => Some substrString(S, O, O +Int L)
+    requires O >=Int 0
+     andBool L >=Int 0
+     andBool O <Int lengthString(S)
+     andBool (O +Int L) <=Int lengthString(S)
+
+  rule #SliceString(S, O, L) => None [owise]
+```
+
+### Bytes Operations
+
+The bytes instructions have a stubbed implementation for the time being, since
+the actual serialization format is not formally unspecified.
+
+```k
+  rule <k> PACK A => #HandleAnnotations(A) ... </k>
+       <stack> [T V] ; SS => [bytes #Packed(T,V)] ; SS </stack>
+
+  rule <k> UNPACK A _ => #HandleAnnotations(A) ... </k>
+       <stack> [#Packed(T,V)] ; SS => [option T Some V] ; SS </stack>
+```
+
+The `CONCAT` operation over two bytes is relatively straightforward since we
+already have helper functions to extract bytes content.
+
+```k
+  rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
+       <stack> [bytes _ B1] ; [bytes _ B2] ; SS => [bytes B1 +Bytes B2] ; SS </stack>
+```
+
+`CONCAT` over lists of bytes is somewhat more involved, since we need to
+distinguish this case from lists of strings.
+
+```k
+  rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
+       <stack> [(list _ bytes) L] ; SS => [bytes #ConcatBytes(L, .Bytes)] ; SS </stack>
+
+  syntax Bytes ::= #ConcatBytes(List, Bytes) [function]
+  rule #ConcatBytes(.List, A) => A
+  rule #ConcatBytes(ListItem(B) DL, A) => #ConcatBytes(DL, A +Bytes B)
+```
+
+`SIZE` is relatively simple, except that we must remember to divide by two,
+since bytes length is measured in terms of number of bytes, not characters in
+the hex string.
+
+```k
+  rule <k> SIZE A => #HandleAnnotations(A) ... </k>
+       <stack> [bytes _ B] ; SS => [nat lengthBytes(B)] ; SS </stack>
+```
+
+The remaining operations are defined in terms of the same operations on
+strings, allowing for code reuse.
+
+```k
+  rule <k> SLICE A => #HandleAnnotations(A) ... </k>
+       <stack> [nat _ O:Int] ; [nat _ L:Int] ; [bytes _ B:Bytes] ; SS => [bytes #SliceBytes(B, O, L)] </stack>
+
+  syntax OptionData ::= #SliceBytes(Bytes, Int, Int) [function]
+  // ----------------------------------------------------------
+  rule #SliceBytes(S, O, L) => Some substrBytes(S, O, O +Int L)
+    requires O >=Int 0
+     andBool L >=Int 0
+     andBool O <Int lengthBytes(S)
+     andBool (O +Int L) <=Int lengthBytes(S)
+
+  rule #SliceBytes(S, O, L) => None [owise]
+```
+
+### Pair Operations
+
+```k
+  rule <k> PAIR A => #HandleAnnotations(A) ... </k>
+       <stack> [LTy L] ; [RTy R] ; SS => [pair LTy RTy Pair L R] ; SS </stack>
+
+  rule <k> UNPAIR A => #HandleAnnotations(A) ... </k>
+       <stack> [pair _ LTy RTy Pair L R] ; SS => [LTy L] ; [RTy R] ; SS </stack>
+
+  rule <k> CAR A => #HandleAnnotations(A) ... </k>
+       <stack> [pair _ LTy _ Pair L _] ; SS => [LTy L] ; SS </stack>
+
+  rule <k> CDR A => #HandleAnnotations(A) ... </k>
+       <stack> [pair _ _ RTy Pair _ R] ; SS => [RTy R] ; SS </stack>
+```
+
+### Set Operations
+
+```k
+  rule <k> EMPTY_SET A T:Type => #HandleAnnotations(A) ... </k>
+       <stack> SS => [set T .Set] ; SS </stack>
+
+  rule <k> MEM A => #HandleAnnotations(A) ... </k>
+       <stack> [T X] ; [set _ T S:Set] ; SS => [bool X in S] ; SS </stack>
+
+  // True to insert, False to remove.
+  rule <k> UPDATE A => #HandleAnnotations(A) ... </k>
+       <stack> [T D] ; [bool _ true] ; [set _ T S:Set] ; SS => [set _ T (SetItem(D) S)] ; SS </stack>
+
+  rule <k> UPDATE A => #HandleAnnotations(A) ... </k>
+       <stack> [T D] ; [bool _ false] ; [set _ T SetItem(D) S] ; SS => [set _ T S] ; SS </stack>
+
+  rule <k> UPDATE A => #HandleAnnotations(A) ... </k>
+       <stack> [T D] ; [bool _ false] ; [set _ T S:Set] ; SS => [set _ T S:Set] ; SS </stack>
+       requires notBool(D in S)
+
+  rule <k> SIZE A => #HandleAnnotations(A) ... </k>
+       <stack> [set _ _ S:Set] ; SS => [nat size(S)] ; SS </stack>
+```
+
+Note that, according to the Michelson documentation, set iteration order is
+actually defined (the set is iterated over in ascending order).
+For simplicity we implement this by repeatedly selecting the minimal element.
+
+```k
+  rule <k> ITER A _ => #HandleAnnotations(A) ... </k>
+       <stack> [set _ _ .Set] ; SS => SS </stack>
+
+  rule <k> ITER A B
+        => #HandleAnnotations(A)
+        ~> B
+        ~> #Push(S -Set SetItem(#MinimalElement(Set2List(S))))
+        ~> ITER .AnnotationList B
+        ...
+        </k>
+       <stack> [set _ T:Type S] ; SS => [T #MinimalElement(Set2List(S))] ; SS </stack>
+    requires size(S) >Int 0
+
+  syntax Data ::= #MinimalElement(List) [function]
+  syntax Data ::= #MinimalElementAux(List, Data) [function]
+
+  rule #MinimalElement(ListItem(H) L) => #MinimalElementAux(L, H)
+  rule #MinimalElementAux(.List, M) => M
+  rule #MinimalElementAux(ListItem(H) L, M)
+    => #MinimalElementAux(L, M) requires #DoCompare(M, H) <=Int 0
+  rule #MinimalElementAux(ListItem(H) L, M)
+    => #MinimalElementAux(L, H) requires #DoCompare(M, H) ==Int 1
+```
+
+### Map Operations
+
+```k
+  rule <k> EMPTY_MAP A KT VT => #HandleAnnotations(A) ... </k>
+       <stack> SS => [map KT VT .Map] ; SS </stack>
+
+  rule <k> GET A => #HandleAnnotations(A) ... </k>
+       <stack> [KT X] ; [map _ KT VT M] ; SS => [option VT Some {M[X]}:>Data] ; SS </stack>
+    requires X in_keys(M)
+
+  rule <k> GET A => #HandleAnnotations(A) ... </k>
+       <stack> [KT X] ; [map _ KT VT M] ; SS => [option VT None] ; SS </stack>
+    requires notBool(X in_keys(M))
+
+  rule <k> MEM A => #HandleAnnotations(A) ~> . ... </k>
+       <stack> [KT X] ; [map _ KT VT M] ; SS => [bool X in_keys(M)] ; SS </stack>
+
+  rule <k> UPDATE A => #HandleAnnotations(A)  ... </k>
+       <stack> [KT K] ; [option VT Some V] ; [map _ KT VT M:Map] ; SS => [map KT VT M[K <- V]] ; SS </stack>
+
+  rule <k> UPDATE A => #HandleAnnotations(A)  ... </k>
+       <stack> [KT K] ; [option VT None] ; [map _ KT VT M:Map] ; SS => [map KT VT M[K <- undef]] ; SS </stack>
+
+  rule <k> SIZE A => #HandleAnnotations(A)  ... </k>
+       <stack> [map _ KT VT M:Map] ; SS => [nat size(M)] ; SS </stack>
+```
+
+The `MAP` operation, over maps, is somewhat more involved. We need to set up a
+stack without the actual map to execute the block on, and we need to keep track
+of the updated map as we do. We implement this by splitting the operation into
+multiple K items.
+
+```k
+  rule <k> MAP A B => #HandleAnnotations(A) ~> #PerformMap(KT, VT, M, .Map, B) ... </k>
+       <stack> [map KT VT M] ; SS => SS </stack>
+```
+
+`#PerformMap` holds the old map, the new map, and the block to execute.
+It sets up the new stack and queues up a `#PopNewVal` which removes
+the value produced by the MAP block and adds it to the second map argument.
+Like Sets, iteration order is actually defined, and we implement it by
+repeatedly selecting the minimal element in the list of keys in the map.
+
+```k
+  syntax Instruction ::= #PerformMap(Type, Type, Map, Map, Block)
+  // ------------------------------------------------------------
+  rule <k> #PerformMap(KT, VT, M1, M2, B)
+        => B
+        ~> #PopNewVal(#MinimalKey(M1))
+        ~> #PerformMap(M1[#MinimalKey(M1) <- undef], M2, B)
+           ...
+       </k>
+       <stack> SS => [pair KT VT Pair #MinimalKey(M1) {M1[#MinimalKey(M1)]}:>Data] ; SS
+       </stack>
+    requires size(M1) >Int 0
+
+  rule <k> #PerformMap(KT, VT, .Map, M, _) => . ... </k>
+       <stack> SS => [map KT VT M] ; SS </stack>
+
+  syntax Instruction ::= #PopNewVal(Data)
+  // ------------------------------------
+  rule <k> #PopNewVal(K) ~> #PerformMap(KT, VT, M1, M2, B)
+        => #PerformMap(KT, VT, M1, M2[K <- V], B)
+       </k>
+       <stack> [VT V] ; SS => SS </stack>
+
+  syntax Data ::= #MinimalKey(Map) [function]
+  // ----------------------------------------
+  rule #MinimalKey(M) => #MinimalElement(keys_list(M))
+```
+
+`ITER` is relatively easy to implement using a straightforward recursive style,
+since it does not need to track the new map while keeping it off the stack.
+
+```k
+  rule <k> ITER A B => #HandleAnnotations(A)  ... </k>
+       <stack> [map _ KT VT .Map] ; SS => SS </stack>
+
+  rule <k> ITER A B
+        => #HandleAnnotations(A)
+        ~> B
+        ~> #Push(M[#MinimalKey(M) <- undef])
+        ~> ITER .AnnotationList B
+           ...
+       </k>
+       <stack> [map _ KT VT M:Map] ; SS
+            => [pair KT VT Pair #MinimalKey(M) {M[#MinimalKey(M)]}:>Data] ; SS
+       </stack>
+    requires size(M) >Int 0
+```
+
+### Big Map Operations
+
+For the purposes of this semantics, `big_map`s are represented in the same way
+as maps, so they can reuse the same execution rules.
+
+```k
+  rule <k> EMPTY_BIG_MAP A KT VT => #HandleAnnotations(A) ... </k>
+       <stack> SS => [big_map KT VT .Map] ; SS </stack>
+```
+
+The other operations are identical.
+
+### Option Operations
+
+```k
+  rule <k> SOME A => #HandleAnnotations(A)  ... </k>
+       <stack> [T X] ; SS => [option T Some X] ; SS </stack>
+
+  rule <k> NONE A T:Type => #HandleAnnotations(A)  ... </k>
+       <stack> SS => [option _ T None] ; SS </stack>
+
+  rule <k> IF_NONE A BT BF => #HandleAnnotations(A) ~> BT ... </k>
+       <stack> [option _ T None] ; SS => SS </stack>
+
+  rule <k> IF_NONE A BT BF => #HandleAnnotations(A) ~> BF ... </k>
+       <stack> [option _ T Some V] ; SS => [T V] ; SS </stack>
+```
+
+### Union Operations
+
+```k
+  rule <k> LEFT A RTy:Type => #HandleAnnotations(A)  ... </k>
+       <stack> [LTy X:Data] ; SS => [or LTy RTy Left X] ; SS </stack>
+
+  rule <k> RIGHT A LTy:Type => #HandleAnnotations(A) ... </k>
+       <stack> [RTy X:Data] ; SS => [or LTy RTy Right X] ; SS </stack>
+
+  rule <k> IF_LEFT A BT BF => #HandleAnnotations(A) ~> BT ... </k>
+       <stack> [or _ LTy RTy Left V] ; SS => [LTy V] ; SS </stack>
+
+  rule <k> IF_LEFT A BT BF => #HandleAnnotations(A) ~> BF ... </k>
+       <stack> [or _ LTy RTy Right V] ; SS => [RTy V] ; SS </stack>
+```
+
 # ### List Operations
 # 
 # ```k

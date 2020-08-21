@@ -92,7 +92,7 @@ now.
 
 ```k
   syntax MBytes ::= MBytesLiteral
-                  | #Packed(Data)
+                  | #Packed(Type,Data)
                   | #Blake2B(MBytes)
                   | #SHA256(MBytes)
                   | #SHA512(MBytes)
