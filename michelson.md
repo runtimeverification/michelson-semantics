@@ -1311,6 +1311,10 @@ strings, allowing for code reuse.
        <stack> S:Set => size(S) ... </stack>
 ```
 
+```symbolic
+  rule V1 in S:Set SetItem(V2) => V1 ==K V2 orBool V1 in S [simplification]
+```
+
 Note that, according to the Michelson documentation, set iteration order is
 actually defined (the set is iterated over in ascending order).
 For simplicity we implement this by repeatedly selecting the minimal element.
