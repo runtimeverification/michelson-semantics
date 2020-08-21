@@ -1429,7 +1429,7 @@ of the updated map as we do. We implement this by splitting the operation into
 multiple K items.
 
 ```k
-  rule <k> MAP A B => #HandleAnnotations(A) ~> #PerformMap(MT,KT,VT, M, .Map, B) ... </k>
+  rule <k> MAP A B => #HandleAnnotations(A) ~> #PerformMap(MT, KT, VT, NoneType, M, .Map, B) ... </k>
        <stack> [MT:MapTypeName KT VT M] ; SS => SS </stack>
 ```
 
@@ -1440,32 +1440,40 @@ Like Sets, iteration order is actually defined, and we implement it by
 repeatedly selecting the minimal element in the list of keys in the map.
 
 ```k
-  syntax Instruction ::= #PerformMap(MapTypeName, TypeName, TypeName, Map, Map, Block)
-  // ---------------------------------------------------------------------------------
-  rule <k> #PerformMap(MT, KT, VT, M1, M2, B)
+  syntax MaybeTypeName ::= TypeName
+                         | "NoneType"
+
+  syntax Instruction ::= #PerformMap(MapTypeName, TypeName, TypeName, MaybeTypeName, Map, Map, Block)
+  // ------------------------------------------------------------------------------------------------
+  rule <k> #PerformMap(MT, KT, VT, NVT, M1, M2, B)
         => B
         ~> #PopNewVal(#MinimalKey(M1))
-        ~> #PerformMap(MT, KT, VT, M1[#MinimalKey(M1) <- undef], M2, B)
+        ~> #PerformMap(MT, KT, VT, NVT, M1[#MinimalKey(M1) <- undef], M2, B)
            ...
        </k>
        <stack> SS => [pair KT VT Pair #MinimalKey(M1) {M1[#MinimalKey(M1)]}:>Data] ; SS
        </stack>
     requires size(M1) >Int 0
 
-  rule <k> #PerformMap(MT, KT, VT, .Map, M, _) => . ... </k>
-       <stack> SS => [MT KT VT M] ; SS </stack>
+  rule <k> #PerformMap(MT, KT, VT, NVT, .Map, M, _) => . ... </k>
+       <stack> SS => [MT KT NVT M] ; SS </stack>
 
   syntax Instruction ::= #PopNewVal(Data)
   // ------------------------------------
-  rule <k> #PopNewVal(K) ~> #PerformMap(MT, KT, VT, M1, M2, B)
-        => #PerformMap(MT, KT, VT, M1, M2[K <- V], B)
+  rule <k> #PopNewVal(K) ~> #PerformMap(MT, KT, VT, NVT, M1, M2, B)
+        => #PerformMap(MT, KT, VT, NVT', M1, M2[K <- V], B)
         ...
        </k>
-       <stack> [VT V] ; SS => SS </stack>
+       <stack> [NVT' V] ; SS => SS </stack>
+    requires #CompatibleTypes(NVT,NVT')
 
   syntax Data ::= #MinimalKey(Map) [function]
   // ----------------------------------------
   rule #MinimalKey(M) => #MinimalElement(keys_list(M))
+
+  syntax Bool ::= #CompatibleTypes(MaybeTypeName, TypeName) [function]
+  rule #CompatibleTypes(NoneType,T) => true
+  rule #CompatibleTypes(T1:TypeName, T2) => T1 ==K T2
 ```
 
 `ITER` is relatively easy to implement using a straightforward recursive style,
