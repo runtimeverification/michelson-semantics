@@ -990,144 +990,208 @@ These operations map directly to their K equivalents.
 
 ```k
   rule <k> NEG A => #HandleAnnotations(A) ... </k>
-       <stack> [ int _ I ] ; SS => [ int 0 -Int I ] ; SS </stack>
+       <stack> [ N:NumTypeName _ I ] ; SS => [ int 0 -Int I ] ; SS </stack>
 
   rule <k> ABS A => #HandleAnnotations(A) ... </k>
-       <stack> [ int _ I ] ; SS => [ int absInt(I)) ] ; SS </stack>
+       <stack> [ int _ I ] ; SS => [ nat absInt(I)) ] ; SS </stack>
 
   rule <k> ISNAT A => #HandleAnnotations(A) ... </k>
-       <stack> [ int _ I ] => [ option nat Some I ] ... </stack>
+       <stack> [ int _ I ] ; SS => [ (option nat) Some I ] ; SS </stack>
        requires I >=Int 0
 
   rule <k> ISNAT A => #HandleAnnotations(A) ... </k>
-       <stack> [ int I ] => None ... </stack>
+       <stack> [ int _ I ] ; SS => [ (option nat) None ] ; SS </stack>
        requires I <Int 0
 
   rule <k> INT A => #HandleAnnotations(A) ... </k>
-       <stack> I:Int ... </stack>
+       <stack> [ (nat => int) I:Int ] ; SS </stack>
 
   rule <k> ADD A => #HandleAnnotations(A) ... </k>
-       <stack> I1 ~> I2 => I1 +Int I2 ... </stack>
+       <stack> [ T1:NumTypeName _ I1 ] ;
+               [ T2:NumTypeName _ I2 ] ;
+               SS
+            => [ BinOpNumType(T1,T2) I1 +Int I2 ] ;
+               SS
+       </stack>
 
   rule <k> SUB A => #HandleAnnotations(A) ... </k>
-       <stack> I1 ~> I2 => I1 -Int I2 ... </stack>
+       <stack> [ T1:NumTypeName _ I1 ] ;
+               [ T2:NumTypeName _ I2 ] ;
+               SS
+            => [ int I1 -Int I2 ] ;
+               SS
+       </stack>
 
   rule <k> MUL A => #HandleAnnotations(A) ... </k>
-       <stack> I1 ~> I2 => I1 *Int I2 ... </stack>
+       <stack> [ T1:NumTypeName _ I1 ] ;
+               [ T2:NumberTYpe _ I2 ] ;
+               SS
+            => [ BinOpNumType(T1,T2) I1 *Int I2 ] ;
+               SS
+       </stack>
 
   rule <k> EDIV A => #HandleAnnotations(A) ... </k>
-       <stack> I1:Int ~> 0 => None ... </stack>
+       <stack> [ T1:NumTypeName _ I1:Int ] ;
+               [ T2:NumTypeName _ 0 ] ; 
+               SS
+            => [ (option (pair BinOpNumType(T1,T2) nat)) None ] ;
+               SS
+       </stack>
 
   rule <k> EDIV A  => #HandleAnnotations(A) ... </k>
-       <stack> I1 ~> I2 => Some (Pair (I1 /Int I2) (I1 %Int I2)) ... </stack>
+       <stack> [ T1:NumTypeName _ I1:Int ] ;
+               [ T2:NumTypeName _ I2:Int ] ; 
+               SS
+            => [ (option (pair BinOpNumType(T1,T2) nat))
+                   Some (Pair (I1 /Int I2) (I1 %Int I2)
+               ] ;
+               SS
+       </stack>
        requires I2 =/=Int 0
+
+  syntax NumTypeName ::= BinOpNumType(NumTypeName, NumTypeName) [function, functional]
+  rule BinOpNumType(N:NumTypeName, int) => int
+  rule BinOpNumType(int, N:NumTypeName) => int
+  rule BinOpNumType(nat, nat) => nat
 ```
 
-# Bitwise operations on Michelson `int`s map directly onto K `Int` functions.
-# The `LSL` and `LSR` operations produce exceptions when their shift arugment
-# overflows.
-# 
-# ```k
-#   rule <k> OR A => #HandleAnnotations(A)  ... </k>
-#        <stack> I1 ~> I2 => I1 |Int I2 ... </stack>
-# 
-#   rule <k> AND A => #HandleAnnotations(A) ... </k>
-#        <stack> I1 ~> I2 => I1 &Int I2 ... </stack>
-# 
-#   rule <k> XOR A => #HandleAnnotations(A) ... </k>
-#        <stack> I1 ~> I2 => I1 xorInt I2 ... </stack>
-# 
-#   rule <k> NOT A => #HandleAnnotations(A) ... </k>
-#        <stack> I => ~Int I ... </stack>
-# 
-#   rule <k> LSL A => #HandleAnnotations(A) ... </k>
-#        <stack> X ~> S => X <<Int S ... </stack>
-#        requires S <=Int 256
-# 
-#   rule <k> LSL A ~> Rk
-#         => #HandleAnnotations(A)
-#         ~> Aborted("LSL out of range", S, Rk, Rs)
-#         ~> Rk
-#         </k>
-#        <stack> C:Int ~> S:Int ~> Rs => ( GeneralOverflow C S )  </stack>
-#        requires S >Int 256
-# 
-#   rule <k> LSR A => #HandleAnnotations(A) ... </k>
-#        <stack> X ~> S => X >>Int S ... </stack>
-#        requires S <=Int 256
-# 
-#   rule <k> LSR A ~> Rk
-#         => #HandleAnnotations(A)
-#         ~> Aborted("LSR out of range", S, Rk, Rs)
-#         ~> Rk
-#         </k>
-#        <stack> X ~> S ~> Rs => ( GeneralOverflow X S ) </stack>
-#        requires S >Int 256
-# ```
-# 
-# ### `COMPARE` Instruction
-# 
-# The `COMPARE` instruction is defined over all comparable datatypes.
-# 
-# ```k
-#   rule <k> COMPARE A => #HandleAnnotations(A) ... </k>
-#        <stack> V1 ~> V2 => #DoCompare(V1, V2) ... </stack>
-# ```
-# 
-# We define `COMPARE` in terms of a `#DoCompare` function.
-# 
-# ```k
-#   syntax Int ::= #DoCompare(Data, Data) [function, functional]
-# 
-#   rule #DoCompare(true, true) => 0
-#   rule #DoCompare(false, false) => 0
-#   rule #DoCompare(false, true) => -1
-#   rule #DoCompare(true, false) => 1
-# 
-#   rule #DoCompare(I1:Int, I2:Int) => -1 requires I1 <Int I2
-#   rule #DoCompare(I1:Int, I2:Int) => 0 requires I1 ==Int I2
-#   rule #DoCompare(I1:Int, I2:Int) => 1 requires I1 >Int I2
-# 
-#   rule #DoCompare(S1:String, S2:String) => -1 requires S1 <String S2
-#   rule #DoCompare(S1:String, S2:String) => 0 requires S1 ==String S2
-#   rule #DoCompare(S1:String, S2:String) => 1 requires S1 >String S2
-# 
-#   rule #DoCompare((Pair A1 A2), (Pair B1 B2)) => -1                 requires #DoCompare(A1, B1) ==Int -1
-#   rule #DoCompare((Pair A1 A2), (Pair B1 B2)) => #DoCompare(A2, B2) requires #DoCompare(A1, B1) ==Int 0
-#   rule #DoCompare((Pair A1 A2), (Pair B1 B2)) => 1                  requires #DoCompare(A1, B1) ==Int 1
-# 
-#   rule #DoCompare(B1:Bytes, B2:Bytes) => #DoCompare(Bytes2Int(B1, BE, Unsigned), Bytes2Int(B2, BE, Unsigned))
-#   rule #DoCompare(#KeyHash(S1), #KeyHash(S2)) => #DoCompare(S1, S2)
-#   rule #DoCompare(#Mutez(I1), #Mutez(I2)) => #DoCompare(I1, I2)
-#   rule #DoCompare(#Timestamp(I1), #Timestamp(I2)) => #DoCompare(I1, I2)
-#   rule #DoCompare(#Address(S1), #Address(S2)) => #DoCompare(S1, S2)
-# ```
-# 
-# The `#DoCompare` function requires additional lemmas for symbolic execution.
-# 
-# ```symbolic
-#   rule #DoCompare(I1:Bool, I2:Bool) <Int 0  => (I1 ==Bool false) andBool (I2 ==Bool true)                       [simplification]
-#   rule #DoCompare(I1:Bool, I2:Bool) <=Int 0 => ((I1 ==Bool false) andBool (I2 ==Bool true)) orBool I1 ==Bool I2 [simplification]
-#   rule #DoCompare(I1:Bool, I2:Bool) ==Int 0 => I1 ==Bool I2                                                     [simplification]
-#   rule #DoCompare(I1:Bool, I2:Bool) >=Int 0 => ((I1 ==Bool true) andBool (I2 ==Bool false)) orBool I1 ==Bool I2 [simplification]
-#   rule #DoCompare(I1:Bool, I2:Bool) >Int 0  => (I1 ==Bool true) andBool (I2 ==Bool false)                       [simplification]
-# 
-#   rule #DoCompare(I1:Int, I2:Int) <Int 0  => I1 <Int I2  [simplification]
-#   rule #DoCompare(I1:Int, I2:Int) <=Int 0 => I1 <=Int I2 [simplification]
-#   rule #DoCompare(I1:Int, I2:Int) ==Int 0 => I1 ==Int I2 [simplification]
-#   rule #DoCompare(I1:Int, I2:Int) >=Int 0 => I1 >=Int I2 [simplification]
-#   rule #DoCompare(I1:Int, I2:Int) >Int 0  => I1 >Int I2  [simplification]
-# 
-#   rule #DoCompare(I1:String, I2:String) <Int 0  => I1 <String I2  [simplification]
-#   rule #DoCompare(I1:String, I2:String) <=Int 0 => I1 <=String I2 [simplification]
-#   rule #DoCompare(I1:String, I2:String) ==Int 0 => I1 ==String I2 [simplification]
-#   rule #DoCompare(I1:String, I2:String) >=Int 0 => I1 >=String I2 [simplification]
-#   rule #DoCompare(I1:String, I2:String) >Int 0  => I1 >String I2  [simplification]
-# 
-#   // TODO: at some point this rule should be builtin
-#   rule X ==String X => true [simplification]
-# ```
-# 
+Bitwise operations on Michelson `int`s map directly onto K `Int` functions.
+The `LSL` and `LSR` operations produce exceptions when their shift arugment
+overflows.
+
+```k
+  rule <k> OR A => #HandleAnnotations(A)  ... </k>
+       <stack> [ nat _ I1 ] ; [ nat _ I2 ] ; SS => [ nat I1 |Int I2 ] ; SS </stack>
+
+  rule <k> AND A => #HandleAnnotations(A) ... </k>
+       <stack> [ T1:NumTypeName _ I1 ] ; [ nat _ I2 ] ; SS => [ nat I1 &Int I2 ] ; SS </stack>
+
+  rule <k> XOR A => #HandleAnnotations(A) ... </k>
+       <stack> [ nat _ I1 ] ; [ nat _ I2 ] ; SS => [ nat I1 xorInt I2 ] ; SS </stack>
+
+  rule <k> NOT A => #HandleAnnotations(A) ... </k>
+       <stack> [ T1:NumTypeName _ I ] ; SS => [ int ~Int I ] ; SS </stack>
+
+  rule <k> LSL A => #HandleAnnotations(A) ... </k>
+       <stack> [ nat _ X ] ; [ nat _ S ] ; SS => [ nat X <<Int S ] ; SS </stack>
+    requires S <=Int 256
+
+  rule <k> LSL A ~> Rk
+        => #HandleAnnotations(A)
+        ~> Aborted("LSL out of range", S, Rk, Rs)
+        ~> Rk
+        </k>
+       <stack> [ nat _ C:Int ] ; [ nat _ S:Int ] ; Rs => ( GeneralOverflow C S ) </stack>
+    requires S >Int 256
+
+  rule <k> LSR A => #HandleAnnotations(A) ... </k>
+       <stack> [ nat _ X ] ; [ nat _ S ] ; SS => [ nat X >>Int S ] ; SS </stack>
+    requires S <=Int 256
+
+  rule <k> LSR A ~> Rk
+        => #HandleAnnotations(A)
+        ~> Aborted("LSR out of range", S, Rk, Rs)
+        ~> Rk
+        </k>
+       <stack> [ nat _ X ] ; [ nat _ S ] ; Rs => ( GeneralOverflow X S ) </stack>
+       requires S >Int 256
+```
+
+### `COMPARE` Instruction
+
+The `COMPARE` instruction is defined over all comparable datatypes.
+
+```k
+  rule <k> COMPARE A => #HandleAnnotations(A) ... </k>
+       <stack> [ TY V1 ] ; [ TY V2 ] ; SS => [ int #DoCompare(V1, V2) ] ; SS </stack>
+    requires #IsComparable(TY)
+
+  syntax Bool ::= #IsComparable(Type) [function, functional]
+  // Comparables
+  rule #IsComparable(NumberType _) => true
+  rule #IsComparable(string _) => true
+  rule #IsComparable(bytes _) => true
+  rule #IsComparable(mutez _) => true
+  rule #IsComparable(bool _) => true
+  rule #IsComparable(key_hash _) => true
+  rule #IsComparable(timestamp _) => true
+  rule #IsComparable(address _) => true
+  rule #IsComparable(pair _ T1 T2) => #IsComparable(T1) andBool #IsComparable(T2)
+
+  // Nullary Incomparables
+  rule #IsComparable(key _) => false
+  rule #IsComparable(unit _) => false
+  rule #IsComparable(signature _) => false
+  rule #IsComparable(operation _) => false
+  rule #IsComparable(chain_id _) => false
+
+  // Unary Incomparables
+  rule #IsComparable(option _ _) => false
+  rule #IsComparable(list _ _) => false
+  rule #IsComparable(set _ _) => false
+  rule #IsComparable(contract _ _) => false
+
+  // Bianry Incomparables
+  rule #IsComparable(or _ _ _) => false
+  rule #IsComparable(lambda _ _ _) => false
+  rule #IsComparable(map _ _ _) => false
+  rule #IsComparable(big_map _ _ _) => false
+```
+
+We define `COMPARE` in terms of a `#DoCompare` function.
+
+```k
+  syntax Int ::= #DoCompare(Data, Data) [function, functional]
+
+  rule #DoCompare(true, true) => 0
+  rule #DoCompare(false, false) => 0
+  rule #DoCompare(false, true) => -1
+  rule #DoCompare(true, false) => 1
+
+  rule #DoCompare(I1:Int, I2:Int) => -1 requires I1 <Int I2
+  rule #DoCompare(I1:Int, I2:Int) => 0 requires I1 ==Int I2
+  rule #DoCompare(I1:Int, I2:Int) => 1 requires I1 >Int I2
+
+  rule #DoCompare(S1:String, S2:String) => -1 requires S1 <String S2
+  rule #DoCompare(S1:String, S2:String) => 0 requires S1 ==String S2
+  rule #DoCompare(S1:String, S2:String) => 1 requires S1 >String S2
+
+  rule #DoCompare((Pair A1 A2), (Pair B1 B2)) => -1                 requires #DoCompare(A1, B1) ==Int -1
+  rule #DoCompare((Pair A1 A2), (Pair B1 B2)) => #DoCompare(A2, B2) requires #DoCompare(A1, B1) ==Int 0
+  rule #DoCompare((Pair A1 A2), (Pair B1 B2)) => 1                  requires #DoCompare(A1, B1) ==Int 1
+
+  rule #DoCompare(B1:Bytes, B2:Bytes) => #DoCompare(Bytes2Int(B1, BE, Unsigned), Bytes2Int(B2, BE, Unsigned))
+  rule #DoCompare(#KeyHash(S1), #KeyHash(S2)) => #DoCompare(S1, S2)
+  rule #DoCompare(#Mutez(I1), #Mutez(I2)) => #DoCompare(I1, I2)
+  rule #DoCompare(#Timestamp(I1), #Timestamp(I2)) => #DoCompare(I1, I2)
+  rule #DoCompare(#Address(S1), #Address(S2)) => #DoCompare(S1, S2)
+```
+
+The `#DoCompare` function requires additional lemmas for symbolic execution.
+
+```symbolic
+  rule #DoCompare(I1:Bool, I2:Bool) <Int 0  => (I1 ==Bool false) andBool (I2 ==Bool true)                       [simplification]
+  rule #DoCompare(I1:Bool, I2:Bool) <=Int 0 => ((I1 ==Bool false) andBool (I2 ==Bool true)) orBool I1 ==Bool I2 [simplification]
+  rule #DoCompare(I1:Bool, I2:Bool) ==Int 0 => I1 ==Bool I2                                                     [simplification]
+  rule #DoCompare(I1:Bool, I2:Bool) >=Int 0 => ((I1 ==Bool true) andBool (I2 ==Bool false)) orBool I1 ==Bool I2 [simplification]
+  rule #DoCompare(I1:Bool, I2:Bool) >Int 0  => (I1 ==Bool true) andBool (I2 ==Bool false)                       [simplification]
+
+  rule #DoCompare(I1:Int, I2:Int) <Int 0  => I1 <Int I2  [simplification]
+  rule #DoCompare(I1:Int, I2:Int) <=Int 0 => I1 <=Int I2 [simplification]
+  rule #DoCompare(I1:Int, I2:Int) ==Int 0 => I1 ==Int I2 [simplification]
+  rule #DoCompare(I1:Int, I2:Int) >=Int 0 => I1 >=Int I2 [simplification]
+  rule #DoCompare(I1:Int, I2:Int) >Int 0  => I1 >Int I2  [simplification]
+
+  rule #DoCompare(I1:String, I2:String) <Int 0  => I1 <String I2  [simplification]
+  rule #DoCompare(I1:String, I2:String) <=Int 0 => I1 <=String I2 [simplification]
+  rule #DoCompare(I1:String, I2:String) ==Int 0 => I1 ==String I2 [simplification]
+  rule #DoCompare(I1:String, I2:String) >=Int 0 => I1 >=String I2 [simplification]
+  rule #DoCompare(I1:String, I2:String) >Int 0  => I1 >String I2  [simplification]
+
+  // TODO: at some point this rule should be builtin
+  rule X ==String X => true [simplification]
+```
+ 
 # ### String Operations
 # 
 # ```k

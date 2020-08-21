@@ -156,8 +156,10 @@ K offers the bracket attribute for productions that should not actually be retai
 Michelson types (like other Micheline primitives) have optional annotations.
 
 ```k
-  syntax NullaryTypeName ::= "int"
-                           | "nat"
+  syntax NumTypeName ::= "int"
+                       | "nat"
+
+  syntax NullaryTypeName ::= NumTypeName
                            | "string"
                            | "bytes"
                            | "mutez"
