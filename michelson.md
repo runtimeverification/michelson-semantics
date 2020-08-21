@@ -1368,7 +1368,11 @@ For simplicity we implement this by repeatedly selecting the minimal element.
        // TODO: figure out how to support this in pre/post-conditions which are not typechecked
        // <stacktypes> KT:Type ; map _:AnnotationList KT VT:Type </stacktypes>
 
-  rule K1 in_keys(M:Map[ K2 <- _ ]) => K1 ==K K2 orBool K1 in_keys(M) [simplification]
+  rule K1 in_keys(M:Map[ K2 <- _    ]) =>          K1 ==K K2  orBool  K1 in_keys(M) [simplification]
+  rule K1 in_keys(M:Map[ K2 <- undef]) => (notBool K1 ==K K2) andBool K1 in_keys(M) [simplification]
+
+  rule (M:Map [ K1 <- V ]) [ K1 ] => V                                              [simplification]
+  rule (M:Map [ K2 <- V ]) [ K1 ] => (M:Map [ K1 ]) requires notBool K1 ==K K2      [simplification]
 ```
 
 ```k
