@@ -139,17 +139,17 @@ module MICHELSON-UNPARSER
 
   rule #doUnparse(T:NullaryTypeName .AnnotationList, _) => #doUnparse(T, false)
 
-  rule #doUnparse(TyName:UnaryTypeName AL T, false) =>
+  rule #doUnparse(TyName:UnaryTypeName AL:AnnotationList T, false) =>
     #doUnparse(TyName, false) +String
     " " +String
     #doUnparse(AL, false) +String
     " " +String
     #doUnparse(T, true)
 
-  rule #doUnparse(TyName:UnaryTypeName AL T, true) =>
+  rule #doUnparse(TyName:UnaryTypeName AL:AnnotationList T, true) =>
     "(" +String #doUnparse(TyName AL T, false) +String ")"
 
-  rule #doUnparse(TyName:BinaryTypeName AL T1 T2, false) =>
+  rule #doUnparse(TyName:BinaryTypeName AL:AnnotationList T1 T2, false) =>
     #doUnparse(TyName, false) +String
     " " +String
     #doUnparse(AL, false) +String
@@ -158,7 +158,7 @@ module MICHELSON-UNPARSER
     " " +String
     #doUnparse(T2, true)
 
-  rule #doUnparse(TyName:BinaryTypeName AL T1 T2, true) =>
+  rule #doUnparse(TyName:BinaryTypeName AL:AnnotationList T1 T2, true) =>
     "(" +String #doUnparse(TyName AL T1 T2, false) +String ")"
 
   rule #doUnparse(DROP AList, _) => "DROP" +String #doUnparse(AList, false)
