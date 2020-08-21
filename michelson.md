@@ -12,7 +12,6 @@ K-Michelson: an intra-contract semantics
 ```k
 module MICHELSON-CONFIG
   imports MICHELSON-COMMON
-  imports MICHELSON-TYPES
   imports DOMAINS
 ```
 
@@ -684,7 +683,6 @@ The `FAILWITH` instruction lets users terminate execution at any point.
 It then consumes the rest of the program:
 
 ```k
-  rule <k> Aborted(_, _, _, _) ~> (_:TypedInstruction => .K) ... </k>
   rule <k> Aborted(_, _, _, _) ~> (_:DataList => .K) ... </k>
   rule <k> Aborted(_, _, _, _) ~> (_:Data => .K) ... </k>
 ```
