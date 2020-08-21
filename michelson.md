@@ -2084,9 +2084,6 @@ Symbolic Value Processing
   rule [[ #MichelineToNative(S:SymbolicData, T, _, _) => S ]]
        <symbols> Syms:Map </symbols>
     requires notBool (S in_keys(Syms))
-
-  rule [[ #TypeData(_, S:SymbolicData, T) => #Typed(S, T) ]]
-       <symbols> ... S |-> #TypedSymbol(#Name(T), _) ... </symbols>
 ```
 
 ### `#CreateSymbol`
