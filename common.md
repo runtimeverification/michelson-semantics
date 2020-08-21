@@ -20,10 +20,6 @@ module MICHELSON-COMMON
                     | UnaryTypeName TypeName
                     | BinaryTypeName TypeName TypeName
 
-  syntax StackElement ::= "[" TypeName Data "]"
-  syntax Stack ::= List{StackElement, ";"} [klabel(Stack)]
-  syntax InternalStack ::= Stack | FailedStack
-
   syntax TypeName ::= #Name(Type) [function, functional]
   syntax Type ::= #Type(TypeName) [function, functional]
 
@@ -34,6 +30,27 @@ module MICHELSON-COMMON
   rule #Type(T:NullaryTypeName) => T .AnnotationList
   rule #Type(T:UnaryTypeName ArgT) => T .AnnotationList #Type(ArgT)
   rule #Type(T:BinaryTypeName ArgT1 ArgT2) => T .AnnotationList #Type(ArgT1) #Type(ArgT2)
+```
+
+```k
+  syntax StackElement ::= "[" TypeName Data "]"
+  syntax Stack ::= List{StackElement, ";"} [klabel(Stack)]
+  syntax InternalStack ::= Stack | FailedStack
+
+  syntax InternalStack ::= #LiteralStackToStack(OutputStack) [function]
+  syntax Stack ::= #LiteralStackToStack(StackElementList, Stack) [function]
+  // ----------------------------------------------------------------------
+  rule #LiteralStackToStack(FS:FailedStack) => FS
+  rule #LiteralStackToStack({ LS }) => #LiteralStackToStack(LS, .Stack)
+  rule #LiteralStackToStack(Stack_elt T D ; LS, SS) => #LiteralStackToStack(LS, [#Name(T) D] ; SS)
+  rule #LiteralStackToStack(.StackElementList, SS) => reverseStack(SS)
+
+  syntax Stack ::= reverseStack( Stack )        [function]
+                 | reverseStack( Stack, Stack ) [function]
+  // -----------------------------------------------------
+  rule reverseStack( EL )          => reverseStack( EL, .Stack  )
+  rule reverseStack( E ; EL, EL' ) => reverseStack( EL, E ; EL' )
+  rule reverseStack( .Stack, EL' ) => EL'
 ```
 
 The internal representation of Michelson sets, lists and maps are simply K sets,

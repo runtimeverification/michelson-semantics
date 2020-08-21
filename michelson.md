@@ -589,13 +589,6 @@ checking at a later time.
   rule #StackToNativeAux(Stack_elt T D ; Gs, Addrs, BigMaps)
     => [ #Name(T) #MichelineToNative(D, T, Addrs, BigMaps) ] ;
        #StackToNativeAux(Gs, Addrs, BigMaps)
-
-  syntax Stack ::= reverseStack( Stack )        [function]
-                 | reverseStack( Stack, Stack ) [function]
-  // -----------------------------------------------------
-  rule reverseStack( EL )          => reverseStack( EL, .Stack  )
-  rule reverseStack( E ; EL, EL' ) => reverseStack( EL, E ; EL' )
-  rule reverseStack( .Stack, EL' ) => EL'
 ```
 
 ```k
@@ -2007,7 +2000,7 @@ abstract out pieces of the stack which are non-invariant during loop execution.
 ```k
   syntax Instruction ::= "BIND" OutputStack Block
   rule <k> BIND Shape Block
-        => #Bind(#StackToNative(Shape, Addrs, BigMaps), Stack)
+        => #Bind(#LiteralStackToStack(Shape), Stack)
         ~> Block
         ~> #RestoreSymbols(Symbols)
            ...
