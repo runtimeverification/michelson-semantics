@@ -279,7 +279,7 @@ state. We list the configuration cells storing this kind of state below.
    Michelson stack.
 
     ```k
-                  <stack> .K </stack>
+                  <stack> (.Stack):InternalStack </stack>
     ```
 
 ### Additional Test State
