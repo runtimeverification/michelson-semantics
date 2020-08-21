@@ -932,13 +932,13 @@ the expanded lambda.
                [ (lambda (pair T0 T1) T2)
                  #Lambda((pair T0 T1), T2, { C } )
                ] ;
-	       SS
+               SS
             => [ (lambda T1 T2) #Lambda(T1, T2, { PUSH .AnnotationList #Type(T0) D ;
                                                   PAIR .AnnotationList ;
                                                   { C }
                                                 } )
                ] ;
-	       SS
+               SS
        </stack>
 ```
 
@@ -1235,7 +1235,7 @@ Earlier versions of the semantics didn't check if O was in bounds, resulting in
 
 ```k
   rule <k> SLICE A => #HandleAnnotations(A) ... </k>
-       <stack> [nat O] ; [nat L] ; [string S] ; SS => [string #SliceString(S, O, L)] ; SS </stack>
+       <stack> [nat O] ; [nat L] ; [string S] ; SS => [option string #SliceString(S, O, L)] ; SS </stack>
 
   syntax OptionData ::= #SliceString(String, Int, Int) [function]
 
@@ -1295,7 +1295,7 @@ strings, allowing for code reuse.
 
 ```k
   rule <k> SLICE A => #HandleAnnotations(A) ... </k>
-       <stack> [nat O:Int] ; [nat L:Int] ; [bytes B:Bytes] ; SS => [bytes #SliceBytes(B, O, L)] ; SS </stack>
+       <stack> [nat O:Int] ; [nat L:Int] ; [bytes B:Bytes] ; SS => [option bytes #SliceBytes(B, O, L)] ; SS </stack>
 
   syntax OptionData ::= #SliceBytes(Bytes, Int, Int) [function]
   // ----------------------------------------------------------
@@ -1359,11 +1359,11 @@ For simplicity we implement this by repeatedly selecting the minimal element.
   rule <k> ITER A B
         => #HandleAnnotations(A)
         ~> B
-        ~> #Push(T,S -Set SetItem(#MinimalElement(Set2List(S))))
+        ~> #Push(set T,S -Set SetItem(#MinimalElement(Set2List(S))))
         ~> ITER .AnnotationList B
         ...
         </k>
-       <stack> [set T:TypeName S] ; SS => [T #MinimalElement(Set2List(S))] ; SS </stack>
+       <stack> [set T S] ; SS => [T #MinimalElement(Set2List(S))] ; SS </stack>
     requires size(S) >Int 0
 
   syntax Data ::= #MinimalElement(List) [function]
@@ -1381,14 +1381,14 @@ For simplicity we implement this by repeatedly selecting the minimal element.
 
 ```k
   rule <k> GET A => #HandleAnnotations(A) ... </k>
-       <stack> [KT X] ; [map KT VT M] ; SS => [option VT None] ; SS </stack>
+       <stack> [KT X] ; [MT:MapTypeName KT VT M] ; SS => [option VT None] ; SS </stack>
     requires isValue(X)
      andBool notBool(X in_keys(M))
 ```
 
 ```concrete
    rule <k> GET A => #HandleAnnotations(A) ... </k>
-        <stack> [KT X] ; [map KT VT M] ; SS => [option VT Some {M[X]}:>Data] ; SS </stack>
+        <stack> [KT X] ; [MT:MapTypeName KT VT M] ; SS => [option VT Some {M[X]}:>Data] ; SS </stack>
      requires isValue(X)
       andBool X in_keys(M)
 ```
@@ -1400,7 +1400,7 @@ For simplicity we implement this by repeatedly selecting the minimal element.
         ~> #Assume(M[X] == ?Val)
            ...
        </k>
-       <stack> [KT X] ; [map KT VT M] ; SS => [option VT Some ?Val] ; SS </stack>
+       <stack> [KT X] ; [MT:MapTypeName KT VT M] ; SS => [option VT Some ?Val] ; SS </stack>
     requires X in_keys(M)
 
   rule K1 in_keys(M:Map[ K2 <- _ ]) => K1 ==K K2 orBool K1 in_keys(M) [simplification]
@@ -1411,16 +1411,16 @@ For simplicity we implement this by repeatedly selecting the minimal element.
        <stack> SS => [#Name(map A KT VT) .Map] ; SS </stack>
 
   rule <k> MEM A => #HandleAnnotations(A) ~> . ... </k>
-       <stack> [KT X] ; [map KT VT M] ; SS => [bool X in_keys(M)] ; SS </stack>
+       <stack> [KT X] ; [MT:MapTypeName KT VT M] ; SS => [bool X in_keys(M)] ; SS </stack>
 
   rule <k> UPDATE A => #HandleAnnotations(A)  ... </k>
-       <stack> [KT K] ; [option VT Some V] ; [map KT VT M:Map] ; SS => [map KT VT M[K <- V]] ; SS </stack>
+       <stack> [KT K] ; [option VT Some V] ; [MT:MapTypeName KT VT M:Map] ; SS => [MT KT VT M[K <- V]] ; SS </stack>
 
   rule <k> UPDATE A => #HandleAnnotations(A)  ... </k>
-       <stack> [KT K] ; [option VT None] ; [map KT VT M:Map] ; SS => [map KT VT M[K <- undef]] ; SS </stack>
+       <stack> [KT K] ; [option VT None] ; [MT:MapTypeName KT VT M:Map] ; SS => [MT KT VT M[K <- undef]] ; SS </stack>
 
   rule <k> SIZE A => #HandleAnnotations(A)  ... </k>
-       <stack> [map KT VT M:Map] ; SS => [nat size(M)] ; SS </stack>
+       <stack> [MT:MapTypeName KT VT M:Map] ; SS => [nat size(M)] ; SS </stack>
 ```
 
 The `MAP` operation, over maps, is somewhat more involved. We need to set up a
@@ -1429,8 +1429,8 @@ of the updated map as we do. We implement this by splitting the operation into
 multiple K items.
 
 ```k
-  rule <k> MAP A B => #HandleAnnotations(A) ~> #PerformMap(KT, VT, M, .Map, B) ... </k>
-       <stack> [map KT VT M] ; SS => SS </stack>
+  rule <k> MAP A B => #HandleAnnotations(A) ~> #PerformMap(MT,KT,VT, M, .Map, B) ... </k>
+       <stack> [MT:MapTypeName KT VT M] ; SS => SS </stack>
 ```
 
 `#PerformMap` holds the old map, the new map, and the block to execute.
@@ -1440,25 +1440,26 @@ Like Sets, iteration order is actually defined, and we implement it by
 repeatedly selecting the minimal element in the list of keys in the map.
 
 ```k
-  syntax Instruction ::= #PerformMap(TypeName, TypeName, Map, Map, Block)
-  // ------------------------------------------------------------
-  rule <k> #PerformMap(KT, VT, M1, M2, B)
+  syntax Instruction ::= #PerformMap(MapTypeName, TypeName, TypeName, Map, Map, Block)
+  // ---------------------------------------------------------------------------------
+  rule <k> #PerformMap(MT, KT, VT, M1, M2, B)
         => B
         ~> #PopNewVal(#MinimalKey(M1))
-        ~> #PerformMap(KT, VT, M1[#MinimalKey(M1) <- undef], M2, B)
+        ~> #PerformMap(MT, KT, VT, M1[#MinimalKey(M1) <- undef], M2, B)
            ...
        </k>
        <stack> SS => [pair KT VT Pair #MinimalKey(M1) {M1[#MinimalKey(M1)]}:>Data] ; SS
        </stack>
     requires size(M1) >Int 0
 
-  rule <k> #PerformMap(KT, VT, .Map, M, _) => . ... </k>
-       <stack> SS => [map KT VT M] ; SS </stack>
+  rule <k> #PerformMap(MT, KT, VT, .Map, M, _) => . ... </k>
+       <stack> SS => [MT KT VT M] ; SS </stack>
 
   syntax Instruction ::= #PopNewVal(Data)
   // ------------------------------------
-  rule <k> #PopNewVal(K) ~> #PerformMap(KT, VT, M1, M2, B)
-        => #PerformMap(KT, VT, M1, M2[K <- V], B)
+  rule <k> #PopNewVal(K) ~> #PerformMap(MT, KT, VT, M1, M2, B)
+        => #PerformMap(MT, KT, VT, M1, M2[K <- V], B)
+        ...
        </k>
        <stack> [VT V] ; SS => SS </stack>
 
