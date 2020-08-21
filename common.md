@@ -18,7 +18,7 @@ module MICHELSON-COMMON
 ```k
   syntax TypeName ::= NullaryTypeName
                     | UnaryTypeName TypeName
-		    | BinaryTypeName TypeName TypeName
+                    | BinaryTypeName TypeName TypeName
 
   syntax StackElement ::= "[" TypeName Data "]"
   syntax Stack ::= List{StackElement, ";"} [klabel(Stack)]
