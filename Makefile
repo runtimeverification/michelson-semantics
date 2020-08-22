@@ -25,6 +25,10 @@ export K_RELEASE
 LIBRARY_PATH       := $(LOCAL_LIB)
 C_INCLUDE_PATH     += :$(BUILD_LOCAL)/include
 CPLUS_INCLUDE_PATH += :$(BUILD_LOCAL)/include
+ifeq ($(shell uname -s),Darwin) # on OSX add brew include path
+    C_INCLUDE_PATH     += :/usr/local/include
+    CPLUS_INCLUDE_PATH += :/usr/local/include
+endif
 PATH               := $(K_BIN):$(TEZOS_SUBMODULE):$(PATH)
 PYTHONPATH         := $(K_LIB):$(PYTHONPATH)
 
