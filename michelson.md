@@ -730,16 +730,6 @@ element it pops off for its block.
     requires N >Int 0
 ```
 
-This pseudo-instruction implements the behavior of restoring the previous stack
-when a lambda completes execution.
-
-```k
-  syntax Instruction ::= #ReturnStack(Stack)
-
-  rule <k> #ReturnStack(SS) => . ... </k>
-       <stack> E ; _ => E ; SS </stack>
-```
-
 `DROP n` is implemented in a recursive style, like in the Michelson
 documentation.
 
@@ -859,12 +849,22 @@ An `EXEC` instruction replaces the stack and schedules the restoration of the
 old stack after the completion of the lambda code.
 
 ```k
-  rule <k> EXEC B => #HandleAnnotations(B) ~> C ~> #ReturnStack(SS) ... </k>
-       <stack> [ T1 D ]
-             ; [ (lambda T1 T2) #Lambda(T1, T2, C) ]
+  rule <k> EXEC B
+        => #HandleAnnotations(B)
+        ~> Code
+        ~> #PostExecStackFix(RetType, SS)
+           ...
+       </k>
+       <stack> [ ArgType D ]
+             ; [ (lambda ArgType RetType) #Lambda(ArgType, RetType, Code) ]
              ; SS
-            => [ T1 D ]
+            => [ ArgType D ]
        </stack>
+
+  syntax Instruction ::= #PostExecStackFix(TypeName,Stack)
+  // -----------------------------------------------------
+  rule <k> #PostExecStackFix(RetType, SS) => .K ... </k>
+       <stack> [RetType,V] => [RetType,V] ; SS </stack>
 ```
 
 `APPLY` demonstrates why lambdas have their type information preserved, as
