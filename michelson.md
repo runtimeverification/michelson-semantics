@@ -512,7 +512,18 @@ To correctly check the typing of a unit test, we need the following info:
 4. a Michelson script
 
 Currently, we implement runtime type checking. We may adopt static type
-checking at a later time.
+checking at a later time. All type checking requires looking at the top
+fragment of of the stack only, with the exception of instructions which
+have code in their immediate arguments (1-2) or execute `lambda`s (3).
+
+1. Checking if-like instructions `IF` and `IF_X` requires checking that both
+   branches produce the same the stack type.
+2. Checking iterating instructions `LOOP` and `LOOP_LEFT`, `ITER`, and `MAP`
+   requires checking thet loop body code preserves the original stack type.
+3. Checking function-call instruction `EXEC` requires checking the code
+   returns a singleton stack of the correct type.
+
+We currently do not implement the full typing semantics for cases (1)-(2).
 
 ### Stack Loading
 
