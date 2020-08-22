@@ -2082,7 +2082,8 @@ Symbolic Value Processing
 
 ```symbolic
   rule [[ #MichelineToNative(S:SymbolicData, T, _, _) => D ]]
-       <symbols> S |-> #TypedSymbol(#Name(T), D) ... </symbols>
+       <symbols> S |-> #TypedSymbol(TN, D) ... </symbols>
+    requires TN ==K #Name(T)
 
   rule [[ #MichelineToNative(S:SymbolicData, T, _, _) => S ]]
        <symbols> Syms:Map </symbols>
