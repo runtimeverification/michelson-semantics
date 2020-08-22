@@ -1579,29 +1579,30 @@ The `MAP` operation over `list`s is defined in terms of a helper function.
 ```k
   rule <k> MAP A B
         => #HandleAnnotations(A)
-        ~> #PerformMapList(T, Ls, .List, B)
+        ~> #DoMap(T, NoneType, Ls, .List, B)
            ...
        </k>
        <stack> [list T Ls] ; SS => SS </stack>
 
-  syntax Instruction ::= #PerformMapList(TypeName, List, List, Block)
-                       | #AddToList(List, List, Block)
-  // ------------------------------------------------------
-  rule <k> #PerformMapList(T, .List, Acc, B) => . ... </k>
-       <stack> SS => [list T #ReverseList(Acc)] ; SS </stack>
+  syntax Instruction ::= #DoMap(TypeName, MaybeTypeName, List, List, Block)
+                       | #DoMapAux(TypeName, MaybeTypeName, List, List, Block)
+  // -------------------------------------------------------------------------
+  rule <k> #DoMap(T, NT, .List, Acc, B) => .K ... </k>
+       <stack> SS => [list #DefaultType(NT,T) #ReverseList(Acc)] ; SS </stack>
 
-  rule <k> #PerformMapList(T, ListItem(E) Ls, Acc, B)
+  rule <k> #DoMap(T, NT, ListItem(E) Ls, Acc, B)
         => B
-        ~> #AddToList(Ls, Acc, B)
+        ~> #DoMapAux(T, NT, Ls, Acc, B)
            ...
        </k>
        <stack> SS => [T E] ; SS </stack>
 
-  rule <k> #AddToList(Ls, Acc, B)
-        => #PerformMapList(T, Ls, ListItem(E) Acc, B)
+  rule <k> #DoMapAux(T, NT, Ls, Acc, B)
+        => #DoMap(T, NT', Ls, ListItem(E) Acc, B)
            ...
        </k>
-       <stack> [T E] ; SS => SS </stack>
+       <stack> [NT' E] ; SS => SS </stack>
+    requires #CompatibleTypes(NT,NT')
 
   syntax List ::= #ReverseList(List) [function]
   syntax List ::= #ReverseListAux(List, List) [function]
