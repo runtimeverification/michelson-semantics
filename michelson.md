@@ -1456,7 +1456,7 @@ repeatedly selecting the minimal element in the list of keys in the map.
     requires size(M1) >Int 0
 
   rule <k> #PerformMap(MT, KT, VT, NVT, .Map, M, _) => . ... </k>
-       <stack> SS => [MT KT NVT M] ; SS </stack>
+       <stack> SS => [MT KT #DefaultType(NVT,VT) M] ; SS </stack>
 
   syntax Instruction ::= #PopNewVal(Data)
   // ------------------------------------
@@ -1474,6 +1474,10 @@ repeatedly selecting the minimal element in the list of keys in the map.
   syntax Bool ::= #CompatibleTypes(MaybeTypeName, TypeName) [function]
   rule #CompatibleTypes(NoneType,T) => true
   rule #CompatibleTypes(T1:TypeName, T2) => T1 ==K T2
+
+  syntax TypeName ::= #DefaultType(MaybeTypeName, TypeName) [function]
+  rule #DefaultType(T:TypeName, _) => T
+  rule #DefaultType(NoneType, T) => T
 ```
 
 `ITER` is relatively easy to implement using a straightforward recursive style,
