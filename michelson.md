@@ -1376,7 +1376,11 @@ For simplicity we implement this by repeatedly selecting the minimal element.
     => #MinimalElementAux(L, H) requires #DoCompare(M, H) ==Int 1
 ```
 
-### Map Operations
+### Shared Map/Big Map Operations
+
+Internally, we represent `map`s and `big_map`s identically using K maps.
+For this reason, many map operations share an identical representation upto
+typing (shared operations use a generic `MapTypeName`).
 
 ```k
   rule <k> GET A => #HandleAnnotations(A) ... </k>
@@ -1406,9 +1410,6 @@ For simplicity we implement this by repeatedly selecting the minimal element.
 ```
 
 ```k
-  rule <k> EMPTY_MAP A KT VT => #HandleAnnotations(A) ... </k>
-       <stack> SS => [#Name(map A KT VT) .Map] ; SS </stack>
-
   rule <k> MEM A => #HandleAnnotations(A) ~> . ... </k>
        <stack> [KT X] ; [MT:MapTypeName KT VT M] ; SS => [bool X in_keys(M)] ; SS </stack>
 
@@ -1417,64 +1418,100 @@ For simplicity we implement this by repeatedly selecting the minimal element.
 
   rule <k> UPDATE A => #HandleAnnotations(A)  ... </k>
        <stack> [KT K] ; [option VT None] ; [MT:MapTypeName KT VT M:Map] ; SS => [MT KT VT M[K <- undef]] ; SS </stack>
+```
+
+### Map Specific Operations
+
+```k
+  rule <k> EMPTY_MAP A KT VT => #HandleAnnotations(A) ... </k>
+       <stack> SS => [#Name(map A KT VT) .Map] ; SS </stack>
 
   rule <k> SIZE A => #HandleAnnotations(A)  ... </k>
-       <stack> [MT:MapTypeName KT VT M:Map] ; SS => [nat size(M)] ; SS </stack>
+       <stack> [map KT VT M:Map] ; SS => [nat size(M)] ; SS </stack>
 ```
 
-The `MAP` operation, over maps, is somewhat more involved. We need to set up a
-stack without the actual map to execute the block on, and we need to keep track
-of the updated map as we do. We implement this by splitting the operation into
-multiple K items.
+The `MAP` operation over maps is defined via psuedoinstruction `#DoMap`.
 
 ```k
-  rule <k> MAP A B => #HandleAnnotations(A) ~> #PerformMap(MT, KT, VT, NoneType, M, .Map, B) ... </k>
-       <stack> [MT:MapTypeName KT VT M] ; SS => SS </stack>
+  rule <k> MAP A B
+        => #HandleAnnotations(A)
+	~> #DoMap(#MapOpInfo(KT, VT, NoneType, M, .Map, B))
+	   ...
+       </k>
+       <stack> [map KT VT M] ; SS => SS </stack>
 ```
 
-`#PerformMap` holds the old map, the new map, and the block to execute.
-It sets up the new stack and queues up a `#PopNewVal` which removes
-the value produced by the MAP block and adds it to the second map argument.
-Like Sets, iteration order is actually defined, and we implement it by
-repeatedly selecting the minimal element in the list of keys in the map.
+`#DoMap` takes a `MapOpInfo` struct that holds the original map and newly built
+map, as well as typing information. The map instruction proceeds as follows.
+Let the map have `p` entries in sorted order:
+
+```
+{ Elt key₁ val₁ ; Elt key₂ val₂ ; ... ; Elt keyₚ valₚ }
+```
+
+We apply the map `code`, replacing the map on top of the stack with each
+map entry in sorted order, and then build the new map by pairing each key
+with the corresponding `code` generated value (with a possibly new type),
+as described by the `MAP` typing rule below.
+
+```
+          Γ ⊢ code :: ( pair key_ty val_ty1 ) : A ⇒ val_ty2 : A
+:------------------------------------------------------------------------
+      Γ ⊢ MAP code :: map key_ty val_ty1 : A ⇒ map key_ty val_ty2 : A
+```
 
 ```k
-  syntax MaybeTypeName ::= TypeName
-                         | "NoneType"
+  syntax MapOpInfo ::= #MapOpInfo(keyType     :TypeName,
+			          origValType :TypeName,
+			          newValType  :MaybeTypeName,
+			          origMap     :Map,
+			          newMap      :Map,
+			          mapBody     :Block)
 
-  syntax Instruction ::= #PerformMap(MapTypeName, TypeName, TypeName, MaybeTypeName, Map, Map, Block)
-  // ------------------------------------------------------------------------------------------------
-  rule <k> #PerformMap(MT, KT, VT, NVT, M1, M2, B)
+  syntax Instruction ::= #DoMap(MapOpInfo)
+  // -------------------------------------
+  rule <k> #DoMap(#MapOpInfo(KT, VT, NVT, M1, M2, B))
         => B
-        ~> #PopNewVal(#MinimalKey(M1))
-        ~> #PerformMap(MT, KT, VT, NVT, M1[#MinimalKey(M1) <- undef], M2, B)
+        ~> #DoMapAux(#MinKey(M1),
+	             #MapOpInfo(KT, VT, NVT, M1[#MinKey(M1) <- undef], M2, B))
            ...
        </k>
-       <stack> SS => [pair KT VT Pair #MinimalKey(M1) {M1[#MinimalKey(M1)]}:>Data] ; SS
+       <stack> SS
+            => [pair KT VT Pair #MinKey(M1) {M1[#MinKey(M1)]}:>Data] ;
+	       SS
        </stack>
     requires size(M1) >Int 0
 
-  rule <k> #PerformMap(MT, KT, VT, NVT, .Map, M, _) => . ... </k>
-       <stack> SS => [MT KT #DefaultType(NVT,VT) M] ; SS </stack>
+  rule <k> #DoMap(#MapOpInfo(KT, VT, NVT, .Map, M, _)) => .K ... </k>
+       <stack> SS => [map KT #DefaultType(NVT,VT) M] ; SS </stack>
 
-  syntax Instruction ::= #PopNewVal(Data)
-  // ------------------------------------
-  rule <k> #PopNewVal(K) ~> #PerformMap(MT, KT, VT, NVT, M1, M2, B)
-        => #PerformMap(MT, KT, VT, NVT', M1, M2[K <- V], B)
+  syntax Instruction ::= #DoMapAux(Data, MapOpInfo)
+  // ----------------------------------------------
+  rule <k> #DoMapAux(K, #MapOpInfo(KT, VT, NVT, M1, M2, B))
+        => #DoMap(#MapOpInfo(KT, VT, NVT', M1, M2[K <- V], B))
         ...
        </k>
        <stack> [NVT' V] ; SS => SS </stack>
     requires #CompatibleTypes(NVT,NVT')
 
-  syntax Data ::= #MinimalKey(Map) [function]
-  // ----------------------------------------
-  rule #MinimalKey(M) => #MinimalElement(keys_list(M))
+  syntax Data ::= #MinKey(Map) [function]
+  // ------------------------------------
+  rule #MinKey(M) => #MinimalElement(keys_list(M))
+```
+
+We define auxiliary functions for computing the result type of `MAP`.
+
+```k
+  syntax MaybeTypeName ::= TypeName
+                         | "NoneType"
 
   syntax Bool ::= #CompatibleTypes(MaybeTypeName, TypeName) [function]
+  // -----------------------------------------------------------------
   rule #CompatibleTypes(NoneType,T) => true
   rule #CompatibleTypes(T1:TypeName, T2) => T1 ==K T2
 
   syntax TypeName ::= #DefaultType(MaybeTypeName, TypeName) [function]
+  // -----------------------------------------------------------------
   rule #DefaultType(T:TypeName, _) => T
   rule #DefaultType(NoneType, T) => T
 ```
@@ -1489,27 +1526,22 @@ since it does not need to track the new map while keeping it off the stack.
   rule <k> ITER A B
         => #HandleAnnotations(A)
         ~> B
-        ~> #Push(map KT VT, M[#MinimalKey(M) <- undef])
+        ~> #Push(map KT VT, M[#MinKey(M) <- undef])
         ~> ITER .AnnotationList B
            ...
        </k>
        <stack> [map KT VT M:Map] ; SS
-            => [pair KT VT Pair #MinimalKey(M) {M[#MinimalKey(M)]}:>Data] ; SS
+            => [pair KT VT Pair #MinKey(M) {M[#MinKey(M)]}:>Data] ; SS
        </stack>
     requires size(M) >Int 0
 ```
 
-### Big Map Operations
-
-For the purposes of this semantics, `big_map`s are represented in the same way
-as maps, so they can reuse the same execution rules.
+### Big Map Specific Operations
 
 ```k
   rule <k> EMPTY_BIG_MAP A KT VT => #HandleAnnotations(A) ... </k>
        <stack> SS => [#Name(big_map A KT VT) .Map] ; SS </stack>
 ```
-
-The other operations are identical.
 
 ### Option Operations
 
