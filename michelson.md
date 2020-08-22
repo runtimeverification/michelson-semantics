@@ -2056,6 +2056,7 @@ abstract out pieces of the stack which are non-invariant during loop execution.
        </k>
        <knownaddrs> KnownAddrs </knownaddrs>
        <bigmaps> BigMaps </bigmaps>
+       <stack> SS'' => [ T AD ] ; SS'' </stack>
     requires #ConcreteMatch(ED, #Type(T), KnownAddrs, BigMaps, AD)
 
   // NOTE: this function protects against unification errors
