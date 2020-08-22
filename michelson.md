@@ -524,6 +524,11 @@ have code in their immediate arguments (1-2) or execute `lambda`s (3).
    returns a singleton stack of the correct type.
 
 We currently do not implement the full typing semantics for cases (1)-(2).
+Practically, this means that only *executed* code is type-checked, i.e. untaken
+branches are not checked and loops are only checked for the exact number of
+iterations for which they are run. This means that, even if some execution
+succeeds, executing the other branch of an if instruction or executing a loop
+a different number of times may cause the program to get stuck.
 
 ### Stack Loading
 
