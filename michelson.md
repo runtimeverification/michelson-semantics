@@ -872,8 +872,7 @@ climb back up, respectively.
 
 ```k
   rule <k> PUSH A T X => #HandleAnnotations(A) ... </k>
-       <stack> SS
-            => [ #Name(T) #MichelineToNative(X, T, .Map, .Map) ] ; SS
+       <stack> SS => [ #Name(T) X ] ; SS
        </stack>
     requires isValue(X)
 ```
