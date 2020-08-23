@@ -911,7 +911,7 @@ old stack after the completion of the lambda code.
   syntax Instruction ::= #PostExecStackFix(TypeName,Stack)
   // -----------------------------------------------------
   rule <k> #PostExecStackFix(RetType, SS) => .K ... </k>
-       <stack> [RetType,V] => [RetType,V] ; SS </stack>
+       <stack> [ RetType D ] => [ RetType D ] ; SS </stack>
 ```
 
 `APPLY` demonstrates why lambdas have their type information preserved, as
