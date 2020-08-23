@@ -120,7 +120,9 @@ Type Checking Rules
 
   rule #TypeData(C, B:Block, lambda _ T1 T2) => #TypeLambdaAux(#TypeInstruction(C, B, T1), T1, T2)
 
-  rule #TypeData(C, #Lambda(T1, T2, B), lambda _ T1 T2) => #TypeLambdaAux(#TypeInstruction(C, B, T1), T1, T2)
+  rule #TypeData(C, #Lambda(TN1, TN2, B), lambda _ T1 T2) => #TypeLambdaAux(#TypeInstruction(C, B, T1), T1, T2)
+    requires #Name(T1) ==K TN1
+     andBool #Name(T2) ==K TN2
 
   rule #TypeLambdaAux((#TI(_, T1:Type ; .TypeSeq -> T2:Type ; .TypeSeq) #as B), T1:Type, T2:Type) => #Typed({ #Exec(B) }, lambda .AnnotationList T1 T2)
   rule #TypeLambdaAux(T, T1, T2) => #IllTypedLambda(T, T1, T2) [owise]

@@ -68,7 +68,7 @@ def findFailingBranches(term):
 
     for branch in getBranches(term):
         topCell, constraints = splitPathConditions(branch)
-        cells = findImmediateSubtermsByLabel(['<k>', '<stack>', '<stacktypes>', '<symbols>', '<cutpoints>', '<trace>'], topCell)
+        cells = findImmediateSubtermsByLabel(['<k>', '<stack>', '<symbols>', '<cutpoints>', '<trace>'], topCell)
 
         assert(cells['<k>']['arity'] == 1)
         kcell = cells['<k>']['args'][0]

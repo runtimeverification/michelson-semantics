@@ -119,53 +119,47 @@ module MICHELSON-UNPARSER
   rule #doUnparse(signature, _) => "signature"
   rule #doUnparse(operation, _) => "operation"
   rule #doUnparse(chain_id, _) => "chain_id"
+  rule #doUnparse(option, _) => "option"
+  rule #doUnparse(list, _) => "list"
+  rule #doUnparse(set, _) => "set"
+  rule #doUnparse(contract, _) => "contract"
+  rule #doUnparse(pair, _) => "pair"
+  rule #doUnparse(or, _) => "or"
+  rule #doUnparse(lambda, _) => "lambda"
+  rule #doUnparse(map, _) => "map"
+  rule #doUnparse(big_map, _) => "big_map"
 
-  rule #doUnparse(T:UnannotatedSimpleType (A AL):AnnotationList, false) =>
+  rule #doUnparse(T:NullaryTypeName (A AL):AnnotationList, false) =>
     #doUnparse(T, false) +String
     " " +String
     #doUnparse(A AL, false)
 
-  rule #doUnparse(T:UnannotatedSimpleType (A AL):AnnotationList, true) =>
+  rule #doUnparse(T:NullaryTypeName (A AL):AnnotationList, true) =>
     "(" +String #doUnparse(T (A AL), false) +String ")"
 
-  rule #doUnparse(T:UnannotatedSimpleType .AnnotationList, _) => #doUnparse(T, false)
+  rule #doUnparse(T:NullaryTypeName .AnnotationList, _) => #doUnparse(T, false)
 
-  rule #doUnparse(pair AL T1 T2, false) =>
-    "pair " +String
+  rule #doUnparse(TyName:UnaryTypeName AL:AnnotationList T, false) =>
+    #doUnparse(TyName, false) +String
+    " " +String
+    #doUnparse(AL, false) +String
+    " " +String
+    #doUnparse(T, true)
+
+  rule #doUnparse(TyName:UnaryTypeName AL:AnnotationList T, true) =>
+    "(" +String #doUnparse(TyName AL T, false) +String ")"
+
+  rule #doUnparse(TyName:BinaryTypeName AL:AnnotationList T1 T2, false) =>
+    #doUnparse(TyName, false) +String
+    " " +String
     #doUnparse(AL, false) +String
     " " +String
     #doUnparse(T1, true) +String
     " " +String
     #doUnparse(T2, true)
 
-  rule #doUnparse(pair AL T1 T2, true) =>
-    "(" +String #doUnparse(pair AL T1 T2, false) +String ")"
-
-  rule #doUnparse(option AL T, false) =>
-    "option " +String
-    #doUnparse(AL, false) +String
-    " " +String
-    #doUnparse(T, true)
-
-  rule #doUnparse(option AL T, true) => "(" +String #doUnparse(option AL T, false) +String ")"
-
-  rule #doUnparse(list AList T, false) => "list" +String #doUnparse(AList, false) +String " " +String #doUnparse(T, true)
-  rule #doUnparse(set AList T, false) => "set" +String #doUnparse(AList, false) +String " " +String #doUnparse(T, true)
-  rule #doUnparse(contract AList T, false) => "contract" +String #doUnparse(AList, false) +String " " +String #doUnparse(T, true)
-  rule #doUnparse(or AList T1 T2, false) => "or" +String #doUnparse(AList, false) +String " " +String #doUnparse(T1, true) +String " " +String #doUnparse(T2, true)
-  rule #doUnparse(lambda AList T1 T2, false) => "lambda" +String #doUnparse(AList, false) +String " " +String #doUnparse(T1, true) +String " " +String #doUnparse(T2, true)
-  rule #doUnparse(map AList T1 T2, false) => "map" +String #doUnparse(AList, false) +String " " +String #doUnparse(T1, true) +String " " +String #doUnparse(T2, true)
-  rule #doUnparse(big_map AList T1 T2, false) => "big_map" +String #doUnparse(AList, false) +String " " +String #doUnparse(T1, true) +String " " +String #doUnparse(T2, true)
-
-  rule #doUnparse(list AList T, true) => "(" +String #doUnparse(list AList T, false) +String ")"
-  rule #doUnparse(set AList T, true) => "(" +String #doUnparse(set AList T, false) +String ")"
-  rule #doUnparse(contract AList T, true) => "(" +String #doUnparse(contract AList T, false) +String ")"
-  rule #doUnparse(or AList T1 T2, true) => "(" +String #doUnparse(or AList T1 T2, false) +String ")"
-  rule #doUnparse(lambda AList T1 T2, true) => "(" +String #doUnparse(lambda AList T1 T2, false) +String ")"
-  rule #doUnparse(map AList T1 T2, true) => "(" +String #doUnparse(map AList T1 T2, false) +String ")"
-  rule #doUnparse(big_map AList T1 T2, true) => "(" +String #doUnparse(big_map AList T1 T2, false) +String ")"
-
-//  rule #doUnparse(I:Instruction ;, _) => #doUnparse(I, false) +String ";"
+  rule #doUnparse(TyName:BinaryTypeName AL:AnnotationList T1 T2, true) =>
+    "(" +String #doUnparse(TyName AL T1 T2, false) +String ")"
 
   rule #doUnparse(DROP AList, _) => "DROP" +String #doUnparse(AList, false)
   rule #doUnparse(DROP AList I:Int, _) => "DROP" +String #doUnparse(AList, false) +String " " +String #doUnparse(I, true)
@@ -409,13 +403,13 @@ module MICHELSON-UNPARSER
     " " +String
     #doUnparse(D, true)
 
-  rule #doUnparse(S:StackElement ; Ss:StackElementList, _) =>
+  rule #doUnparse(S:StackElementLiteral ; Ss:StackElementList, _) =>
     #doUnparse(S, false) +String
     "; " +String
     #doUnparse(Ss, false)
     requires notBool Ss ==K .StackElementList
 
-  rule #doUnparse(S:StackElement ; .StackElementList, _) => #doUnparse(S, false)
+  rule #doUnparse(S:StackElementLiteral ; .StackElementList, _) => #doUnparse(S, false)
 
   rule #doUnparse(.StackElementList, _) => ""
 
@@ -522,7 +516,7 @@ endmodule
 module CONTRACT-EXPANDER
   imports COMPAT-COMMON
 
-  syntax Block ::= #StackEltToPush(StackElement) [function]
+  syntax Block ::= #StackEltToPush(StackElementLiteral) [function]
   rule #StackEltToPush(Stack_elt (contract _:AnnotationList T:Type) D:Data) => { PUSH .AnnotationList address .AnnotationList D ;
                                                                                  CONTRACT .AnnotationList T ;
                                                                                  IF_SOME .AnnotationList { } { UNIT .AnnotationList ; FAILWITH .AnnotationList } }
