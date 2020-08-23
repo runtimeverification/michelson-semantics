@@ -219,8 +219,12 @@ Here we type individual instructions.
 ```k
   syntax TypedInstruction ::= #TypeInstruction(TypeContext, Instruction, TypeSeq) [function, functional]
   // ---------------------------------------------------------------------------------------------------
-  // rule #TypeInstruction(_, I, T) => #TI(I, #InvalidTypeForInstruction(I, T)) [owise]
+```
 
+### Control Structures
+
+```k
+  // rule #TypeInstruction(_, I, T) => #TI(I, #InvalidTypeForInstruction(I, T)) [owise]
   rule #TypeInstruction(_, { }, TS) => #TI({ }, TS -> TS)
   rule #TypeInstruction(C, { Is:DataList }, TS) => #fun(#TIs(Is2, TR) => #TI({ #Exec(Is2) }, TR))(#TypeInstructions(C, Is, TS))
 
@@ -249,19 +253,31 @@ Here we type individual instructions.
 
   rule #TypeInstruction(_, (EXEC _) #as I, (T1 ; lambda _ T1 T2 ; Ts) #as OS) => #TI(I, OS -> T2 ; Ts)
   rule #TypeInstruction(_, (APPLY _) #as I, (TL ; lambda _ (pair .AnnotationList TL TR) T2 ; Ts) #as OS) => #TI(I, OS -> lambda .AnnotationList TR T2 ; Ts)
+```
 
+### Generic Comparison
+
+```k
   rule #TypeInstruction(_, (EQ _) #as I, (int _ ; Ts) #as OS) => #TI(I, OS -> (bool .AnnotationList ; Ts))
   rule #TypeInstruction(_, (NEQ _) #as I, (int _ ; Ts) #as OS) => #TI(I, OS -> (bool .AnnotationList ; Ts))
   rule #TypeInstruction(_, (LT _) #as I, (int _ ; Ts) #as OS) => #TI(I, OS -> (bool .AnnotationList ; Ts))
   rule #TypeInstruction(_, (GT _) #as I, (int _ ; Ts) #as OS) => #TI(I, OS -> (bool .AnnotationList ; Ts))
   rule #TypeInstruction(_, (LE _) #as I, (int _ ; Ts) #as OS) => #TI(I, OS -> (bool .AnnotationList ; Ts))
   rule #TypeInstruction(_, (GE _) #as I, (int _ ; Ts) #as OS) => #TI(I, OS -> (bool .AnnotationList ; Ts))
+```
 
+### Boolean Operations
+
+```k
   rule #TypeInstruction(_, (OR _) #as I, (bool _ ; bool _ ; Ts) #as OS) => #TI(I, OS -> (bool .AnnotationList ; Ts))
   rule #TypeInstruction(_, (AND _) #as I, (bool _ ; bool _ ; Ts) #as OS) => #TI(I, OS -> (bool .AnnotationList ; Ts))
   rule #TypeInstruction(_, (XOR _) #as I, (bool _ ; bool _ ; Ts) #as OS) => #TI(I, OS -> (bool .AnnotationList ; Ts))
   rule #TypeInstruction(_, (NOT _) #as I, (bool _ ; Ts) #as OS) => #TI(I, OS -> (bool .AnnotationList ; Ts))
+```
 
+### Integer and Natural Operations
+
+```k
   rule #TypeInstruction(_, (NEG _) #as I, (int _ ; Ts) #as OS) => #TI(I, OS -> (int .AnnotationList ; Ts))
   rule #TypeInstruction(_, (NEG _) #as I, (nat _ ; Ts) #as OS) => #TI(I, OS -> (int .AnnotationList ; Ts))
   rule #TypeInstruction(_, (ABS _) #as I, (int _ ; Ts) #as OS) => #TI(I, OS -> (nat .AnnotationList ; Ts))
@@ -293,7 +309,11 @@ Here we type individual instructions.
   rule #TypeInstruction(_, (NOT _) #as I, (int _ ; Ts) #as OS) => #TI(I, OS -> (int .AnnotationList ; Ts))
   rule #TypeInstruction(_, (LSL _) #as I, (nat _ ; nat _ ; Ts) #as OS) => #TI(I, OS -> (nat .AnnotationList ; Ts))
   rule #TypeInstruction(_, (LSR _) #as I, (nat _ ; nat _ ; Ts) #as OS) => #TI(I, OS -> (nat .AnnotationList ; Ts))
+```
 
+### `COMPARE` Instruction
+
+```k
   rule #TypeInstruction(_, (COMPARE _) #as I, (nat _ ; nat _ ; Ts) #as OS) => #TI(I, OS -> (int .AnnotationList ; Ts))
   rule #TypeInstruction(_, (COMPARE _) #as I, (bool _ ; bool _ ; Ts) #as OS) => #TI(I, OS -> (int .AnnotationList ; Ts))
   rule #TypeInstruction(_, (COMPARE _) #as I, (int _ ; int _ ; Ts) #as OS) => #TI(I, OS -> (int .AnnotationList ; Ts))
@@ -303,30 +323,50 @@ Here we type individual instructions.
   rule #TypeInstruction(_, (COMPARE _) #as I, (mutez _ ; mutez _ ; Ts) #as OS) => #TI(I, OS -> (int .AnnotationList ; Ts))
   rule #TypeInstruction(_, (COMPARE _) #as I, (bytes _ ; bytes _ ; Ts) #as OS) => #TI(I, OS -> (int .AnnotationList ; Ts))
   rule #TypeInstruction(_, (COMPARE _) #as I, (key_hash _ ; key_hash _ ; Ts) #as OS) => #TI(I, OS -> (int .AnnotationList ; Ts))
+```
 
+### String Operations
+
+```k
   rule #TypeInstruction(_, (CONCAT _) #as I, (string _ ; string _ ; Ts) #as OS) => #TI(I, OS -> (string .AnnotationList ; Ts))
   rule #TypeInstruction(_, (CONCAT _) #as I, (list _ string _ ; Ts) #as OS) => #TI(I, OS -> (string .AnnotationList ; Ts))
   rule #TypeInstruction(_, (SIZE _) #as I, (string _ ; Ts) #as OS) => #TI(I, OS -> nat .AnnotationList ; Ts)
   rule #TypeInstruction(_, (SLICE _) #as I, (nat _ ; nat _ ; string _ ; Ts) #as OS) => #TI(I, OS -> (option .AnnotationList string .AnnotationList ; Ts))
+```
 
+### Bytes Operations
+
+```k
   rule #TypeInstruction(_, (PACK _) #as I, (_ ; Ts) #as OS) => #TI(I, OS -> bytes .AnnotationList ; Ts)
   rule #TypeInstruction(_, (UNPACK _ T) #as I, (bytes _ ; Ts) #as OS) => #TI(I, OS -> (option .AnnotationList T) ; Ts)
   rule #TypeInstruction(_, (CONCAT _) #as I, (bytes _ ; bytes _ ; Ts) #as OS) => #TI(I, OS -> (bytes .AnnotationList ; Ts))
   rule #TypeInstruction(_, (CONCAT _) #as I,  (list _ bytes _ ; Ts) #as OS) => #TI(I, OS -> (bytes .AnnotationList ; Ts))
   rule #TypeInstruction(_, (SIZE _) #as I, (bytes _ ; Ts) #as OS) => #TI(I, OS -> nat .AnnotationList ; Ts)
   rule #TypeInstruction(_, (SLICE _) #as I, (nat _ ; nat _ ; bytes _ ; Ts) #as OS) => #TI(I, OS -> (option .AnnotationList bytes .AnnotationList ; Ts))
+```
 
+### Pair Operations
+
+```k
   rule #TypeInstruction(_, (PAIR _) #as I, (T1 ; T2 ; Ts) #as Os) => #TI(I, Os -> pair .AnnotationList T1 T2 ; Ts)
   rule #TypeInstruction(_, (UNPAIR _) #as I, (pair _ T1 T2 ; Ts) #as Os) => #TI(I, Os -> T1 ; T2 ; Ts)
   rule #TypeInstruction(_, (CAR _) #as I, (pair _ T1 _ ; Ts) #as Os) => #TI(I, Os -> T1 ; Ts)
   rule #TypeInstruction(_, (CDR _) #as I, (pair _ _ T2 ; Ts) #as Os) => #TI(I, Os -> T2 ; Ts)
+```
 
+### Set Operations
+
+```k
   rule #TypeInstruction(_, (EMPTY_SET _ T) #as I, Ts) => #TI(I, Ts -> set .AnnotationList T ; Ts)
   rule #TypeInstruction(_, (MEM _) #as I, (T ; set _ T ; Ts) #as OS) => #TI(I, OS -> bool .AnnotationList ; Ts)
   rule #TypeInstruction(_, (UPDATE _) #as I, (T ; bool _ ; set _ T ; Ts) #as OS) => #TI(I, OS -> set .AnnotationList T ; Ts)
   rule #TypeInstruction(_, (SIZE _) #as I, (set _ _ ; Ts) #as OS) => #TI(I, OS -> nat .AnnotationList ; Ts)
   rule #TypeInstruction(C, (ITER _ B) #as I, (set _ T ; Ts) #as OS) => #IterAux(I, #TypeInstruction(C, B, T ; Ts), OS)
+```
 
+### Map Operations
+
+```k
   rule #TypeInstruction(_, (GET _) #as I, (KT ; map _ KT VT ; Ts) #as OS) => #TI(I, OS -> option .AnnotationList VT ; Ts)
   rule #TypeInstruction(_, (GET _) #as I, (KT ; big_map _ KT VT ; Ts) #as OS) => #TI(I, OS -> option .AnnotationList VT ; Ts)
   rule #TypeInstruction(_, (MEM _) #as I, (KT ; map _ KT _ ; Ts) #as OS) => #TI(I, OS -> bool .AnnotationList ; Ts)
@@ -340,24 +380,44 @@ Here we type individual instructions.
   rule #TypeInstruction(C, (ITER _ B) #as I, (map _ KT VT ; Ts) #as OS) => #IterAux(I, #TypeInstruction(C, B, (pair .AnnotationList KT VT) ; Ts), OS)
 
   rule #TypeInstruction(_, (EMPTY_BIG_MAP _ KT VT) #as I, Ts) => #TI(I, Ts -> big_map .AnnotationList KT VT ; Ts)
+```
 
+### Option Operations
+
+```k
   rule #TypeInstruction(_, (SOME _) #as I, (T1 ; Ts) #as OS) => #TI(I, OS -> option .AnnotationList T1 ; Ts)
   rule #TypeInstruction(_, (NONE _ T) #as I, Ts) => #TI(I, Ts -> option .AnnotationList T ; Ts)
+```
 
+### Or Operations
+
+```k
   rule #TypeInstruction(_, (LEFT _ TR) #as I, (TL ; Ts) #as OS) => #TI(I, OS -> (or .AnnotationList TL TR) ; Ts)
   rule #TypeInstruction(_, (RIGHT _ TL) #as I, (TR ; Ts) #as OS) => #TI(I, OS -> (or .AnnotationList TL TR) ; Ts)
+```
 
+### List Operations
+
+```k
   rule #TypeInstruction(_, (CONS _) #as I, (T ; list _ T ; Ts) #as OS) => #TI(I, OS -> list .AnnotationList T ; Ts)
   rule #TypeInstruction(_, (NIL _ T) #as I, Ts) => #TI(I, Ts -> (list .AnnotationList T) ; Ts)
   rule #TypeInstruction(_, (SIZE _) #as I, (list _ _ ; Ts) #as OS) => #TI(I, OS -> nat .AnnotationList ; Ts)
   rule #TypeInstruction(C, (ITER _ B) #as I, (list _ T ; Ts) #as OS) => #IterAux(I, #TypeInstruction(C, B, T ; Ts), OS)
   rule #TypeInstruction(C, (MAP _ B) #as I, (list _ T ; Ts) #as OS) => #MapAux(I, #TypeInstruction(C, B, T ; Ts), OS)
+```
 
+### Timestamp Operations
+
+```k
   rule #TypeInstruction(_, (ADD _) #as I, (int _ ; timestamp _ ; Ts) #as OS) => #TI(I, OS -> timestamp .AnnotationList ; Ts)
   rule #TypeInstruction(_, (ADD _) #as I, (timestamp _ ; int _ ; Ts) #as OS) => #TI(I, OS -> timestamp .AnnotationList ; Ts)
   rule #TypeInstruction(_, (SUB _) #as I, (timestamp _ ; int _ ; Ts) #as OS) => #TI(I, OS -> timestamp .AnnotationList ; Ts)
   rule #TypeInstruction(_, (SUB _) #as I, (timestamp _ ; timestamp _ ; Ts) #as OS) => #TI(I, OS -> int .AnnotationList ; Ts)
+```
 
+### Blockchain Operations
+
+```k
   rule #TypeInstruction(_, (CREATE_CONTRACT _ { code B ; storage St ; parameter Pt ; }) #as I, OS) => #CreateContractAux(I, #TypeInstruction(Pt, B, pair .AnnotationList Pt St), OS)
   rule #TypeInstruction(_, (TRANSFER_TOKENS _) #as I, (T ; mutez _ ; contract _ T ; Ts) #as OS) => #TI(I, OS -> (operation .AnnotationList) ; Ts)
   rule #TypeInstruction(_, (SET_DELEGATE _) #as I, (option _ key_hash _ ; Ts) #as OS) => #TI(I, OS -> (operation .AnnotationList) ; Ts)
@@ -373,20 +433,32 @@ Here we type individual instructions.
   rule #TypeInstruction(_, (AMOUNT _) #as I, OS) => #TI(I, OS -> (mutez .AnnotationList) ; OS)
   rule #TypeInstruction(_, (CHAIN_ID _) #as I, OS) => #TI(I, OS -> (chain_id .AnnotationList) ; OS)
   rule #TypeInstruction(_, (NOW _) #as I, OS) => #TI(I, OS -> (timestamp .AnnotationList) ; OS)
+```
 
+### Cryptographic Operations
+
+```k
   rule #TypeInstruction(_, (HASH_KEY _) #as I, (key _ ; Ts) #as OS) => #TI(I, OS -> (key_hash .AnnotationList ; Ts))
   rule #TypeInstruction(_, (BLAKE2B _) #as I, (bytes _ ; _) #as OS) => #TI(I, OS -> OS)
   rule #TypeInstruction(_, (SHA256 _) #as I, (bytes _ ; _) #as OS) => #TI(I, OS -> OS)
   rule #TypeInstruction(_, (SHA512 _) #as I, (bytes _ ; _) #as OS) => #TI(I, OS -> OS)
   rule #TypeInstruction(_, (CHECK_SIGNATURE _) #as I, (key _ ; signature _ ; bytes _ ; Ts) #as OS) => #TI(I, OS -> bool .AnnotationList ; Ts)
+```
 
+### Mutez Operations
+
+```k
   rule #TypeInstruction(_, (ADD _) #as I, (mutez _ ; mutez _ ; Ts) #as OS) => #TI(I, OS -> mutez .AnnotationList ; Ts)
   rule #TypeInstruction(_, (SUB _) #as I, (mutez _ ; mutez _ ; Ts) #as OS) => #TI(I, OS -> mutez .AnnotationList ; Ts)
   rule #TypeInstruction(_, (MUL _) #as I, (mutez _ ; nat _ ; Ts) #as OS) => #TI(I, OS -> mutez .AnnotationList ; Ts)
   rule #TypeInstruction(_, (MUL _) #as I, (nat _ ; mutez _ ; Ts) #as OS) => #TI(I, OS -> mutez .AnnotationList ; Ts)
   rule #TypeInstruction(_, (EDIV _) #as I, (mutez _ ; nat _ ; Ts) #as OS) => #TI(I, OS -> option .AnnotationList pair .AnnotationList mutez .AnnotationList mutez .AnnotationList ; Ts)
   rule #TypeInstruction(_, (EDIV _) #as I, (mutez _ ; mutez _ ; Ts) #as OS) => #TI(I, OS -> option .AnnotationList pair .AnnotationList nat .AnnotationList mutez .AnnotationList ; Ts)
+```
 
+### Miscellaneous Operations
+
+```k
   // rule #TypeInstruction(_, (CAST _) #as I, Ts) => #TI(I, Ts -> Ts)
   // rule #TypeInstruction(_, (RENAME _) #as I, Ts) => #TI(I, Ts -> Ts)
 
