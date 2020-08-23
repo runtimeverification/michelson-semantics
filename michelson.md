@@ -530,6 +530,34 @@ iterations for which they are run. This means that, even if some execution
 succeeds, executing the other branch of an if instruction or executing a loop
 a different number of times may cause the program to get stuck.
 
+**TODO**: the type of a `MAP` instruction over an empty `list` or `map` is
+currently incorrectly calculated, as we assume it is equivalent to the original
+`map` or `list` that was passed in, which disagrees with the intended
+semantics that the type matches whatever the to-be executed code block does.
+
+#### Typing `FAILWITH`
+
+The `FAILWITH` instruction is interesting because its resulting type is the
+*universal stack type* which unifies with all other stack types. However, due
+to its unique semantics, it poisons all further computation, so that entire
+program returns a `(Failed D)`. For this reason, from our experimentation, we
+have observed the reference implementation makes two requirements on `FAILWITH`
+instruction placement:
+
+1.  It must occur last in the code block it appears in (this makes sense,
+    because all code following it is unreachable, i.e., dead).
+2.  It may not occur in positions that would prevent a concrete type from
+    being inferred. From our understanding, this can happen in two ways:
+
+    - code of the form `IF_X { ... ; FAILWITH } { ... ; FAILWITH }` which
+      prevents inferring a concrete stack type for the `IF_X` instruction;
+    - code of the form `MAP { ... ; FAILWITH }` which prevents the inferring
+      a concrete value type for the resulting `map key_ty val_ty` or `list ty`
+      that it produces.
+
+Currently, we do enforce these restrictions, but we may do so in a future
+version.
+
 ### Stack Loading
 
 ```k
