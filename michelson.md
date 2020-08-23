@@ -1435,8 +1435,8 @@ The `MAP` operation over maps is defined via psuedoinstruction `#DoMap`.
 ```k
   rule <k> MAP A B
         => #HandleAnnotations(A)
-	~> #DoMap(#MapOpInfo(KT, VT, NoneType, M, .Map, B))
-	   ...
+        ~> #DoMap(#MapOpInfo(KT, VT, NoneType, M, .Map, B))
+           ...
        </k>
        <stack> [map KT VT M] ; SS => SS </stack>
 ```
@@ -1462,23 +1462,23 @@ as described by the `MAP` typing rule below.
 
 ```k
   syntax MapOpInfo ::= #MapOpInfo(keyType     :TypeName,
-			          origValType :TypeName,
-			          newValType  :MaybeTypeName,
-			          origMap     :Map,
-			          newMap      :Map,
-			          mapBody     :Block)
+                                  origValType :TypeName,
+                                  newValType  :MaybeTypeName,
+                                  origMap     :Map,
+                                  newMap      :Map,
+                                  mapBody     :Block)
 
   syntax Instruction ::= #DoMap(MapOpInfo)
   // -------------------------------------
   rule <k> #DoMap(#MapOpInfo(KT, VT, NVT, M1, M2, B))
         => B
         ~> #DoMapAux(#MinKey(M1),
-	             #MapOpInfo(KT, VT, NVT, M1[#MinKey(M1) <- undef], M2, B))
+                     #MapOpInfo(KT, VT, NVT, M1[#MinKey(M1) <- undef], M2, B))
            ...
        </k>
        <stack> SS
             => [pair KT VT Pair #MinKey(M1) {M1[#MinKey(M1)]}:>Data] ;
-	       SS
+               SS
        </stack>
     requires size(M1) >Int 0
 
