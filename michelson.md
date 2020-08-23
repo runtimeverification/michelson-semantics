@@ -616,6 +616,9 @@ version.
 Execution Semantics
 ===================
 
+Miscellaneous
+-------------
+
 When the `<k>` cell is empty, we consider execution successful.
 
 ```k
@@ -623,7 +626,7 @@ When the `<k>` cell is empty, we consider execution successful.
        <returncode> 1 => 0 </returncode>
 ```
 
-We handle typed instruction wrappers and blocks here.
+We handle sequence and block semantics here.
 
 ```k
   rule I:Instruction ; Is => I ~> Is [structural]
@@ -631,7 +634,7 @@ We handle typed instruction wrappers and blocks here.
   rule { Is:DataList }    => Is      [structural]
 ```
 
-For now, annotations are ignored.
+For now, we ignore annotations.
 
 ```k
   syntax Instruction ::= #HandleAnnotations(AnnotationList)
