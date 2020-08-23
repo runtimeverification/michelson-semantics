@@ -66,46 +66,11 @@ Type Check Constructors
   rule #LengthTypeSeq(_ ; Ts) => 1 +Int #LengthTypeSeq(Ts)
 
   syntax TypeSeq ::= #ReverseTypeSeq(TypeSeq) [function, functional]
-  // ---------------------------------------------------------------
-  rule #ReverseTypeSeq(T) => #ReverseTypeSeqAux(T, .TypeSeq)
-
   syntax TypeSeq ::= #ReverseTypeSeqAux(TypeSeq, TypeSeq) [function, functional]
-  // ---------------------------------------------------------------------------
+  // --------------------------------------------------------------------------
+  rule #ReverseTypeSeq(T) => #ReverseTypeSeqAux(T, .TypeSeq)
   rule #ReverseTypeSeqAux(T ; Ts1, Ts2) => #ReverseTypeSeqAux(Ts1, T ; Ts2)
   rule #ReverseTypeSeqAux(.TypeSeq, Ts) => Ts
-
-  syntax TypeInput ::= #FirstN(TypeSeq, Int) [function, functional]
-  // --------------------------------------------------------------
-  rule #FirstN(TS, N) => #FirstNAux(TS, N, .TypeSeq)
-
-  syntax TypeInput ::= #FirstNAux(TypeSeq, Int, TypeInput) [function, functional]
-  // ----------------------------------------------------------------------------
-  rule #FirstNAux(_, I, _) => #InternalError                               requires I <Int 0
-  rule #FirstNAux(_, 0, TE:TypeError) => TE
-  rule #FirstNAux(_, 0, TS:TypeSeq) => #ReverseTypeSeq(TS)
-  rule #FirstNAux(T ; Ts, I, R:TypeSeq) => #FirstNAux(Ts, I -Int 1, T ; R) requires I >Int 0
-  rule #FirstNAux(.TypeSeq, I, _) => #InvalidDIP(I)                        requires I >Int 0
-
-  syntax TypeInput ::= #MakeConcat(TypeInput, TypeInput) [function, functional]
-  // --------------------------------------------------------------------------
-  rule #MakeConcat(TE:TypeError, _) => TE
-  rule #MakeConcat(_:TypeSeq, TE:TypeError) => TE
-  rule #MakeConcat(T1:TypeSeq, T2:TypeSeq) => #Concat(T1, T2)
-
-  syntax TypeResult ::= #MakeTransition(TypeInput, TypeInput) [function, functional]
-  // -------------------------------------------------------------------------------
-  rule #MakeTransition(TE:TypeError, _) => TE
-  rule #MakeTransition(_:TypeSeq, TE:TypeError) => TE
-  rule #MakeTransition(T1:TypeSeq, T2:TypeSeq) => T1 -> T2
-
-  syntax TypeSeq ::= #Concat(TypeSeq, TypeSeq) [function, functional]
-  // ----------------------------------------------------------------
-  rule #Concat(TS1, TS2) => #ConcatAux(#ReverseTypeSeq(TS1), TS2)
-
-  syntax TypeSeq ::= #ConcatAux(TypeSeq, TypeSeq) [function, functional]
-  // -------------------------------------------------------------------
-  rule #ConcatAux(.TypeSeq, TS) => TS
-  rule #ConcatAux(T ; TS1, TS2) => #ConcatAux(TS1, T ; TS2)
 
   syntax TypeInput ::= #DropFirst(TypeSeq, Int) [function, functional]
   // -----------------------------------------------------------------
@@ -124,12 +89,6 @@ Type Check Constructors
   rule #RemoveN(_  ; Ts, 0) => Ts
   rule #RemoveN(T1 ; Ts, I) => T1 ; #RemoveN(Ts, I -Int 1) requires I >Int 0
   rule #RemoveN(Ts, _) => Ts [owise] // This rule is unreachable.
-
-  syntax TypeSeq ::= #RemoveFirstN(TypeSeq, Int) [function, functional]
-  // ------------------------------------------------------------------
-  rule #RemoveFirstN(Ts, 0) => Ts
-  rule #RemoveFirstN(_ ; Ts, I) => #RemoveFirstN(Ts, I -Int 1) requires I >Int 0
-  rule #RemoveFirstN(Ts, _) => Ts [owise] // This rule is unreachable.
 
   syntax TypeInput ::= #EndType(TypeResult) [function, functional]
   // -------------------------------------------------------------
@@ -474,18 +433,17 @@ Here we type individual instructions.
 
 ```k
   syntax TypeInput ::= #DigType(TypeSeq, Int) [function, functional]
-  // ---------------------------------------------------------------
-  rule #DigType(TS, I) => #DigTypeAux(TS, I, #GetTypeN(TS, I))
-
   syntax TypeInput ::= #DigTypeAux(TypeSeq, Int, MaybeType) [function, functional]
   // -----------------------------------------------------------------------------
+  rule #DigType(TS, I) => #DigTypeAux(TS, I, #GetTypeN(TS, I))
   rule #DigTypeAux(TS, I, T:Type) => T ; #RemoveN(TS, I)
   rule #DigTypeAux(TS, I, #NoType) => #InvalidDigCount(TS, I)
 
   syntax TypeInput ::= #DoDug(TypeSeq, Int) [function, functional]
   // -------------------------------------------------------------
-  rule #DoDug(TS, I) => #InvalidDugCount(TS, I) requires #LengthTypeSeq(TS) <=Int I orBool
-                                                           I <Int 0
+  rule #DoDug(TS, I) => #InvalidDugCount(TS, I)
+    requires #LengthTypeSeq(TS) <=Int I
+      orBool I <Int 0
   rule #DoDug(TS, 0) => TS
   rule #DoDug(T1 ; TS, I) => #DoDugAux(TS, I, T1)
 
@@ -500,12 +458,51 @@ Here we type individual instructions.
   rule #PushAux(I, _, _) => #TI(I, #InternalError) [owise]
   rule #PushAux(I, TE:TypeError, _) => #TI(I, #InvalidPush(I, TE))
   rule #PushAux(PUSH _ T _, TD:TypedData, Ts) => #TI(PUSH .AnnotationList T TD, Ts -> T ; Ts)
+```
 
+#### `DIP` Type Checking
+
+```k
   syntax TypedInstruction ::= #DIPAux(Instruction, TypedInstruction, TypeSeq) [function, functional]
   // -----------------------------------------------------------------------------------------------
   rule #DIPAux(DIP _ N _, #TI(_, Ts1 -> Ts2) #as B, OS) => #TI(DIP .AnnotationList N { #Exec(B) }, #MakeTransition(OS, #MakeConcat(#FirstN(OS, N), Ts2)))
-  requires #RemoveFirstN(OS, N) ==K Ts1
+    requires #RemoveFirstN(OS, N) ==K Ts1
   rule #DIPAux(I, TI, OS) => #TI(I, #DIPError(TI, OS)) [owise] // TODO: Better error messages.
+
+  syntax TypeInput ::= #FirstN(TypeSeq, Int) [function, functional]
+  syntax TypeInput ::= #FirstNAux(TypeSeq, Int, TypeInput) [function, functional]
+  // ----------------------------------------------------------------------------
+  rule #FirstN(TS, N) => #FirstNAux(TS, N, .TypeSeq)
+  rule #FirstNAux(_, I, _) => #InternalError                               requires I <Int 0
+  rule #FirstNAux(_, 0, TE:TypeError) => TE
+  rule #FirstNAux(_, 0, TS:TypeSeq) => #ReverseTypeSeq(TS)
+  rule #FirstNAux(T ; Ts, I, R:TypeSeq) => #FirstNAux(Ts, I -Int 1, T ; R) requires I >Int 0
+  rule #FirstNAux(.TypeSeq, I, _) => #InvalidDIP(I)                        requires I >Int 0
+
+  syntax TypeSeq ::= #RemoveFirstN(TypeSeq, Int) [function, functional]
+  // ------------------------------------------------------------------
+  rule #RemoveFirstN(Ts, 0) => Ts
+  rule #RemoveFirstN(_ ; Ts, I) => #RemoveFirstN(Ts, I -Int 1) requires I >Int 0
+  rule #RemoveFirstN(Ts, _) => Ts [owise] // This rule is unreachable.
+
+  syntax TypeResult ::= #MakeTransition(TypeInput, TypeInput) [function, functional]
+  // -------------------------------------------------------------------------------
+  rule #MakeTransition(TE:TypeError, _) => TE
+  rule #MakeTransition(_:TypeSeq, TE:TypeError) => TE
+  rule #MakeTransition(T1:TypeSeq, T2:TypeSeq) => T1 -> T2
+
+  syntax TypeInput ::= #MakeConcat(TypeInput, TypeInput) [function, functional]
+  // --------------------------------------------------------------------------
+  rule #MakeConcat(TE:TypeError, _) => TE
+  rule #MakeConcat(_:TypeSeq, TE:TypeError) => TE
+  rule #MakeConcat(T1:TypeSeq, T2:TypeSeq) => #Concat(T1, T2)
+
+  syntax TypeSeq ::= #Concat(TypeSeq, TypeSeq) [function, functional]
+  syntax TypeSeq ::= #ConcatAux(TypeSeq, TypeSeq) [function, functional]
+  // -------------------------------------------------------------------
+  rule #Concat(TS1, TS2) => #ConcatAux(#ReverseTypeSeq(TS1), TS2)
+  rule #ConcatAux(.TypeSeq, TS) => TS
+  rule #ConcatAux(T ; TS1, TS2) => #ConcatAux(TS1, T ; TS2)
 ```
 
 #### If-like Operation Type Checking
