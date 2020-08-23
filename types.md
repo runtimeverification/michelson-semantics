@@ -623,7 +623,7 @@ Here we type individual instructions.
   rule #LoopLeftAux(I, _, _) => #TI(I, #InternalError) [owise]
 ```
 
-#### `LAMBDA` Type Checking
+#### Other Special Instruction Type Checking
 
 ```k
   syntax TypedInstruction ::= #LambdaAux(Instruction, TypedInstruction, TypeSeq) [function, functional]
@@ -633,11 +633,7 @@ Here we type individual instructions.
   requires (T1 ; .TypeSeq) =/=K T3 orBool (T2 ; .TypeSeq) =/=K T4
 
   rule #LambdaAux(I, T, Ts) => #TI(I, #LambdaError(I, T, Ts)) [owise]
-```
 
-#### `CREATE_CONTRACT` Type Checking
-
-```k
   syntax TypedInstruction ::= #CreateContractAux(Instruction, TypedInstruction, TypeSeq) [function, functional]
   // ----------------------------------------------------------------------------------------------------------
   rule #CreateContractAux((CREATE_CONTRACT _ { code B ; storage St ; parameter Pt ; }) ,
