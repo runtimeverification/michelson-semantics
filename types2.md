@@ -370,7 +370,7 @@ These operations map directly to their K equivalents.
        <tstack> [ N:NumTypeName I ] ; SS => [int ; SS </tstack>
 
   rule <type> ABS A => #HandleAnnotations(A) ... </type>
-       <tstack> [int ; SS => [ nat absInt(I) ] ; SS </tstack>
+       <tstack> [int ; SS => nat ; SS </tstack>
 
   rule <type> ISNAT A => #HandleAnnotations(A) ... </type>
        <tstack> [int ; SS => [ (option nat) Some I ] ; SS </tstack>
@@ -437,19 +437,19 @@ overflows.
 
 ```k
   rule <type> OR A => #HandleAnnotations(A)  ... </type>
-       <tstack> [ nat I1 ] ; [ nat I2 ] ; SS => [ nat I1 |Int I2 ] ; SS </tstack>
+       <tstack> nat ; nat ; SS => nat ; SS </tstack>
 
   rule <type> AND A => #HandleAnnotations(A) ... </type>
-       <tstack> [ T1:NumTypeName I1 ] ; [ nat I2 ] ; SS => [ nat I1 &Int I2 ] ; SS </tstack>
+       <tstack> [ T1:NumTypeName I1 ] ; nat ; SS => nat ; SS </tstack>
 
   rule <type> XOR A => #HandleAnnotations(A) ... </type>
-       <tstack> [ nat I1 ] ; [ nat I2 ] ; SS => [ nat I1 xorInt I2 ] ; SS </tstack>
+       <tstack> nat ; nat ; SS => nat ; SS </tstack>
 
   rule <type> NOT A => #HandleAnnotations(A) ... </type>
        <tstack> [ T1:NumTypeName I ] ; SS => [int ; SS </tstack>
 
   rule <type> LSL A => #HandleAnnotations(A) ... </type>
-       <tstack> [ nat X ] ; [ nat S ] ; SS => [ nat X <<Int S ] ; SS </tstack>
+       <tstack> nat ; nat ; SS => nat ; SS </tstack>
     requires S <=Int 256
 
   rule <type> LSL A ~> Rk
@@ -457,11 +457,11 @@ overflows.
         ~> Aborted("LSL out of range", S, Rk, Rs)
         ~> Rk
         </type>
-       <tstack> [ nat C:Int ] ; [ nat S:Int ] ; Rs => ( GeneralOverflow C S ) </tstack>
+       <tstack> nat ; nat ; Rs => ( GeneralOverflow C S ) </tstack>
     requires S >Int 256
 
   rule <type> LSR A => #HandleAnnotations(A) ... </type>
-       <tstack> [ nat X ] ; [ nat S ] ; SS => [ nat X >>Int S ] ; SS </tstack>
+       <tstack> nat ; nat ; SS => nat ; SS </tstack>
     requires S <=Int 256
 
   rule <type> LSR A ~> Rk
@@ -469,7 +469,7 @@ overflows.
         ~> Aborted("LSR out of range", S, Rk, Rs)
         ~> Rk
         </type>
-       <tstack> [ nat X ] ; [ nat S ] ; Rs => ( GeneralOverflow X S ) </tstack>
+       <tstack> nat ; nat ; Rs => ( GeneralOverflow X S ) </tstack>
        requires S >Int 256
 ```
 
@@ -579,7 +579,7 @@ The `#DoCompare` function requires additional lemmas for symbolic execution.
        <tstack> [(list string) L] ; SS => [string #ConcatStrings(L, "")] ; SS </tstack>
 
   rule <type> SIZE A => #HandleAnnotations(A) ... </type>
-       <tstack> [string S] ; SS => [nat lengthString(S)] ; SS </tstack>
+       <tstack> [string S] ; SS => nat ; SS </tstack>
 ```
 
 The actual out of bounds conditions here are determined by experimentation.
@@ -589,7 +589,7 @@ Earlier versions of the semantics didn't check if O was in bounds, resulting in
 
 ```k
   rule <type> SLICE A => #HandleAnnotations(A) ... </type>
-       <tstack> [nat O] ; [nat L] ; [string S] ; SS => [option string #SliceString(S, O, L)] ; SS </tstack>
+       <tstack> nat ; nat ; [string S] ; SS => [option string #SliceString(S, O, L)] ; SS </tstack>
 
   syntax OptionData ::= #SliceString(String, Int, Int) [function]
 
@@ -609,10 +609,10 @@ the actual serialization format is not formally unspecified.
 
 ```k
   rule <type> PACK A => #HandleAnnotations(A) ... </type>
-       <tstack> [T V] ; SS => [bytes #Packed(T,V)] ; SS </tstack>
+       <tstack> [T V] ; SS => bytes ; SS </tstack>
 
   rule <type> UNPACK A _ => #HandleAnnotations(A) ... </type>
-       <tstack> [bytes #Packed(T,V)] ; SS => [option T Some V] ; SS </tstack>
+       <tstack> bytes ; SS => [option T Some V] ; SS </tstack>
 ```
 
 The `CONCAT` operation over two bytes is relatively straightforward since we
@@ -620,7 +620,7 @@ already have helper functions to extract bytes content.
 
 ```k
   rule <type> CONCAT A => #HandleAnnotations(A) ... </type>
-       <tstack> [bytes B1] ; [bytes B2] ; SS => [bytes B1 +Bytes B2] ; SS </tstack>
+       <tstack> bytes ; bytes ; SS => bytes ; SS </tstack>
 ```
 
 `CONCAT` over lists of bytes is somewhat more involved, since we need to
@@ -628,7 +628,7 @@ distinguish this case from lists of strings.
 
 ```k
   rule <type> CONCAT A => #HandleAnnotations(A) ... </type>
-       <tstack> [(list bytes) L] ; SS => [bytes #ConcatBytes(L, .Bytes)] ; SS </tstack>
+       <tstack> [(list bytes) L] ; SS => bytes ; SS </tstack>
 
   syntax Bytes ::= #ConcatBytes(List, Bytes) [function]
   rule #ConcatBytes(.List, A) => A
@@ -641,7 +641,7 @@ the hex string.
 
 ```k
   rule <type> SIZE A => #HandleAnnotations(A) ... </type>
-       <tstack> [bytes B] ; SS => [nat lengthBytes(B)] ; SS </tstack>
+       <tstack> bytes ; SS => nat ; SS </tstack>
 ```
 
 The remaining operations are defined in terms of the same operations on
@@ -649,7 +649,7 @@ strings, allowing for code reuse.
 
 ```k
   rule <type> SLICE A => #HandleAnnotations(A) ... </type>
-       <tstack> [nat O:Int] ; [nat L:Int] ; [bytes B:Bytes] ; SS => [option bytes #SliceBytes(B, O, L)] ; SS </tstack>
+       <tstack> nat ; nat ; bytes ; SS => [option bytes #SliceBytes(B, O, L)] ; SS </tstack>
 
   syntax OptionData ::= #SliceBytes(Bytes, Int, Int) [function]
   // ----------------------------------------------------------
@@ -691,7 +691,7 @@ strings, allowing for code reuse.
        requires notBool(D in S)
 
   rule <type> SIZE A => #HandleAnnotations(A) ... </type>
-       <tstack> [set _ S:Set] ; SS => [nat size(S)] ; SS </tstack>
+       <tstack> [set _ S:Set] ; SS => nat ; SS </tstack>
 ```
 
 Note that, according to the Michelson documentation, set iteration order is
@@ -774,7 +774,7 @@ typing (shared operations use a generic `MapTypeName`).
        <tstack> SS => [#Name(map A KT VT) .Map] ; SS </tstack>
 
   rule <type> SIZE A => #HandleAnnotations(A)  ... </type>
-       <tstack> [map KT VT M:Map] ; SS => [nat size(M)] ; SS </tstack>
+       <tstack> [map KT VT M:Map] ; SS => nat ; SS </tstack>
 ```
 
 The `MAP` operation over maps is defined via psuedoinstruction `#DoMap`.
@@ -936,7 +936,7 @@ since it does not need to track the new map while keeping it off the stack.
        <tstack> [list T .List ] ; SS => SS </tstack>
 
   rule <type> SIZE A => #HandleAnnotations(A)  ... </type>
-       <tstack> [list T L:List] ; SS => [nat size(L)] ; SS </tstack>
+       <tstack> [list T L:List] ; SS => nat ; SS </tstack>
 
   rule <type> ITER A B =>  #HandleAnnotations(A) ~>. ... </type>
        <tstack> [list T .List] ; SS => SS </tstack>
@@ -1001,16 +1001,16 @@ however forces us to use two rules for each operation.
 
 ```k
   rule <type> ADD A => . ... </type>
-       <tstack> [timestamp #Timestamp(I1)] ; int ; SS => [timestamp #Timestamp(I1 +Int I2)] ; SS </tstack>
+       <tstack> timestamp ; int ; SS => timestamp ; SS </tstack>
 
   rule <type> ADD A => . ... </type>
-       <tstack> int ; [timestamp #Timestamp(I2)] ; SS => [timestamp #Timestamp(I1 +Int I2)] ; SS </tstack>
+       <tstack> int ; timestamp ; SS => timestamp ; SS </tstack>
 
   rule <type> SUB A => . ... </type>
-       <tstack> [timestamp #Timestamp(I1)] ; int ; SS => [timestamp #Timestamp(I1 -Int I2)] ; SS </tstack>
+       <tstack> timestamp ; int ; SS => timestamp ; SS </tstack>
 
   rule <type> SUB A => . ... </type>
-       <tstack> [timestamp #Timestamp(I1)] ; [timestamp #Timestamp(I2)] ; SS => int ; SS </tstack>
+       <tstack> timestamp ; timestamp ; SS => int ; SS </tstack>
 ```
 
 ### Blockchain Operations
@@ -1022,7 +1022,7 @@ however forces us to use two rules for each operation.
                ; [T Storage:Data] ;
                SS
             => [operation Create_contract(O, C, Delegate, Initial, Storage)] ;
-               [address #Address("@Address(" +String Int2String(!_:Int) +String ")")] ;
+               address ;
                SS
        </tstack>
        <nonce> #Nonce(O) => #NextNonce(#Nonce(O)) </nonce>
@@ -1052,17 +1052,17 @@ to the given addresses/key hashes.
 
 ```k
   rule <type> CONTRACT _ T => . ... </type>
-       <tstack> [address A] ; SS => [option contract #Name(T) Some {M[A]}:>Data] ; SS </tstack>
+       <tstack> address ; SS => [option contract #Name(T) Some {M[A]}:>Data] ; SS </tstack>
        <knownaddrs> M </knownaddrs>
     requires A in_keys(M)
      andBool #TypeFromContractStruct({M[A]}:>Data) ==K T
 
   rule <type> CONTRACT _ T => . ... </type>
-       <tstack> [address A:Address] ; SS => [option contract #Name(T) None] ; SS </tstack>
+       <tstack> address ; SS => [option contract #Name(T) None] ; SS </tstack>
        <knownaddrs> M </knownaddrs> [owise]
 
   rule <type> IMPLICIT_ACCOUNT Ann => . ... </type>
-       <tstack> [key_hash #KeyHash(A)] ; SS
+       <tstack> key_hash ; SS
             => [contract unit #Contract(#Address(A), unit .AnnotationList)] ; SS
        </tstack>
 
@@ -1078,14 +1078,14 @@ These instructions push blockchain state on the stack.
        ; SS </tstack> <mybalance> B </mybalance>
 
   rule <type> ADDRESS Ann => . ... </type>
-       <tstack> [contract T #Contract(A, _)] ; SS => [address A] ; SS </tstack>
+       <tstack> [contract T #Contract(A, _)] ; SS => address ; SS </tstack>
 
   rule <type> SOURCE Ann => . ... </type>
-       <tstack> SS => [address A] ; SS </tstack>
+       <tstack> SS => address ; SS </tstack>
        <sourceaddr> A </sourceaddr>
 
   rule <type> SENDER Ann => . ... </type>
-       <tstack> SS => [address A] ; SS </tstack>
+       <tstack> SS => address ; SS </tstack>
        <senderaddr> A </senderaddr>
 
   rule <type> SELF Ann => . ... </type>
@@ -1102,7 +1102,7 @@ These instructions push blockchain state on the stack.
        <mychainid> C </mychainid>
 
   rule <type> NOW A => . ... </type>
-       <tstack> SS => [timestamp N] ; SS </tstack>
+       <tstack> SS => timestamp ; SS </tstack>
        <mynow> N </mynow>
 ```
 
@@ -1115,16 +1115,16 @@ The cryptographic operations are simply stubbed for now.
   rule #Blake2BKeyHash(S) => S
 
   rule <type> HASH_KEY A => #HandleAnnotations(A) ... </type>
-       <tstack> [key #Key(S)] ; SS => [key_hash #KeyHash(#Blake2BKeyHash(S))] ; SS </tstack>
+       <tstack> key ; SS => key_hash ; SS </tstack>
 
   rule <type> BLAKE2B A => #HandleAnnotations(A) ... </type>
-       <tstack> [bytes B:MBytes] ; SS => [bytes #Blake2B(B)] ; SS </tstack>
+       <tstack> bytes ; SS => bytes ; SS </tstack>
 
   rule <type> SHA256 A => #HandleAnnotations(A) ... </type>
-       <tstack> [bytes B:MBytes] ; SS => [bytes #SHA256(B)] ; SS </tstack>
+       <tstack> bytes ; SS => bytes ; SS </tstack>
 
   rule <type> SHA512 A => #HandleAnnotations(A) ... </type>
-       <tstack> [bytes B:MBytes] ; SS => [bytes #SHA512(B)] ; SS </tstack>
+       <tstack> bytes ; SS => bytes ; SS </tstack>
 
   syntax MBytes ::= #SignedMBytes(Key, Signature, MBytes)
 
@@ -1199,20 +1199,20 @@ identical to those defined over integers.
            ...
        </type>
        <tstack> mutez
-       ; [nat I2] ; SS => SS </tstack> 
+       ; nat ; SS => SS </tstack> 
   rule <type> MUL A
         => #ValidateMutezAndPush(V, I1, I2)
         ~> #HandleAnnotations(A)
            ...
        </type>
-       <tstack> [nat I1] ; mutez
+       <tstack> nat ; mutez
        ; SS => SS </tstack> 
   rule <type> EDIV A => #HandleAnnotations(A) ... </type>
        <tstack> mutez
        ; mutez ; SS => [option pair nat mutez None] ; SS </tstack> 
   rule <type> EDIV A => #HandleAnnotations(A) ... </type>
        <tstack> mutez
-       ; [nat 0] ; SS => [option pair mutez mutez None] ; SS </tstack> 
+       ; nat ; SS => [option pair mutez mutez None] ; SS </tstack> 
   rule <type> EDIV A => #HandleAnnotations(A) ... </type>
        <tstack> mutez
        ; mutez
@@ -1223,7 +1223,7 @@ identical to those defined over integers.
 
   rule <type> EDIV A => #HandleAnnotations(A) ... </type>
        <tstack> mutez
-       ; [nat I2] ;
+       ; nat ;
                SS
             => [option pair mutez mutez Some P] ; SS
        </tstack>
