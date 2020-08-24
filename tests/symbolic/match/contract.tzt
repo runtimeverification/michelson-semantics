@@ -1,3 +1,0 @@
-input  { Stack_elt (contract int) $VAL } ;
-code   { DUP } ;
-output { Stack_elt (contract int) $VAL ; Stack_elt (contract int) $VAL }
