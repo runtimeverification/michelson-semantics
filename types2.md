@@ -1,8 +1,17 @@
+```k
+requires "common.md"
+```
+
 Static Type Semantics
 =====================
 
 ```k
 module STATIC-TYPE-SEMANTICS
+  imports MICHELSON-COMMON
+```
+
+```k
+  syntax TypeStack ::= List{TypeName, ";"}
 ```
 
 ```k
@@ -35,122 +44,33 @@ The `FAILWITH` instruction lets users terminate execution at any point.
 
 ### Loops
 
-Here we handle concrete loop semantics.
-
 ```k
-  rule <type> LOOP .AnnotationList B
-        => B ~> LOOP .AnnotationList B
-           ...
-       </type>
+  rule <type> LOOP A B => .K ... </type>
        <tstack> bool ; SS => SS </tstack>
-  rule <type> LOOP .AnnotationList B => .K ... </type>
-       <tstack> bool ; SS => SS </tstack>
-```
 
-```k
-  rule <type> LOOP_LEFT .AnnotationList B
-        => B
-        ~> LOOP_LEFT .AnnotationList B
-           ...
-        </type>
-       <tstack> [ (or LX RX) Left D ] ; SS
-           =>  [ LX D ] ; SS
-       </tstack>
-  rule <type> LOOP_LEFT .AnnotationList B => .K ... </type>
-       <tstack> [ (or LX RX) Right D ] ; SS
-            => [ RX D ] ; SS
-       </tstack>
+  rule <type> LOOP_LEFT A B => .K ...  </type>
+       <tstack> or LX RX ; SS => SS </tstack>
 ```
 
 ### Stack Manipulation
 
-It is sometimes useful to create "pseudo-instructions" like this to schedule
-operations to happen in the future.
-
-```k
-  syntax Instruction ::= #Push(TypeName,Data)
-  rule <type> #Push(T,D) => . ... </type>
-       <tstack> SS => [ T D ] ; SS </tstack>
-```
-
-The `DIP` instruction uses the `#Push` pseudo-instruction to replace the
-element it pops off for its block.
-
 ```k
   rule <type> DIP A B => .K ~> B ~> #Push(T,D) ... </type>
-       <tstack> [ T D ] ; SS => SS </tstack>
+       <tstack> T ; SS => SS </tstack>
+  rule <type> DIP A N B => .K ...  </type>
 
-  rule <type> DIP A 0 B => .K ~> B ... </type>
+  rule <type> DROP A => DROP A 1 ... </type>
+  rule <type> DROP A I => .K ...  </type>
 
-  rule <type> DIP A N B
-         => .K
-         ~> DIP .AnnotationList { DIP .AnnotationList N -Int 1 B }
-            ...
-       </type>
-    requires N >Int 0
-```
-
-```k
-  rule <type> DROP A =>  .K ... </type>
-       <tstack> _:StackElement ; SS => SS </tstack>
-
-  rule <type> DROP A I
-        => .K
-        ~> DROP .AnnotationList
-        ~> DROP .AnnotationList I -Int 1
-           ...
-       </type>
-    requires I >Int 0
-
-  rule <type> DROP A 0 => .K ... </type>
-```
-
-```k
   rule <type> DUP A => .K ... </type>
-       <tstack> X:StackElement ; SS => X ; X ; SS </tstack>
+       <tstack> X:TypeName ; SS => X ; X ; SS </tstack>
 
   rule <type> SWAP A => .K ... </type>
-       <tstack> X:StackElement ; Y:StackElement ; SS
-            => Y ; X ; SS
-       </tstack>
-```
+       <tstack> X:TypeName ; Y:TypeName ; SS => Y ; X ; SS </tstack>
 
-```k
   rule <type> DIG A N => .K ~> DIG_DOWN(N, .Stack) ... </type>
-
-  syntax Instruction ::= "DIG_DOWN" "(" Int "," Stack ")"
-                       | "DIG_UP" "(" Stack "," StackElement ")"
-  // -----------------------------------------------------------
-  rule <type> DIG_DOWN(N, A) => DIG_DOWN(N -Int 1, F ; A) ... </type>
-       <tstack> F ; SS => SS </tstack>
-    requires N >Int 0
-
-  rule <type> DIG_DOWN(0, A) => DIG_UP(A, F) ... </type>
-       <tstack> F ; SS => SS </tstack>
-
-  rule <type> DIG_UP(F ; A, T) => DIG_UP(A, T) ... </type>
-       <tstack> SS => F ; SS </tstack>
-
-  rule <type> DIG_UP(.Stack, T) => . ... </type>
-       <tstack> SS => T ; SS </tstack>
-
   rule <type> DUG A N => .K ~> DUG_DOWN(N, .Stack, T) ... </type>
        <tstack> T ; SS => SS </tstack>
-
-  syntax Instruction ::= "DUG_DOWN" "(" Int "," Stack "," StackElement ")"
-                       | "DUG_UP" "(" K ")"
-  // ---------------------------------------------------------------------
-  rule <type> DUG_DOWN(N, S, R) => DUG_DOWN(N -Int 1, T ; S, R) ... </type>
-       <tstack> T ; SS => SS </tstack>
-    requires N >Int 0
-
-  rule <type> DUG_DOWN(0, S, R) => DUG_UP(S) ... </type>
-       <tstack> SS => R ; SS </tstack>
-
-  rule <type> DUG_UP(T:StackElement ; S) => DUG_UP(S) ... </type>
-       <tstack> SS => T ; SS </tstack>
-
-  rule <type> DUG_UP(.Stack) => .K ... </type>
 ```
 
 #### `PUSH`-like Instructions
@@ -337,11 +257,9 @@ Core Operations
 
   rule <type> SIZE A => .K ... </type>
        <tstack> set _ ; SS => nat ; SS </tstack>
-```
 
-```k
   rule <type> ITER A B => .K ...  </type>
-       <tstack> [set T S] ; SS => [T #MinimalElement(Set2List(S))] ; SS </tstack>
+       <tstack> set T ; SS => SS </tstack>
 ```
 
 ### Shared Map/Big Map Operations
@@ -368,12 +286,9 @@ Core Operations
 
   rule <type> SIZE A => .K  ... </type>
        <tstack> map KT VT ; SS => nat ; SS </tstack>
-```
 
-```k
   rule <type> MAP A B => .K ~> #DoMap(#MapOpInfo(KT, VT, NoneType, M, .Map, B)) ...  </type>
        <tstack> map KT VT ; SS => SS </tstack>
-```
 
   rule <type> ITER A B => .K  ... </type>
        <tstack> map KT VT ; SS => SS </tstack>
@@ -428,7 +343,7 @@ Core Operations
        <tstack> SS => list T ; SS </tstack>
 
   rule <type> IF_CONS A BT BF => .K ~> BT ... </type>
-       <tstack> list T ; SS => [T L1] ; list T ; SS </tstack>
+       <tstack> list T ; SS => T ; list T ; SS </tstack>
 
   rule <type> IF_CONS A BT BF => .K ~> BF ... </type>
        <tstack> list T ; SS => SS </tstack>
@@ -440,12 +355,8 @@ Core Operations
        <tstack> list T ; SS => SS </tstack>
 
   rule <type> ITER A B => .K ...  </type>
-       <tstack> list T ; SS => [T E] ; SS </tstack>
-```
+       <tstack> list T ; SS => T ; SS </tstack>
 
-The `MAP` operation over `list`s is defined in terms of a helper function.
-
-```k
   rule <type> MAP A B => #DoMap(T, NoneType, Ls, .List, B) ...  </type>
        <tstack> list T ; SS => SS </tstack>
 ```
@@ -472,7 +383,7 @@ Domain Specific operations
 ### Blockchain Operations
 
 ```k
-  rule <type> CREATE_CONTRACT A:AnnotationList { C } => . ... </type>
+  rule <type> CREATE_CONTRACT A { C } => . ... </type>
        <tstack> option key_hash ; mutez ; T ; SS => operation ; address ; SS </tstack>
 
   rule <type> TRANSFER_TOKENS _ => . ... </type>
@@ -480,17 +391,13 @@ Domain Specific operations
 
   rule <type> SET_DELEGATE A => . ... </type>
        <tstack> option key_hash ; SS => operation ; SS </tstack>
-```
 
-```k
   rule <type> CONTRACT _ T => . ... </type>
        <tstack> address ; SS => option contract T ; SS </tstack>
 
   rule <type> IMPLICIT_ACCOUNT Ann => . ... </type>
        <tstack> key_hash ; SS => contract unit ; SS </tstack>
-```
 
-```k
   rule <type> BALANCE A => . ... </type>
        <tstack> SS => mutez ; SS </tstack>
 
@@ -518,8 +425,6 @@ Domain Specific operations
 ```
 
 ### Cryptographic Operations
-
-The cryptographic operations are simply stubbed for now.
 
 ```k
   rule <type> HASH_KEY A => .K ... </type>
@@ -568,4 +473,8 @@ Debugging Operations
   rule <type> STOP     => .K ... </type>
   rule <type> PAUSE(S) => .K ... </type>
   rule <type> TRACE(S) => .K ... </type>
+```
+
+```k
+endmodule
 ```
