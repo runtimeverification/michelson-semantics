@@ -1402,10 +1402,24 @@ This rule is not supported by the LLVM backend, so we only include it in Haskell
 ```
 
 ```symbolic
-  // Symbolic backend only
-  rule #lookup(_M:Map [ K <- undef], KT, K, VT) => None     requires isValue(KT, K)                        [simplification]
-  rule #lookup(_M:Map [ K <- V    ], KT, K, VT) => (Some V) requires isValue(KT, K) andBool isValue(VT, V) [simplification]
-  // rule K1 in_keys(M:Map[ K2 <- _ ]) => K1 ==K K2 orBool K1 in_keys(M) [simplification]
+  rule #lookup(_M:Map [ K1 <- undef], KT, K2, _ ) => None
+    requires isValue(KT,K1)
+     andBool isValue(KT,K2)
+     andBool K1 ==K  K2
+     [simplification]
+
+  rule #lookup( M:Map [ K1 <-  V   ], KT, K2, VT) => Some V
+    requires isValue(KT,K1)
+     andBool isValue(KT,K2)
+     andBool isValue(VT, V)
+     andBool K1 ==K K2
+     [simplification]
+
+  rule #lookup( M:Map [ K1 <- _V   ], KT, K2, VT) => #lookup(M, KT, K2, VT)
+    requires isValue(KT,K1)
+     andBool isValue(KT,K2)
+     andBool K1 =/=K K2
+     [simplification]
 ```
 
 ```k
