@@ -1021,7 +1021,7 @@ however forces us to use two rules for each operation.
                mutez
                ; [T Storage:Data] ;
                SS
-            => [operation Create_contract(O, C, Delegate, Initial, Storage)] ;
+            => operation ;
                address ;
                SS
        </tstack>
@@ -1029,12 +1029,12 @@ however forces us to use two rules for each operation.
 
   rule <type> TRANSFER_TOKENS _ => . ... </type>
        <tstack> [T D] ; mutez
-       ; [contract T #Contract(A, _)] ; SS => [operation Transfer_tokens(O, D, M, A)] ; SS
+       ; contract T ; SS => operation ; SS
        </tstack>
        <nonce> #Nonce(O) => #NextNonce(#Nonce(O)) </nonce>
 
   rule <type> SET_DELEGATE A => . ... </type>
-       <tstack> [option key_hash D] ; SS => [operation Set_delegate(O, D)] ; SS </tstack>
+       <tstack> [option key_hash D] ; SS => operation ; SS </tstack>
        <nonce> #Nonce(O) => #NextNonce(#Nonce(O)) </nonce>
 ```
 
@@ -1052,18 +1052,18 @@ to the given addresses/key hashes.
 
 ```k
   rule <type> CONTRACT _ T => . ... </type>
-       <tstack> address ; SS => [option contract #Name(T) Some {M[A]}:>Data] ; SS </tstack>
+       <tstack> address ; SS => option contract T ; SS </tstack>
        <knownaddrs> M </knownaddrs>
     requires A in_keys(M)
      andBool #TypeFromContractStruct({M[A]}:>Data) ==K T
 
   rule <type> CONTRACT _ T => . ... </type>
-       <tstack> address ; SS => [option contract #Name(T) None] ; SS </tstack>
+       <tstack> address ; SS => option contract T ; SS </tstack>
        <knownaddrs> M </knownaddrs> [owise]
 
   rule <type> IMPLICIT_ACCOUNT Ann => . ... </type>
        <tstack> key_hash ; SS
-            => [contract unit #Contract(#Address(A), unit .AnnotationList)] ; SS
+            => contract unit ; SS
        </tstack>
 
   syntax Type ::= #TypeFromContractStruct(Data) [function]
@@ -1078,7 +1078,7 @@ These instructions push blockchain state on the stack.
        ; SS </tstack> <mybalance> B </mybalance>
 
   rule <type> ADDRESS Ann => . ... </type>
-       <tstack> [contract T #Contract(A, _)] ; SS => address ; SS </tstack>
+       <tstack> contract T ; SS => address ; SS </tstack>
 
   rule <type> SOURCE Ann => . ... </type>
        <tstack> SS => address ; SS </tstack>
@@ -1089,7 +1089,7 @@ These instructions push blockchain state on the stack.
        <senderaddr> A </senderaddr>
 
   rule <type> SELF Ann => . ... </type>
-       <tstack> SS => [contract #Name(T) #Contract(A, T)] ; SS </tstack>
+       <tstack> SS => contract T ; SS </tstack>
        <paramtype> T </paramtype>
        <myaddr> A </myaddr>
 
@@ -1098,7 +1098,7 @@ These instructions push blockchain state on the stack.
        ; SS </tstack> <myamount> M </myamount>
 
   rule <type> CHAIN_ID A => . ... </type>
-       <tstack> SS => [chain_id C] ; SS </tstack>
+       <tstack> SS => chain_id ; SS </tstack>
        <mychainid> C </mychainid>
 
   rule <type> NOW A => . ... </type>
