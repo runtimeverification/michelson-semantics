@@ -1384,29 +1384,20 @@ typing (shared operations use a generic `MapTypeName`).
 
 ```k
   rule <k> GET A => #HandleAnnotations(A) ... </k>
-       <stack> [KT X] ; [MT:MapTypeName KT VT M] ; SS => [option VT None] ; SS </stack>
-    requires isValue(X)
-     andBool notBool(X in_keys(M))
-```
+       <stack> [KT K] ; [MT:MapTypeName KT VT M:Map] ; SS => [option VT #lookup(M, KT, K, VT)] ; SS </stack>
+    requires isValue(K)
 
-```concrete
-   rule <k> GET A => #HandleAnnotations(A) ... </k>
-        <stack> [KT X] ; [MT:MapTypeName KT VT M] ; SS => [option VT Some {M[X]}:>Data] ; SS </stack>
-     requires isValue(X)
-      andBool X in_keys(M)
+  syntax OptionData ::= #lookup(Map, TypeName, SimpleData, TypeName) [function, smtlib(lookup)]
+  rule #lookup((K |-> V) _M:Map, KT, K,  VT) => (Some V) requires isValue(KT,K) andBool isValue(VT, V)
+  rule #lookup(           M:Map, KT, K, _VT) => None     requires isValue(KT,K) andBool notBool (K in_keys(M))
+  // rule #lookup(         _  _,  _,    _  ) => #Bottom [owise]
 ```
 
 ```symbolic
-  rule <k> GET A
-        => #HandleAnnotations(A)
-        ~> #Assume(?Val == #MakeFresh(#Type(VT)))
-        ~> #Assume(M[X] == ?Val)
-           ...
-       </k>
-       <stack> [KT X] ; [MT:MapTypeName KT VT M] ; SS => [option VT Some ?Val] ; SS </stack>
-    requires X in_keys(M)
-
-  rule K1 in_keys(M:Map[ K2 <- _ ]) => K1 ==K K2 orBool K1 in_keys(M) [simplification]
+  // Symbolic backend only
+  rule #lookup(_M:Map [ K <- undef], KT, K, VT) => None     requires isValue(KT, K)                        [simplification]
+  rule #lookup(_M:Map [ K <- V    ], KT, K, VT) => (Some V) requires isValue(KT, K) andBool isValue(VT, V) [simplification]
+  // rule K1 in_keys(M:Map[ K2 <- _ ]) => K1 ==K K2 orBool K1 in_keys(M) [simplification]
 ```
 
 ```k
@@ -2245,25 +2236,50 @@ Symbolic Value Processing
 ### "Evaluating" Data
 
 The `isValue` predicate indicates if a `Data` has been fully evaluated.
+It has an untyped and typed variant.
 
 ```k
-    syntax Bool ::= isValue(Data) [function, functional]
-    rule isValue(D:SimpleData) => true
-    rule isValue(None) => true
-    rule isValue(Some V) => isValue(V)
-    rule isValue(Left V) => isValue(V)
-    rule isValue(Right V) => isValue(V)
-    rule isValue(Pair L R) => isValue(L) andBool isValue(R)
-    rule isValue(_) => false [owise]
-```
+  syntax Bool ::= isValue(Data) [function, functional]
+  // -------------------------------------------------
+  rule isValue(D:SimpleData) => true
+  rule isValue(None) => true
+  rule isValue(Some V) => isValue(V)
+  rule isValue(Left V) => isValue(V)
+  rule isValue(Right V) => isValue(V)
+  rule isValue(Pair L R) => isValue(L) andBool isValue(R)
+  rule isValue(_) => false [owise]
 
-```symbolic
-    rule isValue(D:SimpleData) => true [simplification]
-    rule isValue(None) => true [simplification]
-    rule isValue(Some V) => isValue(V) [simplification]
-    rule isValue(Left V) => isValue(V) [simplification]
-    rule isValue(Right V) => isValue(V) [simplification]
-    rule isValue(Pair L R) => isValue(L) andBool isValue(R) [simplification]
+  syntax Bool ::= isValue(TypeName, Data) [function, functional]
+  // -----------------------------------------------------------
+  rule isValue(nat,       V:Int)                 => true requires V >=Int 0
+  rule isValue(int,       V:Int)                 => true
+  rule isValue(mutez,     V:Int)                 => true requires #IsLegalMutezValue(V)
+  rule isValue(bool,      V:Bool)                => true
+  rule isValue(bytes,     V:Bytes)               => true
+  rule isValue(string,    V:String)              => true
+  rule isValue(unit,      Unit)                  => true
+  rule isValue(key,       #Key(V:String))        => true
+  rule isValue(key_hash,  #KeyHash(V:String))    => true
+  rule isValue(signature, #Signature(V:String))  => true
+  rule isValue(timestamp, #Timestamp(V:Int))     => true
+  rule isValue(address,   #Address(V:String))    => true
+  rule isValue(chain_id,  #ChainId(V:Bytes))     => true
+  rule isValue(operation, V:BlockchainOperation) => true
+
+  rule isValue(contract T, #Contract(#Address(S:String),TY)) => true requires T ==K #Name(TY)
+  rule isValue(option T, None)                               => true
+  rule isValue(option T, Some V)                             => isValue(T, V)
+
+  rule isValue(pair T1 T2, Pair LV RV)                => isValue(T1, LV) andBool isValue(T2, RV)
+  rule isValue(or T1 T2, Left  V)                     => isValue(T1, V)
+  rule isValue(or T1 T2, Right V)                     => isValue(T2, V)
+  rule isValue(lambda T1 T2, #Lambda(T1,T2, B:Block)) => true
+
+  rule isValue(list _, L:List)            => true
+  rule isValue(set _,  S:Set)             => true
+  rule isValue(MT:MapTypeName _ _, M:Map) => true
+
+  rule isValue(_,_) => false [owise]
 ```
 
 ```k
