@@ -14,22 +14,89 @@ module STATIC-TYPE-SEMANTICS
   syntax TypeStack ::= List{TypeName, ";"}
 ```
 
+Operations on type stacks
+-------------------------
+
+```k
+  syntax TypeName ::= append(TypeStack, TypeStack) [function]
+                    | revAppend(TypeStack, TypeStack) [function]
+                    | getIndex(TypeStack, Int) [function]
+                    | putIndex(Type, TypeStack, Int) [function]
+                    | putIndex2(Type, TypeStack, TypeStack, Int) [function]
+                    | delIndex(TypeStack, Int) [function]
+                    | delIndex2(TypeStack, TypeStack, Int) [function]
+                    | delFirstN(TypeStack, Int) [function]
+                    | takeFirstN(TypeStack, Int) [function]
+                    | takeFirstN'(TypeStack, TypeStack, Int) [function]
+  // ------------------------------------------------------------------
+  rule append(T ; TS,     TS') => append(TS, T ; TS')
+  rule append(.TypeStack, TS') => TS'
+
+  rule revAppend(TS, T' ; TS') => revAppend(T' ; TS, TS')
+  rule revAppend(TS, .TypeSeq) => TS
+
+  rule getIndex(T ; _ , 0) => T
+  rule getIndex(_ ; TS, N) => getIndex(TS, N -Int 1) requires N >Int 1
+
+  rule putIndex(T, TS, N) => putIndex2(T, TS, N, .TypeStack)
+  rule putIndex2(T, T' ; TS, TS', 0) => putIndex2(T, TS, T' ; TS, N -Int 1) requires N >Int 1
+  rule putIndex2(T, _  ; TS, TS', N) => revAppend(T ; TS, TS')
+
+  rule delIndex(TS, N)            => delIndex2(TS, N, .TypeStack)
+  rule delIndex2(T' ; TS, N, TS') => delIndex2(TS, N -Int 1, T' ; TS) requires N >Int 1
+  rule delIndex2(_  ; TS, 0, TS') => revAppend(T ; TS, TS')
+
+  rule delFirstN(_ ; TS, N) => delFirstN(TS, N -Int 1) requires N >Int 1
+  rule delFirstN(TS,     0) => TS
+
+  rule takeFirstN(TS, N) => takeFirstN'(TS, .TypeStack, N)
+  rule takeFirstN'(T ; TS, 'TS, N) => takeFirstN'(TS, T ; 'TS, N -Int 1) requires N >Int 1
+  rule takeFirstN'(_,      'TS, 0) => revAppend(.TypeStack, 'TS)
+```
+
+Type Stack Operations
+---------------------
+
+```k
+  syntax Instruction ::= PUSH(TypeStack)
+                       | REPLACE(TypeStack)
+                       | CHECK(TypeStack)
+                       | SAVE_CHECK(DataList)
+
+  rule <type> PUSH(TS') => .K ... </type>
+       <tstack> TS => append(TS',TS) </tstack>
+
+  rule <type> REPLACE(TS') => .K ... </type>
+       <tstack> TS => TS' </tstack>
+
+  rule <type> CHECK(TS') => .K ... </type>
+       <tstack> TS </tstack>
+    requires TS ==K TS'
+
+  rule <type> SAVE_CHECK(IS) => IS ~> CHECK(TS) ... </type>
+       <tstack> TS </tstack>
+```
+
+Control Structures
+------------------
+
+### Instruction Sequencing
+
+```k
+  syntax Instruction ::= "BLOCK_END"
+```
+
 ```k
   rule <type> I:Instruction ; Is => I ~> Is </type> [structural]
   rule <type> {}                 => .K      </type> [structrual]
   rule <type> { Is:DataList }    => Is      </type> [structural]
 ```
 
-Control Structures
-------------------
-
 ### User-defined Exceptions
-
-The `FAILWITH` instruction lets users terminate execution at any point.
 
 ```k
   rule <type> FAILWITH A => .K ... </type>
-       <tstack> T D:Data ; SS => ( Failed D ) </tstack>
+       <tstack> T ; SS => Failed </tstack>
 ```
 
 ### Conditionals
@@ -232,13 +299,13 @@ Core Operations
 ### Pair Operations
 
   rule <type> PAIR A => .K ... </type>
-       <tstack> LTy ; RTy ; SS => Pair LTy RTy ; SS </tstack> 
+       <tstack> LTy ; RTy ; SS => Pair LTy RTy ; SS </tstack>
 
   rule <type> UNPAIR A => .K ... </type>
-       <tstack> pair LTy RTy ; SS => LTy ; RTy ; SS </tstack> 
+       <tstack> pair LTy RTy ; SS => LTy ; RTy ; SS </tstack>
 
   rule <type> CAR A => .K ... </type>
-       <tstack> pair LTy RTy ; SS => LTy ; SS </tstack> 
+       <tstack> pair LTy RTy ; SS => LTy ; SS </tstack>
 
   rule <type> CDR A => .K ... </type>
        <tstack> pair LTy RTy ; SS => RTy ; SS </tstack>
@@ -447,16 +514,16 @@ Domain Specific operations
 
 ```k
   rule <type> ADD A => .K ...  </type>
-       <tstack> mutez ; mutez ; SS => SS </tstack> 
+       <tstack> mutez ; mutez ; SS => SS </tstack>
 
   rule <type> SUB A => .K ...  </type>
-       <tstack> mutez ; mutez ; SS => SS </tstack> 
+       <tstack> mutez ; mutez ; SS => SS </tstack>
 
   rule <type> MUL A => .K ...  </type>
-       <tstack> mutez ; nat ; SS => SS </tstack> 
+       <tstack> mutez ; nat ; SS => SS </tstack>
 
   rule <type> MUL A => .K ...  </type>
-       <tstack> nat ; mutez ; SS => SS </tstack> 
+       <tstack> nat ; mutez ; SS => SS </tstack>
 
   rule <type> EDIV A => .K ... </type>
        <tstack> mutez ; mutez ; SS => option pair nat mutez ; SS </tstack>
