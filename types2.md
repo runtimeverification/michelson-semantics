@@ -367,57 +367,57 @@ These operations map directly to their K equivalents.
 
 ```k
   rule <type> NEG A => #HandleAnnotations(A) ... </type>
-       <tstack> [ N:NumTypeName I ] ; SS => [int ; SS </tstack>
+       <tstack> N:NumTypeName ; SS => [int ; SS </tstack>
 
   rule <type> ABS A => #HandleAnnotations(A) ... </type>
-       <tstack> [int ; SS => nat ; SS </tstack>
+       <tstack> int ; SS => nat ; SS </tstack>
 
   rule <type> ISNAT A => #HandleAnnotations(A) ... </type>
-       <tstack> [int ; SS => [ (option nat) Some I ] ; SS </tstack>
+       <tstack> int ; SS => option nat ; SS </tstack>
        requires I >=Int 0
 
   rule <type> ISNAT A => #HandleAnnotations(A) ... </type>
-       <tstack> [int ; SS => [ (option nat) None ] ; SS </tstack>
+       <tstack> [int ; SS => option nat ; SS </tstack>
        requires I <Int 0
 
   rule <type> INT A => #HandleAnnotations(A) ... </type>
        <tstack> [ (nat =>int ; SS </tstack>
 
   rule <type> ADD A => #HandleAnnotations(A) ... </type>
-       <tstack> [ T1:NumTypeName I1 ] ;
-               [ T2:NumTypeName I2 ] ;
+       <tstack> T1:NumTypeName ;
+               T2:NumTypeName ;
                SS
             => [ BinOpNumType(T1,T2) I1 +Int I2 ] ;
                SS
        </tstack>
 
   rule <type> SUB A => #HandleAnnotations(A) ... </type>
-       <tstack> [ T1:NumTypeName I1 ] ;
-               [ T2:NumTypeName I2 ] ;
+       <tstack> T1:NumTypeName ;
+               T2:NumTypeName ;
                SS
             => [int ;
                SS
        </tstack>
 
   rule <type> MUL A => #HandleAnnotations(A) ... </type>
-       <tstack> [ T1:NumTypeName I1 ] ;
-               [ T2:NumTypeName I2 ] ;
+       <tstack> T1:NumTypeName ;
+               T2:NumTypeName ;
                SS
             => [ BinOpNumType(T1,T2) I1 *Int I2 ] ;
                SS
        </tstack>
 
   rule <type> EDIV A => #HandleAnnotations(A) ... </type>
-       <tstack> [ T1:NumTypeName I1:Int ] ;
-               [ T2:NumTypeName 0 ] ;
+       <tstack> T1:NumTypeName ;
+               T2:NumTypeName ;
                SS
             => [ (option (pair BinOpNumType(T1,T2) nat)) None ] ;
                SS
        </tstack>
 
   rule <type> EDIV A  => #HandleAnnotations(A) ... </type>
-       <tstack> [ T1:NumTypeName I1:Int ] ;
-               [ T2:NumTypeName I2:Int ] ;
+       <tstack> T1:NumTypeName ;
+               T2:NumTypeName ;
                SS
             => [ (option (pair BinOpNumType(T1,T2) nat))
                    Some P ] ;
@@ -440,13 +440,13 @@ overflows.
        <tstack> nat ; nat ; SS => nat ; SS </tstack>
 
   rule <type> AND A => #HandleAnnotations(A) ... </type>
-       <tstack> [ T1:NumTypeName I1 ] ; nat ; SS => nat ; SS </tstack>
+       <tstack> T1:NumTypeName ; nat ; SS => nat ; SS </tstack>
 
   rule <type> XOR A => #HandleAnnotations(A) ... </type>
        <tstack> nat ; nat ; SS => nat ; SS </tstack>
 
   rule <type> NOT A => #HandleAnnotations(A) ... </type>
-       <tstack> [ T1:NumTypeName I ] ; SS => [int ; SS </tstack>
+       <tstack> T1:NumTypeName ; SS => [int ; SS </tstack>
 
   rule <type> LSL A => #HandleAnnotations(A) ... </type>
        <tstack> nat ; nat ; SS => nat ; SS </tstack>
@@ -514,98 +514,27 @@ The `COMPARE` instruction is defined over all comparable datatypes.
   rule #IsComparable(big_map _ _) => false
 ```
 
-We define `COMPARE` in terms of a `#DoCompare` function.
 
-```k
-  syntax Int ::= #DoCompare(Data, Data) [function, functional]
-
-  rule #DoCompare(true, true) => 0
-  rule #DoCompare(false, false) => 0
-  rule #DoCompare(false, true) => -1
-  rule #DoCompare(true, false) => 1
-
-  rule #DoCompare(I1:Int, I2:Int) => -1 requires I1 <Int I2
-  rule #DoCompare(I1:Int, I2:Int) => 0 requires I1 ==Int I2
-  rule #DoCompare(I1:Int, I2:Int) => 1 requires I1 >Int I2
-
-  rule #DoCompare(S1:String, S2:String) => -1 requires S1 <String S2
-  rule #DoCompare(S1:String, S2:String) => 0 requires S1 ==String S2
-  rule #DoCompare(S1:String, S2:String) => 1 requires S1 >String S2
-
-  rule #DoCompare(P, P) => -1                 requires #DoCompare(A1, B1) ==Int -1 rule #DoCompare(P, P) => #DoCompare(A2, B2) requires #DoCompare(A1, B1) ==Int 0 rule #DoCompare(P, P) => 1                  requires #DoCompare(A1, B1) ==Int 1 
-  rule #DoCompare(B1:Bytes, B2:Bytes) => #DoCompare(Bytes2Int(B1, BE, Unsigned), Bytes2Int(B2, BE, Unsigned))
-  rule #DoCompare(#KeyHash(S1), #KeyHash(S2)) => #DoCompare(S1, S2)
-  rule #DoCompare(V, V) => #DoCompare(I1, I2)
-  rule #DoCompare(#Timestamp(I1), #Timestamp(I2)) => #DoCompare(I1, I2)
-  rule #DoCompare(#Address(S1), #Address(S2)) => #DoCompare(S1, S2)
-```
-
-The `#DoCompare` function requires additional lemmas for symbolic execution.
-
-```symbolic
-  rule #DoCompare(I1:Bool, I2:Bool) <Int 0  => (I1 ==Bool false) andBool (I2 ==Bool true)                       [simplification]
-  rule #DoCompare(I1:Bool, I2:Bool) <=Int 0 => ((I1 ==Bool false) andBool (I2 ==Bool true)) orBool I1 ==Bool I2 [simplification]
-  rule #DoCompare(I1:Bool, I2:Bool) ==Int 0 => I1 ==Bool I2                                                     [simplification]
-  rule #DoCompare(I1:Bool, I2:Bool) >=Int 0 => ((I1 ==Bool true) andBool (I2 ==Bool false)) orBool I1 ==Bool I2 [simplification]
-  rule #DoCompare(I1:Bool, I2:Bool) >Int 0  => (I1 ==Bool true) andBool (I2 ==Bool false)                       [simplification]
-
-  rule #DoCompare(I1:Int, I2:Int) <Int 0  => I1 <Int I2  [simplification]
-  rule #DoCompare(I1:Int, I2:Int) <=Int 0 => I1 <=Int I2 [simplification]
-  rule #DoCompare(I1:Int, I2:Int) ==Int 0 => I1 ==Int I2 [simplification]
-  rule #DoCompare(I1:Int, I2:Int) >=Int 0 => I1 >=Int I2 [simplification]
-  rule #DoCompare(I1:Int, I2:Int) >Int 0  => I1 >Int I2  [simplification]
-
-  rule #DoCompare(I1:String, I2:String) <Int 0  => I1 <String I2  [simplification]
-  rule #DoCompare(I1:String, I2:String) <=Int 0 => I1 <=String I2 [simplification]
-  rule #DoCompare(I1:String, I2:String) ==Int 0 => I1 ==String I2 [simplification]
-  rule #DoCompare(I1:String, I2:String) >=Int 0 => I1 >=String I2 [simplification]
-  rule #DoCompare(I1:String, I2:String) >Int 0  => I1 >String I2  [simplification]
-
-  // TODO: at some point this rule should be builtin
-  rule X ==String X => true [simplification]
-```
 
 ### String Operations
 
 ```k
-  syntax String ::= #ConcatStrings(List, String) [function]
-  rule #ConcatStrings(.List, A) => A
-  rule #ConcatStrings(ListItem(S1) DL, A) => #ConcatStrings(DL, A +String S1)
+  rule <type> CONCAT A => #HandleAnnotations(A) ... </type>
+       <tstack> string ; string ; SS => string ; SS </tstack>
 
   rule <type> CONCAT A => #HandleAnnotations(A) ... </type>
-       <tstack> [string S1] ; [string S2] ; SS => [string S1 +String S2] ; SS </tstack>
-
-  rule <type> CONCAT A => #HandleAnnotations(A) ... </type>
-       <tstack> [(list string) L] ; SS => [string #ConcatStrings(L, "")] ; SS </tstack>
+       <tstack> list string ; SS => string ; SS </tstack>
 
   rule <type> SIZE A => #HandleAnnotations(A) ... </type>
-       <tstack> [string S] ; SS => nat ; SS </tstack>
+       <tstack> string ; SS => nat ; SS </tstack>
 ```
-
-The actual out of bounds conditions here are determined by experimentation.
-Earlier versions of the semantics didn't check if O was in bounds, resulting in
-`Slice("", 0, 0) => Some ""` rather than the correct
-`#SliceString("", 0, 0) => None`
 
 ```k
   rule <type> SLICE A => #HandleAnnotations(A) ... </type>
-       <tstack> nat ; nat ; [string S] ; SS => [option string #SliceString(S, O, L)] ; SS </tstack>
-
-  syntax OptionData ::= #SliceString(String, Int, Int) [function]
-
-  rule #SliceString(S, O, L) => Some substrString(S, O, O +Int L)
-    requires O >=Int 0
-     andBool L >=Int 0
-     andBool O <Int lengthString(S)
-     andBool (O +Int L) <=Int lengthString(S)
-
-  rule #SliceString(S, O, L) => None [owise]
+       <tstack> nat ; nat ; string ; SS => [option string #SliceString(S, O, L)] ; SS </tstack>
 ```
 
 ### Bytes Operations
-
-The bytes instructions have a stubbed implementation for the time being, since
-the actual serialization format is not formally unspecified.
 
 ```k
   rule <type> PACK A => #HandleAnnotations(A) ... </type>
@@ -615,24 +544,16 @@ the actual serialization format is not formally unspecified.
        <tstack> bytes ; SS => [option T Some V] ; SS </tstack>
 ```
 
-The `CONCAT` operation over two bytes is relatively straightforward since we
-already have helper functions to extract bytes content.
-
 ```k
   rule <type> CONCAT A => #HandleAnnotations(A) ... </type>
        <tstack> bytes ; bytes ; SS => bytes ; SS </tstack>
 ```
 
-`CONCAT` over lists of bytes is somewhat more involved, since we need to
-distinguish this case from lists of strings.
 
 ```k
   rule <type> CONCAT A => #HandleAnnotations(A) ... </type>
        <tstack> [(list bytes) L] ; SS => bytes ; SS </tstack>
 
-  syntax Bytes ::= #ConcatBytes(List, Bytes) [function]
-  rule #ConcatBytes(.List, A) => A
-  rule #ConcatBytes(ListItem(B) DL, A) => #ConcatBytes(DL, A +Bytes B)
 ```
 
 `SIZE` is relatively simple, except that we must remember to divide by two,
@@ -908,38 +829,38 @@ since it does not need to track the new map while keeping it off the stack.
 
 ```k
   rule <type> LEFT A RTy:Type => #HandleAnnotations(A)  ... </type>
-       <tstack> [LTy X:Data] ; SS => [or LTy #Name(RTy) Left X] ; SS </tstack>
+       <tstack> LTy ; SS => or LTy #Name(RTy) ; SS </tstack>
 
   rule <type> RIGHT A LTy:Type => #HandleAnnotations(A) ... </type>
-       <tstack> [RTy X:Data] ; SS => [or #Name(LTy) RTy Right X] ; SS </tstack>
+       <tstack> RTy ; SS => or #Name(LTy) RTy ; SS </tstack>
 
   rule <type> IF_LEFT A BT BF => #HandleAnnotations(A) ~> BT ... </type>
-       <tstack> [or LTy RTy Left V] ; SS => [LTy V] ; SS </tstack>
+       <tstack> or LTy RTy ; SS => LTy ; SS </tstack>
 
   rule <type> IF_LEFT A BT BF => #HandleAnnotations(A) ~> BF ... </type>
-       <tstack> [or LTy RTy Right V] ; SS => [RTy V] ; SS </tstack>
+       <tstack> or LTy RTy ; SS => RTy ; SS </tstack>
 ```
 
 ### List Operations
 
 ```k
   rule <type> CONS A => #HandleAnnotations(A)  ... </type>
-       <tstack> [T V] ; [list T L:List] ; SS => [list T ListItem(V) L] ; SS </tstack>
+       <tstack> [T V] ; list T ; SS => list T ; SS </tstack>
 
   rule <type> NIL A T => #HandleAnnotations(A)  ... </type>
-       <tstack> SS => [list #Name(T) .List] ; SS </tstack>
+       <tstack> SS => list #Name(T) ; SS </tstack>
 
   rule <type> IF_CONS A BT BF => #HandleAnnotations(A) ~> BT ... </type>
-       <tstack> [list T ListItem(L1) Ls] ; SS => [T L1] ; [list T Ls] ; SS </tstack>
+       <tstack> list T ; SS => [T L1] ; list T ; SS </tstack>
 
   rule <type> IF_CONS A BT BF => #HandleAnnotations(A) ~> BF ... </type>
-       <tstack> [list T .List ] ; SS => SS </tstack>
+       <tstack> list T ; SS => SS </tstack>
 
   rule <type> SIZE A => #HandleAnnotations(A)  ... </type>
-       <tstack> [list T L:List] ; SS => nat ; SS </tstack>
+       <tstack> list T ; SS => nat ; SS </tstack>
 
   rule <type> ITER A B =>  #HandleAnnotations(A) ~>. ... </type>
-       <tstack> [list T .List] ; SS => SS </tstack>
+       <tstack> list T ; SS => SS </tstack>
 
   rule <type> ITER A B
         => #HandleAnnotations(A)
@@ -948,7 +869,7 @@ since it does not need to track the new map while keeping it off the stack.
         ~> ITER .AnnotationList B
            ...
        </type>
-       <tstack> [list T ListItem(E) Ls] ; SS => [T E] ; SS </tstack>
+       <tstack> list T ; SS => [T E] ; SS </tstack>
 ```
 
 The `MAP` operation over `list`s is defined in terms of a helper function.
@@ -959,13 +880,13 @@ The `MAP` operation over `list`s is defined in terms of a helper function.
         ~> #DoMap(T, NoneType, Ls, .List, B)
            ...
        </type>
-       <tstack> [list T Ls] ; SS => SS </tstack>
+       <tstack> list T ; SS => SS </tstack>
 
   syntax Instruction ::= #DoMap(TypeName, MaybeTypeName, List, List, Block)
                        | #DoMapAux(TypeName, MaybeTypeName, List, List, Block)
   // -------------------------------------------------------------------------
   rule <type> #DoMap(T, NT, .List, Acc, B) => .K ... </type>
-       <tstack> SS => [list #DefaultType(NT,T) #ReverseList(Acc)] ; SS </tstack>
+       <tstack> SS => list #DefaultType(NT,T) ; SS </tstack>
 
   rule <type> #DoMap(T, NT, ListItem(E) Ls, Acc, B)
         => B
