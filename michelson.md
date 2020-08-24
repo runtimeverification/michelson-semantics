@@ -1385,7 +1385,6 @@ typing (shared operations use a generic `MapTypeName`).
 ```k
   rule <k> GET A => #HandleAnnotations(A) ... </k>
        <stack> [KT K] ; [MT:MapTypeName KT VT M:Map] ; SS => [option VT #lookup(M, KT, K, VT)] ; SS </stack>
-    requires isValue(K)
 
   syntax OptionData ::= #lookup(Map, TypeName, SimpleData, TypeName) [function, smtlib(lookup)]
   rule #lookup((K |-> V) _M:Map, KT, K,  VT) => (Some V) requires isValue(KT,K) andBool isValue(VT, V)
