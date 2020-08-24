@@ -88,7 +88,7 @@ Type Stack Operations
                        | SAVE_CHECK(TypeStack, DataList)
                        | MAP_MAP_CHECK(TypeName, TypeStack)
                        | MAP_LIST_CHECK(TypeStack)
-
+  // ---------------------------------------------
   rule <type> APPEND(TS') => .K ... </type>
        <tstack> TS => append(TS',TS) </tstack>
 
@@ -109,6 +109,79 @@ Type Stack Operations
   rule <type> MAP_LIST_CHECK(TS') => .K ... </type>
        <tstack> val_ty ; TS => list val_ty ; TS </tstack>
     requires UnifyNoFailed(TS, TS')
+```
+
+Type Checking Data Literals
+---------------------------
+
+Note: no literals of type `contract`, `operation`, or `big_map`.
+
+```k
+  syntax Instruction ::= TYPE_DATA(TypeName, Data)
+  // ---------------------------------------------
+  rule <type> TYPE_DATA(unit,      Unit)            => .K ... </type>
+  rule <type> TYPE_DATA(bool,      B:MichelsonBool) => .K ... </type>
+
+  rule <type> TYPE_DATA(nat,       I:Int)           => .K ... </type>
+  rule <type> TYPE_DATA(int,       I:Int)           => .K ... </type>
+  rule <type> TYPE_DATA(timestamp, I:Int)           => .K ... </type>
+  rule <type> TYPE_DATA(mutez,     I:Int)           => .K ... </type>
+
+  rule <type> TYPE_DATA(string,    S:String)        => .K ... </type>
+  rule <type> TYPE_DATA(address,   S:String)        => .K ... </type>
+  rule <type> TYPE_DATA(key,       S:String)        => .K ... </type>
+  rule <type> TYPE_DATA(key_hash,  S:String)        => .K ... </type>
+  rule <type> TYPE_DATA(timestamp, S:String)        => .K ... </type>
+  rule <type> TYPE_DATA(signature, S:String)        => .K ... </type>
+
+  rule <type> TYPE_DATA(bytes,     M:MBytesLiteral) => .K ... </type>
+  rule <type> TYPE_DATA(chain_id,  M:MBytesLiteral) => .K ... </type>
+
+  rule <type> TYPE_DATA(option T, None)   => .K              ... </type>
+  rule <type> TYPE_DATA(option T, Some D) => TYPE_DATA(T, D) ... </type>
+
+  rule <type> TYPE_DATA(list T, { }) => .K ... </type>
+  rule <type> TYPE_DATA(list T, { E }) => TYPE_DATA(T, E) ... </type>
+  rule <type> TYPE_DATA(list T, { E ; Rest })
+           => TYPE_DATA(T, E)
+           ~> TYPE_DATA(list T, { Rest })
+              ...
+       </type>
+
+  rule <type> TYPE_DATA(set T, { }) => .K  </type>
+  rule <type> TYPE_DATA(set T, { E }) => TYPE_DATA(T, E) ...  </type>
+  rule <type> TYPE_DATA(set T, { E ; Rest })
+           => TYPE_DATA(T, E)
+           ~> TYPE_DATA(set T, { Rest })
+              ...
+       </type>
+
+  rule <type> TYPE_DATA(pair lt rt, Pair LV RV)
+           => TYPE_DATA(lt, LV)
+           ~> TYPE_DATA(rt, RV)
+              ...
+       </type>
+
+  rule <type> TYPE_DATA(or lt rt, Left  LV) => TYPE_DATA(lt, LV) ...  </type>
+  rule <type> TYPE_DATA(or lt rt, Right RV) => TYPE_DATA(rt, RV) ...  </type>
+
+  rule <type> TYPE_DATA(map kt vt, { }) => .K </type>
+  rule <type> TYPE_DATA(map kt vt, { Elt T D })
+           => TYPE_DATA(pair kt vt, Pair T D)
+              ...
+       </type>
+  rule <type> TYPE_DATA(map kt vt, { Elt T D ; Rest })
+           => TYPE_DATA(pair kt vt, Pair T D)
+           ~> TYPE_DATA(map kt vt, { Rest })
+              ...
+       </type>
+
+  rule <type> TYPE_DATA(lambda at rt, { D:DataList })
+           => D
+           ~> CHECK(rt)
+           ~> REPLACE(TS)
+              ...
+       <tstack> TS => at </tstack>
 ```
 
 Control Structures
@@ -173,14 +246,14 @@ Control Structures
 #### `PUSH`-like Instructions
 
 ```k
-  rule <type> PUSH A T X => .K ... </type>
+  rule <type> PUSH A T X => CHECK_DATA(#Name(T), X) ... </type>
        <tstack> TS => #Name(T) ; TS </tstack>
 
   rule <type> UNIT A => .K ... </type>
        <tstack> TS => unit ; TS </tstack>
 
-  rule <type> LAMBDA A T1 T2 C => .K ... </type>
-       <tstack> TS => (lambda #Name(T1) #Name(T2)) ; TS </tstack>
+  rule <type> LAMBDA A T1 T2 C => CHECK_DATA(lambda #Name(t1) #Name(t2), C) ... </type>
+       <tstack> TS => lambda #Name(t1) #Name(t2) ; TS </tstack>
 ```
 
 ### Lambda Evaluation
