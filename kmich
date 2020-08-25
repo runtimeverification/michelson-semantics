@@ -65,7 +65,12 @@ run_interpret() {
 }
 
 run_symbtest() {
-    run_krun --search-final --output json "$@" | $kmich_dir/lib/michelson-test-check "$kompiled_dir"
+    output=$(run_krun --search-final --output json "$@")
+    if [ $? -ne 0 ]; then
+        echo "$output" >&2
+        fatal "krun encountered an error: skipping post-processing"
+    fi
+    echo "$output" | $kmich_dir/lib/michelson-test-check "$kompiled_dir"
 }
 
 # Main
