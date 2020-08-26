@@ -1414,6 +1414,7 @@ This rule is not supported by the LLVM backend, so we only include it in Haskell
 
   rule <k> UPDATE A => #HandleAnnotations(A)  ... </k>
        <stack> [KT K] ; [option VT Some V] ; [MT:MapTypeName KT VT M:Map] ; SS => [MT KT VT M[K <- V]] ; SS </stack>
+    requires isValue(VT, V)
 
   rule <k> UPDATE A => #HandleAnnotations(A)  ... </k>
        <stack> [KT K] ; [option VT None] ; [MT:MapTypeName KT VT M:Map] ; SS => [MT KT VT M[K <- undef]] ; SS </stack>
