@@ -1390,10 +1390,15 @@ typing (shared operations use a generic `MapTypeName`).
   rule <k> GET A => #HandleAnnotations(A) ... </k>
        <stack> [KT K] ; [MT:MapTypeName KT VT M:Map] ; SS => [option VT #lookup(M, KT, K, VT)] ; SS </stack>
 
-  syntax OptionData ::= #lookup(Map, TypeName, SimpleData, TypeName) [function, smtlib(lookup)]
-  rule #lookup((K |-> V) _M:Map, KT, K,  VT) => (Some V) requires isValue(KT,K) andBool isValue(VT, V)
-  rule #lookup(           M:Map, KT, K, _VT) => None     requires isValue(KT,K) andBool notBool (K in_keys(M))
-  // rule #lookup(         _  _,  _,    _  ) => #Bottom [owise]
+  syntax OptionData ::= #lookup(Map, TypeName, Data, TypeName) [function, smtlib(lookup)]
+  rule #lookup((K |-> V) _M:Map, KT, K, VT) => Some V  requires isValue(KT, K) andBool isValue(VT, V)
+  rule #lookup(           M:Map, KT, K, _ ) => None    requires isValue(KT, K) andBool notBool (K in_keys(M))
+```
+
+This rule is not supported by the LLVM backend, so we only include it in Haskell builds.
+
+```symbolic
+  rule #lookup(_, _, _, _ ) => #Bottom [owise]
 ```
 
 ```symbolic
