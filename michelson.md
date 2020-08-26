@@ -1136,6 +1136,8 @@ The `COMPARE` instruction is defined over all comparable datatypes.
   rule #IsComparable(address) => true
   rule #IsComparable(pair T1 T2) => #IsComparable(T1) andBool #IsComparable(T2)
 
+  rule #IsComparable(option _) => true
+
   // Nullary Incomparables
   rule #IsComparable(key) => false
   rule #IsComparable(unit) => false
@@ -1144,7 +1146,6 @@ The `COMPARE` instruction is defined over all comparable datatypes.
   rule #IsComparable(chain_id) => false
 
   // Unary Incomparables
-  rule #IsComparable(option _) => false
   rule #IsComparable(list _) => false
   rule #IsComparable(set _) => false
   rule #IsComparable(contract _) => false
@@ -1173,6 +1174,11 @@ We define `COMPARE` in terms of a `#DoCompare` function.
   rule #DoCompare(S1:String, S2:String) => -1 requires S1 <String S2
   rule #DoCompare(S1:String, S2:String) => 0 requires S1 ==String S2
   rule #DoCompare(S1:String, S2:String) => 1 requires S1 >String S2
+
+  rule #DoCompare(None,    None   ) =>  0
+  rule #DoCompare(Nome,    Some V ) => -1
+  rule #DoCompare(Some V,  None   ) =>  1
+  rule #DoCompare(Some V1, Some V2) => #DoCompare(V1, V2)
 
   rule #DoCompare((Pair A1 A2), (Pair B1 B2)) => -1                 requires #DoCompare(A1, B1) ==Int -1
   rule #DoCompare((Pair A1 A2), (Pair B1 B2)) => #DoCompare(A2, B2) requires #DoCompare(A1, B1) ==Int 0
