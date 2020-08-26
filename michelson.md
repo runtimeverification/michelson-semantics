@@ -1160,10 +1160,10 @@ The `COMPARE` instruction is defined over all comparable datatypes.
 We define `COMPARE` in terms of a `#DoCompare` function.
 
 ```k
-  syntax Int ::= #DoCompare(Data, Data) [function, functional]
+  syntax Int ::= #DoCompare(Data, Data) [function]
 
-  rule #DoCompare(true, true) => 0
-  rule #DoCompare(false, false) => 0
+  rule #DoCompare(V, V) => 0
+
   rule #DoCompare(false, true) => -1
   rule #DoCompare(true, false) => 1
 
@@ -1175,7 +1175,6 @@ We define `COMPARE` in terms of a `#DoCompare` function.
   rule #DoCompare(S1:String, S2:String) => 0 requires S1 ==String S2
   rule #DoCompare(S1:String, S2:String) => 1 requires S1 >String S2
 
-  rule #DoCompare(None,    None   ) =>  0
   rule #DoCompare(Nome,    Some V ) => -1
   rule #DoCompare(Some V,  None   ) =>  1
   rule #DoCompare(Some V1, Some V2) => #DoCompare(V1, V2)
@@ -1194,21 +1193,20 @@ We define `COMPARE` in terms of a `#DoCompare` function.
 The `#DoCompare` function requires additional lemmas for symbolic execution.
 
 ```symbolic
+  rule #DoCompare(V1, V2) ==Int 0 => V1 ==K V2 [simplification]
+
   rule #DoCompare(I1:Bool, I2:Bool) <Int 0  => (I1 ==Bool false) andBool (I2 ==Bool true)                       [simplification]
   rule #DoCompare(I1:Bool, I2:Bool) <=Int 0 => ((I1 ==Bool false) andBool (I2 ==Bool true)) orBool I1 ==Bool I2 [simplification]
-  rule #DoCompare(I1:Bool, I2:Bool) ==Int 0 => I1 ==Bool I2                                                     [simplification]
   rule #DoCompare(I1:Bool, I2:Bool) >=Int 0 => ((I1 ==Bool true) andBool (I2 ==Bool false)) orBool I1 ==Bool I2 [simplification]
   rule #DoCompare(I1:Bool, I2:Bool) >Int 0  => (I1 ==Bool true) andBool (I2 ==Bool false)                       [simplification]
 
   rule #DoCompare(I1:Int, I2:Int) <Int 0  => I1 <Int I2  [simplification]
   rule #DoCompare(I1:Int, I2:Int) <=Int 0 => I1 <=Int I2 [simplification]
-  rule #DoCompare(I1:Int, I2:Int) ==Int 0 => I1 ==Int I2 [simplification]
   rule #DoCompare(I1:Int, I2:Int) >=Int 0 => I1 >=Int I2 [simplification]
   rule #DoCompare(I1:Int, I2:Int) >Int 0  => I1 >Int I2  [simplification]
 
   rule #DoCompare(I1:String, I2:String) <Int 0  => I1 <String I2  [simplification]
   rule #DoCompare(I1:String, I2:String) <=Int 0 => I1 <=String I2 [simplification]
-  rule #DoCompare(I1:String, I2:String) ==Int 0 => I1 ==String I2 [simplification]
   rule #DoCompare(I1:String, I2:String) >=Int 0 => I1 >=String I2 [simplification]
   rule #DoCompare(I1:String, I2:String) >Int 0  => I1 >String I2  [simplification]
 
