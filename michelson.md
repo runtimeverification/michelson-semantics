@@ -684,7 +684,7 @@ Currently, if a program aborts due to the FAILWITH instruction, we throw away
 the abortion debug info:
 
 ```k
-  rule <k> (Aborted(_, _, _, _) => .K) ~> #ExecutePostConditions ... </k>
+  rule <k> (Aborted(_, _, _, _) ~> #ExecutePostConditions ~> Rest) => .K </k>
 ```
 
 ### Conditionals
