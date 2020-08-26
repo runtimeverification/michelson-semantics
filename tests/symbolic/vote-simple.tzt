@@ -30,34 +30,31 @@ postcondition {  { PUSH (pair int (map int int)) $I                            /
                  ; COMPARE ; EQ                                                // K=S
                  ; IF // K = S
                       { TRACE("==")
-		      ; PUSH (pair int (map int int)) $I                       // (S,M)
+                      ; PUSH (pair int (map int int)) $I                       // (S,M)
+                      ; UNPAIR                                                 // S M
+                      ; GET                                                    // M[S]
+                      ; IF_NONE { PUSH bool False }
+                                { PUSH int 1                                    // 1 + M[S]
+                                ; ADD                                           // M[S]+1
+                                ; PUSH (pair (list operation) (map int int)) $O // (L,M') M[S]+1
+                                ; CDR                                           // M' M[S]+1
+                                ; PUSH (pair int (map int int)) $I ; CAR        // S M' M[S]+1
+                                ; GET                                           // M'[S] M[S]+1
+                                ; IF_NONE { PUSH bool False }
+                                          { COMPARE ; EQ    }                   // M'[S] == M[S]+1
+                                }
+                      }
+                      // S != K
+                      { TRACE("=/=")
+                      ; PUSH (pair int (map int int)) $I                       // (S,M)
                       ; CDR                                                    // M
                       ; PUSH int $K                                            // K M
-                      ; GET                                                    // M[K]
+                      ; GET                                                    // M[K]?
                       ; PUSH (pair (list operation) (map int int)) $O          // (L,M') M[K]
                       ; CDR                                                    // M' M[K]
                       ; PUSH int $K                                            // K M' M[K]
                       ; GET                                                    // M'[K] M[K]
                       ; COMPARE ; EQ                                           // M'[K] == M[K]
                       }
-                      // S != K
-                      { TRACE("=/=")
-		      ; PUSH (pair int (map int int)) $I                       // (S,M)
-                      ; CDR                                                    // M
-                      ; PUSH int $K                                            // K M
-                      ; GET                                                    // M[K]?
-		      ; IF_NONE { PUSH bool True }
-		                { TRACE("IN MAP")
-				; PUSH int 1                                             // 1 M[K]
-                                ; ADD                                                    // M[K]+1
-                                ; PUSH (pair (list operation) (map int int)) $O          // (L,M') M[K]+1
-                                ; CDR                                                    // M' M[K]+1
-                                ; PUSH int $K                                            // K M' M[K]+1
-                                ; GET                                                    // M'[K] M[K]+1
-				; IF_NONE { PUSH bool False }
-				          { TRACE("COMPARE")
-					  ; COMPARE ; EQ    }                            // M'[K] == M[K]+1
-                                }
-		      }
                  }
               }
