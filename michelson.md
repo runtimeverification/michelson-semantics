@@ -1423,12 +1423,19 @@ This rule is not supported by the LLVM backend, so we only include it in Haskell
 ```
 
 ```k
-  rule <k> MEM A => #HandleAnnotations(A) ~> . ... </k>
-       <stack> [KT X] ; [MT:MapTypeName KT VT M] ; SS => [bool X in_keys(M)] ; SS </stack>
+  rule <k> MEM A => #HandleAnnotations(A) ~> #Assume(isValue(VT, {M[K]}:>Data)) ... </k>
+       <stack> [KT K] ; [MT:MapTypeName KT VT M:Map] ; SS => [bool true] ; SS </stack>
+    requires isValue(KT, K)
+     andBool K in_keys(M)
+
+  rule <k> MEM A => #HandleAnnotations(A) ...  </k>
+       <stack> [KT K] ; [MT:MapTypeName KT VT M:Map] ; SS => [bool false] ; SS </stack>
+    requires notBool K in_keys(M)
 
   rule <k> UPDATE A => #HandleAnnotations(A)  ... </k>
        <stack> [KT K] ; [option VT Some V] ; [MT:MapTypeName KT VT M:Map] ; SS => [MT KT VT M[K <- V]] ; SS </stack>
-    requires isValue(VT, V)
+    requires isValue(KT, K)
+     andBool isValue(VT, V)
 
   rule <k> UPDATE A => #HandleAnnotations(A)  ... </k>
        <stack> [KT K] ; [option VT None] ; [MT:MapTypeName KT VT M:Map] ; SS => [MT KT VT M[K <- undef]] ; SS </stack>
