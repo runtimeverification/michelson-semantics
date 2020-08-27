@@ -15,6 +15,10 @@ module MICHELSON-COMMON
   imports COLLECTIONS
 ```
 
+```symbolic
+  imports MAP-SYMBOLIC
+```
+
 ```k
   syntax TypeName ::= NullaryTypeName
                     | UnaryTypeName TypeName
