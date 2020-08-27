@@ -1387,39 +1387,30 @@ For this reason, many map operations share an identical representation upto
 typing (shared operations use a generic `MapTypeName`).
 
 ```k
-  rule <k> GET A => #HandleAnnotations(A) ... </k>
-       <stack> [KT K] ; [MT:MapTypeName KT VT M:Map] ; SS => [option VT #lookup(M, KT, K, VT)] ; SS </stack>
+  rule <k> GET A => #HandleAnnotations(A) ...  </k>
+       <stack> [KT K] ; [MT:MapTypeName KT VT M:Map] ; SS => [option VT #lookup(M, K, VT)] ; SS </stack>
+    requires isValue(KT, K)
+```
 
-  syntax OptionData ::= #lookup(Map, TypeName, Data, TypeName) [function, smtlib(lookup)]
-  rule #lookup((K |-> V) _M:Map, KT, K, VT) => Some V  requires isValue(KT, K) andBool isValue(VT, V)
-  rule #lookup(           M:Map, KT, K, _ ) => None    requires isValue(KT, K) andBool notBool (K in_keys(M))
+```k
+  syntax OptionData ::= #lookup(Map, Data, TypeName) [function, smtlib(lookup)]
+  // --------------------------------------------------------------------------
+  rule #lookup(M, K, VT) => Some {M[K]}:>Data requires K in_keys(M) andBool         isValue(VT,{M[K]}:>Data)
+  rule #lookup(M, K, _ ) => None              requires notBool K in_keys(M)
 ```
 
 This rule is not supported by the LLVM backend, so we only include it in Haskell builds.
 
 ```symbolic
-  rule #lookup(_, _, _, _ ) => #Bottom [owise]
+  rule #lookup(M, K, VT) => #Bottom           requires K in_keys(M) andBool notBool isValue(VT,{M[K]}:>Data)
 ```
 
 ```symbolic
-  rule #lookup(_M:Map [ K1 <- undef], KT, K2, _ ) => None
-    requires isValue(KT,K1)
-     andBool isValue(KT,K2)
-     andBool K1 ==K  K2
-     [simplification]
-
-  rule #lookup( M:Map [ K1 <-  V   ], KT, K2, VT) => Some V
-    requires isValue(KT,K1)
-     andBool isValue(KT,K2)
-     andBool isValue(VT, V)
-     andBool K1 ==K K2
-     [simplification]
-
-  rule #lookup( M:Map [ K1 <- _V   ], KT, K2, VT) => #lookup(M, KT, K2, VT)
-    requires isValue(KT,K1)
-     andBool isValue(KT,K2)
-     andBool K1 =/=K K2
-     [simplification]
+  rule #lookup(M [ K1 <- V1    ], K2, VT) => Some {V1}:>Data    requires K1 ==K  K2 andBool         isValue(VT,{V1}:>Data) [simplification]
+  rule #lookup(M [ K1 <- V1    ], K2, VT) => #Bottom            requires K1 ==K  K2 andBool notBool isValue(VT,{V1}:>Data) [simplification]
+  rule #lookup(M [ K1 <- undef ], K2, _ ) => None               requires K1 ==K  K2                                        [simplification]
+  rule #lookup(M [ K1 <- _     ], K2, VT) => #lookup(M, K2, VT) requires K1 =/=K K2                                        [simplification]
+  rule #lookup(M [ K1 <- undef ], K2, VT) => #lookup(M, K2, VT) requires K1 =/=K K2                                        [simplification]
 ```
 
 ```k
