@@ -2361,6 +2361,8 @@ It has an untyped and typed variant.
   rule <k> #MakeFresh(or _:AnnotationList T1 T2) => Right #MakeFresh(T2) ... </k>
 ```
 
+We implement fresh lambdas as fresh uninterpreted functions.
+
 ```symbolic
   rule <k> #MakeFresh(lambda    _:AnnotationList T1 T2)
         => #Lambda(T1,T2, { #Uninterpreted(!Id, T1, T2) })
