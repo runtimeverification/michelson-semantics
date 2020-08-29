@@ -2365,19 +2365,20 @@ We implement fresh lambdas as fresh uninterpreted functions.
 
 ```symbolic
   rule <k> #MakeFresh(lambda    _:AnnotationList T1 T2)
-        => #Lambda(T1,T2, { #Uninterpreted(!Id, T1, T2) })
+        => #Lambda(#Name(T1), #Name(T2), { #Uninterpreted(!Id, #Name(T1), #Name(T2)) })
            ...
        </k>
 
-  syntax Instruction ::= #Uninterpreted(id: Int, arg: Type, return: Type)
+  syntax Instruction ::= #Uninterpreted(id: Int, arg: TypeName, return: TypeName)
+  syntax Data ::= uninterpreted(id: Int, arg: Data) [function, functional, no-evaluators]
+  // ------------------------------------------------------------------------------------
   rule <k> #Uninterpreted(Id, ArgT, RetT)
-        => #Assume(uninterpreted(Id, Arg) == #MakeFresh(RetT))
+        => #Assume(uninterpreted(Id, Arg) == #MakeFresh(#Type(RetT)))
            ...
        </k>
-       <stack> Arg => uninterpreted(Id, Arg):Data ... </stack>
+       <stack> [ArgT Arg] ; SS => [RetT uninterpreted(Id, Arg):Data] ; SS </stack>
     requires isValue(Arg)
 
-  syntax Data ::= uninterpreted(id: Int, arg: Data) [function, functional, no-evaluators]
 ```
 
 ```k
