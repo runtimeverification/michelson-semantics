@@ -1136,6 +1136,8 @@ The `COMPARE` instruction is defined over all comparable datatypes.
   rule #IsComparable(address) => true
   rule #IsComparable(pair T1 T2) => #IsComparable(T1) andBool #IsComparable(T2)
 
+  rule #IsComparable(option _) => true
+
   // Nullary Incomparables
   rule #IsComparable(key) => false
   rule #IsComparable(unit) => false
@@ -1144,7 +1146,6 @@ The `COMPARE` instruction is defined over all comparable datatypes.
   rule #IsComparable(chain_id) => false
 
   // Unary Incomparables
-  rule #IsComparable(option _) => false
   rule #IsComparable(list _) => false
   rule #IsComparable(set _) => false
   rule #IsComparable(contract _) => false
@@ -1159,10 +1160,10 @@ The `COMPARE` instruction is defined over all comparable datatypes.
 We define `COMPARE` in terms of a `#DoCompare` function.
 
 ```k
-  syntax Int ::= #DoCompare(Data, Data) [function, functional]
+  syntax Int ::= #DoCompare(Data, Data) [function]
 
-  rule #DoCompare(true, true) => 0
-  rule #DoCompare(false, false) => 0
+  rule #DoCompare(V, V) => 0
+
   rule #DoCompare(false, true) => -1
   rule #DoCompare(true, false) => 1
 
@@ -1173,6 +1174,10 @@ We define `COMPARE` in terms of a `#DoCompare` function.
   rule #DoCompare(S1:String, S2:String) => -1 requires S1 <String S2
   rule #DoCompare(S1:String, S2:String) => 0 requires S1 ==String S2
   rule #DoCompare(S1:String, S2:String) => 1 requires S1 >String S2
+
+  rule #DoCompare(Nome,    Some V ) => -1
+  rule #DoCompare(Some V,  None   ) =>  1
+  rule #DoCompare(Some V1, Some V2) => #DoCompare(V1, V2)
 
   rule #DoCompare((Pair A1 A2), (Pair B1 B2)) => -1                 requires #DoCompare(A1, B1) ==Int -1
   rule #DoCompare((Pair A1 A2), (Pair B1 B2)) => #DoCompare(A2, B2) requires #DoCompare(A1, B1) ==Int 0
@@ -1188,21 +1193,20 @@ We define `COMPARE` in terms of a `#DoCompare` function.
 The `#DoCompare` function requires additional lemmas for symbolic execution.
 
 ```symbolic
+  rule #DoCompare(V1, V2) ==Int 0 => V1 ==K V2 [simplification]
+
   rule #DoCompare(I1:Bool, I2:Bool) <Int 0  => (I1 ==Bool false) andBool (I2 ==Bool true)                       [simplification]
   rule #DoCompare(I1:Bool, I2:Bool) <=Int 0 => ((I1 ==Bool false) andBool (I2 ==Bool true)) orBool I1 ==Bool I2 [simplification]
-  rule #DoCompare(I1:Bool, I2:Bool) ==Int 0 => I1 ==Bool I2                                                     [simplification]
   rule #DoCompare(I1:Bool, I2:Bool) >=Int 0 => ((I1 ==Bool true) andBool (I2 ==Bool false)) orBool I1 ==Bool I2 [simplification]
   rule #DoCompare(I1:Bool, I2:Bool) >Int 0  => (I1 ==Bool true) andBool (I2 ==Bool false)                       [simplification]
 
   rule #DoCompare(I1:Int, I2:Int) <Int 0  => I1 <Int I2  [simplification]
   rule #DoCompare(I1:Int, I2:Int) <=Int 0 => I1 <=Int I2 [simplification]
-  rule #DoCompare(I1:Int, I2:Int) ==Int 0 => I1 ==Int I2 [simplification]
   rule #DoCompare(I1:Int, I2:Int) >=Int 0 => I1 >=Int I2 [simplification]
   rule #DoCompare(I1:Int, I2:Int) >Int 0  => I1 >Int I2  [simplification]
 
   rule #DoCompare(I1:String, I2:String) <Int 0  => I1 <String I2  [simplification]
   rule #DoCompare(I1:String, I2:String) <=Int 0 => I1 <=String I2 [simplification]
-  rule #DoCompare(I1:String, I2:String) ==Int 0 => I1 ==String I2 [simplification]
   rule #DoCompare(I1:String, I2:String) >=Int 0 => I1 >=String I2 [simplification]
   rule #DoCompare(I1:String, I2:String) >Int 0  => I1 >String I2  [simplification]
 
@@ -1383,28 +1387,46 @@ For this reason, many map operations share an identical representation upto
 typing (shared operations use a generic `MapTypeName`).
 
 ```k
-  rule <k> GET A => #HandleAnnotations(A) ... </k>
-       <stack> [KT K] ; [MT:MapTypeName KT VT M:Map] ; SS => [option VT #lookup(M, KT, K, VT)] ; SS </stack>
-
-  syntax OptionData ::= #lookup(Map, TypeName, SimpleData, TypeName) [function, smtlib(lookup)]
-  rule #lookup((K |-> V) _M:Map, KT, K,  VT) => (Some V) requires isValue(KT,K) andBool isValue(VT, V)
-  rule #lookup(           M:Map, KT, K, _VT) => None     requires isValue(KT,K) andBool notBool (K in_keys(M))
-  // rule #lookup(         _  _,  _,    _  ) => #Bottom [owise]
-```
-
-```symbolic
-  // Symbolic backend only
-  rule #lookup(_M:Map [ K <- undef], KT, K, VT) => None     requires isValue(KT, K)                        [simplification]
-  rule #lookup(_M:Map [ K <- V    ], KT, K, VT) => (Some V) requires isValue(KT, K) andBool isValue(VT, V) [simplification]
-  // rule K1 in_keys(M:Map[ K2 <- _ ]) => K1 ==K K2 orBool K1 in_keys(M) [simplification]
+  rule <k> GET A => #HandleAnnotations(A) ...  </k>
+       <stack> [KT K] ; [MT:MapTypeName KT VT M:Map] ; SS => [option VT #lookup(M, K, VT)] ; SS </stack>
+    requires isValue(KT, K)
 ```
 
 ```k
-  rule <k> MEM A => #HandleAnnotations(A) ~> . ... </k>
-       <stack> [KT X] ; [MT:MapTypeName KT VT M] ; SS => [bool X in_keys(M)] ; SS </stack>
+  syntax OptionData ::= #lookup(Map, Data, TypeName) [function, smtlib(lookup)]
+  // --------------------------------------------------------------------------
+  rule #lookup(M, K, VT) => Some {M[K]}:>Data requires K in_keys(M) andBool         isValue(VT,{M[K]}:>Data)
+  rule #lookup(M, K, _ ) => None              requires notBool K in_keys(M)
+```
+
+This rule is not supported by the LLVM backend, so we only include it in Haskell builds.
+
+```symbolic
+  rule #lookup(M, K, VT) => #Bottom           requires K in_keys(M) andBool notBool isValue(VT,{M[K]}:>Data)
+```
+
+```symbolic
+  rule #lookup(M [ K1 <- V1    ], K2, VT) => Some {V1}:>Data    requires K1 ==K  K2 andBool         isValue(VT,{V1}:>Data) [simplification]
+  rule #lookup(M [ K1 <- V1    ], K2, VT) => #Bottom            requires K1 ==K  K2 andBool notBool isValue(VT,{V1}:>Data) [simplification]
+  rule #lookup(M [ K1 <- undef ], K2, _ ) => None               requires K1 ==K  K2                                        [simplification]
+  rule #lookup(M [ K1 <- _     ], K2, VT) => #lookup(M, K2, VT) requires K1 =/=K K2                                        [simplification]
+  rule #lookup(M [ K1 <- undef ], K2, VT) => #lookup(M, K2, VT) requires K1 =/=K K2                                        [simplification]
+```
+
+```k
+  rule <k> MEM A => #HandleAnnotations(A) ~> #Assume(isValue(VT, {M[K]}:>Data)) ... </k>
+       <stack> [KT K] ; [MT:MapTypeName KT VT M:Map] ; SS => [bool true] ; SS </stack>
+    requires isValue(KT, K)
+     andBool K in_keys(M)
+
+  rule <k> MEM A => #HandleAnnotations(A) ...  </k>
+       <stack> [KT K] ; [MT:MapTypeName KT VT M:Map] ; SS => [bool false] ; SS </stack>
+    requires notBool K in_keys(M)
 
   rule <k> UPDATE A => #HandleAnnotations(A)  ... </k>
        <stack> [KT K] ; [option VT Some V] ; [MT:MapTypeName KT VT M:Map] ; SS => [MT KT VT M[K <- V]] ; SS </stack>
+    requires isValue(KT, K)
+     andBool isValue(VT, V)
 
   rule <k> UPDATE A => #HandleAnnotations(A)  ... </k>
        <stack> [KT K] ; [option VT None] ; [MT:MapTypeName KT VT M:Map] ; SS => [MT KT VT M[K <- undef]] ; SS </stack>
