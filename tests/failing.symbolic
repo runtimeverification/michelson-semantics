@@ -1,6 +1,0 @@
-tests/symbolic/small-loop.tzt
-tests/symbolic/illtyped.stuck.tzt
-tests/symbolic/pair-deconstruct.tzt
-tests/symbolic/vote-simple.tzt
-tests/symbolic/vote.tzt
-tests/symbolic/set_update_01.tzt
