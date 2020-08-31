@@ -4,3 +4,4 @@ tests/symbolic/pair-deconstruct.tzt
 tests/symbolic/vote-simple.tzt
 tests/symbolic/vote.tzt
 tests/symbolic/set_update_01.tzt
+tests/symbolic/lambda-deterministic.fail.tzt

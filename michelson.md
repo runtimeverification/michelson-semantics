@@ -2347,7 +2347,6 @@ It has an untyped and typed variant.
   rule <k> #MakeFresh(set       _:AnnotationList _:Type)        => ?_:Set                                ... </k>
   rule <k> #MakeFresh(map       _:AnnotationList _:Type _:Type) => ?_:Map                                ... </k>
   rule <k> #MakeFresh(big_map   _:AnnotationList _:Type _:Type) => ?_:Map                                ... </k>
-  rule <k> #MakeFresh(lambda    _:AnnotationList T1 T2)         => #Lambda(#Name(T1),#Name(T2),?_:Block) ... </k>
   rule <k> #MakeFresh(contract  _:AnnotationList T)             => #Contract(#Address(?_:String),T)      ... </k>
 
   rule <k> #MakeFresh(pair _:AnnotationList T1 T2)
@@ -2360,6 +2359,26 @@ It has an untyped and typed variant.
 
   rule <k> #MakeFresh(or _:AnnotationList T1 T2) => Left  #MakeFresh(T1) ... </k>
   rule <k> #MakeFresh(or _:AnnotationList T1 T2) => Right #MakeFresh(T2) ... </k>
+```
+
+We implement fresh lambdas as fresh uninterpreted functions.
+
+```symbolic
+  rule <k> #MakeFresh(lambda    _:AnnotationList T1 T2)
+        => #Lambda(#Name(T1), #Name(T2), { #Uninterpreted(!Id, #Name(T1), #Name(T2)) })
+           ...
+       </k>
+
+  syntax Instruction ::= #Uninterpreted(id: Int, arg: TypeName, return: TypeName)
+  syntax Data ::= uninterpreted(id: Int, arg: Data) [function, functional, no-evaluators]
+  // ------------------------------------------------------------------------------------
+  rule <k> #Uninterpreted(Id, ArgT, RetT)
+        => #Assume(uninterpreted(Id, Arg) == #MakeFresh(#Type(RetT)))
+           ...
+       </k>
+       <stack> [ArgT Arg] ; SS => [RetT uninterpreted(Id, Arg):Data] ; SS </stack>
+    requires isValue(Arg)
+
 ```
 
 ```k
