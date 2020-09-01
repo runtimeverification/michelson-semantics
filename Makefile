@@ -91,6 +91,7 @@ deps-tezos: $(TEZOS_SUBMODULE)/make.timestamp
 
 SOURCE_FILES       := compat    \
                       common    \
+                      config    \
                       michelson \
                       syntax    \
                       types

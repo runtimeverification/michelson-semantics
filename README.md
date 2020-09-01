@@ -49,14 +49,13 @@ The project has a very simple layout. Source files live at the project root.
 -   [common.md](./common.md) specifies common infrastructure used in the type
     checker and the core semantics
 
+-   [state.md](./config.md) specifies the shared configuration (state
+    representation) of the core Michelson semantics and type checker
+
 -   [types.md](./types.md) contains a rudimentary type-checker for Michelson
 
--   [michelson.md](./michelson.md) specifies:
-
-    * the configuration (state representation) of Michelson programs (module
-      `MICHELSON-CONFIG`)
-    * the core semantic rules of Michelson as well as semantic extensions to
-      support unit testing (module `MICHELSON`)
+-   [michelson.md](./michelson.md) specifies the core semantic rules of
+    Michelson as well as semantic extensions to support unit testing
 
 -   [compat.md](./compat.md) is a compatability layer between K-Michelson and
     the Tezos Reference client used for cross-validation testing
