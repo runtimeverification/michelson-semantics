@@ -269,7 +269,7 @@ tests/%.unit: tests/% $(llvm_kompiled)
 
 # symbolic
 
-symbolic_tests         := $(wildcard tests/symbolic/*.tzt) $(wildcard tests/symbolic/match/*.tzt) $(wildcard tests/symbolic/compare/*.tzt)
+symbolic_tests         := $(shell find tests/symbolic -type f -name '*.tzt')
 symbolic_tests_failing := $(shell cat tests/failing.symbolic)
 symbolic_tests_passing := $(filter-out $(symbolic_tests_failing), $(symbolic_tests))
 
