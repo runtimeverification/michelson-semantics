@@ -54,7 +54,7 @@ The project has a very simple layout. Source files live at the project root.
 -   [michelson.md](./michelson.md) specifies:
 
     * the configuration (state representation) of Michelson programs (module
-      `MICHELSON-CONFIGURATION`)
+      `MICHELSON-CONFIG`)
     * the core semantic rules of Michelson as well as semantic extensions to
       support unit testing (module `MICHELSON`)
 
