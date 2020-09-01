@@ -1,5 +1,41 @@
-K-Michelson Semantics
-=====================
+K-Michelson: A Michelson Semantics
+==================================
+
+Introduction
+------------
+
+K-Michelson is:
+
+1.  a formal, executable, and human-readable semantics of the Michelson
+    blockchain programming language using the K framework;
+
+2.  a unit test framework for Michelson programs that allows testing program
+    behavior at a finer granularity than contract invocation;
+
+3.  a formal verification framework for verifying Michelson program behavior
+    using a slight extension of Michelson as an assertion language.
+
+### Project Goals
+
+1.  serve as a human-readable and executable reference document specifying how
+    Michelson programs should operate;
+
+2.  provide tools for testing and verifying Michelson programs operate as
+    intended by the author.
+
+### Project Non-goals
+
+1.  Provide a complete formal model of the Tezos blockchain. In particular, we
+    do _not_ model things like:
+
+    - The Tezos node networking
+    - Block baking or validation
+    - Transaction pools
+    - Protocol amendment
+
+2.  Replace existing Tezos CLI tools. Developers should still use
+    `tezos-client` for interfacing with Tezos nodes, `tezos-node` for running
+    your own nodes, etc...
 
 Getting Started
 ---------------
@@ -9,7 +45,7 @@ See the [user guide](USER_GUIDE.md) for installation and usage instructions.
 Project Structure
 -----------------
 
-The project has a very simple layout. Source files live at the project root:
+The project has a very simple layout. Source files live at the project root.
 
 - [syntax.md](./syntax.md) specifies the syntax of Michelson and other input
   data
