@@ -855,9 +855,8 @@ climb back up, respectively.
 
 ```k
   rule <k> PUSH A T X => #HandleAnnotations(A) ... </k>
-       <stack> SS => [ #Name(T) X ] ; SS
-       </stack>
-    requires isValue(X)
+       <stack> SS => [ #Name(T) X ] ; SS </stack>
+    requires isValue(#Name(T), X)
 ```
 
 If it is not a `Value`, `PUSH` converts its argument to a `Value`, either by
@@ -866,7 +865,7 @@ up/creating a new symbol in the symbol table.
 
 ```k
   rule <k> PUSH A T (X => #MichelineToNative(X, T, .Map, .Map)) ... </k>
-    requires notBool isValue(X)
+    requires notBool isValue(#Name(T), X)
      andBool notBool isSymbolicData(X)
 ```
 
