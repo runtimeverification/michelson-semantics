@@ -3,7 +3,7 @@ code {
   CAR ; DUP ;
   DIP {
       GET ;
-      IF_NONE { UNIT ; FAILWITH } { } ; // ASSERT_SOME ;
+      IF_NONE { UNIT ; FAILWITH } { } ; # ASSERT_SOME ;
       PUSH int 1 ;
       ADD ;
       SOME
@@ -13,48 +13,48 @@ code {
   PAIR
 } ;
 
-// storage (map int int) ;
-// parameter int ;
+# storage (map int int) ;
+# parameter int ;
 input { Stack_elt (pair int (map int int)) $I } ;
 
-precondition { { PUSH (pair int (map int int)) $I                             // (S, M)
-               ; UNPAIR                                                       // S M
-               ; MEM                                                          // (S \in M)
+precondition { { PUSH (pair int (map int int)) $I                             # (S, M)
+               ; UNPAIR                                                       # S M
+               ; MEM                                                          # (S \in M)
                }
              } ;
 
 output { Stack_elt (pair (list operation) (map int int)) $O } ;
-postcondition {  { PUSH (pair int (map int int)) $I                            // (S,M)
-                 ; CAR                                                         // S
-                 ; PUSH int $K                                                 // K S
-                 ; COMPARE ; EQ                                                // K=S
-                 ; IF // K = S
+postcondition {  { PUSH (pair int (map int int)) $I                            # (S,M)
+                 ; CAR                                                         # S
+                 ; PUSH int $K                                                 # K S
+                 ; COMPARE ; EQ                                                # K=S
+                 ; IF # K = S
                       { TRACE("==")
-                      ; PUSH (pair int (map int int)) $I                       // (S,M)
-                      ; UNPAIR                                                 // S M
-                      ; GET                                                    // M[S]
+                      ; PUSH (pair int (map int int)) $I                       # (S,M)
+                      ; UNPAIR                                                 # S M
+                      ; GET                                                    # M[S]
                       ; IF_NONE { PUSH bool False }
-                                { PUSH int 1                                    // 1 + M[S]
-                                ; ADD                                           // M[S]+1
-                                ; PUSH (pair (list operation) (map int int)) $O // (L,M') M[S]+1
-                                ; CDR                                           // M' M[S]+1
-                                ; PUSH (pair int (map int int)) $I ; CAR        // S M' M[S]+1
-                                ; GET                                           // M'[S] M[S]+1
+                                { PUSH int 1                                    # 1 + M[S]
+                                ; ADD                                           # M[S]+1
+                                ; PUSH (pair (list operation) (map int int)) $O # (L,M') M[S]+1
+                                ; CDR                                           # M' M[S]+1
+                                ; PUSH (pair int (map int int)) $I ; CAR        # S M' M[S]+1
+                                ; GET                                           # M'[S] M[S]+1
                                 ; IF_NONE { PUSH bool False }
-                                          { COMPARE ; EQ    }                   // M'[S] == M[S]+1
+                                          { COMPARE ; EQ    }                   # M'[S] == M[S]+1
                                 }
                       }
-                      // S != K
+                      # S != K
                       { TRACE("=/=")
-                      ; PUSH (pair int (map int int)) $I                       // (S,M)
-                      ; CDR                                                    // M
-                      ; PUSH int $K                                            // K M
-                      ; GET                                                    // M[K]?
-                      ; PUSH (pair (list operation) (map int int)) $O          // (L,M') M[K]
-                      ; CDR                                                    // M' M[K]
-                      ; PUSH int $K                                            // K M' M[K]
-                      ; GET                                                    // M'[K] M[K]
-                      ; COMPARE ; EQ                                           // M'[K] == M[K]
+                      ; PUSH (pair int (map int int)) $I                       # (S,M)
+                      ; CDR                                                    # M
+                      ; PUSH int $K                                            # K M
+                      ; GET                                                    # M[K]?
+                      ; PUSH (pair (list operation) (map int int)) $O          # (L,M') M[K]
+                      ; CDR                                                    # M' M[K]
+                      ; PUSH int $K                                            # K M' M[K]
+                      ; GET                                                    # M'[K] M[K]
+                      ; COMPARE ; EQ                                           # M'[K] == M[K]
                       }
                  }
               }

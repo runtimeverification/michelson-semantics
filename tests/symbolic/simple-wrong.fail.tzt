@@ -1,6 +1,5 @@
-/* Post condition does not hold (Final comparison should be `PUSH nat 1; COMPARE; EQ`)
- * Expected: One failed branch
- */
+# Post condition does not hold (Final comparison should be `PUSH nat 1; COMPARE; EQ`)
+# Expected: One failed branch
 
 code { ADD } ; 
 input { Stack_elt int $I1 ; Stack_elt int $I2 } ;
