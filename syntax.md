@@ -85,9 +85,10 @@ K boolean values use all lowercase `true` and `false` - hence we need to add tok
 They are converted to K booleans immediately after parsing by function rules.
 
 ```k
-  syntax Data ::= MichelsonBool [klabel(MichelsonBool), symbol, function, avoid]
-  syntax MichelsonBool ::= "True" [token]
-                         | "False" [token]
+  syntax Data ::= MichelsonBool
+  syntax MichelsonBool ::= MichelsonBoolLiteral [klabel(MichelsonBool), symbol, function, avoid]
+  syntax MichelsonBoolLiteral ::= "True" [token]
+                                | "False" [token]
 ```
 
 Here we specify the various complex types offered by Michelson, making the best possible use of K sorts.

@@ -137,6 +137,7 @@ Michelson bools are of the form (True/False), but K bools are of the form
 bool sort.
 
 ```k
+  syntax MichelsonBool ::= Bool
   rule `MichelsonBool`(True) => true
   rule `MichelsonBool`(False) => false
 ```
