@@ -664,10 +664,10 @@ Keeping this similarity, unless absolutely prevented for performance or K style
 reasons, was a major design goal of the semantics.
 
 ```k
-  rule <k> IF A  BT _  => #HandleAnnotations(A) ~> BT ... </k>
+  rule <k> IF A  BT _  => #HandleAnnotations(A) ~> TRACE("IF true")  ~> BT ... </k>
        <stack> [ bool true  ] ; SS => SS </stack>
 
-  rule <k> IF A  _  BF => #HandleAnnotations(A) ~> BF ... </k>
+  rule <k> IF A  _  BF => #HandleAnnotations(A) ~> TRACE("IF false") ~> BF ... </k>
        <stack> [ bool false ] ; SS => SS </stack>
 ```
 
@@ -1535,10 +1535,10 @@ since it does not need to track the new map while keeping it off the stack.
   rule <k> NONE A T:Type => #HandleAnnotations(A)  ... </k>
        <stack> SS => [option #Name(T) None] ; SS </stack>
 
-  rule <k> IF_NONE A BT _  => #HandleAnnotations(A) ~> BT ... </k>
+  rule <k> IF_NONE A BT _  => #HandleAnnotations(A) ~> TRACE("IF_NONE true") ~> BT ... </k>
        <stack> [option _ None] ; SS => SS </stack>
 
-  rule <k> IF_NONE A _  BF => #HandleAnnotations(A) ~> BF ... </k>
+  rule <k> IF_NONE A _  BF => #HandleAnnotations(A) ~> TRACE("IF_NONE false") ~> BF ... </k>
        <stack> [option T Some V] ; SS => [T V] ; SS </stack>
 ```
 
@@ -1551,10 +1551,10 @@ since it does not need to track the new map while keeping it off the stack.
   rule <k> RIGHT A LTy:Type => #HandleAnnotations(A) ... </k>
        <stack> [RTy X:Data] ; SS => [or #Name(LTy) RTy Right X] ; SS </stack>
 
-  rule <k> IF_LEFT A BT _  => #HandleAnnotations(A) ~> BT ... </k>
+  rule <k> IF_LEFT A BT _  => #HandleAnnotations(A) ~> TRACE("IF_LEFT true") ~> BT ... </k>
        <stack> [or LTy _   Left V] ; SS => [LTy V] ; SS </stack>
 
-  rule <k> IF_LEFT A _  BF => #HandleAnnotations(A) ~> BF ... </k>
+  rule <k> IF_LEFT A _  BF => #HandleAnnotations(A) ~> TRACE("IF_LEFT false") ~> BF ... </k>
        <stack> [or _   RTy Right V] ; SS => [RTy V] ; SS </stack>
 ```
 
@@ -1567,10 +1567,10 @@ since it does not need to track the new map while keeping it off the stack.
   rule <k> NIL A T => #HandleAnnotations(A)  ... </k>
        <stack> SS => [list #Name(T) .List] ; SS </stack>
 
-  rule <k> IF_CONS A BT _  => #HandleAnnotations(A) ~> BT ... </k>
+  rule <k> IF_CONS A BT _  => #HandleAnnotations(A) ~> TRACE("IF_CONS true") ~> BT ... </k>
        <stack> [list T ListItem(L1) Ls] ; SS => [T L1] ; [list T Ls] ; SS </stack>
 
-  rule <k> IF_CONS A _  BF => #HandleAnnotations(A) ~> BF ... </k>
+  rule <k> IF_CONS A _  BF => #HandleAnnotations(A) ~> TRACE("IF_CONS false") ~> BF ... </k>
        <stack> [list _ .List ] ; SS => SS </stack>
 
   rule <k> SIZE A => #HandleAnnotations(A)  ... </k>
