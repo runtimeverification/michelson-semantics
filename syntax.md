@@ -344,7 +344,7 @@ action of one instruction.
   syntax OtherContractsMapEntryList ::= List{OtherContractsMapEntry, ";"} [klabel(OtherContractsMapEntryList)]
 
   syntax BigMapGroup ::= "big_maps" "{" BigMapEntryList "}"
-  syntax BigMapEntry ::= "Big_map" Int Type Type MapLiteral
+  syntax BigMapEntry ::= "Big_map" Int Type Type NeMapLiteral
                        | "Big_map" Int Type Type EmptyBlock
   syntax BigMapEntryList ::= List{BigMapEntry, ";"} [klabel(BigMapEntryList)]
 
