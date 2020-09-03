@@ -408,9 +408,9 @@ Below are the rules for loading specific groups.
   rule #BigMapsEntryListToKMap(.BigMapEntryList) => .Map
   rule #BigMapsEntryListToKMap(E ; Es) => #BigMapsEntryToKMap(E) #BigMapsEntryListToKMap(Es)
 
-  syntax KItem ::= "#BigMap" "(" SequenceData "," Type ")"
-  rule #BigMapsEntryToKMap(Big_map I T1 T2 { }          ) => I |-> #BigMap({ }, big_map .AnnotationList T1 T2)
-  rule #BigMapsEntryToKMap(Big_map I T1 T2 ML:MapLiteral) => I |-> #BigMap(ML,  big_map .AnnotationList T1 T2)
+  syntax KItem ::= "#BigMap" "(" MapLiteral "," Type ")"
+  rule #BigMapsEntryToKMap(Big_map I T1 T2 { }            ) => I |-> #BigMap({ }, big_map .AnnotationList T1 T2)
+  rule #BigMapsEntryToKMap(Big_map I T1 T2 ML:NeMapLiteral) => I |-> #BigMap(ML,  big_map .AnnotationList T1 T2)
 
   rule <k> invariant Annot { Stack } { Blocks } => . ... </k>
        <invs> .Map
@@ -2141,7 +2141,7 @@ Symbolic Value Processing
   rule #FindSymbolsIn({ M:MapEntry ; ML:MapEntryList }, (map _ _ _) #as MT)
     => #FindSymbolsIn({ M }, MT) |Set #FindSymbolsIn({ ML }, MT)
 
-  rule #FindSymbolsIn(M:MapLiteral, big_map A KT VT)
+  rule #FindSymbolsIn(M:NeMapLiteral, big_map A KT VT)
     => #FindSymbolsIn(M, map A KT VT)
 
   rule #FindSymbolsIn(_, _) => .Set [owise]
