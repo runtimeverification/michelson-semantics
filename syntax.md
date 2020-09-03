@@ -183,12 +183,6 @@ limitations.
                     | ParameterDecl ";" StorageDecl ";" CodeDecl
 ```
 
-```k
-  syntax OptionData ::= "(" OptionData ")" [bracket]
-  syntax Data ::= "(" Data ")" [bracket]
-  syntax Type ::= "(" Type ")" [bracket]
-```
-
 ### Instruction Syntax
 
 Note that, because of `lambda` data literals, instructions are also data.
@@ -302,6 +296,17 @@ set used for debugging purposes.
   syntax Instruction ::= "PAUSE"
   syntax Instruction ::= PAUSE(String)
   syntax Instruction ::= TRACE(String)
+```
+
+### Primitive Applications
+
+We not correctly parse Micheline primitive applications; we currently work
+around the issue by allowing extra parens around potential primitive arguments.
+
+```k
+  syntax OptionData ::= "(" OptionData ")" [bracket]
+  syntax Data       ::= "(" Data ")"       [bracket]
+  syntax Type       ::= "(" Type ")"       [bracket]
 ```
 
 ### Input File Syntax
