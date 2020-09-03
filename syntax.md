@@ -86,7 +86,7 @@ They are converted to K booleans immediately after parsing by function rules.
 
 ```k
   syntax Data ::= MichelsonBool
-  syntax MichelsonBool ::= MichelsonBoolLiteral [klabel(MichelsonBool), symbol, function, avoid]
+  syntax MichelsonBool ::= MichelsonBoolLiteral [klabel(MichelsonBoolLit), symbol, function, avoid]
   syntax MichelsonBoolLiteral ::= "True" [token]
                                 | "False" [token]
 ```

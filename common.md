@@ -138,8 +138,8 @@ bool sort.
 
 ```k
   syntax MichelsonBool ::= Bool
-  rule `MichelsonBool`(True) => true
-  rule `MichelsonBool`(False) => false
+  rule `MichelsonBoolLit`(True) => true
+  rule `MichelsonBoolLit`(False) => false
 ```
 
 These rules define what constitutes a legal mutez value, allowing us to
