@@ -15,6 +15,9 @@ module MICHELSON-SYNTAX
   syntax TypeAnnotation ::= r":([_a-zA-Z][_0-9a-zA-Z\\.]*)?" [token]
   syntax VariableAnnotation ::= r"@(%|%%|[_a-zA-Z][_0-9a-zA-Z\\.]*)?" [token]
   syntax FieldAnnotation ::= r"%(@|[_a-zA-Z][_0-9a-zA-Z\\.]*)?" [token]
+
+  // NB: This special token defines the syntax to be ignored by the parser
+  syntax #Layout ::= r"(#.*)|[\\n \\t\\r]*" [token]
 endmodule
 ```
 
