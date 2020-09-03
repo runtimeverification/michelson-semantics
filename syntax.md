@@ -22,6 +22,8 @@ module MICHELSON-SYNTAX
   syntax VariableAnnotation ::= r"@(%|%%|[_a-zA-Z][_0-9a-zA-Z\\.]*)?" [token]
   syntax FieldAnnotation ::= r"%(@|[_a-zA-Z][_0-9a-zA-Z\\.]*)?" [token]
 
+  syntax Wildcard ::= r"_" [token]
+
   // NB: This special token defines the syntax to be ignored by the parser
   syntax #Layout ::= r"(#.*)|[\\n \\t\\r]*" [token]
 endmodule
@@ -631,13 +633,14 @@ indicating that the code snippet should fail in a specific way during execution.
   syntax OutputStack ::= LiteralStack | FailedStack
 ```
 
-The wildcard pattern `_` can be used to omit part of the output stack. This
-is typically used to omit the cryprographic nonce in values of type `operation`.
-
-TODO: Parsing `_`s is somewhat tricky in K so we use `#Any` instead for now.
+The wildcard pattern `_` can be used to omit part of the output stack. This is
+typically used to omit the cryprographic nonce in values of type `operation`.
+To reduce potential ambiguities, in the internal representation we refer to the
+wildcard pattern via the name `Wildcard`.
 
 ```k
-  syntax Data ::= "#Any"
+  syntax Wildcard [token]
+  syntax Data ::= Wildcard
 ```
 
 Unit test groups

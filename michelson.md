@@ -2345,7 +2345,7 @@ module MATCHER
   // This covers any structurally different data. (e.g. (Left 1) vs (Right 1))
   rule #Matches(D1, D2) => D1 ==K D2 [owise]
 
-  rule #Matches(#Any, _) => true
+  rule #Matches(_:Wildcard, _) => true
 
   rule #Matches(.List, .List) => true
   rule #Matches(ListItem(L1) Ls1:List, ListItem(L2) Ls2:List)

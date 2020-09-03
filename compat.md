@@ -476,7 +476,7 @@ module MICHELSON-UNPARSER
   rule #doUnparse(input C, _) => "input " +String #doUnparse(C, true)
   rule #doUnparse(output LS, _) => "output " +String #doUnparse(LS, true)
 
-  rule #doUnparse(#Any, _) => "#Any"
+  rule #doUnparse(_:Wildcard, _) => "_"
 endmodule
 ```
 

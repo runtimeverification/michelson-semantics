@@ -458,10 +458,10 @@ already been converted to K-internal form, so there is no need to recurse here.
   rule #MichelineToNative(I:Int, big_map _:AnnotationList _K _V, _KnownAddrs, BigMaps) => {BigMaps[I]}:>Data
 ```
 
-The `#Any` value maps to itself.
+The wildcard value maps to itself.
 
 ```k
-  rule #MichelineToNative(#Any, _, _, _) => #Any
+  rule #MichelineToNative(WC:Wildcard, _, _, _) => WC
 ```
 
 ```k
