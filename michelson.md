@@ -2267,7 +2267,7 @@ It has an untyped and typed variant.
   // -----------------------------------------------------------
   rule isValue(nat,       V:Int)                 => true requires V >=Int 0
   rule isValue(int,       V:Int)                 => true
-  rule isValue(mutez,     V:Int)                 => true requires #IsLegalMutezValue(V)
+  rule isValue(mutez,     #Mutez(V:Int))         => true requires #IsLegalMutezValue(V)
   rule isValue(bool,      V:Bool)                => true
   rule isValue(bytes,     V:Bytes)               => true
   rule isValue(string,    V:String)              => true
