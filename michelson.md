@@ -6,65 +6,11 @@ requires "types.md"
 Michelson Interpreter State
 ===========================
 
-K-Michelson: an intra-contract semantics
-----------------------------------------
-
 ```k
 module MICHELSON-CONFIG
   imports MICHELSON-COMMON
   imports DOMAINS
 ```
-
-Recall that Michelson is a blockchain programming language (i.e., the
-programming language used on the Tezos blockchain). As such, the initial state
-for any Michelson script execution is provided by the current blockchain head
-upon which it is executed. This means that as blocks are added to the chain,
-executing the same script on the new chain head may produce different results.
-
-As such, we can choose to model Michelson code execution on two levels, i.e.:
-
-1. modeling how Michelson code will execute by limiting ourselves to a
-   particular blockchain head, or;
-2. we can additionally model how the Tezos blockchain evolves by modeling:
-   - Michelson script-driven (internal) vs. off-chain (external) originated
-     transactions including: acount creation, delegation, Tezos tranfer, etc...
-   - block baking
-   - protocol amendment
-   - etc...
-
-We refer to (1) as a _intra-contract_ semantics and (2) as a _inter-contract_
-semantics.
-
-The important thing to note from all of this: K-Michelson is an intra-contract
-semantics --- thus we avoid worrying about lots of details involved in modeling
-blockchain state.
-
-### Intra-contract semantic styles
-
-Within the intra-contract semantic framework, we have two main alternatives to
-consider. We can either model:
-
-1. Contract semantics --- executing a Michelson script as it would appear in a
-   contract account on the Tezos blockchain, i.e., one that consumes an initial
-   stack of the form:
-
-   `Stack_elt (pair 'parameter_type 'storage_type)`
-
-   and produces a final stack of the form:
-
-   `Stack_elt (pair (list operation) 'storage_type)`;
-
-2. General semantics --- exeucting an arbitray snippet of Michelson code that
-   consumes an iput stack of arbitrary type and outputs a Michelson stack of
-   arbitrary type.
-
-Note that, as the name suggests, a general semantics is more general than a
-contract semantics, since it can model arbitrary Michelson expressions ---
-including Michelson expressions which are equivalent to standard contracts.
-
-In particular, K-Michelson is an _general_, intra-contract semantics. This means
-we can represent the execution of arbitrary Michelson expressions as they would
-appear in an arbitrary contract on an arbitrary blockchain head.
 
 The K-Michelson Configuration
 -----------------------------
