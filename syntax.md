@@ -61,8 +61,6 @@ Here we define the three sequence sorts in Michelson.  Note that these sorts cov
   syntax MapEntryList ::= MapEntry | MapEntry ";" MapEntryList
 ```
 
-[//]: # (What about sets?)
-
 Here we define annotations.  Michelson actually has more stringent requirements for annotation lists to be well formed, but we do not yet enforce these requirements as annotations do very little in an execution semantics.  It is possible to fully specify the real requirements in the K grammar, and indeed an older version of the semantics did so.  However, the number of productions and rules necessary came at an unacceptable performance penalty when compared to the minimal benefit gained by rejecting such contracts.
 
 ```k
@@ -151,8 +149,6 @@ K offers the bracket attribute for productions that should not actually be retai
   syntax Data ::= "(" Data ")" [bracket]
   syntax Type ::= "(" Type ")" [bracket] // Technically incorrect due to rule about primitive app right inside a sequence.  Need to split out Wrapped/Unwrapped sort.
 ```
-
-[//]: # (If you want to forbid { (prim arg) }, you should probably have a complete intermediate representation corresponding to Micheline.)
 
 Michelson types (like other Micheline primitives) have optional annotations.
 
@@ -316,8 +312,6 @@ Here we specify the different formats a Michelson Contract may take.  These will
                     | ParameterDecl ";" StorageDecl ";" CodeDecl
 ```
 
-[//]: # (I suggest to rename "Contract" into "Script"; in Tezos, "contract" usually means everything that is stored at a given address: this includes the script but also the storage and the balance.)
-
 These sorts construct a mapping from Addresses to Types which will specify which contracts are available for this contract to access with the `CONTRACT T` instruction. In principle, any contract on the blockchain should be so accessible, but in practice this would be infeasible and needlessly overcomplicate using the semantics.
 
 ```k
@@ -348,8 +342,6 @@ These sorts define the *Loading Groups* for the contract.  Loading groups specif
 - StorageValue specifies the data passed to this execution as its last storage value.
 - BigMap specifies the big\_map data stored at each big\_map index.
 
-
-[//]: # (Are ParameterValue and StorageValue ever used?)
 
 ```k
   syntax ContractGroup ::= "contract" "{" Contract "}"
@@ -503,7 +495,6 @@ instead, they can only be pushed on the stack by the Michelson
 - Initial Balance (`mutez`): An initial balance to transfer to the new contract
 - Initial Storage (`T`): An initial storage value, expected to be the same type
   as specified in the originated contract
-[//]: # (A code together with parameter and storage types is usually called a "script")
 
 2. We need an `operation` literal to transfer mutez to a contract (including
    the case of invoking a contract):
