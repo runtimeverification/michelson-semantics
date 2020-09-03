@@ -93,23 +93,21 @@ Types are defined as expected.
 Simple data literals have efficiently detectable normal forms at runtime.
 
 ```k
-  syntax KResult ::= SimpleData
-
   syntax SimpleData ::= Int
   syntax SimpleData ::= String
   syntax SimpleData ::= MichelsonBool
   syntax SimpleData ::= MBytes
   syntax SimpleData ::= "Unit"
-  syntax SimpleData ::= Timestamp
-  syntax SimpleData ::= ChainId
-  syntax SimpleData ::= KeyHash
   syntax SimpleData ::= Mutez
   syntax SimpleData ::= Address
-  syntax SimpleData ::= ContractData
-  syntax SimpleData ::= Key
-  syntax SimpleData ::= Signature
-
   syntax Data ::= SimpleData
+```
+
+This declaration instructs the compiler to consider SimpleData literals to be
+in normal form.
+
+```k
+  syntax KResult ::= SimpleData
 ```
 
 At parse time, `mutez` and `address` literals are read in as ints and strings.

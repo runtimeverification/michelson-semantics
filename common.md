@@ -106,7 +106,17 @@ timestamps and naturals.
 We extend the `SimpleData` sort to contain internal datatypes.
 
 ```k
-  syntax SimpleData ::= Bool | LambdaData | Set | Map | List
+  syntax SimpleData ::= Bool
+                      | LambdaData
+                      | Set
+                      | Map
+                      | List
+                      | Timestamp
+                      | ChainId
+                      | KeyHash
+                      | ContractData
+                      | Key
+                      | Signature
 ```
 
 The K specification of the Michelson Bytes type is incomplete due to the lack a
