@@ -1327,11 +1327,12 @@ actually defined (the set is iterated over in ascending order).
 For simplicity we implement this by repeatedly selecting the minimal element.
 
 ```k
-  rule <k> ITER A _ => #HandleAnnotations(A) ... </k>
+  rule <k> ITER A _ => #HandleAnnotations(A) ~> TRACE("ITER set end") ... </k>
        <stack> [set _ .Set] ; SS => SS </stack>
 
   rule <k> ITER A Body
         => #HandleAnnotations(A)
+        ~> TRACE("ITER set next")
         ~> Body
         ~> #Push(set T,S -Set SetItem(#MinimalElement(Set2List(S))))
         ~> ITER .AnnotationList Body
@@ -1503,12 +1504,13 @@ We define auxiliary functions for computing the result type of `MAP`.
 since it does not need to track the new map while keeping it off the stack.
 
 ```k
-  rule <k> ITER A _ => #HandleAnnotations(A)  ... </k>
+  rule <k> ITER A _ => #HandleAnnotations(A) ~> TRACE("ITER map end") ... </k>
        <stack> [map _ _ .Map] ; SS => SS </stack>
 
   rule <k> ITER A Body
         => #HandleAnnotations(A)
         ~> Body
+        ~> TRACE("ITER map next")
         ~> #Push(map KT VT, M[#MinKey(M) <- undef])
         ~> ITER .AnnotationList Body
            ...
@@ -1576,11 +1578,12 @@ since it does not need to track the new map while keeping it off the stack.
   rule <k> SIZE A => #HandleAnnotations(A)  ... </k>
        <stack> [list _ L:List] ; SS => [nat size(L)] ; SS </stack>
 
-  rule <k> ITER A _ =>  #HandleAnnotations(A) ~>. ... </k>
+  rule <k> ITER A _ =>  #HandleAnnotations(A) ~> TRACE("ITER list end") ... </k>
        <stack> [list _ .List] ; SS => SS </stack>
 
   rule <k> ITER A Body
         => #HandleAnnotations(A)
+        ~> TRACE("ITER list next")
         ~> Body
         ~> #Push(list T,Ls)
         ~> ITER .AnnotationList Body
