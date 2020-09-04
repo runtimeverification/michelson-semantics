@@ -363,7 +363,7 @@ module MICHELSON-UNPARSER
     #doUnparse(T2, true) +String
     " { }"
 
-  rule #doUnparse(Big_map I T1 T2 ML:MapLiteral, _) =>
+  rule #doUnparse(Big_map I T1 T2 ML:NeMapLiteral, _) =>
     "Big_map" +String
     #doUnparse(I, false) +String
     " " +String
@@ -476,7 +476,7 @@ module MICHELSON-UNPARSER
   rule #doUnparse(input C, _) => "input " +String #doUnparse(C, true)
   rule #doUnparse(output LS, _) => "output " +String #doUnparse(LS, true)
 
-  rule #doUnparse(#Any, _) => "#Any"
+  rule #doUnparse(_:Wildcard, _) => "_"
 endmodule
 ```
 

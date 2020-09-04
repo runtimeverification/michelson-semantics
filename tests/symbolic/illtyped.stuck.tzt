@@ -1,6 +1,5 @@
-/* Add requires two items on stack, but only one provided.
- * Expected: One branch stuck
- */
+# Add requires two items on stack, but only one provided.
+# Expected: One branch stuck
 
 code { ADD } ;
 input { Stack_elt nat $I1  } ;

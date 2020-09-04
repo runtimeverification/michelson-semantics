@@ -106,7 +106,17 @@ timestamps and naturals.
 We extend the `SimpleData` sort to contain internal datatypes.
 
 ```k
-  syntax SimpleData ::= Bool | LambdaData | Set | Map | List
+  syntax SimpleData ::= Bool
+                      | LambdaData
+                      | Set
+                      | Map
+                      | List
+                      | Timestamp
+                      | ChainId
+                      | KeyHash
+                      | ContractData
+                      | Key
+                      | Signature
 ```
 
 The K specification of the Michelson Bytes type is incomplete due to the lack a
@@ -137,8 +147,9 @@ Michelson bools are of the form (True/False), but K bools are of the form
 bool sort.
 
 ```k
-  rule `MichelsonBool`(True) => true
-  rule `MichelsonBool`(False) => false
+  syntax MichelsonBool ::= Bool
+  rule `MichelsonBoolLit`(True) => true
+  rule `MichelsonBoolLit`(False) => false
 ```
 
 These rules define what constitutes a legal mutez value, allowing us to
@@ -447,10 +458,10 @@ already been converted to K-internal form, so there is no need to recurse here.
   rule #MichelineToNative(I:Int, big_map _:AnnotationList _K _V, _KnownAddrs, BigMaps) => {BigMaps[I]}:>Data
 ```
 
-The `#Any` value maps to itself.
+The wildcard value maps to itself.
 
 ```k
-  rule #MichelineToNative(#Any, _, _, _) => #Any
+  rule #MichelineToNative(WC:Wildcard, _, _, _) => WC
 ```
 
 ```k
