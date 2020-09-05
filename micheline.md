@@ -130,7 +130,7 @@ module K-MICHELSON-IR
   imports K-MICHELINE-ABSTRACT-SYNTAX
   imports K-MICHELINE-TO-MICHELSON-COMMON-SYNTAX
 
-// Syntax
+  // Syntax
 
   syntax MichelsonNode ::= DataNode
                          | "{" InstructionList"}"
@@ -145,6 +145,7 @@ module K-MICHELSON-IR
                            | Instruction Annotations MichelsonNode
                            | Instruction Annotations MichelsonNode MichelsonNode
                            | Instruction Annotations MichelsonNode MichelsonNode MichelsonNode
+
   syntax Annotations ::= Map
   syntax InstructionList::= List{InstructionNode, ";"} [klabel(InstructionList)]
 
@@ -160,40 +161,37 @@ module K-MICHELSON-IR
                     | String
                  // | Bytes
 
-// Parsing functions
+  // Parsing functions
 
-  syntax DeclarationList ::= PrimitiveArgsToDeclarationList(PrimitiveArgs) [function]
-  rule PrimitiveArgsToDeclarationList(.PrimitiveArgs) => .DeclarationList
-  rule PrimitiveArgsToDeclarationList(Node(AppNode(AppNodeCtor(code,   Node(SeqNode({ Args })); .PrimitiveArgs))); Rest) => code   { PrimitiveArgsToInstructionList(Args) } ; PrimitiveArgsToDeclarationList(Rest)
-  rule PrimitiveArgsToDeclarationList(Node(AppNode(AppNodeCtor(input,  Node(SeqNode({ Args })); .PrimitiveArgs))); Rest) => input  { PrimitiveArgsToStackList(Args) }       ; PrimitiveArgsToDeclarationList(Rest)
-  rule PrimitiveArgsToDeclarationList(Node(AppNode(AppNodeCtor(output, Node(SeqNode({ Args })); .PrimitiveArgs))); Rest) => output { PrimitiveArgsToStackList(Args) }       ; PrimitiveArgsToDeclarationList(Rest)
+  syntax DeclarationList ::= parseDecls(PrimitiveArgs) [function]
+  rule parseDecls(.PrimitiveArgs) => .DeclarationList
+  rule parseDecls(Node(AppNode(AppNodeCtor(code,   Node(SeqNode({ Args })); .PrimitiveArgs))); Rest) => code   { parseInstrs(Args) } ; parseDecls(Rest)
+  rule parseDecls(Node(AppNode(AppNodeCtor(input,  Node(SeqNode({ Args })); .PrimitiveArgs))); Rest) => input  { parseStack(Args)  } ; parseDecls(Rest)
+  rule parseDecls(Node(AppNode(AppNodeCtor(output, Node(SeqNode({ Args })); .PrimitiveArgs))); Rest) => output { parseStack(Args)  } ; parseDecls(Rest)
 
-  syntax InstructionList ::= PrimitiveArgsToInstructionList(PrimitiveArgs) [function]
-  rule PrimitiveArgsToInstructionList(.PrimitiveArgs) => .InstructionList
-  rule PrimitiveArgsToInstructionList(Node(PrimNode(N)); Rest)        => classifyInstruction(N, #PAD(newAnnotMap, .PrimitiveArgs))
-  rule PrimitiveArgsToInstructionList(Node(AppNode(AppNodeCtor(I, Args))); Rest) => classifyInstruction(I, toPrimArgData(Args)); PrimitiveArgsToInstructionList(Rest)
+  syntax InstructionList ::= parseInstrs(PrimitiveArgs) [function]
+  rule parseInstrs(.PrimitiveArgs)                            => .InstructionList
+  rule parseInstrs(Node(PrimNode(N)) ; Rest)                  => parseInstr(N, #PAD(newAnnotMap, .PrimitiveArgs)) ; parseInstrs(Rest)
+  rule parseInstrs(Node(AppNode(AppNodeCtor(I, Args))); Rest) => parseInstr(I, toPrimArgData(Args))               ; parseInstrs(Rest)
 
-  syntax InstructionNode ::= classifyInstruction(Primitive, PrimArgData) [function]
-  rule classifyInstruction(I:Instruction, #PAD(Annots:Map,                                        .PrimitiveArgs)) => I Annots
-  rule classifyInstruction(I:Instruction, #PAD(Annots:Map, Node(Arg1) ;                           .PrimitiveArgs)) => I Annots MichelineNodeToMichelsonNode(Arg1)
-  rule classifyInstruction(I:Instruction, #PAD(Annots:Map, Node(Arg1) ; Node(Arg2) ;              .PrimitiveArgs)) => I Annots MichelineNodeToMichelsonNode(Arg1) MichelineNodeToMichelsonNode(Arg2)
-  rule classifyInstruction(I:Instruction, #PAD(Annots:Map, Node(Arg1) ; Node(Arg2) ; Node(Arg3) ; .PrimitiveArgs)) => I Annots MichelineNodeToMichelsonNode(Arg1) MichelineNodeToMichelsonNode(Arg2) MichelineNodeToMichelsonNode(Arg3)
+  syntax InstructionNode ::= parseInstr(Primitive, PrimArgData) [function]
+  rule parseInstr(I:Instruction, #PAD(Annots:Map,                                        .PrimitiveArgs)) => I Annots
+  rule parseInstr(I:Instruction, #PAD(Annots:Map, Node(Arg1) ;                           .PrimitiveArgs)) => I Annots parseArg(Arg1)
+  rule parseInstr(I:Instruction, #PAD(Annots:Map, Node(Arg1) ; Node(Arg2) ;              .PrimitiveArgs)) => I Annots parseArg(Arg1) parseArg(Arg2)
+  rule parseInstr(I:Instruction, #PAD(Annots:Map, Node(Arg1) ; Node(Arg2) ; Node(Arg3) ; .PrimitiveArgs)) => I Annots parseArg(Arg1) parseArg(Arg2) parseArg(Arg3)
 
-  syntax StackList ::= PrimitiveArgsToStackList(PrimitiveArgs) [function]
-  rule PrimitiveArgsToStackList(.PrimitiveArgs) => .StackList
-  rule PrimitiveArgsToStackList(Node(AppNode(AppNodeCtor(Stack_elt, Node(PrimNode(Type)) ; Node(Value) ; .PrimitiveArgs ))); Rest)
-    => (Type MichelineNodeToDataNode(Value)) ; PrimitiveArgsToStackList(Rest)
+  syntax StackList ::= parseStack(PrimitiveArgs) [function]
+  rule parseStack(.PrimitiveArgs) => .StackList
+  rule parseStack(Node(AppNode(AppNodeCtor(Stack_elt, Node(PrimNode(Type)) ; Node(Value) ; .PrimitiveArgs ))); Rest)
+    => (Type parseData(Value)) ; parseStack(Rest)
 
-  syntax DataNode ::= MichelineNodeToDataNode(MichelineNode) [function]
-  rule MichelineNodeToDataNode(IntNode(I))    => I
-  rule MichelineNodeToDataNode(StringNode(S)) => S
+  syntax DataNode ::= parseData(MichelineNode) [function]
+  rule parseData(IntNode(I))    => I
+  rule parseData(StringNode(S)) => S
 
-  syntax MichelsonNode ::= MichelineNodeToMichelsonNode(MichelineNode) [function]
-  rule MichelineNodeToMichelsonNode(IntNode(I))                             => I
-  rule MichelineNodeToMichelsonNode(StringNode(S))                          => S
-//  rule MichelineNodeToMichelsonNode(BytesNode(B))                           => B
-//  rule MichelineNodeToMichelsonNode(SeqNode(S))                             => S
-
+  syntax MichelsonNode ::= parseArg(MichelineNode) [function]
+  rule parseArg(IntNode(I))                             => I
+  rule parseArg(StringNode(S))                          => S
 
   syntax AnnotationType ::= "#@" | "#:" | "#%" | "#!"
   syntax AnnotationList ::= List{Annotation, ";"}
