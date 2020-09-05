@@ -81,7 +81,7 @@ above.
 requires "micheline.md"
 
 module MICHELSON-CONFIG
-  imports K-MICHELINE-PRIMITIVE
+  imports K-MICHELSON-IR
 ```
 
 We first define a special directive `#Init` which we will describe later.
@@ -232,8 +232,7 @@ all _write-once_, i.e. after initialization, they are never changed.
     represent fragments of contracts and which are not complete contracts.
 
     ```k
-                  // <script> #NoData </script>
-                  <script> .K </script>
+                  <script> .InstructionList </script>
     ```
 
 ### Michelson Runtime State
@@ -296,7 +295,7 @@ of Michelson code. We list these configuration cells here:
    It is useful for test execution, type-checking, and debugging purposes.
 
     ```k
-                  <inputstack> .PrimitiveArgs </inputstack>
+                  <inputstack> .StackList </inputstack>
     ```
 
 2. The `<expected>` cell contains the expected output stack for the given

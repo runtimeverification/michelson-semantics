@@ -9,31 +9,42 @@ requires "michelson/configuration.md"
 
 module MICHELSON
   imports MICHELSON-CONFIG
+
+  imports INT
 ```
 
 Michelson Semantics Initialization
 ==================================
 
 ```k
-  rule <k> Pgm(P) => P ... </k>
-  rule <k> code _ (Arg .PrimitiveArgs) => .K ... </k>
-       <script> .K => Arg </script>
-  rule <k> input _ ({ Arg } .PrimitiveArgs) => .K ... </k>
-       <inputstack> .PrimitiveArgs => Arg </inputstack>
-  rule <k> output _ _ => .K ... </k>
+  rule <k> Pgm(P) => PrimitiveArgsToDeclarationList(P) ... </k>
 
-  rule <k> .PrimitiveArgs => .K ... </k>
-  rule <k> (P Ps):PrimitiveArgs => (P ~> Ps) ... </k>
+  rule <k> .DeclarationList => .K ... </k>
+  rule <k> (D ; Ds):DeclarationList => (D ~> Ds) ... </k>
 
-  rule <k> { Arg:PrimitiveArgs }:KItem => Arg ... </k>
-
-  rule <k> (ABS _ .PrimitiveArgs):KItem => .K ... </k>
-       <stack> Stack_elt _:Map ((int M:Map .PrimitiveArgs => nat M:Map .PrimitiveArgs) (N => absInt(N)) .PrimitiveArgs) _Rest </stack>
+  rule <k> code { Arg } => .K ... </k>
+       <script> .InstructionList => Arg </script>
+  rule <k> input { Arg } => .K ... </k>
+       <inputstack> .StackList => Arg </inputstack>
+  rule <k> output _ => .K ... </k>
 
   rule <k> #Init => Script ... </k>
        <script> Script </script>
        <stack> _ => InputStack </stack>
        <inputstack> InputStack </inputstack>
+
+  rule <k> .InstructionList => .K ... </k>
+  rule <k> (D ; Ds):InstructionList => (D ~> Ds) ... </k>
+
+  rule <k> ABS _ => .K ... </k>
+       <stack> (int N)          ; Rest
+            => (nat absInt(N))) ; Rest
+       </stack>
+
+  rule <k> ADD _ => .K ... </k>
+       <stack> (int I1) ; (int I2) ; Rest
+            => (int I1 +Int I2)    ; Rest
+       </stack>
 ```
 
 The `#BaseInit` takes care of initialization common to the different semantics.
