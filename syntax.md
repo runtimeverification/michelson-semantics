@@ -300,7 +300,7 @@ set used for debugging purposes.
 
 ### Primitive Applications
 
-We not correctly parse Micheline primitive applications; we currently work
+We do not correctly parse Micheline primitive applications; we currently work
 around the issue by allowing extra parens around potential primitive arguments.
 
 ```k
