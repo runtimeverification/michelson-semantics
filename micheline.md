@@ -69,16 +69,16 @@ module K-MICHELINE-CONCRETE-SYNTAX
                          | "(" PrimitiveApplication ")" [klabel(AppNode),    symbol]
 
   // Micheline Nodes
-  syntax EmptyMichelineNodes   ::= ""  [klabel(.PrimArgs), symbol]
-  syntax EmptyMichelineNodesSC ::= ";" [klabel(.PrimArgs), symbol]
-  syntax NeMichelineNodes ::= MichelineNode EmptyMichelineNodes   [klabel(PrimArgsCons), symbol]
-                            | MichelineNode EmptyMichelineNodesSC [klabel(PrimArgsCons), symbol]
-                            | MichelineNode ";" NeMichelineNodes  [klabel(PrimArgsCons), symbol]
+  syntax EmptyMichelineNodes   ::= ""  [klabel(.PrimitiveArgs), symbol]
+  syntax EmptyMichelineNodesSC ::= ";" [klabel(.PrimitiveArgs), symbol]
+  syntax NeMichelineNodes ::= MichelineNode EmptyMichelineNodes   [klabel(PrimitiveArgsCons), symbol]
+                            | MichelineNode EmptyMichelineNodesSC [klabel(PrimitiveArgsCons), symbol]
+                            | MichelineNode ";" NeMichelineNodes  [klabel(PrimitiveArgsCons), symbol]
 
   // Primtive Args
-  syntax EmptyPrimitiveArgs ::= "" [klabel(.PrimArgs), symbol]
-  syntax NePrimitiveArgs ::= PrimitiveArg EmptyPrimitiveArgs [klabel(PrimArgsCons), symbol]
-                           | PrimitiveArg NePrimitiveArgs    [klabel(PrimArgsCons), symbol]
+  syntax EmptyPrimitiveArgs ::= "" [klabel(.PrimitiveArgs), symbol]
+  syntax NePrimitiveArgs ::= PrimitiveArg EmptyPrimitiveArgs [klabel(PrimitiveArgsCons), symbol]
+                           | PrimitiveArg NePrimitiveArgs    [klabel(PrimitiveArgsCons), symbol]
 
   // Tokens
   syntax BytesToken         ::= r"0x[a-fA-F0-9]*"                     [token]
@@ -116,52 +116,87 @@ module K-MICHELINE-ABSTRACT-SYNTAX
                          | SeqNode(SequenceNode)         [klabel(SeqNode),    symbol]
                          | PrimNode(Primitive)           [klabel(PrimNode),   symbol]
                          | AppNode(PrimitiveApplication) [klabel(AppNode),    symbol]
-                         | Int
-                         | String
-                         | BytesToken
-                         | SequenceNode
-                         | Primitive Map PrimitiveArgs
 
   syntax PrimitiveArg ::= Node(MichelineNode)    [klabel(Node),     symbol]
                         | AnnotArg(Annotation)   [klabel(AnnotArg), symbol]
-                        | MichelineNode
-                        | Annotation
 
-  syntax PrimitiveArgs ::= ".PrimitiveArgs"              [klabel(.PrimArgs),    symbol       ]
-                         | PrimitiveArg "" PrimitiveArgs [klabel(PrimArgsCons), symbol, right]
-
-  rule IntNode(I) => I [anywhere]
-  rule StringNode(S) => S [anywhere]
-  rule BytesNode(B) => B [anywhere]
-  rule SeqNode(S) => S [anywhere]
-  rule AnnotArg(A) => A [anywhere]
-  rule Node(N) => N [anywhere]
+  syntax PrimitiveArgs ::= ".PrimitiveArgs"               [klabel(.PrimitiveArgs),    symbol       ]
+                         | PrimitiveArg ";" PrimitiveArgs [klabel(PrimitiveArgsCons), symbol, right]
 endmodule
 ```
 
 ```k
-module K-MICHELINE-PRIMITIVE
+module K-MICHELSON-IR
   imports K-MICHELINE-ABSTRACT-SYNTAX
-  imports INT
-  imports STRING
-  imports BYTES
+  imports K-MICHELINE-TO-MICHELSON-COMMON-SYNTAX
 
-  // Internal Primitive Definition
-  // Primitive has three arguments
-  //
-  // 1. Primitive name
-  // 2. `Map` argument has type: AnnotationType |-> AnnotationList
-  // 3. Primitive argument list (possibly empty)
-  //
+// Syntax
+
+  syntax MichelsonNode ::= DataNode
+                         | "{" InstructionList"}"
+                         | "{" StackList "}"
+                         | DeclarationList
+
+                         | Type Annotations
+                         | Type Annotations MichelsonNode
+                         | Type Annotations MichelsonNode MichelsonNode
+
+  syntax InstructionNode ::= Instruction Annotations
+                           | Instruction Annotations MichelsonNode
+                           | Instruction Annotations MichelsonNode MichelsonNode
+                           | Instruction Annotations MichelsonNode MichelsonNode MichelsonNode
+  syntax Annotations ::= Map
+  syntax InstructionList::= List{InstructionNode, ";"} [klabel(InstructionList)]
+
+  syntax DeclarationNode ::= Field MichelsonNode
+  syntax DeclarationList ::= List{DeclarationNode, ";"} [klabel(DeclarationList)]
+
+  syntax StackNode ::= "(" TypeNode DataNode ")"
+  syntax StackList ::= List{StackNode, ";" } [klabel(StackList)]
+
+  syntax TypeNode ::= Type
+
+  syntax DataNode ::= Int
+                    | String
+                 // | Bytes
+
+// Parsing functions
+
+  syntax DeclarationList ::= PrimitiveArgsToDeclarationList(PrimitiveArgs) [function]
+  rule PrimitiveArgsToDeclarationList(.PrimitiveArgs) => .DeclarationList
+  rule PrimitiveArgsToDeclarationList(Node(AppNode(AppNodeCtor(code,   Node(SeqNode({ Args })); .PrimitiveArgs))); Rest) => code   { PrimitiveArgsToInstructionList(Args) } ; PrimitiveArgsToDeclarationList(Rest)
+  rule PrimitiveArgsToDeclarationList(Node(AppNode(AppNodeCtor(input,  Node(SeqNode({ Args })); .PrimitiveArgs))); Rest) => input  { PrimitiveArgsToStackList(Args) }       ; PrimitiveArgsToDeclarationList(Rest)
+  rule PrimitiveArgsToDeclarationList(Node(AppNode(AppNodeCtor(output, Node(SeqNode({ Args })); .PrimitiveArgs))); Rest) => output { PrimitiveArgsToStackList(Args) }       ; PrimitiveArgsToDeclarationList(Rest)
+
+  syntax InstructionList ::= PrimitiveArgsToInstructionList(PrimitiveArgs) [function]
+  rule PrimitiveArgsToInstructionList(.PrimitiveArgs) => .InstructionList
+  rule PrimitiveArgsToInstructionList(Node(PrimNode(N)); Rest)        => classifyInstruction(N, #PAD(newAnnotMap, .PrimitiveArgs))
+  rule PrimitiveArgsToInstructionList(Node(AppNode(AppNodeCtor(I, Args))); Rest) => classifyInstruction(I, toPrimArgData(Args)); PrimitiveArgsToInstructionList(Rest)
+
+  syntax InstructionNode ::= classifyInstruction(Primitive, PrimArgData) [function]
+  rule classifyInstruction(I:Instruction, #PAD(Annots:Map,                                        .PrimitiveArgs)) => I Annots
+  rule classifyInstruction(I:Instruction, #PAD(Annots:Map, Node(Arg1) ;                           .PrimitiveArgs)) => I Annots MichelineNodeToMichelsonNode(Arg1)
+  rule classifyInstruction(I:Instruction, #PAD(Annots:Map, Node(Arg1) ; Node(Arg2) ;              .PrimitiveArgs)) => I Annots MichelineNodeToMichelsonNode(Arg1) MichelineNodeToMichelsonNode(Arg2)
+  rule classifyInstruction(I:Instruction, #PAD(Annots:Map, Node(Arg1) ; Node(Arg2) ; Node(Arg3) ; .PrimitiveArgs)) => I Annots MichelineNodeToMichelsonNode(Arg1) MichelineNodeToMichelsonNode(Arg2) MichelineNodeToMichelsonNode(Arg3)
+
+  syntax StackList ::= PrimitiveArgsToStackList(PrimitiveArgs) [function]
+  rule PrimitiveArgsToStackList(.PrimitiveArgs) => .StackList
+  rule PrimitiveArgsToStackList(Node(AppNode(AppNodeCtor(Stack_elt, Node(PrimNode(Type)) ; Node(Value) ; .PrimitiveArgs ))); Rest)
+    => (Type MichelineNodeToDataNode(Value)) ; PrimitiveArgsToStackList(Rest)
+
+  syntax DataNode ::= MichelineNodeToDataNode(MichelineNode) [function]
+  rule MichelineNodeToDataNode(IntNode(I))    => I
+  rule MichelineNodeToDataNode(StringNode(S)) => S
+
+  syntax MichelsonNode ::= MichelineNodeToMichelsonNode(MichelineNode) [function]
+  rule MichelineNodeToMichelsonNode(IntNode(I))                             => I
+  rule MichelineNodeToMichelsonNode(StringNode(S))                          => S
+//  rule MichelineNodeToMichelsonNode(BytesNode(B))                           => B
+//  rule MichelineNodeToMichelsonNode(SeqNode(S))                             => S
+
+
   syntax AnnotationType ::= "#@" | "#:" | "#%" | "#!"
   syntax AnnotationList ::= List{Annotation, ";"}
-
-  // Internal Primitive Conversion
-  syntax MichelineNode ::= toPrim(Primitive, PrimArgData)
-
-  rule PrimNode(N:Primitive)                  => toPrim(N, #PAD(newAnnotMap, .PrimitiveArgs)) [anywhere]
-  rule AppNode(AppNodeCtor(N:Primitive,Args)) => toPrim(N, toPrimArgData(Args))               [anywhere]
-  rule toPrim(P,#PAD(Annots, Args))           => P Annots Args                                [anywhere]
 
   // Auxiliary Functions
   // list helpers
@@ -174,8 +209,8 @@ module K-MICHELINE-PRIMITIVE
   syntax PrimitiveArgs ::= revArgs(PrimitiveArgs)                [function, functional]
                          | revArgs(PrimitiveArgs, PrimitiveArgs) [function, functional]
   rule revArgs(As) => revArgs(As, .PrimitiveArgs)
-  rule revArgs(A As:PrimitiveArgs, As':PrimitiveArgs) => revArgs(As, A As')
-  rule revArgs(    .PrimitiveArgs, As':PrimitiveArgs) => As'
+  rule revArgs(A ; As:PrimitiveArgs, As':PrimitiveArgs) => revArgs(As, A ; As')
+  rule revArgs(      .PrimitiveArgs, As':PrimitiveArgs) => As'
 
   // map helpers
   syntax Map ::= "newAnnotMap" [function, functional]
@@ -185,35 +220,21 @@ module K-MICHELINE-PRIMITIVE
                       #! |-> .AnnotationList
 
   // Primitive argument annotation separator
-  syntax PrimArgData ::= #PAD(Map, PrimitiveArgs)
+  syntax PrimArgData ::= #PAD(annotations: Map, args: PrimitiveArgs)
 
   syntax PrimArgData ::= toPrimArgData(PrimitiveArgs)              [function]
                        | toPrimArgData(PrimitiveArgs, PrimArgData) [function]
-
   rule toPrimArgData(Others) => toPrimArgData(Others, #PAD(newAnnotMap, .PrimitiveArgs))
-  rule toPrimArgData(A:VarAnnotation   Rest, #PAD(Annots #@ |-> As,       Others))
-    => toPrimArgData(Rest,                   #PAD(Annots #@ |-> A ; As,   Others))
-  rule toPrimArgData(A:TypeAnnotation  Rest, #PAD(Annots #: |-> As,       Others))
-    => toPrimArgData(Rest,                   #PAD(Annots #: |-> A ; As,   Others))
-  rule toPrimArgData(A:FieldAnnotation Rest, #PAD(Annots #% |-> As,       Others))
-    => toPrimArgData(Rest,                   #PAD(Annots #% |-> A ; As,   Others))
-  rule toPrimArgData(N:MichelineNode   Rest, #PAD(Annots,                 Others))
-    => toPrimArgData(Rest,                   #PAD(Annots,               N Others))
+  rule toPrimArgData(AnnotArg(A:VarAnnotation)   ; Rest, #PAD(Annots #@ |-> As, Others)) => toPrimArgData(Rest, #PAD(Annots #@ |-> A ; As,           Others))
+  rule toPrimArgData(AnnotArg(A:TypeAnnotation)  ; Rest, #PAD(Annots #: |-> As, Others)) => toPrimArgData(Rest, #PAD(Annots #: |-> A ; As,           Others))
+  rule toPrimArgData(AnnotArg(A:FieldAnnotation) ; Rest, #PAD(Annots #% |-> As, Others)) => toPrimArgData(Rest, #PAD(Annots #% |-> A ; As,           Others))
+  rule toPrimArgData(Node(N:MichelineNode)       ; Rest, #PAD(Annots,           Others)) => toPrimArgData(Rest, #PAD(Annots,               Node(N) ; Others))
   rule toPrimArgData(.PrimitiveArgs, #PAD(#@ |-> VAs #: |-> TAs #% |-> FAs #! |-> LAs, Others))
     => #PAD(#@ |-> revAnnots(VAs)
             #: |-> revAnnots(TAs)
             #% |-> revAnnots(FAs)
             #! |-> revAnnots(LAs),
             revArgs(Others))
-endmodule
-```
-
-```k
-module MICHELSON-PARSER
-  imports K-MICHELINE-PRIMITIVE
-
-  syntax Pgm ::= PrimitiveArgs [klabel(MichelsonPgm), symbol]
-  configuration <k> $PGM:Pgm </k>
 endmodule
 ```
 
