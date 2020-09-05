@@ -601,9 +601,9 @@ module K-MICHELSON-PRIMTIVE-ARITY
                     | "AnyInt"
 
   syntax ArgType ::= "IntArg"
-		   | "DataArg"
+                   | "DataArg"
                    | "CodeArg"
-		   | "TypeArg"
+                   | "TypeArg"
 
   syntax ArgTypeSpec ::= List{ArgType, ""}
                        | "Special"
@@ -617,7 +617,7 @@ module K-MICHELSON-PRIMTIVE-ARITY
   syntax MichelsonContext ::= "FieldCon"
                             | "TypeCon"
                             | "InstCon"
-			    | "DataCon"
+                            | "DataCon"
 
   syntax ContextualArityData    ::= MichelsonContext "|->" ArityData
   syntax ContextualArityDataMap ::= List{ContextualArityData, ""}
