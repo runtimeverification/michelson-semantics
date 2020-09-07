@@ -512,7 +512,51 @@ To correctly check the typing of a unit test, we need the following info:
 4. a Michelson script
 
 Currently, we implement runtime type checking. We may adopt static type
-checking at a later time.
+checking at a later time. All type checking requires looking at the top
+fragment of of the stack only, with the exception of instructions which
+have code in their immediate arguments (1-2) or execute `lambda`s (3).
+
+1. Checking if-like instructions `IF` and `IF_X` requires checking that both
+   branches produce the same the stack type.
+2. Checking iterating instructions `LOOP` and `LOOP_LEFT`, `ITER`, and `MAP`
+   requires checking thet loop body code preserves the original stack type.
+3. Checking function-call instruction `EXEC` requires checking the code
+   returns a singleton stack of the correct type.
+
+We currently do not implement the full typing semantics for cases (1)-(2).
+Practically, this means that only *executed* code is type-checked, i.e. untaken
+branches are not checked and loops are only checked for the exact number of
+iterations for which they are run. This means that, even if some execution
+succeeds, executing the other branch of an if instruction or executing a loop
+a different number of times may cause the program to get stuck.
+
+**TODO**: the type of a `MAP` instruction over an empty `list` or `map` is
+currently incorrectly calculated, as we assume it is equivalent to the original
+`map` or `list` that was passed in, which disagrees with the intended
+semantics that the type matches whatever the to-be executed code block does.
+
+#### Typing `FAILWITH`
+
+The `FAILWITH` instruction is interesting because its resulting type is the
+*universal stack type* which unifies with all other stack types. However, due
+to its unique semantics, it poisons all further computation, so that entire
+program returns a `(Failed D)`. For this reason, from our experimentation, we
+have observed the reference implementation makes two requirements on `FAILWITH`
+instruction placement:
+
+1.  It must occur last in the code block it appears in (this makes sense,
+    because all code following it is unreachable, i.e., dead).
+2.  It may not occur in positions that would prevent a concrete type from
+    being inferred. From our understanding, this can happen in two ways:
+
+    - code of the form `IF_X { ... ; FAILWITH } { ... ; FAILWITH }` which
+      prevents inferring a concrete stack type for the `IF_X` instruction;
+    - code of the form `MAP { ... ; FAILWITH }` which prevents the inferring
+      a concrete value type for the resulting `map key_ty val_ty` or `list ty`
+      that it produces.
+
+Currently, we do enforce these restrictions, but we may do so in a future
+version.
 
 ### Stack Loading
 
@@ -572,6 +616,9 @@ checking at a later time.
 Execution Semantics
 ===================
 
+Miscellaneous
+-------------
+
 When the `<k>` cell is empty, we consider execution successful.
 
 ```k
@@ -579,7 +626,7 @@ When the `<k>` cell is empty, we consider execution successful.
        <returncode> 1 => 0 </returncode>
 ```
 
-We handle typed instruction wrappers and blocks here.
+We handle sequence and block semantics here.
 
 ```k
   rule I:Instruction ; Is => I ~> Is [structural]
@@ -587,7 +634,7 @@ We handle typed instruction wrappers and blocks here.
   rule { Is:DataList }    => Is      [structural]
 ```
 
-For now, annotations are ignored.
+For now, we ignore annotations.
 
 ```k
   syntax Instruction ::= #HandleAnnotations(AnnotationList)
@@ -730,16 +777,6 @@ element it pops off for its block.
     requires N >Int 0
 ```
 
-This pseudo-instruction implements the behavior of restoring the previous stack
-when a lambda completes execution.
-
-```k
-  syntax Instruction ::= #ReturnStack(Stack)
-
-  rule <k> #ReturnStack(SS) => . ... </k>
-       <stack> E ; _ => E ; SS </stack>
-```
-
 `DROP n` is implemented in a recursive style, like in the Michelson
 documentation.
 
@@ -818,9 +855,8 @@ climb back up, respectively.
 
 ```k
   rule <k> PUSH A T X => #HandleAnnotations(A) ... </k>
-       <stack> SS => [ #Name(T) X ] ; SS
-       </stack>
-    requires isValue(X)
+       <stack> SS => [ #Name(T) X ] ; SS </stack>
+    requires isValue(#Name(T), X)
 ```
 
 If it is not a `Value`, `PUSH` converts its argument to a `Value`, either by
@@ -829,7 +865,7 @@ up/creating a new symbol in the symbol table.
 
 ```k
   rule <k> PUSH A T (X => #MichelineToNative(X, T, .Map, .Map)) ... </k>
-    requires notBool isValue(X)
+    requires notBool isValue(#Name(T), X)
      andBool notBool isSymbolicData(X)
 ```
 
@@ -859,12 +895,22 @@ An `EXEC` instruction replaces the stack and schedules the restoration of the
 old stack after the completion of the lambda code.
 
 ```k
-  rule <k> EXEC B => #HandleAnnotations(B) ~> C ~> #ReturnStack(SS) ... </k>
-       <stack> [ T1 D ]
-             ; [ (lambda T1 T2) #Lambda(T1, T2, C) ]
+  rule <k> EXEC B
+        => #HandleAnnotations(B)
+        ~> Code
+        ~> #PostExecStackFix(RetType, SS)
+           ...
+       </k>
+       <stack> [ ArgType D ]
+             ; [ (lambda ArgType RetType) #Lambda(ArgType, RetType, Code) ]
              ; SS
-            => [ T1 D ]
+            => [ ArgType D ]
        </stack>
+
+  syntax Instruction ::= #PostExecStackFix(TypeName,Stack)
+  // -----------------------------------------------------
+  rule <k> #PostExecStackFix(RetType, SS) => .K ... </k>
+       <stack> [ RetType D ] => [ RetType D ] ; SS </stack>
 ```
 
 `APPLY` demonstrates why lambdas have their type information preserved, as
@@ -2220,7 +2266,7 @@ It has an untyped and typed variant.
   // -----------------------------------------------------------
   rule isValue(nat,       V:Int)                 => true requires V >=Int 0
   rule isValue(int,       V:Int)                 => true
-  rule isValue(mutez,     V:Int)                 => true requires #IsLegalMutezValue(V)
+  rule isValue(mutez,     #Mutez(V:Int))         => true requires #IsLegalMutezValue(V)
   rule isValue(bool,      V:Bool)                => true
   rule isValue(bytes,     V:Bytes)               => true
   rule isValue(string,    V:String)              => true
