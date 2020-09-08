@@ -1,10 +1,10 @@
-input { Stack_elt nat $I1 } ;   //        I1
-code { DUP                      //     I1 I1
-     ; PUSH nat 5               //   0 I1 I1
-     ; COMPARE                  //   ???? I1
-     ; LT                       //   0>I1 I1
-     ; IF { LEFT  nat }         // (left  I1) where I1 > 5
-          { RIGHT nat }         // (right I1) where I1 <= 5
+input { Stack_elt nat $I1 } ;   #        I1
+code { DUP                      #     I1 I1
+     ; PUSH nat 5               #   0 I1 I1
+     ; COMPARE                  #   ???? I1
+     ; LT                       #   0>I1 I1
+     ; IF { LEFT  nat }         # (left  I1) where I1 > 5
+          { RIGHT nat }         # (right I1) where I1 <= 5
      } ;
 output { Stack_elt (or nat nat) $OPT } ;
 postcondition { { PUSH (or nat nat) $OPT
