@@ -50,7 +50,7 @@ code
                    #  : @storage pair (nat %stored_counter) (pair (nat %threshold) (list %keys key)) ]
                 DIP { SWAP } ; SWAP ;
                 IF_CONS
-		             # sigs.hd sigs.tl @keys.elt @valid ...
+                             # sigs.hd sigs.tl @keys.elt @valid ...
                   {
                     IF_SOME     # sigs.hd.v sigs.tl @keys.elt @valid ...
                       { SWAP ;  # sigs.tl sigs.hd.v @keys.elt @valid ...
@@ -59,7 +59,7 @@ code
                             SWAP ; DIIP { DUUP } ;
                             # Checks signatures, fails if invalid
                             # [ @keys.elt key : @hd.some signature : @packed bytes
-			    #   : @valid nat
+                            #   : @valid nat
                             #   : @packed bytes
                             #   : or :action
                             #     (lambda %operation unit (list operation))
@@ -77,22 +77,22 @@ code
                   } ;
                 SWAP
               }
-	      # postcondition: if we haven't failed, then
-	      # 1. list option sig and list keys have the same size
-	      # 2. forall 0 <= i <= len(list keys) : if sigs[i] == Some V then (CHECK_SIGNATURE keys[i] sigs[i] payload)
-	      # 3. valid == sum of set signatures
+              # postcondition: if we haven't failed, then
+              # 1. list option sig and list keys have the same size
+              # 2. forall 0 <= i <= len(list keys) : if sigs[i] == Some V then (CHECK_SIGNATURE keys[i] sigs[i] payload)
+              # 3. valid == sum of set signatures
 
-	      # initial loop body stack =>
-	      # final loop body stack ???
-	      # at(loop1, x) x
-	      # iter_invariant key valid sigs bytes action storage {
-	      #
-	      #   1. PUSH list (option signature) sigs ; IF_CONS { } { FAIL }
-	      #   2. PUSH list (option signature) sigs ; IF_CONS { IF_NONE { PUSH bool True ; } { PUSH ... ; CHECK_SIGNATURE } } { FAIL }
-	      #
-	      #   3. IF (2) => PUSH nat at(iter, valid) ; PUSH nat 1 ; ADD ; PUSH nat valid ; COMPARE ; EQ
-	      #   4. tail(at(loop1, sigs)) == sigs
-	      # }
+              # initial loop body stack =>
+              # final loop body stack ???
+              # at(loop1, x) x
+              # iter_invariant key valid sigs bytes action storage {
+              #
+              #   1. PUSH list (option signature) sigs ; IF_CONS { } { FAIL }
+              #   2. PUSH list (option signature) sigs ; IF_CONS { IF_NONE { PUSH bool True ; } { PUSH ... ; CHECK_SIGNATURE } } { FAIL }
+              #
+              #   3. IF (2) => PUSH nat at(iter, valid) ; PUSH nat 1 ; ADD ; PUSH nat valid ; COMPARE ; EQ
+              #   4. tail(at(loop1, sigs)) == sigs
+              # }
 
           } ;
         # Assert that the threshold is less than or equal to the
@@ -117,3 +117,28 @@ code
           };
         PAIR }
   }
+
+# TODO: fix this predicate definition
+#
+# Add new predicate to use in assertion
+#
+# function $ALL_VALID lambda (pair (list (option signature)) (pair (list key) bytes)) bool
+# { UNPAPAIR ; # sigs keys bytes
+#   IF_CONS {                            # sigs.hd sigs.tl keys bytes
+#             DIG 2 ;                    # keys sigs.hd sigs.tl bytes
+#             IF_CONS {                  # keys.hd keys.tl sigs.hd sigs.tl bytes
+#                       DIG 2 ;          # sigs.hd keys.hd keys.tl sigs.tl bytes
+#                       IF_NONE {        # keys.hd keys.tl sigs.tl bytes
+#                                 DROP ; SWAP ; PAPAPAIR ; PUSH lambda (pair (list (option signature)) (pair (list key) bytes)) bool $ALL_VALID ; EXEC ;
+#                               }
+#                               {
+#
+#                               }
+#                     }
+#                     { DROP 3 ; PUSH bool False } # drop everything and return false
+#           }
+#           { # keys bytes
+#             IF_CONS { PUSH bool False } # sigs list is nil but keys list is not => fail
+#                     { PUSH bool True  } # both lists nil => ok
+#           }
+# }
