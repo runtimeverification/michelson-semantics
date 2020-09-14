@@ -14,7 +14,6 @@ requires "json.md"
 requires "michelson.md"
 
 module MICHELSON-UNPARSER
-  imports MICHELSON-MACRO-SYNTAX
   imports UNIT-TEST-COMMON-SYNTAX
   imports MICHELSON-COMMON
 
@@ -288,13 +287,6 @@ module MICHELSON-UNPARSER
   rule #doUnparse(SET_CDR AList, _) => "SET_CDR" +String #doUnparse(AList, false)
   rule #doUnparse(CREATE_CONTRACT AList { C }, _) => "CREATE_CONTRACT" +String #doUnparse(AList, false) +String " {" +String #doUnparse(C, true) +String "}"
 
-  syntax String ::= #DIPMacroToString(DIPMacro) [function, hook(STRING.token2string)]
-  syntax String ::= #DUPMacroToString(DUPMacro) [function, hook(STRING.token2string)]
-  syntax String ::= #PairMacroToString(PairMacro) [function, hook(STRING.token2string)]
-  syntax String ::= #UnpairMacroToString(UnpairMacro) [function, hook(STRING.token2string)]
-  syntax String ::= #CDARMacroToString(CDARMacro) [function, hook(STRING.token2string)]
-  syntax String ::= #SetCDARMacroToString(SetCDARMacro) [function, hook(STRING.token2string)]
-
   rule #doUnparse(D:DIPMacro A B, _) => #DIPMacroToString(D) +String
                                         " " +String
                                         #doUnparse(A, false) +String
@@ -305,14 +297,6 @@ module MICHELSON-UNPARSER
                                       " " +String
                                       #doUnparse(A, false)
 
-  rule #doUnparse(P:PairMacro A, _) => #PairMacroToString(P) +String
-                                       " " +String
-                                       #doUnparse(A, false)
-
-  rule #doUnparse(U:UnpairMacro A, _) => #UnpairMacroToString(U) +String
-                                         " " +String
-                                         #doUnparse(A, false)
-
   rule #doUnparse(C:CDARMacro A, _) => #CDARMacroToString(C) +String
                                        " " +String
                                        #doUnparse(A, false)
@@ -320,7 +304,21 @@ module MICHELSON-UNPARSER
   rule #doUnparse(C:SetCDARMacro A, _) => #SetCDARMacroToString(C) +String
                                           " " +String
                                           #doUnparse(A, false)
+```
 
+The following macros are currently disabled.
+
+```disabled
+  rule #doUnparse(P:PairMacro A, _) => #PairMacroToString(P) +String
+                                       " " +String
+                                       #doUnparse(A, false)
+
+  rule #doUnparse(U:UnpairMacro A, _) => #UnpairMacroToString(U) +String
+                                         " " +String
+                                         #doUnparse(A, false)
+```
+
+```k
   rule #doUnparse(storage T, _) => "storage " +String #doUnparse(T, true)
   rule #doUnparse(parameter T, _) => "parameter " +String #doUnparse(T, true)
 
