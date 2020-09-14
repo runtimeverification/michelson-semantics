@@ -82,7 +82,7 @@ run_symbtest() {
 
 [[ $# -gt 0 ]] && { run_command="$1" ; shift ; }
 
-if [[ $# -le 1 ]] || [[ "$run_command" == 'help' ]] || [[ "$run_command" == '--help' ]] ; then
+if [[ $# -le 0 ]] || [[ "$run_command" == 'help' ]] || [[ "$run_command" == '--help' ]] ; then
     echo "
         usage: $0 run       [--backend (llvm|symbolic|contract-expander|extractor|input-creator|output-compare)] <pgm>  <K arg>*
                $0 kast      [--backend (llvm|symbolic|contract-expander|extractor|input-creator|output-compare)] <pgm>  <output format> <K arg>*
