@@ -16,7 +16,11 @@ requires "michelson.md"
 module MICHELSON-UNPARSER
   imports UNIT-TEST-COMMON-SYNTAX
   imports MICHELSON-COMMON
+```
 
+### Core Michelson Unparsing
+
+```k
   // We add sorts here to simplify when terms are primitive arguments
   syntax ApplicationData ::= Pair | OrData | OptionData
   syntax Data ::= ApplicationData
@@ -246,12 +250,19 @@ module MICHELSON-UNPARSER
   rule #doUnparse(SOURCE AList, _) => "SOURCE" +String #doUnparse(AList, false)
   rule #doUnparse(SENDER AList, _) => "SENDER" +String #doUnparse(AList, false)
   rule #doUnparse(ADDRESS AList, _) => "ADDRESS" +String #doUnparse(AList, false)
+  rule #doUnparse(CREATE_CONTRACT AList { C }, _) => "CREATE_CONTRACT" +String #doUnparse(AList, false) +String " {" +String #doUnparse(C, true) +String "}"
+```
+
+### Macro Unparsing
+
+```k
   rule #doUnparse(CMPEQ AList, _) => "CMPEQ" +String #doUnparse(AList, false)
   rule #doUnparse(CMPNEQ AList, _) => "CMPNEQ" +String #doUnparse(AList, false)
   rule #doUnparse(CMPLT AList, _) => "CMPLT" +String #doUnparse(AList, false)
   rule #doUnparse(CMPGT AList, _) => "CMPGT" +String #doUnparse(AList, false)
   rule #doUnparse(CMPLE AList, _) => "CMPLE" +String #doUnparse(AList, false)
   rule #doUnparse(CMPGE AList, _) => "CMPGE" +String #doUnparse(AList, false)
+
   rule #doUnparse(IFEQ AList B1 B2, _) => "IFEQ" +String #doUnparse(AList, false) +String " " +String #doUnparse(B1, true) +String " " +String #doUnparse(B2, true)
   rule #doUnparse(IFNEQ AList B1 B2, _) => "IFNEQ" +String #doUnparse(AList, false) +String " " +String #doUnparse(B1, true) +String " " +String #doUnparse(B2, true)
   rule #doUnparse(IFLT AList B1 B2, _) => "IFLT" +String #doUnparse(AList, false) +String " " +String #doUnparse(B1, true) +String " " +String #doUnparse(B2, true)
@@ -264,6 +275,7 @@ module MICHELSON-UNPARSER
   rule #doUnparse(IFCMPGT AList B1 B2, _) => "IFCMPGT" +String #doUnparse(AList, false) +String " " +String #doUnparse(B1, true) +String " " +String #doUnparse(B2, true)
   rule #doUnparse(IFCMPLE AList B1 B2, _) => "IFCMPLE" +String #doUnparse(AList, false) +String " " +String #doUnparse(B1, true) +String " " +String #doUnparse(B2, true)
   rule #doUnparse(IFCMPGE AList B1 B2, _) => "IFCMPGE" +String #doUnparse(AList, false) +String " " +String #doUnparse(B1, true) +String " " +String #doUnparse(B2, true)
+
   rule #doUnparse(FAIL AList, _) => "FAIL" +String #doUnparse(AList, false)
   rule #doUnparse(ASSERT AList, _) => "ASSERT" +String #doUnparse(AList, false)
   rule #doUnparse(ASSERT_EQ AList, _) => "ASSERT_EQ" +String #doUnparse(AList, false)
@@ -282,10 +294,16 @@ module MICHELSON-UNPARSER
   rule #doUnparse(ASSERT_SOME AList, _) => "ASSERT_SOME" +String #doUnparse(AList, false)
   rule #doUnparse(ASSERT_LEFT AList, _) => "ASSERT_LEFT" +String #doUnparse(AList, false)
   rule #doUnparse(ASSERT_RIGHT AList, _) => "ASSERT_RIGHT" +String #doUnparse(AList, false)
+
   rule #doUnparse(IF_SOME AList B1 B2, _) => "IF_SOME" +String #doUnparse(AList, false) +String " " +String #doUnparse(B1, true) +String " " +String #doUnparse(B2, true)
+
   rule #doUnparse(SET_CAR AList, _) => "SET_CAR" +String #doUnparse(AList, false)
   rule #doUnparse(SET_CDR AList, _) => "SET_CDR" +String #doUnparse(AList, false)
-  rule #doUnparse(CREATE_CONTRACT AList { C }, _) => "CREATE_CONTRACT" +String #doUnparse(AList, false) +String " {" +String #doUnparse(C, true) +String "}"
+
+  rule #doUnparse(MAP_CAR AList Body, _) => "MAP_CAR" +String #doUnparse(AList, false) +String " " +String #doUnparse(Body,false)
+  rule #doUnparse(MAP_CDR AList Body, _) => "MAP_CDR" +String #doUnparse(AList, false) +String " " +String #doUnparse(Body,false)
+
+  rule #doUnparse(DUP AList N:Int, _) => "DUP" +String #doUnparse(AList, false) +String " " +String #doUnparse(N:Int,false)
 
   rule #doUnparse(D:DIPMacro A B, _) => #DIPMacroToString(D) +String
                                         " " +String
@@ -304,6 +322,12 @@ module MICHELSON-UNPARSER
   rule #doUnparse(C:SetCDARMacro A, _) => #SetCDARMacroToString(C) +String
                                           " " +String
                                           #doUnparse(A, false)
+
+  rule #doUnparse(C:MapCDARMacro A Body, _) => #MapCDARMacroToString(C) +String
+                                               " " +String
+                                               #doUnparse(A, false) +String
+					       " " +String
+					       #doUnparse(Body, false)
 ```
 
 The following macros are currently disabled.
@@ -317,6 +341,8 @@ The following macros are currently disabled.
                                          " " +String
                                          #doUnparse(A, false)
 ```
+
+### Michelson Groups/TZT Extexnsion Unparsing
 
 ```k
   rule #doUnparse(storage T, _) => "storage " +String #doUnparse(T, true)
