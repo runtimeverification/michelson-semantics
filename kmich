@@ -36,14 +36,18 @@ run_krun() {
 run_kast() {
     local output_mode
 
+    [[ $# -lt 1 ]] && fatal "kast: no output mode provided"
     output_mode="$1" ; shift
+
     kast --directory "$backend_dir" "$run_file" --output "$output_mode" "$@"
 }
 
 run_prove() {
     local def_module
 
+    [[ $# -lt 1 ]] && fatal "prove: no definition module provided"
     def_module="$1" ; shift
+
     export K_OPTS=-Xmx8G
     kprove --directory "$backend_dir" "$run_file" --def-module "$def_module" "$@"
 }
@@ -76,15 +80,15 @@ run_symbtest() {
 # Main
 # ----
 
-run_command="$1" ; shift
+[[ $# -gt 0 ]] && { run_command="$1" ; shift ; }
 
-if [[ "$run_command" == 'help' ]] || [[ "$run_command" == '--help' ]] ; then
+if [[ $# -le 0 ]] || [[ "$run_command" == 'help' ]] || [[ "$run_command" == '--help' ]] ; then
     echo "
-        usage: $0 run       [--backend (llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare)] <pgm>  <K arg>*
-               $0 kast      [--backend (llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare)] <pgm>  <output format> <K arg>*
-               $0 symbtest  [--backend symbolic]                                                                       <pgm>                  <K arg>*
-               $0 prove     [--backend (prove|symbolic)]                                                               <spec> <def_module>    <K arg>*
-               $0 interpret [--backend (llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare)] <pgm>  <LLVM KRun arg>*
+        usage: $0 run       [--backend (llvm|symbolic|contract-expander|extractor|input-creator|output-compare)] <pgm>  <K arg>*
+               $0 kast      [--backend (llvm|symbolic|contract-expander|extractor|input-creator|output-compare)] <pgm>  <output format> <K arg>*
+               $0 symbtest  [--backend symbolic]                                                                 <pgm>                  <K arg>*
+               $0 prove     [--backend symbolic]                                                                 <spec> <def_module>    <K arg>*
+               $0 interpret [--backend (llvm|symbolic|contract-expander|extractor|input-creator|output-compare)] <pgm>  <LLVM KRun arg>*
 
                $0 [help|--help|version|--version]
 
