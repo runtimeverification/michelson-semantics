@@ -2189,10 +2189,10 @@ Complex macro evaluation proceeds by interpreting the trimmed string as
 Michelson instructions.
 
 1.  The `DU+P` macro is equivalent to `DUP n` where `n` is the number of `U`s,
-    where `DUP n` duplicates the `n`th stack element in place. Thus, we can
-    infer the typing rule of the form:
+    where `DUP n` duplicates the `n`th stack element. Thus, we can infer a
+    typing rule of the form:
 
-    `x1 ... xn S => x1 ... xn xn S`.
+    `x1 ... xn S => x1 xn ... xn S`.
 
     ```k
     rule #DUP(S) => DUP .AnnotationList lengthString(S)
@@ -2301,7 +2301,7 @@ Michelson instructions.
    the string. Technically, this macro accepts a variant of roman numerals with
    characters `MDCLXVI` where different letters increase the value of `n` by
    more than 1, but, for simplicity, we only accept the consecutive `I`s.
-   It's typing rule is equivalent to the typing rule for `DIP n code`
+   Its typing rule is equivalent to the typing rule for `DIP n code`
 
    ```k
    rule #DIP(S,Body) => DIP .AnnotationList lengthString(S) Body
