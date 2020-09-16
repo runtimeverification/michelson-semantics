@@ -125,7 +125,7 @@ fi
 
 backend="llvm"
 debug=false
-[[ ! "$run_command" == 'prove' ]]    || backend='symbolic'
+[[ ! "$run_command" == 'prove' ]]    || backend='prove'
 [[ ! "$run_command" == 'symbtest' ]] || backend='symbolic'
 args=()
 while [[ $# -gt 0 ]]; do
@@ -160,10 +160,10 @@ llvm_krun_args=()
 case "$run_command-$backend" in
 
     # Running
-    run-@(llvm|symbolic|contract-expander|extractor|input-creator|output-compare)       ) run_krun       "$@" ;;
-    kast-@(llvm|symbolic|contract-expander|extractor|input-creator|output-compare)      ) run_kast       "$@" ;;
-    interpret-@(llvm|symbolic|contract-expander|extractor|input-creator|output-compare) ) run_interpret  "$@" ;;
-    symbtest-symbolic                                                                   ) run_symbtest   "$@" ;;
-    prove-symbolic                                                                      ) run_prove      "$@" ;;
+    run-@(llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare)       ) run_krun       "$@" ;;
+    kast-@(llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare)      ) run_kast       "$@" ;;
+    symbtest-symbolic                                                                         ) run_symbtest   "$@" ;;
+    prove-@(prove|symbolic)                                                                   ) run_prove      "$@" ;;
+    interpret-@(llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare) ) run_interpret  "$@" ;;
     *) $0 help ; fatal "Unknown command on backend: $run_command $backend" ;;
 esac
