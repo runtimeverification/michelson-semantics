@@ -37,3 +37,6 @@ tests/unit/update_bigmapstringstring_04.tzt
 tests/unit/update_bigmapstringstring_05.tzt
 tests/unit/update_bigmapstringstring_06.tzt
 tests/unit/update_bigmapstringstring_07.tzt
+
+tests/macros/pappaiir.tzt
+tests/macros/unpappaiir.tzt
