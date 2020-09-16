@@ -2272,8 +2272,7 @@ Michelson instructions.
       => { DUP .AnnotationList ;
            DIP .AnnotationList
                { CAR .AnnotationList ;
-                 { #MAP_CDAR( #Advance(1,S), Body ) } ;
-                 Body
+                 { #MAP_CDAR( #Advance(1,S), Body ) }
                } ;
            CDR .AnnotationList ;
            SWAP .AnnotationList ;
@@ -2286,8 +2285,7 @@ Michelson instructions.
       => { DUP .AnnotationList ;
            DIP .AnnotationList
                { CDR .AnnotationList ;
-                 { #MAP_CDAR( #Advance(1,S), Body ) } ;
-                 Body
+                 { #MAP_CDAR( #Advance(1,S), Body ) }
                } ;
            CAR .AnnotationList ;
            PAIR .AnnotationList
