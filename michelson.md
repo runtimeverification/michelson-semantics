@@ -2245,9 +2245,6 @@ Michelson instructions.
 
   rule #MAP_CDAR("A", Body) => MAP_CAR .AnnotationList Body
   rule #MAP_CDAR("D", Body) => MAP_CDR .AnnotationList Body
-
-  // NOTE: this rule is explicitly undefined and should be unreachable
-  // rule #MAP_CDAR("", Body) => #Bottom
 ```
 
 5. The `DII+P` macro evaluates to `DIP n` where `n` is the number of `I`s in
