@@ -2199,10 +2199,12 @@ Michelson instructions.
 
 ```k
   rule #CDAR(S) => CAR .AnnotationList ; #CDAR( #Advance(1,S) )
-    requires #CharAt(1, S) ==String "A"
+   requires    lengthString(S) >Int 0
+   andThenBool #CharAt(0, S) ==String "A"
 
   rule #CDAR(S) => CDR .AnnotationList ; #CDAR( #Advance(1,S) )
-    requires #CharAt(1, S) ==String "D"
+    requires    lengthString(S) >Int 0
+    andThenBool #CharAt(0, S) ==String "D"
 
   rule #CDAR("") => { }
 ```
@@ -2227,8 +2229,8 @@ Michelson instructions.
          SWAP .AnnotationList ;
          PAIR .AnnotationList
        }
-    requires lengthString(S) >=Int 2
-     andBool #CharAt(1, S) ==String "A"
+    requires    lengthString(S) >=Int 2
+    andThenBool #CharAt(0, S) ==String "A"
 
   rule #MAP_CDAR(S, Body)
     => { DUP .AnnotationList ;
@@ -2240,8 +2242,8 @@ Michelson instructions.
          CAR .AnnotationList ;
          PAIR .AnnotationList
        }
-    requires lengthString(S) >=Int 2
-     andBool #CharAt(1, S) ==String "D"
+    requires    lengthString(S) >=Int 2
+    andThenBool #CharAt(0, S) ==String "D"
 
   rule #MAP_CDAR("A", Body) => MAP_CAR .AnnotationList Body
   rule #MAP_CDAR("D", Body) => MAP_CDR .AnnotationList Body
@@ -2274,11 +2276,11 @@ The following two macros are left for future implementation work.
 
   syntax String ::= #CharAt(Int, String) [function]
   // ----------------------------------------------
-  rule #CharAt(N, S) => substrString(S, N, N +Int 1) requires N >=Int 0
+  rule #CharAt(N, S) => substrString(S, N, N +Int 1)
 
   syntax String ::= #Advance(Int, String)  [function]
   // ------------------------------------------------
-  rule #Advance (N, S) => substrString(S, N, lengthString(S))
+  rule #Advance(N, S) => substrString(S, N, lengthString(S))
 ```
 
 Symbolic Value Processing
