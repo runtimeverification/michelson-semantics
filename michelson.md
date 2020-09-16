@@ -2159,7 +2159,7 @@ The following macros have one-step mappings to Michelson code.
            ...
        </k>
 
-  rule <k> DUP _ 1 => DUP .AnnotationList ... </k>
+  // NOTE: there is no DUP 1 macro --- presumably becuase this is equal to DUP
   rule <k> DUP _ 2 => DIP .AnnotationList { DUP .AnnotationList } ; SWAP .AnnotationList ... </k>
   rule <k> DUP _ N => DIP .AnnotationList (N -Int 1) { DUP .AnnotationList } ; DIG .AnnotationList N ... </k>
     requires N >Int 2
