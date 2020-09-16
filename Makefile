@@ -120,15 +120,15 @@ ifeq (,$(RELEASE))
     LLVM_KOMPILE_OPTS += -g
 endif
 
-KOMPILE_LLVM := kompile --debug --backend llvm --md-selector "$(tangle_llvm)" \
-                $(KOMPILE_OPTS)                                               \
-                $(addprefix -ccopt ,$(LLVM_KOMPILE_OPTS))
+KOMPILE_LLVM = kompile --debug --backend llvm --md-selector "$(tangle_llvm)" \
+               $(KOMPILE_OPTS)                                               \
+               $(addprefix -ccopt ,$(LLVM_KOMPILE_OPTS))
 
 HASKELL_KOMPILE_OPTS +=
 
-KOMPILE_HASKELL := kompile --debug --backend haskell --md-selector "$(tangle_haskell)" \
-                   $(KOMPILE_OPTS)                                                     \
-                   $(HASKELL_KOMPILE_OPTS)
+KOMPILE_HASKELL = kompile --debug --backend haskell --md-selector "$(tangle_haskell)" \
+                  $(KOMPILE_OPTS)                                                     \
+                  $(HASKELL_KOMPILE_OPTS)
 
 defn:        defn-k defn-compat
 defn-k:      defn-llvm defn-prove defn-symbolic
@@ -168,6 +168,7 @@ prove_kompiled      := $(prove_dir)/$(notdir $(prove_main_file))-kompiled/defini
 defn-prove:  $(prove_files)
 build-prove: $(prove_kompiled)
 
+$(prove_kompiled): tangle_haskell := k | concrete
 $(prove_kompiled): $(prove_files)
 	$(KOMPILE_HASKELL) $(prove_main_file).md                  \
 	                   --directory $(prove_dir) -I $(CURDIR)  \
