@@ -2208,8 +2208,8 @@ Michelson instructions.
 
     ```k
     rule #CDAR(S) => CAR .AnnotationList ; #CDAR( #Advance(1,S) )
-     requires    lengthString(S) >Int 0
-     andThenBool #CharAt(0, S) ==String "A"
+      requires    lengthString(S) >Int 0
+      andThenBool #CharAt(0, S) ==String "A"
 
     rule #CDAR(S) => CDR .AnnotationList ; #CDAR( #Advance(1,S) )
       requires    lengthString(S) >Int 0
@@ -2297,15 +2297,15 @@ Michelson instructions.
     rule #MAP_CDAR("D", Body) => MAP_CDR .AnnotationList Body
     ```
 
-5. The `DII+P` macro evaluates to `DIP n` where `n` is the number of `I`s in
-   the string. Technically, this macro accepts a variant of roman numerals with
-   characters `MDCLXVI` where different letters increase the value of `n` by
-   more than 1, but, for simplicity, we only accept the consecutive `I`s.
-   Its typing rule is equivalent to the typing rule for `DIP n code`
+5.  The `DII+P` macro evaluates to `DIP n` where `n` is the number of `I`s in
+    the string. Technically, this macro accepts a variant of roman numerals with
+    characters `MDCLXVI` where different letters increase the value of `n` by
+    more than 1, but, for simplicity, we only accept the consecutive `I`s.
+    Its typing rule is equivalent to the typing rule for `DIP n code`
 
-   ```k
-   rule #DIP(S,Body) => DIP .AnnotationList lengthString(S) Body
-   ```
+    ```k
+    rule #DIP(S,Body) => DIP .AnnotationList lengthString(S) Body
+    ```
 
 #### Unimplemented Macros
 
