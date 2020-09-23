@@ -871,7 +871,9 @@ up/creating a new symbol in the symbol table.
 
 ```symbolic
   rule <k> PUSH A T (X:SymbolicData => D)  ... </k>
-       <symbols> X |-> #TypedSymbol(#Name(T), D) ... </symbols>
+       <symbols> X |-> #TypedSymbol(TN, D) ... </symbols>
+    requires #Name(T) ==K TN
+
   rule <k> (.K => #CreateSymbol(X, T)) ~> PUSH A T X:SymbolicData  ... </k>
        <symbols> Symbols  </symbols>
     requires notBool X in_keys(Symbols)
