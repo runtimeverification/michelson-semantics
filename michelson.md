@@ -240,7 +240,7 @@ of Michelson code. We list these configuration cells here:
    It is useful for test execution, type-checking, and debugging purposes.
 
     ```k
-                  <inputstack> .K </inputstack>
+                  <inputstack> { .StackElementList } </inputstack>
     ```
 
 2. The `<expected>` cell contains the expected output stack for the given
@@ -248,7 +248,7 @@ of Michelson code. We list these configuration cells here:
    used for test validation, type-checking, and debugging purposes.
 
     ```k
-                  <expected> .K </expected>
+                  <expected> ({ .StackElementList }):OutputStack </expected>
     ```
 
 3. These cells contain pre- and post-conditions, as well as loop invariants.
@@ -419,10 +419,10 @@ Below are the rules for loading specific groups.
        </invs>
 
   rule <k> input LS => .K ... </k>
-       <inputstack> .K => LS </inputstack>
+       <inputstack> { .StackElementList } => LS </inputstack>
 
-  rule <k> output Os => .K ... </k>
-       <expected> .K => Os </expected>
+  rule <k> output OS => .K ... </k>
+       <expected> { .StackElementList } => OS </expected>
 
   rule <k> precondition { Bs } => .K ... </k>
        <pre> .BlockList => Bs </pre>
