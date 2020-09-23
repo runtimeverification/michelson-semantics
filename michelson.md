@@ -339,12 +339,11 @@ Semantics Initialization
 
 ```k
   rule <k> #Init
-        => #CreateSymbols
-        ~> #ConvertBigMapsToNative
+        => #ConvertBigMapsToNative
         ~> #ConvertParamToNative
         ~> #ConvertStorageToNative
         ~> #ExecutePreConditions
-        ~> #LoadInputStack
+        ~> #InitInputStack
         ~> #ExecuteScript
         ~> #ExecutePostConditions
            ...
@@ -429,31 +428,6 @@ Below are the rules for loading specific groups.
 
   rule <k> postcondition { Bs } => .K ... </k>
        <post> .BlockList => Bs </post>
-```
-
-### Symbol Creation
-
-Load symbolic variables into the `<symbols>` map.
-
-```k
-  syntax KItem ::= "#CreateSymbols"
-```
-
-```concrete
-  rule <k> #CreateSymbols => . ... </k>
-```
-
-```symbolic
-  rule <k> #CreateSymbols
-        => #CreateSymbols(#UnifiedSetToList(#UnifyTypes( #FindSymbolsS(Stack)
-                                                    |Set #FindSymbolsBL(Pre)
-                                                    |Set #FindSymbolsB({ Script })
-                         )                )           )
-           ...
-       </k>
-       <inputstack> { Stack }:LiteralStack </inputstack>
-       <pre> Pre:BlockList </pre>
-       <script> Script:Data </script>
 ```
 
 ### Micheline to Native Conversion
@@ -558,39 +532,39 @@ instruction placement:
 Currently, we do enforce these restrictions, but we may do so in a future
 version.
 
-### Stack Loading
+### Stack Initialization
 
 ```k
-  syntax KItem ::= "#LoadInputStack"
-  rule <k> #LoadInputStack => .K ... </k>
-       <stack> _ => #StackToNative(Actual, Addrs, BigMaps) </stack>
-       <inputstack> Actual </inputstack>
+  syntax KItem ::= "#InitInputStack"
+  rule <k> #InitInputStack => #StackToNative(Actual, .Stack) ... </k>
+       <inputstack> { Actual } </inputstack>
+
+  syntax KItem ::= #StackToNative(StackElementList, Stack)
+  // -----------------------------------------------------
+  rule <k> #StackToNative(Stack_elt T D ; Stack, Stack')
+        => #StackToNative(Stack, [ #Name(T) #MichelineToNative(D, T, Addrs, BigMaps) ] ; Stack')
+           ...
+       </k>
        <knownaddrs> Addrs </knownaddrs>
        <bigmaps> BigMaps </bigmaps>
+    requires notBool isSymbolicData(D)
 
-  syntax InternalStack ::= #StackToNative(OutputStack, Map, Map) [function]
-  syntax Stack ::= #StackToNativeAux(StackElementList, Map, Map) [function]
-  // ----------------------------------------------------------------------
-  rule #StackToNative( { Ls }, Addrs, BigMaps )
-    => #StackToNativeAux( Ls, Addrs, BigMaps )
-  rule #StackToNative( FS:FailedStack, _, _ ) => FS
+  rule <k> (.K => #CreateSymbol(X, T))
+        ~> #StackToNative(Stack_elt T X:SymbolicData ; Stack, Stack')
+           ...
+       </k>
+       <symbols> Symbols  </symbols>
+    requires notBool X in_keys(Symbols)
 
-  rule #StackToNativeAux(.StackElementList, _Addrs, _BigMaps) => .Stack
-  rule #StackToNativeAux(Stack_elt T D ; Gs, Addrs, BigMaps)
-    => [ #Name(T) #MichelineToNative(D, T, Addrs, BigMaps) ] ;
-       #StackToNativeAux(Gs, Addrs, BigMaps)
-```
+  rule <k> #StackToNative(Stack_elt T X:SymbolicData ; Stack, Stack')
+        => #StackToNative(Stack, [ TN D ] ; Stack')
+           ...
+       </k>
+       <symbols> X |-> #TypedSymbol(TN, D) ... </symbols>
+    requires TN ==K #Name(T)
 
-```k
-  syntax KItem ::= "#LoadDefaultContractStack"
-  rule <k> #LoadDefaultContractStack ... </k>
-       <stack> _:Stack
-            => [ (pair #Name(PT) #Name(ST)) Pair P S ]
-       </stack>
-       <paramvalue> P </paramvalue>
-       <paramtype> PT </paramtype>
-       <storagevalue> S </storagevalue>
-       <storagetype> ST </storagetype>
+  rule <k> #StackToNative(.StackElementList, Stack) => .K ... </k>
+       <stack> _ => reverseStack(Stack) </stack>
 ```
 
 ### Code Execution
@@ -2242,6 +2216,7 @@ Symbolic Value Processing
 
 ```symbolic
   syntax KItem ::= #CreateSymbol(SymbolicData, Type)
+  // -----------------------------------------------
   rule <k> (.K => #MakeFresh(T)) ~>  #CreateSymbol(_, T) ... </k>
   rule <k> (V ~> #CreateSymbol(N, T)) => . ... </k>
        <symbols> M => M[N <- #TypedSymbol(#Name(T), V)] </symbols>
