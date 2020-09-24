@@ -549,6 +549,11 @@ version.
        <bigmaps> BigMaps </bigmaps>
     requires notBool isSymbolicData(D)
 
+  rule <k> #StackToNative(.StackElementList, Stack) => .K ... </k>
+       <stack> _ => reverseStack(Stack) </stack>
+```
+
+```symbolic
   rule <k> (.K => #CreateSymbol(X, T))
         ~> #StackToNative(Stack_elt T X:SymbolicData ; Stack, Stack')
            ...
@@ -562,9 +567,6 @@ version.
        </k>
        <symbols> X |-> #TypedSymbol(TN, D) ... </symbols>
     requires TN ==K #Name(T)
-
-  rule <k> #StackToNative(.StackElementList, Stack) => .K ... </k>
-       <stack> _ => reverseStack(Stack) </stack>
 ```
 
 ### Code Execution
