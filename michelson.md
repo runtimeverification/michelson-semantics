@@ -2086,6 +2086,252 @@ abstract out pieces of the stack which are non-invariant during loop execution.
        <symbols> _ => Symbols </symbols>
 ```
 
+Macro Evaluation
+----------------
+
+### Simple Macro Evaluation
+
+The following macros have one-step mappings to Michelson code.
+
+```k
+  rule <k> CMPEQ _  => COMPARE .AnnotationList ; EQ  .AnnotationList ... </k>
+  rule <k> CMPNEQ _ => COMPARE .AnnotationList ; NEQ .AnnotationList ... </k>
+  rule <k> CMPLT _  => COMPARE .AnnotationList ; LT  .AnnotationList ... </k>
+  rule <k> CMPGT _  => COMPARE .AnnotationList ; GT  .AnnotationList ... </k>
+  rule <k> CMPLE _  => COMPARE .AnnotationList ; LE  .AnnotationList ... </k>
+  rule <k> CMPGE _  => COMPARE .AnnotationList ; GE  .AnnotationList ... </k>
+
+  rule <k> IFEQ     _ B1 B2 => EQ     .AnnotationList ; IF .AnnotationList B1 B2 ... </k>
+  rule <k> IFNEQ    _ B1 B2 => NEQ    .AnnotationList ; IF .AnnotationList B1 B2 ... </k>
+  rule <k> IFLT     _ B1 B2 => LT     .AnnotationList ; IF .AnnotationList B1 B2 ... </k>
+  rule <k> IFGT     _ B1 B2 => GT     .AnnotationList ; IF .AnnotationList B1 B2 ... </k>
+  rule <k> IFLE     _ B1 B2 => LE     .AnnotationList ; IF .AnnotationList B1 B2 ... </k>
+  rule <k> IFGE     _ B1 B2 => GE     .AnnotationList ; IF .AnnotationList B1 B2 ... </k>
+  rule <k> IFCMPEQ  _ B1 B2 => CMPEQ  .AnnotationList ; IF .AnnotationList B1 B2 ... </k>
+  rule <k> IFCMPNEQ _ B1 B2 => CMPNEQ .AnnotationList ; IF .AnnotationList B1 B2 ... </k>
+  rule <k> IFCMPLT  _ B1 B2 => CMPLT  .AnnotationList ; IF .AnnotationList B1 B2 ... </k>
+  rule <k> IFCMPGT  _ B1 B2 => CMPGT  .AnnotationList ; IF .AnnotationList B1 B2 ... </k>
+  rule <k> IFCMPLE  _ B1 B2 => CMPLE  .AnnotationList ; IF .AnnotationList B1 B2 ... </k>
+  rule <k> IFCMPGE  _ B1 B2 => CMPGE  .AnnotationList ; IF .AnnotationList B1 B2 ... </k>
+
+  rule <k> FAIL _ => UNIT .AnnotationList ; FAILWITH .AnnotationList ... </k>
+
+  rule <k> ASSERT        _ => IF       .AnnotationList {} { FAIL .AnnotationList } ... </k>
+  rule <k> ASSERT_EQ     _ => IFEQ     .AnnotationList {} { FAIL .AnnotationList } ... </k>
+  rule <k> ASSERT_NEQ    _ => IFNEQ    .AnnotationList {} { FAIL .AnnotationList } ... </k>
+  rule <k> ASSERT_LT     _ => IFLT     .AnnotationList {} { FAIL .AnnotationList } ... </k>
+  rule <k> ASSERT_LE     _ => IFLE     .AnnotationList {} { FAIL .AnnotationList } ... </k>
+  rule <k> ASSERT_GT     _ => IFGT     .AnnotationList {} { FAIL .AnnotationList } ... </k>
+  rule <k> ASSERT_GE     _ => IFGE     .AnnotationList {} { FAIL .AnnotationList } ... </k>
+  rule <k> ASSERT_CMPEQ  _ => IFCMPEQ  .AnnotationList {} { FAIL .AnnotationList } ... </k>
+  rule <k> ASSERT_CMPNEQ _ => IFCMPNEQ .AnnotationList {} { FAIL .AnnotationList } ... </k>
+  rule <k> ASSERT_CMPLT  _ => IFCMPLT  .AnnotationList {} { FAIL .AnnotationList } ... </k>
+  rule <k> ASSERT_CMPLE  _ => IFCMPLE  .AnnotationList {} { FAIL .AnnotationList } ... </k>
+  rule <k> ASSERT_CMPGT  _ => IFCMPGT  .AnnotationList {} { FAIL .AnnotationList } ... </k>
+  rule <k> ASSERT_CMPGE  _ => IFCMPGE  .AnnotationList {} { FAIL .AnnotationList } ... </k>
+  rule <k> ASSERT_NONE   _ => IF_NONE  .AnnotationList {} { FAIL .AnnotationList } ... </k>
+  rule <k> ASSERT_SOME   _ => IF_SOME  .AnnotationList {} { FAIL .AnnotationList } ... </k>
+  rule <k> ASSERT_LEFT   _ => IF_LEFT  .AnnotationList {} { FAIL .AnnotationList } ... </k>
+  rule <k> ASSERT_RIGHT  _ => IF_RIGHT .AnnotationList {} { FAIL .AnnotationList } ... </k>
+
+  rule <k> IF_SOME  _ B1 B2 => IF_NONE .AnnotationList B2 B1 ... </k>
+  rule <k> IF_RIGHT _ B1 B2 => IF_LEFT .AnnotationList B2 B1 ... </k>
+
+  rule <k> SET_CAR _ => CDR .AnnotationList ; SWAP .AnnotationList ; PAIR .AnnotationList ... </k>
+  rule <k> SET_CDR _ => CAR .AnnotationList ;                        PAIR .AnnotationList ... </k>
+
+  rule <k> MAP_CAR _ Body
+        => DUP .AnnotationList ;
+           CDR .AnnotationList ;
+           DIP .AnnotationList { CAR .AnnotationList ; Body } ;
+           SWAP .AnnotationList ;
+           PAIR .AnnotationList
+           ...
+       </k>
+
+  rule <k> MAP_CDR _ Body
+        => DUP .AnnotationList ;
+           CDR .AnnotationList ;
+           Body ;
+           SWAP .AnnotationList ;
+           CAR .AnnotationList ;
+           PAIR .AnnotationList
+           ...
+       </k>
+
+  // NOTE: there is no DUP 1 macro --- presumably becuase this is equal to DUP
+  rule <k> DUP _ 2 => DIP .AnnotationList { DUP .AnnotationList } ; SWAP .AnnotationList ... </k>
+  rule <k> DUP _ N => DIP .AnnotationList (N -Int 1) { DUP .AnnotationList } ; DIG .AnnotationList N ... </k>
+    requires N >Int 2
+```
+
+### Complex Macro Evaluation
+
+The following macros require two or more steps to fully process.
+We first convert the macro token into a string and trim off any unneeded
+prefixes/suffixes.
+
+```k
+  syntax DataList ::= #DUP(String)                          [function]
+                    | #CDAR(String)                         [function]
+                    | "#SET_CDAR" "(" String ")"            [function]
+                    | "#MAP_CDAR" "(" String ","  Block ")" [function]
+                    | #DIP(String, Block)                   [function]
+
+  rule <k> M:DUPMacro     _   => #DUP(     #Trim(1,1,#DUPMacroToString(M)))        ... </k>
+  rule <k> M:CDARMacro    _   => #CDAR(    #Trim(1,1,#CDARMacroToString(M)))       ... </k>
+  rule <k> M:SetCDARMacro _   => #SET_CDAR(#Trim(5,1,#SetCDARMacroToString(M)))    ... </k>
+  rule <k> M:MapCDARMacro _ B => #MAP_CDAR(#Trim(5,1,#MapCDARMacroToString(M)), B) ... </k>
+  rule <k> M:DIPMacro     _ B => #DIP(     #Trim(1,1,#DIPMacroToString(M)),     B) ... </k>
+```
+
+Complex macro evaluation proceeds by interpreting the trimmed string as
+Michelson instructions.
+
+1.  The `DU+P` macro is equivalent to `DUP n` where `n` is the number of `U`s,
+    where `DUP n` duplicates the `n`th stack element. Thus, we can infer a
+    typing rule of the form:
+
+    `x1 ... xn S => x1 xn ... xn S`.
+
+    ```k
+    rule #DUP(S) => DUP .AnnotationList lengthString(S)
+    ```
+
+2.  The `C[AD]+R` macro evaluates to successive `CAR` or `CDR` instructions for
+    each `A` or `D` in the string. Thus, we can infer a typing rule of the
+    form:
+
+    `ptype(...x...) S => x S`
+
+    where `ptype` is a nested pair type of the required structure.
+
+    ```k
+    rule #CDAR(S) => CAR .AnnotationList ; #CDAR( #Advance(1,S) )
+      requires    lengthString(S) >Int 0
+      andThenBool #CharAt(0, S) ==String "A"
+
+    rule #CDAR(S) => CDR .AnnotationList ; #CDAR( #Advance(1,S) )
+      requires    lengthString(S) >Int 0
+      andThenBool #CharAt(0, S) ==String "D"
+
+    rule #CDAR("") => { }
+    ```
+
+3.  The `SET_C[AD]+R` macro sets a designated leaf element in a nested `pair`
+    type with depth `n` which depends on the sequence of `A`s and `D`s in the
+    macro. Thus, we can infer a typing rule of the form:
+
+    `ptype(...x...) x S => ptype(...x...) S`.
+
+    ```k
+    rule #SET_CDAR(S)
+      => { DUP .AnnotationList ;
+           DIP .AnnotationList
+               { CAR .AnnotationList ;
+             { #SET_CDAR( #Advance(1,S) ) }
+               } ;
+           CDR .AnnotationList ;
+           SWAP .AnnotationList ;
+           PAIR .AnnotationList
+         }
+      requires    lengthString(S) >=Int 2
+      andThenBool #CharAt(0, S) ==String "A"
+
+    rule #SET_CDAR(S)
+      => { DUP .AnnotationList ;
+           DIP .AnnotationList
+               { CDR .AnnotationList ;
+             { #SET_CDAR( #Advance(1,S) ) }
+               } ;
+           CAR .AnnotationList ;
+           PAIR .AnnotationList
+         }
+      requires    lengthString(S) >=Int 2
+      andThenBool #CharAt(0, S) ==String "D"
+
+    rule #SET_CDAR("A") => SET_CAR .AnnotationList
+    rule #SET_CDAR("D") => SET_CDR .AnnotationList
+    ```
+
+4.  The `MAP_C[AD]+R code` assumes the following conditions:
+
+    - the macro is applied to a stack of the for `ptype S` where `ptype` is a
+      nested `pair` type with a designated leaf of depth `n` which depends on
+      the sequence of `A`s and `D`s in the macro;
+    - the designated leaf value is `v` with type `x`;
+    - for the given `code`, we can infer a typing rule of the form `x S => x S`
+
+    Then `MAP_C[AD]+R` macro transforms the pair by applying `code` to leaf
+    value `v`. Thus, we can infer a typing rule of the form:
+
+    `ptype(...x...) S => ptype(...x...) S`.
+
+    ```k
+    rule #MAP_CDAR(S, Body)
+      => { DUP .AnnotationList ;
+           DIP .AnnotationList
+               { CAR .AnnotationList ;
+                 { #MAP_CDAR( #Advance(1,S), Body ) }
+               } ;
+           CDR .AnnotationList ;
+           SWAP .AnnotationList ;
+           PAIR .AnnotationList
+         }
+      requires    lengthString(S) >=Int 2
+      andThenBool #CharAt(0, S) ==String "A"
+
+    rule #MAP_CDAR(S, Body)
+      => { DUP .AnnotationList ;
+           DIP .AnnotationList
+               { CDR .AnnotationList ;
+                 { #MAP_CDAR( #Advance(1,S), Body ) }
+               } ;
+           CAR .AnnotationList ;
+           PAIR .AnnotationList
+         }
+      requires    lengthString(S) >=Int 2
+      andThenBool #CharAt(0, S) ==String "D"
+
+    rule #MAP_CDAR("A", Body) => MAP_CAR .AnnotationList Body
+    rule #MAP_CDAR("D", Body) => MAP_CDR .AnnotationList Body
+    ```
+
+5.  The `DII+P` macro evaluates to `DIP n` where `n` is the number of `I`s in
+    the string. Technically, this macro accepts a variant of roman numerals with
+    characters `MDCLXVI` where different letters increase the value of `n` by
+    more than 1, but, for simplicity, we only accept the consecutive `I`s.
+    Its typing rule is equivalent to the typing rule for `DIP n code`
+
+    ```k
+    rule #DIP(S,Body) => DIP .AnnotationList lengthString(S) Body
+    ```
+
+#### Unimplemented Macros
+
+The following two macros are left for future implementation work.
+
+```disabled
+  rule <k> M:PairMacro    _ => #Eval(#Trim(1,1,#PairMacroToString(M)),    M) ... </k>
+  rule <k> M:UnpairMacro  _ => #Eval(#Trim(2,1,#UnpairMacroToString(M)),  M) ... </k>
+```
+
+### Macro Evaluation Auxiliary Functions
+
+```k
+  syntax String ::= #Trim(Int, Int, String) [function]
+  // -------------------------------------------------
+  rule #Trim(B, E, S) => substrString(S, B, lengthString(S) -Int E)
+
+  syntax String ::= #CharAt(Int, String) [function]
+  // ----------------------------------------------
+  rule #CharAt(N, S) => substrString(S, N, N +Int 1)
+
+  syntax String ::= #Advance(Int, String)  [function]
+  // ------------------------------------------------
+  rule #Advance(N, S) => substrString(S, N, lengthString(S))
+```
+
 Symbolic Value Processing
 -------------------------
 
