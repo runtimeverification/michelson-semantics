@@ -240,7 +240,7 @@ of Michelson code. We list these configuration cells here:
    It is useful for test execution, type-checking, and debugging purposes.
 
     ```k
-                  <inputstack> .K </inputstack>
+                  <inputstack> { .StackElementList } </inputstack>
     ```
 
 2. The `<expected>` cell contains the expected output stack for the given
@@ -248,7 +248,7 @@ of Michelson code. We list these configuration cells here:
    used for test validation, type-checking, and debugging purposes.
 
     ```k
-                  <expected> .K </expected>
+                  <expected> ({ .StackElementList }):OutputStack </expected>
     ```
 
 3. These cells contain pre- and post-conditions, as well as loop invariants.
@@ -339,12 +339,11 @@ Semantics Initialization
 
 ```k
   rule <k> #Init
-        => #CreateSymbols
-        ~> #ConvertBigMapsToNative
+        => #ConvertBigMapsToNative
         ~> #ConvertParamToNative
         ~> #ConvertStorageToNative
         ~> #ExecutePreConditions
-        ~> #LoadInputStack
+        ~> #InitInputStack
         ~> #ExecuteScript
         ~> #ExecutePostConditions
            ...
@@ -419,41 +418,16 @@ Below are the rules for loading specific groups.
        </invs>
 
   rule <k> input LS => .K ... </k>
-       <inputstack> .K => LS </inputstack>
+       <inputstack> { .StackElementList } => LS </inputstack>
 
-  rule <k> output Os => .K ... </k>
-       <expected> .K => Os </expected>
+  rule <k> output OS => .K ... </k>
+       <expected> { .StackElementList } => OS </expected>
 
   rule <k> precondition { Bs } => .K ... </k>
        <pre> .BlockList => Bs </pre>
 
   rule <k> postcondition { Bs } => .K ... </k>
        <post> .BlockList => Bs </post>
-```
-
-### Symbol Creation
-
-Load symbolic variables into the `<symbols>` map.
-
-```k
-  syntax KItem ::= "#CreateSymbols"
-```
-
-```concrete
-  rule <k> #CreateSymbols => . ... </k>
-```
-
-```symbolic
-  rule <k> #CreateSymbols
-        => #CreateSymbols(#UnifiedSetToList(#UnifyTypes( #FindSymbolsS(Stack)
-                                                    |Set #FindSymbolsBL(Pre)
-                                                    |Set #FindSymbolsB({ Script })
-                         )                )           )
-           ...
-       </k>
-       <inputstack> { Stack }:LiteralStack </inputstack>
-       <pre> Pre:BlockList </pre>
-       <script> Script:Data </script>
 ```
 
 ### Micheline to Native Conversion
@@ -558,39 +532,41 @@ instruction placement:
 Currently, we do enforce these restrictions, but we may do so in a future
 version.
 
-### Stack Loading
+### Stack Initialization
 
 ```k
-  syntax KItem ::= "#LoadInputStack"
-  rule <k> #LoadInputStack => .K ... </k>
-       <stack> _ => #StackToNative(Actual, Addrs, BigMaps) </stack>
-       <inputstack> Actual </inputstack>
+  syntax KItem ::= "#InitInputStack"
+  rule <k> #InitInputStack => #StackToNative(Actual, .Stack) ... </k>
+       <inputstack> { Actual } </inputstack>
+
+  syntax KItem ::= #StackToNative(StackElementList, Stack)
+  // -----------------------------------------------------
+  rule <k> #StackToNative(Stack_elt T D ; Stack, Stack')
+        => #StackToNative(Stack, [ #Name(T) #MichelineToNative(D, T, Addrs, BigMaps) ] ; Stack')
+           ...
+       </k>
        <knownaddrs> Addrs </knownaddrs>
        <bigmaps> BigMaps </bigmaps>
+    requires notBool isSymbolicData(D)
 
-  syntax InternalStack ::= #StackToNative(OutputStack, Map, Map) [function]
-  syntax Stack ::= #StackToNativeAux(StackElementList, Map, Map) [function]
-  // ----------------------------------------------------------------------
-  rule #StackToNative( { Ls }, Addrs, BigMaps )
-    => #StackToNativeAux( Ls, Addrs, BigMaps )
-  rule #StackToNative( FS:FailedStack, _, _ ) => FS
-
-  rule #StackToNativeAux(.StackElementList, _Addrs, _BigMaps) => .Stack
-  rule #StackToNativeAux(Stack_elt T D ; Gs, Addrs, BigMaps)
-    => [ #Name(T) #MichelineToNative(D, T, Addrs, BigMaps) ] ;
-       #StackToNativeAux(Gs, Addrs, BigMaps)
+  rule <k> #StackToNative(.StackElementList, Stack) => .K ... </k>
+       <stack> _ => reverseStack(Stack) </stack>
 ```
 
-```k
-  syntax KItem ::= "#LoadDefaultContractStack"
-  rule <k> #LoadDefaultContractStack ... </k>
-       <stack> _:Stack
-            => [ (pair #Name(PT) #Name(ST)) Pair P S ]
-       </stack>
-       <paramvalue> P </paramvalue>
-       <paramtype> PT </paramtype>
-       <storagevalue> S </storagevalue>
-       <storagetype> ST </storagetype>
+```symbolic
+  rule <k> (.K => #CreateSymbol(X, T))
+        ~> #StackToNative(Stack_elt T X:SymbolicData ; Stack, Stack')
+           ...
+       </k>
+       <symbols> Symbols  </symbols>
+    requires notBool X in_keys(Symbols)
+
+  rule <k> #StackToNative(Stack_elt T X:SymbolicData ; Stack, Stack')
+        => #StackToNative(Stack, [ TN D ] ; Stack')
+           ...
+       </k>
+       <symbols> X |-> #TypedSymbol(TN, D) ... </symbols>
+    requires TN ==K #Name(T)
 ```
 
 ### Code Execution
@@ -871,7 +847,9 @@ up/creating a new symbol in the symbol table.
 
 ```symbolic
   rule <k> PUSH A T (X:SymbolicData => D)  ... </k>
-       <symbols> X |-> #TypedSymbol(#Name(T), D) ... </symbols>
+       <symbols> X |-> #TypedSymbol(TN, D) ... </symbols>
+    requires #Name(T) ==K TN
+
   rule <k> (.K => #CreateSymbol(X, T)) ~> PUSH A T X:SymbolicData  ... </k>
        <symbols> Symbols  </symbols>
     requires notBool X in_keys(Symbols)
@@ -2131,115 +2109,9 @@ Symbolic Value Processing
 
 `#CreateSymbol` is responsible for setting up the initial symbol table.
 
-```k
-  syntax Type ::= "#UnknownType"
-
-  syntax KItem ::= SymbolicElement
-
-  syntax SymbolicElement ::= #SymbolicElement(SymbolicData, Type)
-
-  syntax Set ::= #FindSymbolsBL(BlockList) [function, functional]
-  rule #FindSymbolsBL(.BlockList) => .Set
-  rule #FindSymbolsBL(B:Block ; Rs:BlockList)
-    => #FindSymbolsB(B) #FindSymbolsBL(Rs)
-
-  syntax Set ::= #FindSymbolsB(Block) [function, functional]
-  rule #FindSymbolsB({ }) => .Set
-  rule #FindSymbolsB({ I:Instruction }) => #FindSymbolsI(I)
-  rule #FindSymbolsB({ I:Instruction ; Is:DataList }:Block)
-    => #FindSymbolsI(I) |Set #FindSymbolsB({ Is })
-
-  syntax Set ::= #FindSymbolsI(Instruction) [function, functional]
-  rule #FindSymbolsI(PUSH _ T D) => #FindSymbolsIn(D, T)
-  rule #FindSymbolsI(_)          => .Set [owise]
-
-  syntax Set ::= #FindSymbolsS(StackElementList) [function, functional]
-  rule #FindSymbolsS(.StackElementList) => .Set
-  rule #FindSymbolsS((Stack_elt T D ); Ss:StackElementList)
-    => #FindSymbolsIn(D, T) |Set #FindSymbolsS(Ss)
-```
-
-```k
-  syntax Set ::= #FindSymbolsIn(Data, Type) [function, functional]
-  rule #FindSymbolsIn(S:SymbolicData, T)
-    => SetItem(#SymbolicElement(S, T)) // ???
-
-  rule #FindSymbolsIn(Pair V1 V2, pair _ T1 T2)
-    => #FindSymbolsIn(V1, T1) |Set #FindSymbolsIn(V2, T2)
-  rule #FindSymbolsIn(Some V, option _ T) => #FindSymbolsIn(V, T)
-  rule #FindSymbolsIn(Left V, or _ T _) => #FindSymbolsIn(V, T)
-  rule #FindSymbolsIn(Right V, or _ _ T) => #FindSymbolsIn(V, T)
-  rule #FindSymbolsIn(B:Block, lambda _ _ _) => #FindSymbolsB(B)
-
-  rule #FindSymbolsIn({ }, list _ _) => .Set
-  rule #FindSymbolsIn({ D:Data }, list _ T) => #FindSymbolsIn(D, T)
-  rule #FindSymbolsIn({ D:Data ; DL }, list _ T)
-    => #FindSymbolsIn(D, T) |Set #FindSymbolsIn({ DL }, T)
-
-  rule #FindSymbolsIn({ }, set _ _) => .Set
-  rule #FindSymbolsIn({ D:Data }, set _ T) => #FindSymbolsIn(D, T)
-  rule #FindSymbolsIn({ D:Data ; DL }, set _ T)
-    => #FindSymbolsIn(D, T) |Set #FindSymbolsIn({ DL }, T)
-
-  rule #FindSymbolsIn({ }, map _ _ _) => .Set
-  rule #FindSymbolsIn({ Elt K V }, map _ KT VT)
-    => #FindSymbolsIn(K, KT) |Set #FindSymbolsIn(V, VT)
-  rule #FindSymbolsIn({ M:MapEntry ; ML:MapEntryList }, (map _ _ _) #as MT)
-    => #FindSymbolsIn({ M }, MT) |Set #FindSymbolsIn({ ML }, MT)
-
-  rule #FindSymbolsIn(M:NeMapLiteral, big_map A KT VT)
-    => #FindSymbolsIn(M, map A KT VT)
-
-  rule #FindSymbolsIn(_, _) => .Set [owise]
-```
-
-```k
-  syntax Bool ::= #AllTypesKnown(Set) [function, functional]
-  rule #AllTypesKnown(SetItem(#SymbolicElement(_, #UnknownType)) _) => false
-  rule #AllTypesKnown(_) => true [owise]
-
-  syntax UnificationFailure ::= "#UnificationFailure"
-
-  syntax UnifiedSet ::= Set | UnificationFailure
-
-  syntax UnifiedSet ::= #UnifyTypes(Set) [function, functional]
-
-  rule #UnifyTypes(SetItem(#SymbolicElement(S, #UnknownType))
-                   SetItem(#SymbolicElement(S, T)) Ss)
-    => #UnifyTypes(SetItem(#SymbolicElement(S, T)) Ss)
-
-  rule #UnifyTypes(SetItem(#SymbolicElement(S, T1))
-                   SetItem(#SymbolicElement(S, T2)) _)
-    => #UnificationFailure
-    requires T1 =/=K T2
-     andBool T1 =/=K #UnknownType
-     andBool T2 =/=K #UnknownType
-
-  rule #UnifyTypes(S) => S
-    requires #AllTypesKnown(S) [owise]
-
-  rule #UnifyTypes(S) => #UnificationFailure
-    requires notBool(#AllTypesKnown(S)) [owise]
-
-  syntax UnifiedList ::= List | UnificationFailure
-  syntax UnifiedList ::= #UnifiedSetToList(UnifiedSet) [function, functional]
-
-  rule #UnifiedSetToList(S:Set) => Set2List(S)
-  rule #UnifiedSetToList(#UnificationFailure) => #UnificationFailure
-```
-
-```symbolic
-  syntax KItem ::= #CreateSymbols(UnifiedList)
-  rule <k> #CreateSymbols(.List) => . ... </k>
-  rule <k> #CreateSymbols(ListItem(#SymbolicElement(D, T)) S)
-        => #CreateSymbol(D, T)
-        ~> #CreateSymbols(S)
-           ...
-       </k>
-```
-
 ```symbolic
   syntax KItem ::= #CreateSymbol(SymbolicData, Type)
+  // -----------------------------------------------
   rule <k> (.K => #MakeFresh(T)) ~>  #CreateSymbol(_, T) ... </k>
   rule <k> (V ~> #CreateSymbol(N, T)) => . ... </k>
        <symbols> M => M[N <- #TypedSymbol(#Name(T), V)] </symbols>
