@@ -1330,11 +1330,11 @@ For simplicity we implement this by repeatedly selecting the minimal element.
   rule <k> ITER A _ => #HandleAnnotations(A) ... </k>
        <stack> [set _ .Set] ; SS => SS </stack>
 
-  rule <k> ITER A B
+  rule <k> ITER A Body
         => #HandleAnnotations(A)
-        ~> B
+        ~> Body
         ~> #Push(set T,S -Set SetItem(#MinimalElement(Set2List(S))))
-        ~> ITER .AnnotationList B
+        ~> ITER .AnnotationList Body
         ...
         </k>
        <stack> [set T S] ; SS => [T #MinimalElement(Set2List(S))] ; SS </stack>
@@ -1416,9 +1416,9 @@ This rule is not supported by the LLVM backend, so we only include it in Haskell
 The `MAP` operation over maps is defined via psuedoinstruction `#DoMap`.
 
 ```k
-  rule <k> MAP A B
+  rule <k> MAP A Body
         => #HandleAnnotations(A)
-        ~> #DoMap(#MapOpInfo(KT, VT, NoneType, M, .Map, B))
+        ~> #DoMap(#MapOpInfo(KT, VT, NoneType, M, .Map, Body))
            ...
        </k>
        <stack> [map KT VT M] ; SS => SS </stack>
@@ -1579,11 +1579,11 @@ since it does not need to track the new map while keeping it off the stack.
   rule <k> ITER A _ =>  #HandleAnnotations(A) ~>. ... </k>
        <stack> [list _ .List] ; SS => SS </stack>
 
-  rule <k> ITER A B
+  rule <k> ITER A Body
         => #HandleAnnotations(A)
-        ~> B
+        ~> Body
         ~> #Push(list T,Ls)
-        ~> ITER .AnnotationList B
+        ~> ITER .AnnotationList Body
            ...
        </k>
        <stack> [list T ListItem(E) Ls] ; SS => [T E] ; SS </stack>
@@ -1592,9 +1592,9 @@ since it does not need to track the new map while keeping it off the stack.
 The `MAP` operation over `list`s is defined in terms of a helper function.
 
 ```k
-  rule <k> MAP A B
+  rule <k> MAP A Body
         => #HandleAnnotations(A)
-        ~> #DoMap(T, NoneType, Ls, .List, B)
+        ~> #DoMap(T, NoneType, Ls, .List, Body)
            ...
        </k>
        <stack> [list T Ls] ; SS => SS </stack>
