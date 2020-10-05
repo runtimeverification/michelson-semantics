@@ -104,7 +104,7 @@ tangle_llvm    := k | concrete
 HOOK_NAMESPACES := TIME MICHELSON
 
 # NOTE: -W useless-rule check is quite expensive (increasing compilation times by several times), use -Wno useless-rule unless this check is needed!!!
-KOMPILE_OPTS += --hook-namespaces "$(HOOK_NAMESPACES)" --gen-bison-parser --emit-json -w all -Wno unused-var -Wno unused-symbol -Wno useless-rule
+KOMPILE_OPTS += --hook-namespaces "$(HOOK_NAMESPACES)" --gen-bison-parser --emit-json -w all -Wno unused-symbol -Wno useless-rule
 
 ifneq (,$(RELEASE))
     KOMPILE_OPTS += -O3
