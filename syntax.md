@@ -14,7 +14,6 @@ Unit test file syntax is defined as a slight extension of this file.
 ```k
 module MICHELSON-SYNTAX
   imports MICHELSON-COMMON-SYNTAX
-  imports MICHELSON-MACRO-SYNTAX
 
   syntax Groups ::= Group ";" [klabel(groupSemicolon), symbol]
 
@@ -298,6 +297,93 @@ set used for debugging purposes.
   syntax Instruction ::= TRACE(String)
 ```
 
+### Macro Syntax
+
+All macros are instructions.
+
+```k
+  syntax Instruction ::= Macro
+```
+
+Some macros have syntax that can be validated at parse-time. Other macros need
+additional runtime processing. The following macros require such processing.
+
+```k
+  // FIXME: Pair and Unpair macro syntax currently too imprecise
+  syntax DIPMacro ::= r"DII+P" [token]
+  syntax DUPMacro ::= r"DUU+P" [token]
+  syntax CDARMacro ::= r"C[A,D]{2,}R" [token]
+  syntax SetCDARMacro ::= r"SET_C[AD]{2,}R" [token]
+  syntax MapCDARMacro ::= r"MAP_C[AD]{2,}R" [token]
+
+  syntax NullaryMacroToken ::= DUPMacro
+                             | CDARMacro
+                             | SetCDARMacro
+
+  syntax UnaryMacroToken ::= DIPMacro
+                           | MapCDARMacro
+
+  syntax Macro ::= NullaryMacroToken AnnotationList
+  syntax Macro ::= UnaryMacroToken AnnotationList Block
+```
+
+Note: these macros require special runtime processing but are currently
+_unimplemented_. Trying to use them will result in a parse error.
+
+```disabled
+  syntax NullaryMacroToken ::= PairMacro | UnpairMacro
+  syntax PairMacro ::= r"P[AIP]+R" [token]
+  syntax UnpairMacro ::= r"UNP[AIP]+R" [token]
+```
+
+The following macros can be validated at parse-time.
+
+```k
+  syntax Macro ::= "DUP" AnnotationList Int
+  syntax Macro ::= "CMPEQ" AnnotationList
+  syntax Macro ::= "CMPNEQ" AnnotationList
+  syntax Macro ::= "CMPLT" AnnotationList
+  syntax Macro ::= "CMPGT" AnnotationList
+  syntax Macro ::= "CMPLE" AnnotationList
+  syntax Macro ::= "CMPGE" AnnotationList
+  syntax Macro ::= "IFEQ" AnnotationList Block Block
+  syntax Macro ::= "IFNEQ" AnnotationList Block Block
+  syntax Macro ::= "IFLT" AnnotationList Block Block
+  syntax Macro ::= "IFGT" AnnotationList Block Block
+  syntax Macro ::= "IFLE" AnnotationList Block Block
+  syntax Macro ::= "IFGE" AnnotationList Block Block
+  syntax Macro ::= "IFCMPEQ" AnnotationList Block Block
+  syntax Macro ::= "IFCMPNEQ" AnnotationList Block Block
+  syntax Macro ::= "IFCMPLT" AnnotationList Block Block
+  syntax Macro ::= "IFCMPGT" AnnotationList Block Block
+  syntax Macro ::= "IFCMPLE" AnnotationList Block Block
+  syntax Macro ::= "IFCMPGE" AnnotationList Block Block
+  syntax Macro ::= "FAIL" AnnotationList
+  syntax Macro ::= "ASSERT" AnnotationList
+  syntax Macro ::= "ASSERT_EQ" AnnotationList
+  syntax Macro ::= "ASSERT_NEQ" AnnotationList
+  syntax Macro ::= "ASSERT_LT" AnnotationList
+  syntax Macro ::= "ASSERT_LE" AnnotationList
+  syntax Macro ::= "ASSERT_GT" AnnotationList
+  syntax Macro ::= "ASSERT_GE" AnnotationList
+  syntax Macro ::= "ASSERT_CMPEQ" AnnotationList
+  syntax Macro ::= "ASSERT_CMPNEQ" AnnotationList
+  syntax Macro ::= "ASSERT_CMPLT" AnnotationList
+  syntax Macro ::= "ASSERT_CMPLE" AnnotationList
+  syntax Macro ::= "ASSERT_CMPGT" AnnotationList
+  syntax Macro ::= "ASSERT_CMPGE" AnnotationList
+  syntax Macro ::= "ASSERT_NONE" AnnotationList
+  syntax Macro ::= "ASSERT_SOME" AnnotationList
+  syntax Macro ::= "ASSERT_LEFT" AnnotationList
+  syntax Macro ::= "ASSERT_RIGHT" AnnotationList
+  syntax Macro ::= "IF_SOME" AnnotationList Block Block
+  syntax Macro ::= "IF_RIGHT" AnnotationList Block Block
+  syntax Macro ::= "SET_CAR" AnnotationList
+  syntax Macro ::= "SET_CDR" AnnotationList
+  syntax Macro ::= "MAP_CAR" AnnotationList Block
+  syntax Macro ::= "MAP_CDR" AnnotationList Block
+```
+
 ### Primitive Applications
 
 We do not correctly parse Micheline primitive applications; we currently work
@@ -363,77 +449,6 @@ action of one instruction.
 ```
 
 ```k
-endmodule
-```
-
-Michelson Macro Syntax
-----------------------
-
-Note: currently, our semantics does not support macro evaluation.
-We leave this macro syntax specified for future usage.
-
-```k
-module MICHELSON-MACRO-SYNTAX
-  imports MICHELSON-COMMON-SYNTAX
-
-  syntax Macro
-  syntax Instruction ::= Macro
-
-  // FIXME: Pair and Unpair macro syntax currently too imprecise
-  syntax DIPMacro ::= r"DII+P" [token]
-  syntax DUPMacro ::= r"DUU+P" [token]
-  syntax PairMacro ::= r"P[AIP]+R" [token]
-  syntax UnpairMacro ::= r"UNP[AIP]+R" [token]
-  syntax CDARMacro ::= r"C[A,D]{2,}R" [token]
-  syntax SetCDARMacro ::= r"SET_C[AD]+R" [token]
-
-  syntax Macro ::= DIPMacro AnnotationList Block
-  syntax Macro ::= DUPMacro AnnotationList
-  syntax Macro ::= PairMacro AnnotationList
-  syntax Macro ::= UnpairMacro AnnotationList
-  syntax Macro ::= CDARMacro AnnotationList
-  syntax Macro ::= SetCDARMacro AnnotationList
-
-  syntax Macro ::= "CMPEQ" AnnotationList
-  syntax Macro ::= "CMPNEQ" AnnotationList
-  syntax Macro ::= "CMPLT" AnnotationList
-  syntax Macro ::= "CMPGT" AnnotationList
-  syntax Macro ::= "CMPLE" AnnotationList
-  syntax Macro ::= "CMPGE" AnnotationList
-  syntax Macro ::= "IFEQ" AnnotationList Block Block
-  syntax Macro ::= "IFNEQ" AnnotationList Block Block
-  syntax Macro ::= "IFLT" AnnotationList Block Block
-  syntax Macro ::= "IFGT" AnnotationList Block Block
-  syntax Macro ::= "IFLE" AnnotationList Block Block
-  syntax Macro ::= "IFGE" AnnotationList Block Block
-  syntax Macro ::= "IFCMPEQ" AnnotationList Block Block
-  syntax Macro ::= "IFCMPNEQ" AnnotationList Block Block
-  syntax Macro ::= "IFCMPLT" AnnotationList Block Block
-  syntax Macro ::= "IFCMPGT" AnnotationList Block Block
-  syntax Macro ::= "IFCMPLE" AnnotationList Block Block
-  syntax Macro ::= "IFCMPGE" AnnotationList Block Block
-  syntax Macro ::= "FAIL" AnnotationList
-  syntax Macro ::= "ASSERT" AnnotationList
-  syntax Macro ::= "ASSERT_EQ" AnnotationList
-  syntax Macro ::= "ASSERT_NEQ" AnnotationList
-  syntax Macro ::= "ASSERT_LT" AnnotationList
-  syntax Macro ::= "ASSERT_LE" AnnotationList
-  syntax Macro ::= "ASSERT_GT" AnnotationList
-  syntax Macro ::= "ASSERT_GE" AnnotationList
-  syntax Macro ::= "ASSERT_CMPEQ" AnnotationList
-  syntax Macro ::= "ASSERT_CMPNEQ" AnnotationList
-  syntax Macro ::= "ASSERT_CMPLT" AnnotationList
-  syntax Macro ::= "ASSERT_CMPLE" AnnotationList
-  syntax Macro ::= "ASSERT_CMPGT" AnnotationList
-  syntax Macro ::= "ASSERT_CMPGE" AnnotationList
-  syntax Macro ::= "ASSERT_NONE" AnnotationList
-  syntax Macro ::= "ASSERT_SOME" AnnotationList
-  syntax Macro ::= "ASSERT_LEFT" AnnotationList
-  syntax Macro ::= "ASSERT_RIGHT" AnnotationList
-  syntax Macro ::= "IF_SOME" AnnotationList Block Block
-  syntax Macro ::= "IF_RIGHT" AnnotationList Block Block
-  syntax Macro ::= "SET_CAR" AnnotationList
-  syntax Macro ::= "SET_CDR" AnnotationList
 endmodule
 ```
 

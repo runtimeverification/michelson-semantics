@@ -41,12 +41,13 @@ export PYTHONPATH
 .PHONY: all clean distclean clean-tests                                                             \
         deps deps-k deps-tezos                                                                      \
         defn defn-k defn-compat                                                                     \
-        defn-llvm defn-symbolic                                                                     \
+        defn-llvm defn-prove defn-symbolic                                                          \
         defn-contract-expander defn-extractor defn-input-creator defn-output-compare                \
         build build-k build-compat                                                                  \
-        build-llvm build-symbolic                                                                   \
+        build-llvm build-prove build-symbolic                                                       \
         build-contract-expander build-extractor build-input-creator build-output-compare            \
-        test test-unit test-unit-failing test-cross test-cross-faling test-prove test-prove-failing
+        test test-unit test-unit-failing test-cross test-cross-faling                               \
+        test-prove test-prove-failing test-symbolic test-symbolic-failing
 .SECONDARY:
 
 all: build
@@ -103,7 +104,7 @@ tangle_llvm    := k | concrete
 HOOK_NAMESPACES := TIME MICHELSON
 
 # NOTE: -W useless-rule check is quite expensive (increasing compilation times by several times), use -Wno useless-rule unless this check is needed!!!
-KOMPILE_OPTS += --hook-namespaces "$(HOOK_NAMESPACES)" --gen-bison-parser --emit-json -w all -Wno unused-var -Wno unused-symbol -Wno useless-rule
+KOMPILE_OPTS += --hook-namespaces "$(HOOK_NAMESPACES)" --gen-bison-parser --emit-json -w all -Wno unused-symbol -Wno useless-rule
 
 ifneq (,$(RELEASE))
     KOMPILE_OPTS += -O3
@@ -119,22 +120,22 @@ ifeq (,$(RELEASE))
     LLVM_KOMPILE_OPTS += -g
 endif
 
-KOMPILE_LLVM := kompile --debug --backend llvm --md-selector "$(tangle_llvm)" \
-                $(KOMPILE_OPTS)                                               \
-                $(addprefix -ccopt ,$(LLVM_KOMPILE_OPTS))
+KOMPILE_LLVM = kompile --debug --backend llvm --md-selector "$(tangle_llvm)" \
+               $(KOMPILE_OPTS)                                               \
+               $(addprefix -ccopt ,$(LLVM_KOMPILE_OPTS))
 
 HASKELL_KOMPILE_OPTS +=
 
-KOMPILE_HASKELL := kompile --debug --backend haskell --md-selector "$(tangle_haskell)" \
-                   $(KOMPILE_OPTS)                                                     \
-                   $(HASKELL_KOMPILE_OPTS)
+KOMPILE_HASKELL = kompile --debug --backend haskell --md-selector "$(tangle_haskell)" \
+                  $(KOMPILE_OPTS)                                                     \
+                  $(HASKELL_KOMPILE_OPTS)
 
 defn:        defn-k defn-compat
-defn-k:      defn-llvm defn-symbolic
+defn-k:      defn-llvm defn-prove defn-symbolic
 defn-compat: defn-contract-expander defn-extractor defn-input-creator defn-output-compare
 
 build:        build-k build-compat
-build-k:      build-llvm build-symbolic
+build-k:      build-llvm build-prove build-symbolic
 build-compat: build-contract-expander build-extractor build-input-creator build-output-compare
 
 # LLVM
@@ -154,6 +155,25 @@ $(llvm_kompiled): $(llvm_files)
 	                --directory $(llvm_dir) -I $(CURDIR)  \
 	                --main-module $(llvm_main_module)     \
 	                --syntax-module $(llvm_syntax_module)
+
+### Prove
+
+prove_dir           := $(DEFN_DIR)/prove
+prove_files         := $(ALL_FILES)
+prove_main_file     := michelson
+prove_main_module   := MICHELSON
+prove_syntax_module := UNIT-TEST-SYNTAX
+prove_kompiled      := $(prove_dir)/$(notdir $(prove_main_file))-kompiled/definition.kore
+
+defn-prove:  $(prove_files)
+build-prove: $(prove_kompiled)
+
+$(prove_kompiled): tangle_haskell := k | concrete
+$(prove_kompiled): $(prove_files)
+	$(KOMPILE_HASKELL) $(prove_main_file).md                  \
+	                   --directory $(prove_dir) -I $(CURDIR)  \
+	                   --main-module $(prove_main_module)     \
+	                   --syntax-module $(prove_syntax_module)
 
 ### Symbolic
 

@@ -214,6 +214,25 @@ real typecheck.
   syntax Data ::= #MichelineToNative(DataOrSeq, Type, Map, Map) [function]
 ```
 
+### Macro Parsing
+
+These functions convert macros to strings to enable evaluation.
+
+```k
+  syntax String ::= #DIPMacroToString(DIPMacro) [function, hook(STRING.token2string)]
+  syntax String ::= #DUPMacroToString(DUPMacro) [function, hook(STRING.token2string)]
+  syntax String ::= #CDARMacroToString(CDARMacro) [function, hook(STRING.token2string)]
+  syntax String ::= #SetCDARMacroToString(SetCDARMacro) [function, hook(STRING.token2string)]
+  syntax String ::= #MapCDARMacroToString(MapCDARMacro) [function, hook(STRING.token2string)]
+```
+
+These macro conversion functions are currently disabled.
+
+```disabled
+  syntax String ::= #PairMacroToString(PairMacro) [function, hook(STRING.token2string)]
+  syntax String ::= #UnpairMacroToString(UnpairMacro) [function, hook(STRING.token2string)]
+```
+
 ### Converting String-Based Datatypes
 
 Michelson has several datatypes whose values are given as Micheline Strings.
