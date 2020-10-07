@@ -3,9 +3,7 @@ requires "lemmas.k"
 module MULTISIG
   imports LEMMAS
 
-  rule <k>
-    input { Stack_elt pair .AnnotationList ( or .AnnotationList unit  .AnnotationList pair  .AnnotationList ( pair  .AnnotationList nat  .AnnotationList or  .AnnotationList ( lambda  .AnnotationList unit .AnnotationList list .AnnotationList operation .AnnotationList ) pair  .AnnotationList nat  .AnnotationList list  .AnnotationList key .AnnotationList ) list  .AnnotationList option .AnnotationList signature .AnnotationList ) pair .AnnotationList nat  .AnnotationList pair .AnnotationList nat  .AnnotationList list  .AnnotationList key .AnnotationList $IN ; .StackElementList } ;
-    code { UNPAIR .AnnotationList ;
+  rule <k> UNPAIR .AnnotationList ;
            IF_LEFT .AnnotationList { DROP .AnnotationList ;
                                      NIL .AnnotationList operation .AnnotationList ;
                                      PAIR .AnnotationList
@@ -70,8 +68,59 @@ module MULTISIG
                                                              } ;
                                      PAIR .AnnotationList
             }
-         } ;
-    output { Stack_elt pair .AnnotationList ( list .AnnotationList operation .AnnotationList ) pair .AnnotationList nat  .AnnotationList pair .AnnotationList nat  .AnnotationList list  .AnnotationList key .AnnotationList $OUT ; .StackElementList }
     => .K
        </k>
+       <paramtype> (or .AnnotationList unit .AnnotationList
+                      pair .AnnotationList (pair .AnnotationList nat .AnnotationList
+                                 (or .AnnotationList (lambda .AnnotationList unit .AnnotationList (list .AnnotationList operation .AnnotationList ))
+                                     pair .AnnotationList nat .AnnotationList
+                                          (list .AnnotationList key .AnnotationList )))
+                           (list .AnnotationList (option .AnnotationList signature .AnnotationList )))
+       </paramtype>
+
+       <paramvalue> #NoData </paramvalue>
+       <storagetype> #NotSet </storagetype>
+       <storagevalue> #NoData </storagevalue>
+       <mybalance> #Mutez(0) </mybalance>
+       <myamount> #Mutez(0) </myamount>
+       <mynow> #Timestamp(0) </mynow>
+       <myaddr> #Address("InvalidMyAddr") </myaddr>
+       <knownaddrs> .Map </knownaddrs>
+       <sourceaddr> #Address("InvalidSourceAddr") </sourceaddr>
+       <senderaddr> #Address("InvalidSenderAddr") </senderaddr>
+       <mychainid> #ChainId(0x) </mychainid>
+       <nonce> #Nonce(0) </nonce>
+       <bigmaps> .Map </bigmaps>
+       <script> #NoData </script>
+       <stack> [ pair (or unit                                           // default operation
+                          pair (pair nat                                 // counter
+                                     (or (lambda unit (list operation))  // requested action
+                                         pair nat                        // change keys - new threshold
+                                              (list key)))               // change keys - new key list
+                               (list (option signature)))
+                      (pair nat                                          // stored counter
+                            (pair nat                                    // threshold
+                                  (list key)))                           // list of keys
+                // ---------------------------------------------------------------------
+                 Pair
+                   (Right
+                     (Pair
+                       (Pair Count:Int
+                             (Left #Lambda(unit, list operation, _:Block)))
+                       SigList:List))
+                   (Pair Count:Int (Pair Threshold:Int KeyList:List)) ] ; .Stack
+            // -----------------------------------------------------------------
+            => [ pair (list operation) (pair nat (pair nat (list key))) ?_:Pair ] ; .Stack
+       </stack>
+       <returncode> 1 </returncode>
+       <assumeFailed> false </assumeFailed>
+       <trace> .K </trace>
+       // <inputstack> { .StackElementList } </inputstack>
+       // <expected> { .StackElementList } </expected>
+       // <cutpoints> .Set </cutpoints>
+       // <pre> .BlockList </pre>
+       // <post> .BlockList </post>
+       // <invs> .Map </invs>
+       // <symbols> .Map </symbols>
 endmodule
+
