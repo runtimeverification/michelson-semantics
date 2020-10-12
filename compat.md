@@ -92,8 +92,8 @@ module MICHELSON-UNPARSER
   rule #doUnparse(true, _) => "True"
   rule #doUnparse(false, _) => "False"
 
-  rule #doUnparse(True, _) => "True"
-  rule #doUnparse(False, _) => "False"
+  rule #doUnparse(#token("True", "MichelsonBoolToken"), _) => "True"
+  rule #doUnparse(#token("False","MichelsonBoolToken"), _) => "False"
 
   rule #doUnparse(Unit, _) => "Unit"
 
@@ -582,7 +582,7 @@ module CONTRACT-EXPANDER
 
   syntax Type ::= #FindParamType(Groups) [function]
   rule #FindParamType(parameter T) => T
-  rule #FindParamType(parameter T ; Rs) => T
+  rule #FindParamType(parameter T ; _) => T
   rule #FindParamType(_:Group) => unit .AnnotationList [owise]
   rule #FindParamType(_ ; Rs) => #FindParamType(Rs) [owise]
 
@@ -677,7 +677,7 @@ module INPUT-CREATOR
   rule #DataForType(int _) => 0
   rule #DataForType(nat _) => 0
   rule #DataForType(string _) => ""
-  rule #DataForType(bytes _) => 0x
+  rule #DataForType(bytes _) => .Bytes
   rule #DataForType(mutez _) => 0
   rule #DataForType(bool _) => true
   rule #DataForType(key_hash _) => "tz1TGu6TN5GSez2ndXXeDX6LgUDvLzPLqgYV"

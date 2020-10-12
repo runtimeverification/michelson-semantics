@@ -95,7 +95,7 @@ timestamps and naturals.
   syntax ContractData ::= #Contract(Address, Type)
   syntax Mutez ::= #Mutez(Int)
   syntax KeyHash ::= #KeyHash(String)
-  syntax ChainId ::= #ChainId(MBytes)
+  syntax ChainId ::= #ChainId(MichelsonBytes)
   syntax Timestamp ::= #Timestamp(Int)
   syntax Key ::= #Key(String)
   syntax Signature ::= #Signature(String)
@@ -127,11 +127,11 @@ operation. We give the various cryptographic operations a similar treatment for
 now.
 
 ```k
-  syntax MBytes ::= MBytesLiteral
-                  | #Packed(TypeName,Data)
-                  | #Blake2B(MBytes)
-                  | #SHA256(MBytes)
-                  | #SHA512(MBytes)
+  syntax MichelsonBytes ::= MichelsonBytesToken
+                          | #Packed(TypeName,Data)
+                          | #Blake2B(MichelsonBytes)
+                          | #SHA256(MichelsonBytes)
+                          | #SHA512(MichelsonBytes)
 ```
 
 We specify that both `parameter T` and `storage T` productions are also groups
@@ -148,8 +148,8 @@ bool sort.
 
 ```k
   syntax MichelsonBool ::= Bool
-  rule `MichelsonBoolLit`(True) => true
-  rule `MichelsonBoolLit`(False) => false
+  rule `MichelsonBoolToken`(#token("True",  "MichelsonBoolToken")) => true
+  rule `MichelsonBoolToken`(#token("False", "MichelsonBoolToken")) => false
 ```
 
 These rules define what constitutes a legal mutez value, allowing us to
@@ -163,15 +163,27 @@ represent mutez overflow.
   rule #IsLegalMutezValue(I) => I >=Int 0 andBool I <Int #MutezOverflowLimit
 ```
 
-Michelson byte literals are given by their hexadecimal representation with the
-prefix "Ox". Since the K byte literal has a different representation, we convert
-here from one to the other.
+Michelson byte literals are represented internally by the K `Bytes` type.
 
 ```k
-  syntax MBytes ::= Bytes
+  syntax MichelsonBytes ::= Bytes
 
-  syntax Bytes ::= #MBytesLiteralToBytes(MBytesLiteral) [function, hook(BYTES.hexstring2bytes)]
-  rule `MBytesLiteral`(M) => #MBytesLiteralToBytes(M)
+  syntax String ::= #MichelsonBytesTokenToString(MichelsonBytesToken) [function, hook(STRING.token2string)]
+  // ------------------------------------------------------------------------------------------------------
+  rule `MichelsonBytesToken`(M) => #ParseBytes(stripFirst(#MichelsonBytesTokenToString(M), 2), .Bytes)
+
+  syntax Bytes ::= #ParseBytes(String, Bytes) [function]
+  // ---------------------------------------------------
+  rule #ParseBytes("", ByteStr) => ByteStr
+  rule #ParseBytes(Hex, ByteStr)
+    => #ParseBytes(stripFirst(Hex, 2),
+                   ByteStr
+            +Bytes Int2Bytes(1, String2Base(substrString(Hex, 0, 2), 16), BE))
+    requires Hex =/=String ""
+
+  syntax String ::= stripFirst(String, Int) [function]
+  // -------------------------------------------------
+  rule stripFirst(S, I) => substrString(S, I, lengthString(S))
 ```
 
 A Michelson contract consists of three [primitive
@@ -294,10 +306,10 @@ We convert that form here.
 
 ### Converting Simple Datatypes
 
-A ChainId is simply a specially tagged MBytes.
+A ChainId is simply a specially tagged MichelsonBytes.
 
 ```k
-  rule #MichelineToNative(H:MBytes, chain_id _, _KnownAddrs, _BigMaps) => #ChainId(H)
+  rule #MichelineToNative(H:MichelsonBytes, chain_id _, _KnownAddrs, _BigMaps) => #ChainId(H)
 ```
 
 An int can simply be represented directly as a K int. Nats get an additional
@@ -314,10 +326,10 @@ Strings, like ints, represent themselves.
   rule #MichelineToNative(S:String, string _, _KnownAddrs, _BigMaps) => S
 ```
 
-MBytes conversion is done by the function rule.
+MichelsonBytes conversion is done by the function rule.
 
 ```k
-  rule #MichelineToNative(B:MBytes, bytes _, _KnownAddrs, _BigMaps) => B
+  rule #MichelineToNative(B:MichelsonBytes, bytes _, _KnownAddrs, _BigMaps) => B
 ```
 
 Mutez is simply a specially tagged int - we also sanity check the int to ensure
