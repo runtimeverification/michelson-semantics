@@ -85,9 +85,21 @@ module MICHELSON-UNPARSER
   rule #doUnparse(I:Int, _) => Int2String(I)
   rule #doUnparse(S:String, _) => "\"" +String S +String "\""
 
-  syntax String ::= #unparseBytes(Bytes) [function, functional, hook(MICHELSON.tohexstring)]
+  syntax String ::= #unparseBytes(Bytes, Int, String) [function, functional]
+  // -----------------------------------------------------------------------
+  rule #unparseBytes(B, N, S) => #unparseBytes(B, N +Int 1, S +String #Char2Hex(B[N]))
+    requires N >=Int 0 andBool N <Int lengthBytes(B)
+  rule #unparseBytes(B, N, S) => S
+    requires N >=Int lengthBytes(B)
 
-  rule #doUnparse(M, _) => #unparseBytes(M)
+  syntax String ::= #Char2Hex(Int)    [function]
+                  | #Char2Hex(String) [function]
+  // -------------------------------------------
+  rule #Char2Hex(I:Int)    => #Char2Hex(Base2String(I, 16))
+  rule #Char2Hex(S:String) => S             requires lengthString(S) ==Int 2
+  rule #Char2Hex(S:String) => "0" +String S requires lengthString(S) ==Int 1
+
+  rule #doUnparse(M, _) => #unparseBytes(M, 0, "0x")
 
   rule #doUnparse(true, _) => "True"
   rule #doUnparse(false, _) => "False"
