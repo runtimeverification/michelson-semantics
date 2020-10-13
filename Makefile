@@ -110,7 +110,7 @@ ifneq (,$(RELEASE))
     KOMPILE_OPTS += -O3
 endif
 
-CPP_FILES := hooks/hex.cpp hooks/time.cpp hooks/decode.cpp
+CPP_FILES := hooks/time.cpp
 
 LLVM_KOMPILE_OPTS += -L$(LOCAL_LIB) -I$(K_RELEASE)/include/kllvm \
                      $(abspath $(CPP_FILES))                     \
