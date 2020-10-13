@@ -6,7 +6,9 @@ shopt -s extglob
 notif() { echo "== $@" >&2 ; }
 fatal() { echo "[FATAL] $@" ; exit 1 ; }
 
-kmich_dir="${KMICH_DIR:-.}"
+scriptpath="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+
+kmich_dir="${KMICH_DIR:-$scriptpath}"
 build_dir="$kmich_dir/.build"
 defn_dir="${KMICH_DEFN_DIR:-$build_dir/defn}"
 lib_dir="$build_dir/local/lib"
@@ -19,7 +21,7 @@ if [[ ! -f "${k_release_dir}/bin/kompile" ]]; then
     fi
 fi
 
-export PATH="$k_release_dir/bin:$PATH"
+export PATH="$scriptpath/lib:$k_release_dir/bin:$PATH"
 export LD_LIBRARY_PATH="$k_release_dir/lib/native/linux64:$lib_dir:${LD_LIBRARY_PATH:-}"
 export PYTHONPATH="$k_release_dir/lib/kframework:${PYTHONPATH:-}"
 
