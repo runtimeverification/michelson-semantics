@@ -745,14 +745,19 @@ module OUTPUT-COMPARE
   imports K-REFLECTION
   imports MATCHER
 
-  syntax String ::= #decodeBinaryRepresentation(Bytes) [function, hook(MICHELSON.decode)]
-  syntax BlockchainOperation ::= #parseOperation(String) [function]
-  rule #parseOperation(S) => #parseKORE(S)
+  syntax KItem ::= #decodeBinary(Bytes)  [function]
+  // -----------------------------------------------
+  rule #decodeBinary(B) => #system("decode-michelson-operation.py "
+                           +String #unparseBytes(B, 0, ""))
+
+  syntax BlockchainOperation ::= #parseOperation(KItem) [function]
+  // -------------------------------------------------------------
+  rule #parseOperation(#systemResult(0, Stdout, _)) => #parseKORE(Stdout)
 
   syntax KItem ::= #CheckOutput(OutputStack, OutputStack) // Expected, Actual
 
   rule #MichelineToNative(B:Bytes, operation _, KnownAddrs, BigMaps)
-    => #MichelineToNative(#parseOperation(#decodeBinaryRepresentation(B)),
+    => #MichelineToNative(#parseOperation(#decodeBinary(B)),
                           operation .AnnotationList,
                           KnownAddrs,
                           BigMaps)

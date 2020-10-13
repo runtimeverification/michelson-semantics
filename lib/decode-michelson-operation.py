@@ -1,11 +1,25 @@
 #!/usr/bin/env python3
-import json, sys
+"""
+Usage: decode-michelson-operation.py <hex-encoded binary string>
+
+Consumes binary string given as the only command line argument and prints its
+KORE representation on standard output.
+
+Prerequisites:
+1. the Tezos module in this archive should be built via the included Makefile.
+2. the `kast` executable should be available on the system path.
+"""
+
+import json, sys, subprocess, os, tempfile
+
+BUFFER = ""
 
 def wrap_string(string):
     return '"{0}"'.format(string)
 
 def emit(item):
-    print(" {0} ".format(str(item)), end="")
+    global BUFFER
+    BUFFER += " {0} ".format(str(item))
 
 list_type = type([])
 dict_type = type({})
@@ -92,6 +106,8 @@ def emit_delegation(obj):
     emit(")")
 
 def emit_operation(obj):
+    global BUFFER
+    BUFFER = ""
     assert type(obj) == dict_type
     assert "kind" in obj
     kind = obj["kind"]
@@ -105,6 +121,30 @@ def emit_operation(obj):
         emit_delegation(obj)
     else:
         assert False
+    return BUFFER
 
-with open(sys.argv[1], "r") as f:
-    emit_operation(json.load(f))
+# auxiliary operation for calling subprocesses
+def run(args):
+    proc_ret = subprocess.run(args, capture_output=True, text=True)
+    if proc_ret.returncode != 0:
+        print(proc_ret.stderr)
+        exit(1)
+    return proc_ret.stdout
+
+if __name__ == "__main__":
+  if len(sys.argv) != 2: exit(1)
+  # get paths to important pieces
+  path = os.path.dirname(os.path.realpath(__file__))
+  tezos_codec = os.path.join(path, "..", "ext",    "tezos", "tezos-codec")
+  k_def_path  = os.path.join(path, "..", ".build", "defn",  "llvm")
+  # run tezos codec to get json encoded string
+  json_str = run([tezos_codec, "decode", "005-PsBabyM1.operation.internal", "from", sys.argv[1]])
+  # run emit operation to get K encoding of operation
+  k_str = emit_operation(json.loads(json_str))
+  # run kast to get kore
+  with tempfile.NamedTemporaryFile() as f:
+      f.write(k_str.encode('utf-8'))
+      f.flush()
+      kore_str = run(["kast", "-s", "Data", "--directory", k_def_path, "-o", "kore", f.name])
+      # print the kore str
+      print(kore_str, end="")
