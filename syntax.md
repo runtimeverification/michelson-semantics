@@ -50,9 +50,9 @@ module MICHELSON-COMMON-SYNTAX
 Type annotations only exist as tokens in the internal representation.
 
 ```k
-  syntax TypeAnnotation
-  syntax VariableAnnotation
-  syntax FieldAnnotation
+  syntax TypeAnnotation [token]
+  syntax VariableAnnotation [token]
+  syntax FieldAnnotation [token]
   syntax Annotation ::= TypeAnnotation | VariableAnnotation | FieldAnnotation
 
   syntax AnnotationList ::= List{Annotation, ""}
@@ -126,10 +126,10 @@ At parse time, `mutez` and `address` literals are read in as ints and strings.
 `bytes` and `bool` literals must be converted from Michelson to K syntax.
 
 ```k
-  syntax MichelsonBytesToken
+  syntax MichelsonBytesToken [token]
   syntax MichelsonBytes ::= MichelsonBytesToken [klabel(MichelsonBytesToken), symbol, function, avoid]
 
-  syntax MichelsonBoolToken
+  syntax MichelsonBoolToken [token]
   syntax MichelsonBool ::= MichelsonBoolToken [klabel(MichelsonBoolToken), symbol, function, avoid]
 ```
 
