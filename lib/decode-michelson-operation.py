@@ -125,7 +125,7 @@ def emit_operation(obj):
 
 # auxiliary operation for calling subprocesses
 def run(args):
-    proc_ret = subprocess.run(args, capture_output=True, text=True)
+    proc_ret = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
     if proc_ret.returncode != 0:
         print(proc_ret.stderr)
         exit(1)
