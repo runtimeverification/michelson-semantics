@@ -169,7 +169,7 @@ Michelson byte literals are represented internally by the K `Bytes` type.
   syntax MichelsonBytes ::= Bytes
 
   syntax String ::= #MichelsonBytesTokenToString(MichelsonBytesToken) [function, hook(STRING.token2string)]
-  // ------------------------------------------------------------------------------------------------------
+
   rule `MichelsonBytesToken`(M) => #ParseBytes(stripFirst(#MichelsonBytesTokenToString(M), 2), .Bytes)
 
   syntax Bytes ::= #ParseBytes(String, Bytes) [function]
