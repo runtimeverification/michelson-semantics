@@ -15,6 +15,11 @@ Unit test file syntax is defined as a slight extension of this file.
 module MICHELSON-SYNTAX
   imports MICHELSON-COMMON-SYNTAX
 
+  syntax MichelsonBoolToken ::= "True"  [token]
+                              | "False" [token]
+
+  syntax MichelsonBytesToken ::= r"0x([0-9a-fA-F]{2})*" [token]
+
   syntax Groups ::= Group ";" [klabel(groupSemicolon), symbol]
 
   syntax TypeAnnotation ::= r":([_a-zA-Z][_0-9a-zA-Z\\.]*)?" [token]
@@ -45,9 +50,9 @@ module MICHELSON-COMMON-SYNTAX
 Type annotations only exist as tokens in the internal representation.
 
 ```k
-  syntax TypeAnnotation     [token]
+  syntax TypeAnnotation [token]
   syntax VariableAnnotation [token]
-  syntax FieldAnnotation    [token]
+  syntax FieldAnnotation [token]
   syntax Annotation ::= TypeAnnotation | VariableAnnotation | FieldAnnotation
 
   syntax AnnotationList ::= List{Annotation, ""}
@@ -97,7 +102,7 @@ Simple data literals have efficiently detectable normal forms at runtime.
   syntax SimpleData ::= Int
   syntax SimpleData ::= String
   syntax SimpleData ::= MichelsonBool
-  syntax SimpleData ::= MBytes
+  syntax SimpleData ::= MichelsonBytes
   syntax SimpleData ::= "Unit"
   syntax SimpleData ::= Mutez
   syntax SimpleData ::= Address
@@ -121,12 +126,11 @@ At parse time, `mutez` and `address` literals are read in as ints and strings.
 `bytes` and `bool` literals must be converted from Michelson to K syntax.
 
 ```k
-  syntax MBytesLiteral ::= r"0x([0-9a-fA-F]{2})*" [token]
-  syntax MBytes ::= MBytesLiteral [klabel(MBytesLiteral), symbol, function, avoid]
+  syntax MichelsonBytesToken [token]
+  syntax MichelsonBytes ::= MichelsonBytesToken [klabel(MichelsonBytesToken), symbol, function, avoid]
 
-  syntax MichelsonBool ::= MichelsonBoolLiteral [klabel(MichelsonBoolLit), symbol, function, avoid]
-  syntax MichelsonBoolLiteral ::= "True" [token]
-                                | "False" [token]
+  syntax MichelsonBoolToken [token]
+  syntax MichelsonBool ::= MichelsonBoolToken [klabel(MichelsonBoolToken), symbol, function, avoid]
 ```
 
 Simple recursive data structures are defined as expected.
@@ -418,7 +422,7 @@ action of one instruction.
   syntax NowGroup ::= "now" Int
   syntax SenderGroup ::= "sender" String
   syntax SourceGroup ::= "source" String
-  syntax ChainGroup ::= "chain_id" MBytes
+  syntax ChainGroup ::= "chain_id" MichelsonBytes
   syntax SelfGroup ::= "self" String
   syntax AmountGroup ::= "amount" Int
   syntax BalanceGroup ::= "balance" Int
