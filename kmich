@@ -62,28 +62,17 @@ run_prove() {
 }
 
 run_interpret() {
-    local in_kore out_kore
-
-    in_kore=$(mktemp $kompiled_dir/in_kore.XXXXXX)
-    out_kore=$(mktemp $kompiled_dir/out_kore.XXXXXX)
-    if $debug; then
-        notif "Input Kore: $in_kore"
-        notif "Output Kore: $out_kore"
-    else
-        trap "rm -rf $in_kore $out_kore" INT TERM EXIT
-    fi
-
-    cat "$run_file" | $kompiled_dir/parser_PGM > $in_kore
-    llvm-krun --directory "$kompiled_dir" -c PGM $in_kore Pgm korefile --pretty-print "${llvm_krun_args[@]}" "$@"
+    kx --directory "$backend_dir" "${llvm_krun_args[@]}" "$run_file" "$@"
 }
 
 run_symbtest() {
-    output=$(run_krun --search-final --output json "$@")
+    kore_output="$(mktemp kore.output.XXXXXXXXXX)"
+    trap "rm -rf $kore_output" INT TERM EXIT
+    run_interpret --search-final --output kore "$@" > "$kore_output"
     if [ $? -ne 0 ]; then
-        echo "$output" >&2
         fatal "krun encountered an error: skipping post-processing"
     fi
-    echo "$output" | $kmich_dir/lib/michelson-test-check "$kompiled_dir"
+    kast -d "$backend_dir" -i kore -o json "$kore_output" | $kmich_dir/lib/michelson-test-check "$kompiled_dir"
 }
 
 # Main
