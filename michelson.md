@@ -1948,8 +1948,8 @@ These operations are used internally for implementation purposes.
 
 ```k
   syntax KItem ::= #Assume(BoolExp) [strict, result(Bool)]
-  rule <k> #Assume(true)  => .             ... </k>
-  rule <k> #Assume(false) ~> _:K => . </k>
+  rule <k> #Assume(true)         => .K ... </k>
+  rule <k> #Assume(false) ~> _:K => .K     </k>
        <assumeFailed> _ => true </assumeFailed> [transition]
 ```
 
