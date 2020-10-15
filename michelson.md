@@ -1542,6 +1542,21 @@ since it does not need to track the new map while keeping it off the stack.
        <stack> [option T Some V] ; SS => [T V] ; SS </stack>
 ```
 
+```symbolic
+  rule <k> IF_NONE A BT _  => #HandleAnnotations(A) ~> BT ... </k>
+       <stack> [option _ D:OptionData] ; SS => SS </stack>
+    requires D ==K None
+
+  rule <k> IF_NONE A _  BF => #HandleAnnotations(A) ~> BF ... </k>
+       <stack> [option T D:OptionData] ; SS => [T #Unwrap(D,T)] ; SS </stack>
+    requires D =/=K None
+
+  syntax Data ::= #Unwrap(OptionData,TypeName) [function]
+  // ----------------------------------------------------
+  rule #Unwrap(Some V, T) => V requires isValue(T, V)
+  rule #Unwrap(None,   _) => #Bottom
+```
+
 ### Union Operations
 
 ```k
