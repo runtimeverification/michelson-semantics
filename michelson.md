@@ -1407,6 +1407,9 @@ This rule is not supported by the LLVM backend, so we only include it in Haskell
   rule #lookup(M [ K1 <- undef ], K2, _ ) => None               requires K1 ==K  K2                                        [simplification]
   rule #lookup(M [ K1 <- _     ], K2, VT) => #lookup(M, K2, VT) requires K1 =/=K K2                                        [simplification]
   rule #lookup(M [ K1 <- undef ], K2, VT) => #lookup(M, K2, VT) requires K1 =/=K K2                                        [simplification]
+
+  rule #lookup(M,K,_) ==K None => notBool K in_keys(M) [simplification]
+  rule #Unwrap(#lookup(M, K, _) #as D, T) => {M[K]}:>Data requires D =/=K None [simplification]
 ```
 
 ```k
@@ -1559,7 +1562,9 @@ since it does not need to track the new map while keeping it off the stack.
 
   rule <k> NONE A T:Type => #HandleAnnotations(A)  ... </k>
        <stack> SS => [option #Name(T) None] ; SS </stack>
+```
 
+```concrete
   rule <k> IF_NONE A BT _  => #HandleAnnotations(A) ~> BT ... </k>
        <stack> [option _ None] ; SS => SS </stack>
 
