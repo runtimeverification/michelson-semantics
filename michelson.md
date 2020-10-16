@@ -142,7 +142,7 @@ all _write-once_, i.e. after initialization, they are never changed.
     `CHAIN_ID` instruction pushes the current chain identifier on the stack.
 
     ```k
-                  <mychainid> #ChainId(0x) </mychainid>
+                  <mychainid> #ChainId(.Bytes) </mychainid>
     ```
 
 11. Each contract account contains a nonce which will be attached to any new
@@ -1757,22 +1757,22 @@ The cryptographic operations are simply stubbed for now.
        <stack> [key #Key(S)] ; SS => [key_hash #KeyHash(#Blake2BKeyHash(S))] ; SS </stack>
 
   rule <k> BLAKE2B A => #HandleAnnotations(A) ... </k>
-       <stack> [bytes B:MBytes] ; SS => [bytes #Blake2B(B)] ; SS </stack>
+       <stack> [bytes B:MichelsonBytes] ; SS => [bytes #Blake2B(B)] ; SS </stack>
 
   rule <k> SHA256 A => #HandleAnnotations(A) ... </k>
-       <stack> [bytes B:MBytes] ; SS => [bytes #SHA256(B)] ; SS </stack>
+       <stack> [bytes B:MichelsonBytes] ; SS => [bytes #SHA256(B)] ; SS </stack>
 
   rule <k> SHA512 A => #HandleAnnotations(A) ... </k>
-       <stack> [bytes B:MBytes] ; SS => [bytes #SHA512(B)] ; SS </stack>
+       <stack> [bytes B:MichelsonBytes] ; SS => [bytes #SHA512(B)] ; SS </stack>
 
-  syntax MBytes ::= #SignedMBytes(Key, Signature, MBytes)
+  syntax MichelsonBytes ::= #SignBytes(Key, Signature, MichelsonBytes)
 
   /*
   // FIXME: The haskell backend does not support distinguishing these rules.
   rule <k> CHECK_SIGNATURE A => #HandleAnnotations(A) ... </k>
        <stack> #Key(K)
             ~> #Signature(S)
-            ~> #SignedMBytes(#Key(K), #Signature(S), _)
+            ~> #SignBytes(#Key(K), #Signature(S), _)
             => true
                ...
        </stack>
@@ -1780,7 +1780,7 @@ The cryptographic operations are simply stubbed for now.
   rule <k> CHECK_SIGNATURE A => #HandleAnnotations(A) ... </k>
        <stack> #Key(_)
             ~> #Signature(_)
-            ~> _:MBytes
+            ~> _:MichelsonBytes
             => false
                ...
        </stack> [owise]

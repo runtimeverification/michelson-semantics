@@ -85,15 +85,27 @@ module MICHELSON-UNPARSER
   rule #doUnparse(I:Int, _) => Int2String(I)
   rule #doUnparse(S:String, _) => "\"" +String S +String "\""
 
-  syntax String ::= #unparseBytes(Bytes) [function, functional, hook(MICHELSON.tohexstring)]
+  syntax String ::= #unparseBytes(Bytes, Int, String) [function, functional]
+  // -----------------------------------------------------------------------
+  rule #unparseBytes(B, N, S) => #unparseBytes(B, N +Int 1, S +String #Char2Hex(B[N]))
+    requires N >=Int 0 andBool N <Int lengthBytes(B)
+  rule #unparseBytes(B, N, S) => S
+    requires N >=Int lengthBytes(B)
 
-  rule #doUnparse(M, _) => #unparseBytes(M)
+  syntax String ::= #Char2Hex(Int)    [function]
+                  | #Char2Hex(String) [function]
+  // -------------------------------------------
+  rule #Char2Hex(I:Int)    => #Char2Hex(Base2String(I, 16))
+  rule #Char2Hex(S:String) => S             requires lengthString(S) ==Int 2
+  rule #Char2Hex(S:String) => "0" +String S requires lengthString(S) ==Int 1
+
+  rule #doUnparse(M, _) => #unparseBytes(M, 0, "0x")
 
   rule #doUnparse(true, _) => "True"
   rule #doUnparse(false, _) => "False"
 
-  rule #doUnparse(True, _) => "True"
-  rule #doUnparse(False, _) => "False"
+  rule #doUnparse(#token("True", "MichelsonBoolToken"), _) => "True"
+  rule #doUnparse(#token("False","MichelsonBoolToken"), _) => "False"
 
   rule #doUnparse(Unit, _) => "Unit"
 
@@ -582,7 +594,7 @@ module CONTRACT-EXPANDER
 
   syntax Type ::= #FindParamType(Groups) [function]
   rule #FindParamType(parameter T) => T
-  rule #FindParamType(parameter T ; Rs) => T
+  rule #FindParamType(parameter T ; _) => T
   rule #FindParamType(_:Group) => unit .AnnotationList [owise]
   rule #FindParamType(_ ; Rs) => #FindParamType(Rs) [owise]
 
@@ -677,7 +689,7 @@ module INPUT-CREATOR
   rule #DataForType(int _) => 0
   rule #DataForType(nat _) => 0
   rule #DataForType(string _) => ""
-  rule #DataForType(bytes _) => 0x
+  rule #DataForType(bytes _) => .Bytes
   rule #DataForType(mutez _) => 0
   rule #DataForType(bool _) => true
   rule #DataForType(key_hash _) => "tz1TGu6TN5GSez2ndXXeDX6LgUDvLzPLqgYV"
@@ -733,14 +745,19 @@ module OUTPUT-COMPARE
   imports K-REFLECTION
   imports MATCHER
 
-  syntax String ::= #decodeBinaryRepresentation(Bytes) [function, hook(MICHELSON.decode)]
-  syntax BlockchainOperation ::= #parseOperation(String) [function]
-  rule #parseOperation(S) => #parseKORE(S)
+  syntax KItem ::= #decodeBinary(Bytes)  [function]
+  // -----------------------------------------------
+  rule #decodeBinary(B) => #system("decode-michelson-operation.py "
+                           +String #unparseBytes(B, 0, ""))
+
+  syntax BlockchainOperation ::= #parseOperation(KItem) [function]
+  // -------------------------------------------------------------
+  rule #parseOperation(#systemResult(0, Stdout, _)) => #parseKORE(Stdout)
 
   syntax KItem ::= #CheckOutput(OutputStack, OutputStack) // Expected, Actual
 
   rule #MichelineToNative(B:Bytes, operation _, KnownAddrs, BigMaps)
-    => #MichelineToNative(#parseOperation(#decodeBinaryRepresentation(B)),
+    => #MichelineToNative(#parseOperation(#decodeBinary(B)),
                           operation .AnnotationList,
                           KnownAddrs,
                           BigMaps)

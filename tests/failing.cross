@@ -2,8 +2,6 @@ tests/unit/add_mutez-mutez_01.tzt
 tests/unit/balance_00.tzt
 tests/unit/chain_id_00.tzt
 tests/unit/chain_id_01.tzt
-tests/unit/createcontract_00.tzt
-tests/unit/createcontract_01.tzt
 tests/unit/failwith_00.tzt
 tests/unit/get_bigmapstringstring_00.tzt
 tests/unit/get_bigmapstringstring_01.tzt
@@ -25,10 +23,7 @@ tests/unit/mem_bigmapstringnat_05.tzt
 tests/unit/mul_mutez-nat_01.tzt
 tests/unit/mul_nat-mutez_01.tzt
 tests/unit/now_00.tzt
-tests/unit/setdelegate_00.tzt
 tests/unit/sub_mutez-mutez_01.tzt
-tests/unit/transfertokens_00.tzt
-tests/unit/transfertokens_01.tzt
 tests/unit/update_bigmapstringstring_00.tzt
 tests/unit/update_bigmapstringstring_01.tzt
 tests/unit/update_bigmapstringstring_02.tzt

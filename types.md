@@ -82,11 +82,11 @@ Type Checking Rules
 
   rule #TypeData(_, Unit, unit _) => #Typed(Unit, unit .AnnotationList)
 
-  rule #TypeData(_, (_:MBytes) #as D, (chain_id _) #as T) => #Typed(D, T)
+  rule #TypeData(_, (_:MichelsonBytes) #as D, (chain_id _) #as T) => #Typed(D, T)
   rule #TypeData(_, (_:Int) #as D, (int _) #as T) => #Typed(D, T)
   rule #TypeData(_, (I:Int) #as D, (nat _) #as T) => #Typed(D, T) requires I >=Int 0
   rule #TypeData(_, (_:String) #as D, (string _) #as T) => #Typed(D, T)
-  rule #TypeData(_, (_:MBytes) #as D, (bytes _) #as T) => #Typed(D, T)
+  rule #TypeData(_, (_:MichelsonBytes) #as D, (bytes _) #as T) => #Typed(D, T)
   rule #TypeData(_, (I:Int) #as D, (mutez _) #as T) => #Typed(D, T)
        requires #IsLegalMutezValue(I)
   rule #TypeData(_, (_:Bool) #as D, (bool _) #as T) => #Typed(D, T)
