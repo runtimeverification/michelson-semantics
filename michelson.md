@@ -1589,7 +1589,9 @@ since it does not need to track the new map while keeping it off the stack.
         ~> ITER .AnnotationList Body
            ...
        </k>
-       <stack> [list T ListItem(E) Ls] ; SS => [T E] ; SS </stack>
+       <stack> [list T ListItem(_E) Ls] ; SS => // [T E] ; 
+       SS </stack>
+    // requires isValue(T,E)
 ```
 
 The `MAP` operation over `list`s is defined in terms of a helper function.
