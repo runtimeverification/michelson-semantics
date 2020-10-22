@@ -41,6 +41,7 @@ run_kast() {
     [[ $# -lt 1 ]] && fatal "kast: no output mode provided"
     output_mode="$1" ; shift
 
+    ! $debug || set -x
     kast --directory "$backend_dir" "$run_file" --output "$output_mode" "$@"
 }
 
@@ -50,8 +51,14 @@ run_prove() {
     [[ $# -lt 1 ]] && fatal "prove: no definition module provided"
     def_module="$1" ; shift
 
+    additional_proof_args=()
+    ! $debug      || additional_proof_args+=(--debug)
+    ! $repl       || additional_proof_args+=(--debugger --debug-script ./lib/kast.kscript)
+
     export K_OPTS=-Xmx8G
-    kprove --directory "$backend_dir" "$run_file" --def-module "$def_module" "$@"
+
+    ! $debug || set -x
+    kprove --directory "$backend_dir" "$run_file" --def-module "$def_module" "${additional_proof_args[@]}" "$@"
 }
 
 run_interpret() {
@@ -127,21 +134,28 @@ fi
 
 backend="llvm"
 debug=false
+repl=false
 [[ ! "$run_command" == 'prove' ]]    || backend='prove'
 [[ ! "$run_command" == 'symbtest' ]] || backend='symbolic'
 args=()
 while [[ $# -gt 0 ]]; do
     arg="$1"
     case $arg in
-        --backend)    args+=("$arg" "$2") ; backend="$2"      ; shift 2 ;;
-        --backend-dir)                      backend_dir="$2"  ; shift 2 ;;
-        --debug)      args+=("$arg")      ; debug=true        ; shift   ;;
-        *)            break                                             ;;
+        --backend)     backend="$2"      ; shift 2 ;;
+        --backend-dir) backend_dir="$2"  ; shift 2 ;;
+        --repl)        repl=true         ; shift   ;;
+        --debug)       debug=true        ; shift   ;;
+        --)            break             ; shift   ;;
+        *)             args+=("$1")      ; shift   ;;
     esac
 done
+
+set -- "${args[@]}" "$@"
 backend_dir="${backend_dir:-$defn_dir/$backend}"
 kompiled_dir=$(find $backend_dir -name '*-kompiled')
 [[ -d "$kompiled_dir" ]] || fatal "Could not find single *-kompiled directory in $backend_dir"
+
+! $repl || [[ "$backend" == prove ]] || fatal "Option --repl only usable with --backend prove!"
 
 # get the run file
 run_file="$1" ; shift
