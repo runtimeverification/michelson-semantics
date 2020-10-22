@@ -88,7 +88,7 @@ module MULTISIG
        <knownaddrs> .Map </knownaddrs>
        <sourceaddr> #Address("InvalidSourceAddr") </sourceaddr>
        <senderaddr> #Address("InvalidSenderAddr") </senderaddr>
-       <mychainid> #ChainId(0x) </mychainid>
+       <mychainid> #ChainId(.Bytes) </mychainid>
        <nonce> #Nonce(0) </nonce>
        <bigmaps> .Map </bigmaps>
        <script> #NoData </script>
@@ -115,6 +115,9 @@ module MULTISIG
        <returncode> 1 </returncode>
        <assumeFailed> false </assumeFailed>
        <trace> .K </trace>
+  requires isValue(list key,              KeyList)
+   andBool isValue(list option signature, SigList)
+
        // <inputstack> { .StackElementList } </inputstack>
        // <expected> { .StackElementList } </expected>
        // <cutpoints> .Set </cutpoints>
