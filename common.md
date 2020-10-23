@@ -61,7 +61,15 @@ The internal representation of Michelson sets, lists and maps are simply K sets,
 lists and maps respectively.
 
 ```k
-  syntax Data ::= Set | Map | List
+  syntax WrappedData  ::= "[" Data "]"
+  syntax InternalList ::= List{WrappedData, ";;"}
+
+  syntax Int ::= size(InternalList, Int) [function, functional]
+  // ----------------------------------------------------------
+  rule size(_ ;; L,        S) => size(L, S +Int 1)
+  rule size(.InternalList, S) => S
+
+  syntax Data ::= Set | Map | InternalList
 ```
 
 The internal representation of typed data in Michelson.
@@ -379,15 +387,17 @@ Collections are converted one element at a time. We need to handle the cases of
 element list, and another embedded list.
 
 ```k
-  rule #MichelineToNative({ }, list _ _, _KnownAddrs, _BigMaps) => .List
-  rule #MichelineToNative({ D1:Data }, list _ T, KnownAddrs, BigMaps) => ListItem(#MichelineToNative(D1, T, KnownAddrs, BigMaps))
-  rule #MichelineToNative({ D1 ; DL:DataList }, list _ T, KnownAddrs, BigMaps) => #MichelineToNative(D1 ; DL, list .AnnotationList T, KnownAddrs, BigMaps)
+  rule #MichelineToNative({ },                  list _ _, _KnownAddrs, _BigMaps) => .InternalList
+  rule #MichelineToNative({ D1:Data },          list _ T,  KnownAddrs, BigMaps) => [ #MichelineToNative(D1, T, KnownAddrs, BigMaps) ] ;; .InternalList
+  rule #MichelineToNative({ D1 ; DL:DataList }, list _ T,  KnownAddrs, BigMaps) => #MichelineToNativeList(D1 ; DL, list .AnnotationList T, KnownAddrs, BigMaps)
 
-  rule #MichelineToNative(D1:Data ; D2:Data, list _ T, KnownAddrs, BigMaps) =>
-       ListItem(#MichelineToNative(D1, T, KnownAddrs, BigMaps)) ListItem(#MichelineToNative(D2, T, KnownAddrs, BigMaps))
+  syntax InternalList ::= #MichelineToNativeList(DataList, Type, Map, Map) [function]
+  // --------------------------------------------------------------------------------
+  rule #MichelineToNativeList(D1:Data ; D2:Data, list _ T, KnownAddrs, BigMaps) =>
+       [ #MichelineToNative(D1, T, KnownAddrs, BigMaps) ]  ;; [ #MichelineToNative(D2, T, KnownAddrs, BigMaps) ]
 
-  rule #MichelineToNative(D1:Data ; D2:Data ; DL:DataList, list _ T, KnownAddrs, BigMaps) =>
-       ListItem(#MichelineToNative(D1, T, KnownAddrs, BigMaps)) {#MichelineToNative(D2 ; DL, list .AnnotationList T, KnownAddrs, BigMaps)}:>List
+  rule #MichelineToNativeList(D1:Data ; D2:Data ; DL:DataList, list _ T, KnownAddrs, BigMaps) =>
+       [ #MichelineToNative(D1, T, KnownAddrs, BigMaps) ] ;; #MichelineToNativeList(D2 ; DL, list .AnnotationList T, KnownAddrs, BigMaps)
 ```
 
 Sets are handled essentially the same way as lists, with the same caveat about

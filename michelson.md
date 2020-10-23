@@ -1188,10 +1188,6 @@ The `#DoCompare` function requires additional lemmas for symbolic execution.
 ### String Operations
 
 ```k
-  syntax String ::= #ConcatStrings(List, String) [function]
-  rule #ConcatStrings(.List, A) => A
-  rule #ConcatStrings(ListItem(S1) DL, A) => #ConcatStrings(DL, A +String S1)
-
   rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
        <stack> [string S1] ; [string S2] ; SS => [string S1 +String S2] ; SS </stack>
 
@@ -1200,6 +1196,11 @@ The `#DoCompare` function requires additional lemmas for symbolic execution.
 
   rule <k> SIZE A => #HandleAnnotations(A) ... </k>
        <stack> [string S] ; SS => [nat lengthString(S)] ; SS </stack>
+
+  syntax String ::= #ConcatStrings(InternalList, String) [function]
+  // --------------------------------------------------------------
+  rule #ConcatStrings(.InternalList, A) => A
+  rule #ConcatStrings([ S1 ] ;; DL,  A) => #ConcatStrings(DL, A +String S1)
 ```
 
 The actual out of bounds conditions here are determined by experimentation.
@@ -1250,9 +1251,10 @@ distinguish this case from lists of strings.
   rule <k> CONCAT A => #HandleAnnotations(A) ... </k>
        <stack> [(list bytes) L] ; SS => [bytes #ConcatBytes(L, .Bytes)] ; SS </stack>
 
-  syntax Bytes ::= #ConcatBytes(List, Bytes) [function]
-  rule #ConcatBytes(.List, A) => A
-  rule #ConcatBytes(ListItem(B) DL, A) => #ConcatBytes(DL, A +Bytes B)
+  syntax Bytes ::= #ConcatBytes(InternalList, Bytes) [function]
+  // ----------------------------------------------------------
+  rule #ConcatBytes(.InternalList, A) => A
+  rule #ConcatBytes([ B ] ;; DL,   A) => #ConcatBytes(DL, A +Bytes B)
 ```
 
 `SIZE` is relatively simple, except that we must remember to divide by two,
@@ -1562,31 +1564,31 @@ since it does not need to track the new map while keeping it off the stack.
 
 ```k
   rule <k> CONS A => #HandleAnnotations(A)  ... </k>
-       <stack> [T V] ; [list T L:List] ; SS => [list T ListItem(V) L] ; SS </stack>
+       <stack> [T V] ; [list T L] ; SS => [list T [ V ] ;; L] ; SS </stack>
 
   rule <k> NIL A T => #HandleAnnotations(A)  ... </k>
-       <stack> SS => [list #Name(T) .List] ; SS </stack>
+       <stack> SS => [list #Name(T) .InternalList] ; SS </stack>
 
   rule <k> IF_CONS A BT _  => #HandleAnnotations(A) ~> BT ... </k>
-       <stack> [list T ListItem(L1) Ls] ; SS => [T L1] ; [list T Ls] ; SS </stack>
+       <stack> [list T [ E ] ;; L] ; SS => [T E] ; [list T L] ; SS </stack>
 
   rule <k> IF_CONS A _  BF => #HandleAnnotations(A) ~> BF ... </k>
-       <stack> [list _ .List ] ; SS => SS </stack>
+       <stack> [list _ .InternalList ] ; SS => SS </stack>
 
   rule <k> SIZE A => #HandleAnnotations(A)  ... </k>
-       <stack> [list _ L:List] ; SS => [nat size(L)] ; SS </stack>
+       <stack> [list _ L:InternalList] ; SS => [nat size(L,0)] ; SS </stack>
 
   rule <k> ITER A _ =>  #HandleAnnotations(A) ~>. ... </k>
-       <stack> [list _ .List] ; SS => SS </stack>
+       <stack> [list _ .InternalList] ; SS => SS </stack>
 
   rule <k> ITER A Body
         => #HandleAnnotations(A)
         ~> Body
-        ~> #Push(list T,Ls)
+        ~> #Push(list T,L)
         ~> ITER .AnnotationList Body
            ...
        </k>
-       <stack> [list T ListItem(E) Ls] ; SS => [T E] ; SS </stack>
+       <stack> [list T [ E ] ;; L] ; SS => [T E] ; SS </stack>
 ```
 
 The `MAP` operation over `list`s is defined in terms of a helper function.
@@ -1594,38 +1596,35 @@ The `MAP` operation over `list`s is defined in terms of a helper function.
 ```k
   rule <k> MAP A Body
         => #HandleAnnotations(A)
-        ~> #DoMap(T, NoneType, Ls, .List, Body)
+        ~> #DoMap(T, NoneType, L, .InternalList, Body)
            ...
        </k>
-       <stack> [list T Ls] ; SS => SS </stack>
+       <stack> [list T L] ; SS => SS </stack>
 
-  syntax Instruction ::= #DoMap(TypeName, MaybeTypeName, List, List, Block)
-                       | #DoMapAux(TypeName, MaybeTypeName, List, List, Block)
-  // -------------------------------------------------------------------------
-  rule <k> #DoMap(T, NT, .List, Acc, _) => .K ... </k>
-       <stack> SS => [list #DefaultType(NT,T) #ReverseList(Acc)] ; SS </stack>
+  syntax Instruction ::= #DoMap(TypeName, MaybeTypeName, InternalList, InternalList, Block)
+                       | #DoMapAux(TypeName, MaybeTypeName, InternalList, InternalList, Block)
+  // -----------------------------------------------------------------------------------------
+  rule <k> #DoMap(T, NT, .InternalList, Acc, _) => .K ... </k>
+       <stack> SS => [list #DefaultType(NT,T) #ReverseList(Acc, .InternalList)] ; SS </stack>
 
-  rule <k> #DoMap(T, NT, ListItem(E) Ls, Acc, B)
+  rule <k> #DoMap(T, NT, [ E ] ;; L, Acc, B)
         => B
-        ~> #DoMapAux(T, NT, Ls, Acc, B)
+        ~> #DoMapAux(T, NT, L, Acc, B)
            ...
        </k>
        <stack> SS => [T E] ; SS </stack>
 
-  rule <k> #DoMapAux(T, NT, Ls, Acc, B)
-        => #DoMap(T, NT', Ls, ListItem(E) Acc, B)
+  rule <k> #DoMapAux(T, NT, L, Acc, B)
+        => #DoMap(T, NT', L, [ E ] ;; Acc, B)
            ...
        </k>
        <stack> [NT' E] ; SS => SS </stack>
     requires #CompatibleTypes(NT,NT')
 
-  syntax List ::= #ReverseList(List) [function]
-  syntax List ::= #ReverseListAux(List, List) [function]
-  // ---------------------------------------------------
-  rule #ReverseList(L) => #ReverseListAux(L, .List)
-  rule #ReverseListAux(ListItem(L1) Ls, Acc)
-    => #ReverseListAux(Ls, ListItem(L1) Acc)
-  rule #ReverseListAux(.List, Acc) => Acc
+  syntax InternalList ::= #ReverseList(InternalList, InternalList) [function, functional]
+  // ------------------------------------------------------------------------------------
+  rule #ReverseList(E ;; L,        L') => #ReverseList(L, E ;; L')
+  rule #ReverseList(.InternalList, L') => L'
 ```
 
 Domain Specific operations
@@ -2404,7 +2403,7 @@ It has an untyped and typed variant.
   rule isValue(or _T1  T2, Right V)                   => isValue(T2, V)
   rule isValue(lambda T1 T2, #Lambda(T1,T2, _:Block)) => true
 
-  rule isValue(list _, _:List)           => true
+  rule isValue(list _, _:InternalList)   => true
   rule isValue(set _,  _:Set)            => true
   rule isValue(_:MapTypeName _ _, _:Map) => true
 
@@ -2509,8 +2508,8 @@ module MATCHER
 
   rule #Matches(_:Wildcard, _) => true
 
-  rule #Matches(.List, .List) => true
-  rule #Matches(ListItem(L1) Ls1:List, ListItem(L2) Ls2:List)
+  rule #Matches(.InternalList, .InternalList) => true
+  rule #Matches(L1 ;; Ls1, L2 ;; Ls2)
     => #Matches(L1, L2) andBool #Matches(Ls1, Ls2)
 
   rule #Matches(.Set, .Set) => true
