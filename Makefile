@@ -101,7 +101,7 @@ ALL_FILES          := $(patsubst %, %.md, $(SOURCE_FILES) $(EXTRA_SOURCE_FILES))
 tangle_haskell := k | symbolic
 tangle_llvm    := k | concrete
 
-HOOK_NAMESPACES := TIME MICHELSON
+HOOK_NAMESPACES := TIME
 
 # NOTE: -W useless-rule check is quite expensive (increasing compilation times by several times), use -Wno useless-rule unless this check is needed!!!
 KOMPILE_OPTS += --hook-namespaces "$(HOOK_NAMESPACES)" --gen-bison-parser --emit-json -w all -Wno unused-symbol -Wno useless-rule
