@@ -1164,7 +1164,8 @@ We define `COMPARE` in terms of a `#DoCompare` function.
 The `#DoCompare` function requires additional lemmas for symbolic execution.
 
 ```symbolic
-  rule #DoCompare(V1, V2) ==Int 0 => V1 ==K V2 [simplification]
+  rule #DoCompare(V1, V2)  ==Int 0 => V1  ==K V2 [simplification]
+  rule #DoCompare(V1, V2) =/=Int 0 => V1 =/=K V2 [simplification]
 
   rule #DoCompare(I1:Bool, I2:Bool) <Int 0  => (I1 ==Bool false) andBool (I2 ==Bool true)                       [simplification]
   rule #DoCompare(I1:Bool, I2:Bool) <=Int 0 => ((I1 ==Bool false) andBool (I2 ==Bool true)) orBool I1 ==Bool I2 [simplification]
