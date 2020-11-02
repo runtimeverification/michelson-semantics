@@ -168,7 +168,6 @@ prove_kompiled      := $(prove_dir)/$(notdir $(prove_main_file))-kompiled/defini
 defn-prove:  $(prove_files)
 build-prove: $(prove_kompiled)
 
-$(prove_kompiled): tangle_haskell := k | concrete
 $(prove_kompiled): $(prove_files)
 	$(KOMPILE_HASKELL) $(prove_main_file).md                  \
 	                   --directory $(prove_dir) -I $(CURDIR)  \
@@ -187,6 +186,7 @@ symbolic_kompiled      := $(symbolic_dir)/$(notdir $(symbolic_main_file))-kompil
 defn-symbolic:  $(symbolic_files)
 build-symbolic: $(symbolic_kompiled)
 
+$(symbolic_kompiled): tangle_haskell := k | symbolic | internalized
 $(symbolic_kompiled): $(symbolic_files)
 	$(KOMPILE_HASKELL) $(symbolic_main_file).md                  \
 	                   --directory $(symbolic_dir) -I $(CURDIR)  \
