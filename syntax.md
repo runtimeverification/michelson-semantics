@@ -313,7 +313,6 @@ Some macros have syntax that can be validated at parse-time. Other macros need
 additional runtime processing. The following macros require such processing.
 
 ```k
-  // FIXME: Pair and Unpair macro syntax currently too imprecise
   syntax DIPMacro ::= r"DII+P" [token]
   syntax DUPMacro ::= r"DUU+P" [token]
   syntax CDARMacro ::= r"C[A,D]{2,}R" [token]
