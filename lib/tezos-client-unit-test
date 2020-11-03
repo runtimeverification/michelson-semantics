@@ -67,7 +67,10 @@ fix_address() {
     export ORIGINATION_SUBS="$TEMP_DIR/origination_subs"
     export ALL_SUBS="$TEMP_DIR/subs"
 
-    if ! grep -o '@Address([^)"]*)' "$test" | sort | uniq > "$FOUND_ADDRESSES"; then
+    # -o - only matching
+    # -E - extended matches
+    # -e - pattern follows this option
+    if ! grep -o -E -e '"KT1[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{33}"' "$test" | tr -d '"' | sort | uniq > "$FOUND_ADDRESSES"; then
         touch "$FOUND_ADDRESSES"
     fi
 
