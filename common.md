@@ -59,7 +59,6 @@ We represent Michelson values by constructors which wrap K primitive types.
   syntax OperationNonce ::= #Nonce(Int)
   syntax LambdaData ::= #Lambda(TypeName, TypeName, Block)
 
-
   syntax SimpleData ::= LambdaData
                       | Timestamp
                       | ChainId
@@ -443,17 +442,18 @@ data literals in normal Michelson. Note that we need to recurse into the data
 elements.
 
 ```k
-  rule #MichelineToNative(Create_contract(N, C, O, M, S), operation _, KnownAddrs, BigMaps) =>
-       Create_contract(
-           N,
-           C,
-           {#MichelineToNative(O, (option .AnnotationList  key_hash .AnnotationList), KnownAddrs, BigMaps)}:>OptionData,
-           {#MichelineToNative(M, mutez .AnnotationList, KnownAddrs, BigMaps)}:>Mutez,
+  rule #MichelineToNative(Create_contract { C } O M S N, operation _, KnownAddrs, BigMaps) =>
+       Create_contract
+           { C }
+           {#MichelineToNative(O, (option .AnnotationList  key_hash .AnnotationList), KnownAddrs, BigMaps)}:>OptionData
+           {#MichelineToNative(M, mutez .AnnotationList, KnownAddrs, BigMaps)}:>Mutez
            #MichelineToNative(S, #StorageTypeFromContract(C), KnownAddrs, BigMaps)
-       )
+           N
+    requires (isWildcard(N) orBool isInt(N))
 
-  rule #MichelineToNative(Set_delegate(N, K), operation _, KnownAddrs, BigMaps) =>
-       Set_delegate(N, {#MichelineToNative(K, (option .AnnotationList key_hash .AnnotationList), KnownAddrs, BigMaps)}:>OptionData)
+  rule #MichelineToNative(Set_delegate K N, operation _, KnownAddrs, BigMaps) =>
+       Set_delegate {#MichelineToNative(K, (option .AnnotationList key_hash .AnnotationList), KnownAddrs, BigMaps)}:>OptionData N
+    requires (isWildcard(N) orBool isInt(N))
 
   syntax Type ::= #StorageTypeFromContract(Contract) [function]
   rule #StorageTypeFromContract(code _ ; storage S ; parameter _ ;) => S
@@ -470,18 +470,19 @@ a contract lookup.
   syntax Type ::= #TypeFromOtherContract(ContractData) [function]
   rule #TypeFromOtherContract(#Contract(_, T)) => T
 
-  rule #MichelineToNative(Transfer_tokens(N, P, M, A), operation _, KnownAddrs, BigMaps)
-          => Transfer_tokens(N,
+  rule #MichelineToNative(Transfer_tokens P M A N, operation _, KnownAddrs, BigMaps)
+          => Transfer_tokens
               #MichelineToNative(
                   P,
                   #TypeFromOtherContract({KnownAddrs[#MichelineToNative(A, address .AnnotationList, KnownAddrs, BigMaps)]}:>ContractData),
                   KnownAddrs,
                   BigMaps
-              ),
-              {#MichelineToNative(M, mutez .AnnotationList, KnownAddrs, BigMaps)}:>Mutez,
+              )
+              {#MichelineToNative(M, mutez .AnnotationList, KnownAddrs, BigMaps)}:>Mutez
               {#MichelineToNative(A, address .AnnotationList, KnownAddrs, BigMaps)}:>Address
-          )
-       requires #MichelineToNative(A, address .AnnotationList, KnownAddrs, BigMaps) in_keys(KnownAddrs)
+              N
+       requires (isWildcard(N) orBool isInt(N))
+        andBool #MichelineToNative(A, address .AnnotationList, KnownAddrs, BigMaps) in_keys(KnownAddrs)
 ```
 
 We extract a `big_map` by index from the bigmaps map. Note that these have

@@ -1659,7 +1659,7 @@ however forces us to use two rules for each operation.
                [mutez Initial:Mutez] ;
                [_ Storage:Data] ;
                SS
-            => [operation Create_contract(O, C, Delegate, Initial, Storage)] ;
+            => [operation Create_contract { C } Delegate Initial Storage O ] ;
                [address #Address("@Address(" +String Int2String(!_:Int) +String ")")] ;
                SS
        </stack>
@@ -1667,12 +1667,12 @@ however forces us to use two rules for each operation.
 
   rule <k> TRANSFER_TOKENS AL => #HandleAnnotations(AL) ... </k>
        <stack> [T D] ; [mutez M] ; [contract T #Contract(A, _)] ; SS
-            => [operation Transfer_tokens(O, D, M, A)] ; SS
+            => [operation Transfer_tokens D M A O] ; SS
        </stack>
        <nonce> #Nonce(O) => #NextNonce(#Nonce(O)) </nonce>
 
   rule <k> SET_DELEGATE A => #HandleAnnotations(A) ... </k>
-       <stack> [option key_hash D] ; SS => [operation Set_delegate(O, D)] ; SS </stack>
+       <stack> [option key_hash D] ; SS => [operation Set_delegate D O] ; SS </stack>
        <nonce> #Nonce(O) => #NextNonce(#Nonce(O)) </nonce>
 ```
 
@@ -2522,22 +2522,22 @@ module MATCHER
 
   syntax Data ::= FailedStack
 
-  rule #Matches(Create_contract(I1, C, O1, M1, D1),
-                Create_contract(I2, C, O2, M2, D2))
+  rule #Matches(Create_contract { C } O1 M1 D1 I1,
+                Create_contract { C } O2 M2 D2 I2)
     => #Matches(I1, I2) andBool
        #Matches(O1, O2) andBool
        #Matches(M1, M2) andBool
-      #Matches(D1, D2)
+       #Matches(D1, D2)
 
-  rule #Matches(Transfer_tokens(I1, D1, M1, A1),
-                Transfer_tokens(I2, D2, M2, A2))
+  rule #Matches(Transfer_tokens D1 M1 A1 I1,
+                Transfer_tokens D2 M2 A2 I2)
     => #Matches(I1, I2) andBool
        #Matches(D1, D2) andBool
        #Matches(M1, M2) andBool
        #Matches(A1, A2)
 
-  rule #Matches(Set_delegate(I1, O1),
-                Set_delegate(I2, O2))
+  rule #Matches(Set_delegate O1 I1,
+                Set_delegate O2 I2)
     => #Matches(I1, I2) andBool #Matches(O1, O2)
 
   rule #Matches(Pair L1 R1, Pair L2 R2)

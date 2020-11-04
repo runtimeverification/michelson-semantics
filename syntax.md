@@ -483,7 +483,7 @@ instead, they can only be pushed on the stack by the Michelson
 
 ```k
   syntax BlockchainOperation ::=
-    "Create_contract" "(" Int "," Contract "," OptionData "," Mutez "," Data ")"
+    "Create_contract" "{" Contract "}" OptionData Mutez Data Data
 ```
 
 - Nonce (`int`): A cryptographic nonce attached to each new `operation` literal
@@ -499,8 +499,7 @@ instead, they can only be pushed on the stack by the Michelson
    the case of invoking a contract):
 
 ```k
-  syntax BlockchainOperation ::=
-    "Transfer_tokens" "(" Int "," Data "," Mutez "," Address ")"
+  syntax BlockchainOperation ::= "Transfer_tokens" Data Mutez Address Data
 ```
 
 - Nonce (`int`): A cryptographic nonce attached to each new `ooeration` literal
@@ -513,7 +512,7 @@ instead, they can only be pushed on the stack by the Michelson
 3. We need an `operation` literal to set the delegate of an account.
 
 ```k
-  syntax BlockchainOperation ::= "Set_delegate" "(" Int "," OptionData ")"
+  syntax BlockchainOperation ::= "Set_delegate" OptionData Data
 ```
 
 - Nonce (`int`): A cryptographic nonce attached to each new `operation` literal
