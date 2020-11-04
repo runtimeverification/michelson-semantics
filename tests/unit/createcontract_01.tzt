@@ -1,6 +1,6 @@
 code {
        CREATE_CONTRACT
-         { code { DROP ; UNIT ; NIL operation ; PAIR ; } ;
+         { code { DROP ; UNIT ; NIL operation ; PAIR } ;
            storage unit ;
            parameter unit }
      } ;
@@ -11,7 +11,7 @@ input {
       } ;
 output {
          Stack_elt operation (Create_contract
-                                { code { DROP ; UNIT ; NIL operation ; PAIR ; } ; storage unit ; parameter unit }
+                                { code { DROP ; UNIT ; NIL operation ; PAIR } ; storage unit ; parameter unit }
                                 None
                                 12
                                 Unit
