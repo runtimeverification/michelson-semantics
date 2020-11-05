@@ -2451,7 +2451,7 @@ It has an untyped and typed variant.
   // TODO: should we expand into the three separate kinds of Blockchain operations?
   rule <k> #MakeFresh(operation _:AnnotationList) => ?_:BlockchainOperation ... </k>
 
-  rule <k> #MakeFresh(list      _:AnnotationList _:Type)        => ?_:List                               ... </k>
+  rule <k> #MakeFresh(list      _:AnnotationList _:Type)        => ?_:InternalList                       ... </k>
   rule <k> #MakeFresh(set       _:AnnotationList _:Type)        => ?_:Set                                ... </k>
   rule <k> #MakeFresh(map       _:AnnotationList _:Type _:Type) => ?_:Map                                ... </k>
   rule <k> #MakeFresh(big_map   _:AnnotationList _:Type _:Type) => ?_:Map                                ... </k>
