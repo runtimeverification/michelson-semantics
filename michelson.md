@@ -2021,7 +2021,7 @@ abstract out pieces of the stack which are non-invariant during loop execution.
         =>   #GeneralizeStack(Stack_elt T V ; SS, SS')
            ...
        </k>
-    requires isValue(V)
+    requires isValue(#Name(T),V)
 ```
 
 ### `BIND` Instruction
@@ -2359,7 +2359,7 @@ Symbolic Value Processing
   rule <k> (.K => #MakeFresh(T)) ~>  #CreateSymbol(_, T) ... </k>
   rule <k> (V ~> #CreateSymbol(N, T)) => . ... </k>
        <symbols> M => M[N <- #TypedSymbol(#Name(T), V)] </symbols>
-    requires isValue(V)
+    requires isValue(#Name(T), V)
 ```
 
 ### "Evaluating" Data
@@ -2371,6 +2371,9 @@ It has an untyped and typed variant.
   syntax Bool ::= isValue(Data) [function, functional]
   // -------------------------------------------------
   rule isValue(_:SimpleData) => true
+  rule isValue(_:InternalList) => true
+  rule isValue(_:Set) => true
+  rule isValue(_:Map) => true
   rule isValue(None) => true
   rule isValue(Some V) => isValue(V)
   rule isValue(Left V) => isValue(V)
@@ -2485,8 +2488,7 @@ We implement fresh lambdas as fresh uninterpreted functions.
            ...
        </k>
        <stack> [ArgT Arg] ; SS => [RetT uninterpreted(Id, Arg):Data] ; SS </stack>
-    requires isValue(Arg)
-
+    requires isValue(ArgT, Arg)
 ```
 
 ```k
