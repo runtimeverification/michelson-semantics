@@ -2371,9 +2371,6 @@ It has an untyped and typed variant.
   syntax Bool ::= isValue(Data) [function, functional]
   // -------------------------------------------------
   rule isValue(_:SimpleData) => true
-  rule isValue(_:InternalList) => true
-  rule isValue(_:Set) => true
-  rule isValue(_:Map) => true
   rule isValue(None) => true
   rule isValue(Some V) => isValue(V)
   rule isValue(Left V) => isValue(V)

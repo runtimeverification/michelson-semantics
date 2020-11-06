@@ -1,13 +1,14 @@
-This file contains the productions for the internal representation of certain
-types of Michelson data in K. These are shared among a number of different
-modules which should not depend on one another, and so is kept separate.
-Furthermore, it contains a number of macro rules which standardize the
-representations of certain productions (e.g. by reordering them and
-adding/removing extra semicolons).
-
 ```k
 requires "syntax.md"
+```
 
+Michelson Internal Representation
+=================================
+
+The Michelson external syntax needs to be converted into an internal
+representation. We define all our internal representations below.
+
+```k
 module MICHELSON-COMMON
   imports SYMBOLIC-UNIT-TEST-COMMON-SYNTAX
   imports BYTES
@@ -15,9 +16,13 @@ module MICHELSON-COMMON
   imports COLLECTIONS
 ```
 
-```symbolic
-  imports MAP-SYMBOLIC
-```
+Type Representation
+-------------------
+
+We represent types internally without their annotations.
+
+NOTE: This simplification breaks the semantics of some instructions relating
+to contracts with entrypoints. We may fix this issue in a later release.
 
 ```k
   syntax TypeName ::= NullaryTypeName
@@ -25,16 +30,141 @@ module MICHELSON-COMMON
                     | BinaryTypeName TypeName TypeName
 
   syntax TypeName ::= #Name(Type) [function, functional]
-  syntax Type ::= #Type(TypeName) [function, functional]
-
+  // ---------------------------------------------------
   rule #Name(T:NullaryTypeName _:AnnotationList) => T
   rule #Name(T:UnaryTypeName _:AnnotationList ArgT) => T #Name(ArgT)
   rule #Name(T:BinaryTypeName _:AnnotationList ArgT1 ArgT2) => T #Name(ArgT1) #Name(ArgT2)
 
+  syntax Type     ::= #Type(TypeName) [function, functional]
+  // -------------------------------------------------------
   rule #Type(T:NullaryTypeName) => T .AnnotationList
   rule #Type(T:UnaryTypeName ArgT) => T .AnnotationList #Type(ArgT)
   rule #Type(T:BinaryTypeName ArgT1 ArgT2) => T .AnnotationList #Type(ArgT1) #Type(ArgT2)
 ```
+
+Value Representation
+--------------------
+
+We represent Michelson values by constructors which wrap K primitive types.
+
+```k
+  syntax Address ::= #Address(String)
+  syntax ContractData ::= #Contract(Address, Type)
+  syntax Mutez ::= #Mutez(Int)
+  syntax KeyHash ::= #KeyHash(String)
+  syntax ChainId ::= #ChainId(MichelsonBytes)
+  syntax Timestamp ::= #Timestamp(Int)
+  syntax Key ::= #Key(String)
+  syntax Signature ::= #Signature(String)
+  syntax OperationNonce ::= #Nonce(Int)
+  syntax LambdaData ::= #Lambda(TypeName, TypeName, Block)
+
+
+  syntax SimpleData ::= LambdaData
+                      | Timestamp
+                      | ChainId
+                      | KeyHash
+                      | ContractData
+                      | Key
+                      | Signature
+```
+
+We represent the values of byte operations as special constructors.
+
+```k
+  syntax MichelsonBytes ::= #Packed(TypeName,Data)
+                          | #Blake2B(MichelsonBytes)
+                          | #SHA256(MichelsonBytes)
+                          | #SHA512(MichelsonBytes)
+```
+
+We represent values of collection types (lists, sets, maps) as follows:
+
+```k
+  syntax WrappedData  ::= "[" Data "]"
+  syntax InternalList ::= List{WrappedData, ";;"}
+
+  syntax Int ::= size(InternalList, Int) [function, functional]
+  // ----------------------------------------------------------
+  rule size(_ ;; L,        S) => size(L, S +Int 1)
+  rule size(.InternalList, S) => S
+
+  syntax SimpleData ::= Set | Map | InternalList
+```
+
+The internal representation of mutez is bounded.
+
+```k
+  syntax Int ::= "#MutezOverflowLimit" [function]
+  // --------------------------------------------
+  rule #MutezOverflowLimit => 2 ^Int 63 // Signed 64 bit integers.
+
+  syntax Bool ::= #IsLegalMutezValue(Int) [function]
+  // -----------------------------------------------
+  rule #IsLegalMutezValue(I) => I >=Int 0 andBool I <Int #MutezOverflowLimit
+```
+
+The following representation is used by our legacy type checker.
+
+```k
+  syntax TypedData ::= #Typed(Data, Type)
+  syntax Data ::= TypedData
+```
+
+## Literal Token to Value Conversion
+
+Michelson bool literals are represented internally by the K `Bool` type.
+
+```k
+  syntax MichelsonBool ::= Bool
+  rule `MichelsonBoolToken`(#token("True",  "MichelsonBoolToken")) => true
+  rule `MichelsonBoolToken`(#token("False", "MichelsonBoolToken")) => false
+```
+
+Michelson byte literals are represented internally by the K `Bytes` type.
+
+```k
+  syntax MichelsonBytes ::= Bytes
+  rule `MichelsonBytesToken`(M) => #ParseBytes(stripFirst(#MichelsonBytesTokenToString(M), 2), .Bytes)
+
+  syntax String ::= #MichelsonBytesTokenToString(MichelsonBytesToken) [function, hook(STRING.token2string)]
+
+  syntax Bytes ::= #ParseBytes(String, Bytes) [function]
+  // ---------------------------------------------------
+  rule #ParseBytes("", ByteStr) => ByteStr
+  rule #ParseBytes(Hex, ByteStr)
+    => #ParseBytes(stripFirst(Hex, 2),
+                   ByteStr
+            +Bytes Int2Bytes(1, String2Base(substrString(Hex, 0, 2), 16), BE))
+    requires Hex =/=String ""
+
+  syntax String ::= stripFirst(String, Int) [function]
+  // -------------------------------------------------
+  rule stripFirst(S, I) => substrString(S, I, lengthString(S))
+```
+
+Macros must be converted into strings for further processing.
+
+```k
+  syntax String ::= #DIPMacroToString(DIPMacro) [function, hook(STRING.token2string)]
+  syntax String ::= #DUPMacroToString(DUPMacro) [function, hook(STRING.token2string)]
+  syntax String ::= #CDARMacroToString(CDARMacro) [function, hook(STRING.token2string)]
+  syntax String ::= #SetCDARMacroToString(SetCDARMacro) [function, hook(STRING.token2string)]
+  syntax String ::= #MapCDARMacroToString(MapCDARMacro) [function, hook(STRING.token2string)]
+```
+
+These macro conversion functions are currently disabled.
+
+```disabled
+  syntax String ::= #PairMacroToString(PairMacro) [function, hook(STRING.token2string)]
+  syntax String ::= #UnpairMacroToString(UnpairMacro) [function, hook(STRING.token2string)]
+```
+
+Stack Representation
+--------------------
+
+We represent the Michelson stack using the `InternalStack` type which contains
+the representation of standard stacks as well as failed stacks.
 
 ```k
   syntax StackElement ::= "[" TypeName Data "]"
@@ -57,141 +187,22 @@ module MICHELSON-COMMON
   rule reverseStack( .Stack, EL' ) => EL'
 ```
 
-The internal representation of Michelson sets, lists and maps are simply K sets,
-lists and maps respectively.
+Miscellaneous Internal Representations
+--------------------------------------
 
-```k
-  syntax WrappedData  ::= "[" Data "]"
-  syntax InternalList ::= List{WrappedData, ";;"}
-
-  syntax Int ::= size(InternalList, Int) [function, functional]
-  // ----------------------------------------------------------
-  rule size(_ ;; L,        S) => size(L, S +Int 1)
-  rule size(.InternalList, S) => S
-
-  syntax Data ::= Set | Map | InternalList
-```
-
-The internal representation of typed data in Michelson.
-
-```k
-  syntax TypedData ::= #Typed(Data, Type)
-  syntax Data ::= TypedData
-```
-
-These are general "Unset" values for Data and Type productions, used when there
-should be information in a cell or production, but there isn't. For example,
-`<parametertype>` is set to `#NotSet` until the `parameter` group is loaded.
-
-**`#NoData` should not be confused with `None` - the former is invalid data and
-should never occur on the Michelson stack, the latter is perfectly legitimate
-Michelson data representing an `option` type which happens to be empty.**
+The internal representation of unset type and data values.
 
 ```k
   syntax PreType ::= "#NotSet" | Type
   syntax PreData ::= "#NoData" | Data
 ```
 
-These productions wrap the literal data of certain Michelson types, attaching a
-minimal amount of type information to data elements on the stack which allows K
-to select the proper rules. For example, the `ADD` instruction uses the presence
-of the `#Timestamp` wrapper to distinguish between additions involving
-timestamps and naturals.
-
-```k
-  syntax Address ::= #Address(String)
-  syntax ContractData ::= #Contract(Address, Type)
-  syntax Mutez ::= #Mutez(Int)
-  syntax KeyHash ::= #KeyHash(String)
-  syntax ChainId ::= #ChainId(MichelsonBytes)
-  syntax Timestamp ::= #Timestamp(Int)
-  syntax Key ::= #Key(String)
-  syntax Signature ::= #Signature(String)
-  syntax OperationNonce ::= #Nonce(Int)
-  syntax LambdaData ::= #Lambda(TypeName, TypeName, Block)
-```
-
-We extend the `SimpleData` sort to contain internal datatypes.
-
-```k
-  syntax SimpleData ::= Bool
-                      | LambdaData
-                      | Set
-                      | Map
-                      | List
-                      | Timestamp
-                      | ChainId
-                      | KeyHash
-                      | ContractData
-                      | Key
-                      | Signature
-```
-
-The K specification of the Michelson Bytes type is incomplete due to the lack a
-formal specification or even documentation of the `PACK` and `UNPACK`
-instructions. Thus, the best we can do for now is wrap packed data with a
-production which allows us to axiomatize `PACK ; UNPACK _` as an identity
-operation. We give the various cryptographic operations a similar treatment for
-now.
-
-```k
-  syntax MichelsonBytes ::= MichelsonBytesToken
-                          | #Packed(TypeName,Data)
-                          | #Blake2B(MichelsonBytes)
-                          | #SHA256(MichelsonBytes)
-                          | #SHA512(MichelsonBytes)
-```
-
 We specify that both `parameter T` and `storage T` productions are also groups
-(see `michelson-syntax.md` for a description of groups).
+(see [syntax.md](syntax.md) for a description of groups).
 
 ```k
   syntax Group ::= ParameterDecl
   syntax Group ::= StorageDecl
-```
-
-Michelson bools are of the form (True/False), but K bools are of the form
-(true/false). We convert them here so we can define rewrite rules over the K
-bool sort.
-
-```k
-  syntax MichelsonBool ::= Bool
-  rule `MichelsonBoolToken`(#token("True",  "MichelsonBoolToken")) => true
-  rule `MichelsonBoolToken`(#token("False", "MichelsonBoolToken")) => false
-```
-
-These rules define what constitutes a legal mutez value, allowing us to
-represent mutez overflow.
-
-```k
-  syntax Int ::= "#MutezOverflowLimit" [function]
-  rule #MutezOverflowLimit => 2 ^Int 63 // Signed 64 bit integers.
-
-  syntax Bool ::= #IsLegalMutezValue(Int) [function]
-  rule #IsLegalMutezValue(I) => I >=Int 0 andBool I <Int #MutezOverflowLimit
-```
-
-Michelson byte literals are represented internally by the K `Bytes` type.
-
-```k
-  syntax MichelsonBytes ::= Bytes
-
-  syntax String ::= #MichelsonBytesTokenToString(MichelsonBytesToken) [function, hook(STRING.token2string)]
-
-  rule `MichelsonBytesToken`(M) => #ParseBytes(stripFirst(#MichelsonBytesTokenToString(M), 2), .Bytes)
-
-  syntax Bytes ::= #ParseBytes(String, Bytes) [function]
-  // ---------------------------------------------------
-  rule #ParseBytes("", ByteStr) => ByteStr
-  rule #ParseBytes(Hex, ByteStr)
-    => #ParseBytes(stripFirst(Hex, 2),
-                   ByteStr
-            +Bytes Int2Bytes(1, String2Base(substrString(Hex, 0, 2), 16), BE))
-    requires Hex =/=String ""
-
-  syntax String ::= stripFirst(String, Int) [function]
-  // -------------------------------------------------
-  rule stripFirst(S, I) => substrString(S, I, lengthString(S))
 ```
 
 A Michelson contract consists of three [primitive
@@ -215,7 +226,11 @@ eleven 'anywhere' rules here.
   rule parameter Pt ; storage St ; code B ; => code B ; storage St ; parameter Pt ; [anywhere]
 ```
 
-This function is similar to `#MichelineToNative` but for contract maps.
+Michelson Internal Representation Conversion
+--------------------------------------------
+
+This function converts the `other_contracts` field into its internal
+represetation.
 
 ```k
   syntax Map ::= #OtherContractsMapEntryListToKMap(OtherContractsMapEntryList) [function]
@@ -223,34 +238,11 @@ This function is similar to `#MichelineToNative` but for contract maps.
   rule #OtherContractsMapEntryListToKMap( Elt A T ; Rs ) => #Address(A) |-> #Contract(#Address(A), T) #OtherContractsMapEntryListToKMap(Rs)
 ```
 
-This function transforms a Michelson data element from its Micheline
-representation to its internal K representation given the data and its real
-Michelson type. It performs some basic sanity checks on the data passed (that it
-is of the correct sort, for example). but otherwise does not attempt to do a
-real typecheck.
+This function converts all other datatypes into their internal represenations.
 
 ```k
   syntax DataOrSeq ::= Data | DataList | MapEntryList // Can't subsort DataList to Data, as that would form a cycle.
   syntax Data ::= #MichelineToNative(DataOrSeq, Type, Map, Map) [function]
-```
-
-### Macro Parsing
-
-These functions convert macros to strings to enable evaluation.
-
-```k
-  syntax String ::= #DIPMacroToString(DIPMacro) [function, hook(STRING.token2string)]
-  syntax String ::= #DUPMacroToString(DUPMacro) [function, hook(STRING.token2string)]
-  syntax String ::= #CDARMacroToString(CDARMacro) [function, hook(STRING.token2string)]
-  syntax String ::= #SetCDARMacroToString(SetCDARMacro) [function, hook(STRING.token2string)]
-  syntax String ::= #MapCDARMacroToString(MapCDARMacro) [function, hook(STRING.token2string)]
-```
-
-These macro conversion functions are currently disabled.
-
-```disabled
-  syntax String ::= #PairMacroToString(PairMacro) [function, hook(STRING.token2string)]
-  syntax String ::= #UnpairMacroToString(UnpairMacro) [function, hook(STRING.token2string)]
 ```
 
 ### Converting String-Based Datatypes
