@@ -198,7 +198,7 @@ The internal representation of unset type and data values.
 ```
 
 We specify that both `parameter T` and `storage T` productions are also groups
-(see `michelson-syntax.md` for a description of groups).
+(see [syntax.md](syntax.md) for a description of groups).
 
 ```k
   syntax Group ::= ParameterDecl
