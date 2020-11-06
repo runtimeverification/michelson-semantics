@@ -186,7 +186,7 @@ symbolic_kompiled      := $(symbolic_dir)/$(notdir $(symbolic_main_file))-kompil
 defn-symbolic:  $(symbolic_files)
 build-symbolic: $(symbolic_kompiled)
 
-$(symbolic_kompiled): tangle_haskell := k | symbolic | internalized
+$(symbolic_kompiled): tangle_haskell := k | symbolic | internalized-rl
 $(symbolic_kompiled): $(symbolic_files)
 	$(KOMPILE_HASKELL) $(symbolic_main_file).md                  \
 	                   --directory $(symbolic_dir) -I $(CURDIR)  \

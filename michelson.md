@@ -264,7 +264,7 @@ of Michelson code. We list these configuration cells here:
 4. In the symbolic semantics, the cutpoint cell contains a list of cutpoints
    that have been visited.
 
-    ```internalized
+    ```internalized-rl
                   <cutpoints> .Set </cutpoints>
     ```
 
@@ -552,7 +552,7 @@ version.
        <stack> _ => reverseStack(Stack) </stack>
 ```
 
-```internalized
+```internalized-rl
   rule <k> (.K => #CreateSymbol(X, T))
         ~> #StackToNative(Stack_elt T X:SymbolicData ; Stack, Stack')
            ...
@@ -704,7 +704,7 @@ Here we handle concrete loop semantics.
 
 Here we handle symbolic loop semantics.
 
-```internalized
+```internalized-rl
   rule <k> LOOP A .AnnotationList Body
         => CUTPOINT(!Id, Invariant) ;
            LOOP .AnnotationList {
@@ -846,7 +846,7 @@ up/creating a new symbol in the symbol table.
      andBool notBool isSymbolicData(X)
 ```
 
-```internalized
+```internalized-rl
   rule <k> PUSH _ T (X:SymbolicData => D)  ... </k>
        <symbols> X |-> #TypedSymbol(TN, D) ... </symbols>
     requires #Name(T) ==K TN
@@ -1975,7 +1975,7 @@ reachability logic circularity (or claim).
 When we reach a cutpoint, we need to generalize our current state into one
 which corresponds to the reachability logic circularity that we wish to use.
 
-```internalized
+```internalized-rl
   syntax Instruction ::= CUTPOINT( id: Int, invariant: Invariant)
 
   rule <k> CUTPOINT(I, { Shape } { Predicates })
@@ -1999,7 +1999,7 @@ which corresponds to the reachability logic circularity that we wish to use.
 In stack-based languages like Michelson, state generalization means that we
 abstract out pieces of the stack which are non-invariant during loop execution.
 
-```internalized
+```internalized-rl
   syntax KItem ::= #GeneralizeStack(StackElementList, Stack)
   rule <k> #GeneralizeStack(.StackElementList, SS) => . ... </k>
        <stack> _ => reverseStack( SS ) </stack>
@@ -2339,7 +2339,7 @@ Symbolic Value Processing
   syntax TypedSymbol ::= #TypedSymbol(TypeName, Data)
 ```
 
-```internalized
+```internalized-rl
   rule [[ #MichelineToNative(S:SymbolicData, T, _, _) => D ]]
        <symbols> S |-> #TypedSymbol(TN, D) ... </symbols>
     requires TN ==K #Name(T)
@@ -2353,7 +2353,7 @@ Symbolic Value Processing
 
 `#CreateSymbol` is responsible for setting up the initial symbol table.
 
-```internalized
+```internalized-rl
   syntax KItem ::= #CreateSymbol(SymbolicData, Type)
   // -----------------------------------------------
   rule <k> (.K => #MakeFresh(T)) ~>  #CreateSymbol(_, T) ... </k>
@@ -2434,7 +2434,7 @@ It has an untyped and typed variant.
 
 `#MakeFresh` is responsible for generating a fresh value of a given type.
 
-```internalized
+```internalized-rl
   syntax Data ::= #MakeFresh(Type)
 
   rule <k> #MakeFresh(nat       _:AnnotationList) => #Assume(?V >=Int 0)             ~> ?V:Int         ... </k>
@@ -2474,7 +2474,7 @@ It has an untyped and typed variant.
 
 We implement fresh lambdas as fresh uninterpreted functions.
 
-```internalized
+```internalized-rl
   rule <k> #MakeFresh(lambda    _:AnnotationList T1 T2)
         => #Lambda(#Name(T1), #Name(T2), { #Uninterpreted(!Id, #Name(T1), #Name(T2)) })
            ...
