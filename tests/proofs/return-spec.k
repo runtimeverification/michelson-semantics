@@ -1,71 +1,72 @@
-requires "michelson.md"
+requires "lemmas.md"
 
 module VERIFICATION
-  imports MICHELSON
+  imports LEMMAS
 endmodule
 
 module RETURN-SPEC
   imports VERIFICATION
 
   rule <k>
-       { 
-         CDR NoAnnotations ;
-         NIL NoAnnotations operation .TypeAnnotationList .FieldAnnotationList ;
-         AMOUNT NoAnnotations ;
-         PUSH NoAnnotations mutez .TypeAnnotationList .FieldAnnotationList 0 ; 
-         IFCMPEQ NoAnnotations { }
+       {
+         CDR .AnnotationList ;
+         NIL .AnnotationList operation .AnnotationList ;
+         AMOUNT .AnnotationList ;
+         PUSH .AnnotationList mutez .AnnotationList 0 ;
+         IFCMPEQ .AnnotationList { }
          {
-            SOURCE NoAnnotations ;
-            CONTRACT NoAnnotations unit .TypeAnnotationList .FieldAnnotationList ;
-            ASSERT_SOME NoAnnotations ;
-            AMOUNT NoAnnotations ;
-            UNIT NoAnnotations ;
-            TRANSFER_TOKENS NoAnnotations ;
-            CONS NoAnnotations 
+            SOURCE .AnnotationList ;
+            CONTRACT .AnnotationList unit .AnnotationList ;
+            ASSERT_SOME .AnnotationList ;
+            AMOUNT .AnnotationList ;
+            UNIT .AnnotationList ;
+            TRANSFER_TOKENS .AnnotationList ;
+            CONS .AnnotationList
          } ;
-         PAIR NoAnnotations 
-       } => . </k>
-        <stack> Pair Unit Unit => Pair ListItem(#TransferTokens(Unit, #Mutez(A), #Contract(#Address("SourceAddr"), unit .TypeAnnotationList .FieldAnnotationList))) Unit </stack>
-        <paramtype> unit .TypeAnnotationList .FieldAnnotationList </paramtype>
-        <storagetype> unit .TypeAnnotationList .FieldAnnotationList </storagetype>
+         PAIR .AnnotationList
+       } => .K </k>
+        <stack> [ (pair unit unit) Pair Unit Unit ] ; .Stack => [ (pair (list operation) unit) Pair [ Transfer_tokens(?_, Unit, #Mutez(A), #Address("SourceAddr")) ] ;; .InternalList Unit ] ; .Stack </stack>
+        <paramtype> unit .AnnotationList </paramtype>
+        <storagetype> unit .AnnotationList </storagetype>
         <mybalance> #Mutez(0) </mybalance>
         <myamount> #Mutez(A) </myamount>
         <mynow> #Timestamp(0) </mynow>
         <myaddr> #Address("OwnAddr") </myaddr>
-        <knownaddrs> #Address("SourceAddr") |-> #Contract(#Address("SourceAddr"), unit .TypeAnnotationList .FieldAnnotationList) </knownaddrs>
+        <knownaddrs> #Address("SourceAddr") |-> #Contract(#Address("SourceAddr"), unit .AnnotationList) </knownaddrs>
         <sourceaddr> #Address("SourceAddr") </sourceaddr>
         <senderaddr> #Address("SenderAddr") </senderaddr>
-        <mychainid> #ChainId(0) </mychainid>
-        requires A >Int 0 
+        <mychainid> #ChainId(_) </mychainid>
+        <nonce> #Nonce(?_ => ?_) </nonce>
+        requires A >Int 0
 
 
   rule <k>
-       { 
-         CDR NoAnnotations ;
-         NIL NoAnnotations operation .TypeAnnotationList .FieldAnnotationList ;
-         AMOUNT NoAnnotations ;
-         PUSH NoAnnotations mutez .TypeAnnotationList .FieldAnnotationList 0 ; 
-         IFCMPEQ NoAnnotations { }
+       {
+         CDR .AnnotationList ;
+         NIL .AnnotationList operation .AnnotationList ;
+         AMOUNT .AnnotationList ;
+         PUSH .AnnotationList mutez .AnnotationList 0 ;
+         IFCMPEQ .AnnotationList { }
          {
-            SOURCE NoAnnotations ;
-            CONTRACT NoAnnotations unit .TypeAnnotationList .FieldAnnotationList ;
-            ASSERT_SOME NoAnnotations ;
-            AMOUNT NoAnnotations ;
-            UNIT NoAnnotations ;
-            TRANSFER_TOKENS NoAnnotations ;
-            CONS NoAnnotations 
+            SOURCE .AnnotationList ;
+            CONTRACT .AnnotationList unit .AnnotationList ;
+            ASSERT_SOME .AnnotationList ;
+            AMOUNT .AnnotationList ;
+            UNIT .AnnotationList ;
+            TRANSFER_TOKENS .AnnotationList ;
+            CONS .AnnotationList
          } ;
-         PAIR NoAnnotations 
-       } => . </k>
-        <stack> Pair Unit Unit => Pair .List Unit </stack>
-        <paramtype> unit .TypeAnnotationList .FieldAnnotationList </paramtype>
-        <storagetype> unit .TypeAnnotationList .FieldAnnotationList </storagetype>
+         PAIR .AnnotationList
+       } => .K </k>
+        <stack> [ (pair unit unit) Pair Unit Unit ] ; .Stack => [ (pair (list operation) unit) Pair .InternalList Unit ] ; .Stack </stack>
+        <paramtype> unit .AnnotationList </paramtype>
+        <storagetype> unit .AnnotationList </storagetype>
         <mybalance> #Mutez(0) </mybalance>
         <myamount> #Mutez(0) </myamount>
         <mynow> #Timestamp(0) </mynow>
         <myaddr> #Address("OwnAddr") </myaddr>
-        <knownaddrs> #Address("SourceAddr") |-> #Contract(#Address("SourceAddr"), unit .TypeAnnotationList .FieldAnnotationList) </knownaddrs>
+        <knownaddrs> #Address("SourceAddr") |-> #Contract(#Address("SourceAddr"), unit .AnnotationList) </knownaddrs>
         <sourceaddr> #Address("SourceAddr") </sourceaddr>
         <senderaddr> #Address("SenderAddr") </senderaddr>
-        <mychainid> #ChainId(0) </mychainid>
+        <mychainid> #ChainId(_) </mychainid>
 endmodule
