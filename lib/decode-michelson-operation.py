@@ -124,7 +124,7 @@ if __name__ == "__main__":
   # get paths to important pieces
   path = os.path.dirname(os.path.realpath(__file__))
   tezos_codec = os.path.join(path, "..", "ext",    "tezos", "tezos-codec")
-  k_def_path  = os.path.join(path, "..", ".build", "defn",  "llvm")
+  k_def_path  = os.path.join(path, "..", ".build", "defn",  "contract-expander")
   # run tezos codec to get json encoded string
   json_str = run([tezos_codec, "decode", "005-PsBabyM1.operation.internal", "from", sys.argv[1]])
   # run emit operation to get K encoding of operation
