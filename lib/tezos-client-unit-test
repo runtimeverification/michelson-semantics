@@ -67,12 +67,13 @@ fix_address() {
     export ORIGINATION_SUBS="$TEMP_DIR/origination_subs"
     export ALL_SUBS="$TEMP_DIR/subs"
 
-    # -o - only matching
-    # -E - extended matches
-    # -e - pattern follows this option
-    if ! grep -o -E -e '"KT1[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{33}"' "$test" | tr -d '"' | sort | uniq > "$FOUND_ADDRESSES"; then
-        touch "$FOUND_ADDRESSES"
-    fi
+    # grep pattern is for tezos contract account address literals
+    # contract account address literals are double-quoted strings with:
+    # 1. the prefix KT1
+    # 2. a suffix of length 33 written with the bitcoin base 58 alphabet, i.e., with "I", "O", "0" and "l" removed.
+    touch "$FOUND_ADDRESSES"
+    grep --only-matching --extended-regexp '"KT1[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{33}"' "$test" \
+        | tr -d '"' | sort | uniq > "$FOUND_ADDRESSES"
 
     extract other_contracts true | tr -d '{}' | tr ';' '\n' | sed -E 's/^\s*//;s/\s*$//;s/Elt\s*"([^"]*)"\s*(.*)/\1#\2/;/^\s*$/d' > "$REAL_ADDRESSES_UNSORTED"
 
