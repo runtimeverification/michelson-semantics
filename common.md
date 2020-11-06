@@ -190,7 +190,7 @@ the representation of standard stacks as well as failed stacks.
 Miscellaneous Internal Representations
 --------------------------------------
 
-The internal represetnation of unset type and data values.
+The internal representation of unset type and data values.
 
 ```k
   syntax PreType ::= "#NotSet" | Type
