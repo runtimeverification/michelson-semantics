@@ -429,7 +429,7 @@ action of one instruction.
   syntax StorageValueGroup ::= "storage_value" Data
 
   syntax ContractsGroup ::= "other_contracts" "{" OtherContractsMapEntryList "}"
-  syntax OtherContractsMapEntry ::= "Elt" String Type
+  syntax OtherContractsMapEntry ::= "Contract" String Type
   syntax OtherContractsMapEntryList ::= List{OtherContractsMapEntry, ";"} [klabel(OtherContractsMapEntryList)]
 
   syntax BigMapGroup ::= "big_maps" "{" BigMapEntryList "}"

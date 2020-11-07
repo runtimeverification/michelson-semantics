@@ -375,8 +375,8 @@ The following macros are currently disabled.
     #doUnparse(P, false) +String
     ";"
 
-  rule #doUnparse(Elt S:String T:Type, _) =>
-    "Elt " +String
+  rule #doUnparse(Contract S:String T:Type, _) =>
+    "Contract " +String
     #doUnparse(S, false) +String
     " " +String
     #doUnparse(T, false)

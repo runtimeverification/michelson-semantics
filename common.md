@@ -233,8 +233,10 @@ represetation.
 
 ```k
   syntax Map ::= #OtherContractsMapEntryListToKMap(OtherContractsMapEntryList) [function]
+  // ------------------------------------------------------------------------------------
   rule #OtherContractsMapEntryListToKMap( .OtherContractsMapEntryList ) => .Map
-  rule #OtherContractsMapEntryListToKMap( Elt A T ; Rs ) => #Address(A) |-> #Contract(#Address(A), T) #OtherContractsMapEntryListToKMap(Rs)
+  rule #OtherContractsMapEntryListToKMap( Contract A T ; Rs )
+    => #Address(A) |-> #Contract(#Address(A), T) #OtherContractsMapEntryListToKMap(Rs)
 ```
 
 This function converts all other datatypes into their internal represenations.

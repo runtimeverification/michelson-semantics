@@ -76,7 +76,7 @@ fix_address() {
     grep --only-matching --extended-regexp '"KT1[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{33}"' "$test" \
         | tr -d '"' | sort | uniq > "$FOUND_ADDRESSES" || true
 
-    extract other_contracts true | tr -d '{}' | tr ';' '\n' | sed -E 's/^\s*//;s/\s*$//;s/Elt\s*"([^"]*)"\s*(.*)/\1#\2/;/^\s*$/d' > "$REAL_ADDRESSES_UNSORTED"
+    extract other_contracts true | tr -d '{}' | tr ';' '\n' | sed -E 's/^\s*//;s/\s*$//;s/Contract\s*"([^"]*)"\s*(.*)/\1#\2/;/^\s*$/d' > "$REAL_ADDRESSES_UNSORTED"
 
     export FAKE_SENDER=$(extract sender true)
     if [ ! -z $FAKE_SENDER ] && ! ( grep "$FAKE_SENDER" "$REAL_ADDRESSES_UNSORTED" ); then
