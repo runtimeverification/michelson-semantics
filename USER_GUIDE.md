@@ -1,127 +1,199 @@
 User Guide
 ==========
 
-Building and Installation
--------------------------
+Welcome to K-Michelson: a formal verification framework for Michelson using
+assertions written in Michelson!
 
-To build K-Michelson, please follow the instructions below. Note that:
+This guide assumes you have successfully installed K-Michelson according to
+the instructions in [INSTALL.md](INSTALL.md).
 
-- all commands should be executed in the K-Michelson software archive root
-- only Linux is officially supported; other systems may have limited support
+The purpose of this toolkit is to aid Michelson smart contract developers by
+providing a local testing framework that supports both concrete and symbolic
+tests.
 
-K-Michelson has two direct dependencies:
+We will cover the following topics:
 
-1. [K framework](https://github.com/kframework/k) - for building the K-Michelson
-   interpreter and executing Michelson code using the K-Michelson interpreter
-2. [Tezos client](http://tezos.gitlab.io/index.html) for cross-validation of
-   K-Michelson test execution against test execution on the reference Michelson
-   interpreter.
+1.  How to run existing K-Michelson tests
+2.  How to write your own K-Michelson tests based on new or existing Michelson
+    scripts
 
-To simplify installation, we package pinned versions of (1-2) under the `/ext`
-directory. As part of the installation process, we must first build these
-dependencies.
+Testing Overview
+----------------
 
-### Installing the Prerequisites
+In total, this framework includes three kinds of tests:
 
-The K framework and Tezos client each have a number of their own dependencies
-that must be installed before they can be built. On an Ubuntu system, do the
-following to install all needed dependencies:
+1. concrete unit tests using the `.tzt` format (defined below)
+2. symbolic unit tests using an extended `.tzt` format
+3. `kprove`-style tests
 
-```sh
-sudo apt-get install rsync git m4 build-essential patch unzip bubblewrap wget  \
-pkg-config libgmp-dev libev-dev libhidapi-dev libmpfr-dev flex bison z3        \
-libz3-dev maven python3 cmake gcc zlib1g-dev libboost-test-dev libyaml-dev     \
-libjemalloc-dev openjdk-8-jdk clang-8 lld-8 llvm-8-tools pcregrep
-```
+with type (1) tests being the least expressive/rigorous and type (3) tests
+being the most expressive and rigorous. In many cases, concrete unit tests are
+already sufficient to explore a wide range of script behaviors. Type (2)-(3)
+tests should only be used when a full _proof of correctness_ is required.
 
-Note that the JDK and Clang packages referenced above typically can be
-substituted with more recent versions without any issues.
+### Test Grammar
 
-You will also need a recent version of
-[Haskell stack](https://docs.haskellstack.org/en/stable/install_and_upgrade).
-You can either install the Ubuntu package and upgrade it locally:
+Type (1)-(2) tests use the `.tzt` format, first defined in
+[here](https://gitlab.com/tezos/tezos/-/merge_requests/1487/diffs).
+The `.tzt` format is a slight extension of the `.tz` format.
+For convenience, we briefly explain the `.tzt` grammar here.
 
-```
-sudo apt-get install haskell-stack
-stack upgrade --binary-only
-```
+The `.tzt` format can be understood as schemas applied to the
+[Micheline format](http://tezos.gitlab.io/whitedoc/micheline.html).
+More abstractly, it is an unordered set of typed fields that optionally
+contains associated data.
 
-or else get the latest version with their installer script by doing:
+#### Michelson Grammar Extensions
 
-```
-curl -sSL https://get.haskellstack.org/ | sh
-```
+In the standard Michelson grammar, there are no literals for the `operation`
+and `big_map` types. The `.tzt` format adds support for these literals because
+tests may need to refer to these kinds of values.
 
-You will additionally need to install a recent version of the
-[OCaml package manager, opam](https://opam.ocaml.org/doc/Install.html). For
-Ubuntu, the recommended installation steps are:
+1.  `operation` literals have the following form:
 
-```
-sudo apt-get install software-properties-common
-sudo add-apt-repository ppa:avsm/ppa
-sudo apt-get install opam
-```
+    - `Create_contract contract (option key_hash) mutez T byte` where
+      `contract`'s storage type is `T`
 
-For other Linux distributions, you may need to adapt the above instructions,
-especially package names and package installation commands.
-Consult your distribution documentation for details as well as the links
-above for guidance on installing Haskell Stack as well as opam.
+    - `Transfer_tokens T mutez address byte` where the `contract` value at
+       `address` has parameter type `T`
 
-### Building K-Michelson
+    - `Set_delegate (option key_hash) byte`
 
-Build the K Framework (if you don't have a global install) and Tezos
-dependencies:
+    where in each case the final `byte` argument represents a cryptographic
+    nonce.
 
-```sh
-git submodule update --init --recursive
-make deps
-```
+2.  `big_map` literals have the following form:
 
-The following command will build all versions of the semantics including:
+    - a natural number identifier referring to an indexed `big_map` in
+      the `big_maps` field (see description below)
 
-- The LLVM backend for running Michelson unit tests (`.tzt` extension);
-- The Haskell backend for running symbolic Michelson unit tests (also `.tzt`
-  extension);
-- The compatibility layers for validating the semantics against the Tezos
-  reference client.
+      Ex. `2`
 
-```sh
-make build -j8
-```
+    - a standard `map` literal
 
-Running Test Suites
--------------------
+      Ex. `{ Elt 1 True ; Elt 3 False }` (literal of type `big_map nat bool`)
 
-There are three major test-suites you may be interested in running.
+    - a pair of a `big_map` identifier and a map literal (the map literal
+      represents a difference list)
 
-The unit tests (running individual `*.tzt` programs and checking their exit
-code):
+      Ex. `Pair 2 { Elt 1 False }` (refers to the `big_map`
+      `{ Elt 1 False ; Elt 3 False }` if `2` identifies the map
+      `{ Elt 1 True  ; Elt 3 False }`)
 
-```sh
-make test-unit -j8
-```
+#### Field Types
 
-The symbolic unit tests (running individual `*.tzt` programs and checking their
-output using `lib/michelson-test-check`). Note that their are three flavours of
-symbolic unit tests. Those with the `stuck.tzt` extension, test ill-formed
-programs and are expected to get stuck before completing exectution. Those with
-the `fail.tzt` extension, are "broken" tests where assertions are expected to
-fail.
+We list the set of possible types below. Note that each field can accept only
+_one_ type.
 
-```sh
-make test-symbolic -j8
-```
+-   expression - an arbitrary Michelson expression
 
-The validation tests against the Tezos reference client:
+    Ex. `{ PUSH int 1; PUSH int -2; ADD }`
+    Ex. `{}`
 
-```sh
-make test-cross -j8
-```
+-   stack - a typed Michelson stack which is equivalent to a list of stack
+    stack elements of the form `Stack_elt type value`
 
-Running Your Own Programs
--------------------------
+    Ex. `{ Stack_elt int -1 ; Stack_elt (set int) { Elt 0 ; Elt 3 } }`
+    Ex. `{ Stack_elt bool True }`
+    Ex. `{}`
 
-### Runner Script
+-   type - any Michelson type
+
+    Ex. `bool :flag`
+    Ex. `pair nat int`
+
+-   timestamp - a Michelson timestamp literal
+
+    Ex. `0`
+    Ex. `"2019-09-26T10:59:51Z"`
+
+-   mutez - a Michelson mutez literal
+
+    Ex. `0` (minimum value)
+    Ex. `9223372036854775807` (maximum value)
+
+-   address - a Michelson address literal
+
+    Ex. `"tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx"`
+    Ex. `"KT1BEqzn5Wx8uJrZNvuS9DVHmLvG9td3fDLi"`
+
+-   chain_id - a Michelson chain_id literal
+
+    Ex. `0x00000000` (minimum value)
+    Ex. `0xFFFFFFFF` (maximum value)
+
+-   contract type map - a map of contract addresses to their parameter types
+    where each map entry has the form `Contract address type`
+
+    Ex. `{ Contract "KT1BEqzn5Wx8uJrZNvuS9DVHmLvG9td3fDLi" nat ;
+           Contract "KT1HgAM3pNzkqd1Ps8iunMGNopFRFKHWoPdW" (list int) }`
+    Ex. `{ Contract "KT1BEqzn5Wx8uJrZNvuS9DVHmLvG9td3fDLi" nat }`
+    Ex. `{}`
+
+-   big_map index map - a map of natural number indices to big_map literals
+    where each map entry has the form `Big_map nat type type map_literal`
+
+    Ex. `{ Big_map 1 string int  { Elt "bar" 1 ; Elt "foo" 2 } ;
+           Big_map 2 string bool { Elt "a" True ; Elt "b" False } }`
+    Ex. `{}`
+
+#### Field List
+
+The set of required fields and their types is listed below:
+
+-   `code` (expression) the Michelson code to be tested
+
+-   `input` (stack) the input stack supplied to the code in the `code` field
+
+-   `output` (stack) the expected output stack of the `code` field given the
+    input stack defined in `input`
+
+The format also allows for optional fields which have default values. The set
+of optional fields is defined below:
+
+-   `parameter` (type, default `unit`) defines the contract type pushed by the
+    `SELF` instruction
+
+-   `now` (timestamp, default `0`) defines the result timestamp of the `NOW`
+    instruction
+
+-   `sender` (address, default `"tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx"`)
+    defines the result of the `SENDER` instruction
+
+-   `source` (address, default `"tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx"`)
+    defines the result of the `SOURCE` instruction
+
+-   `chain_id` (chain_id, default `0x7a06a770`) defines the result of the
+    `CHAIN_ID` instruction
+
+-   `self` (address, default `"KT1BEqzn5Wx8uJrZNvuS9DVHmLvG9td3fDLi"`) defines
+    the address of the contract pushed by the `SELF` instruction
+
+-   `amount` (mutez, default `0`) defines the amount of mutez returned by the
+    `AMOUNT` instruction
+
+-   `balance` (mutez, default `0`) defines the amount of mutez returned by the
+    `BALANCE` instruction
+
+-   `other_contracts` (contract type map, default `{}`) defines the set of
+    other contracts which are available for this contract to invoke.
+
+-   `big_maps` (big_map index map, default `{}`) defines a mapping from
+    natural number indices to `big_map` literals; this allows us to write
+    `big_map` literals in the other fields as just an index.
+
+    This feature is helpful when the `big_map` literal is large.
+
+The format admits some fields which are _ignored_ for compatibility reasons.
+The set of ignored fields is defined below:
+
+-   `storage` (type) defines the storage type of the contract in `.tz` files
+
+Example Tests
+-------------
+
+Running an Existing Test
+------------------------
 
 The `kmich` script is provided as a way to access the semantics directly.
 You can do `./kmich help` for the most up-to-date information about how to use
@@ -130,7 +202,6 @@ this script.
 ### Example
 
 The semantics accepts unit tests in the format discussed
-[here](https://gitlab.com/tezos/tezos/-/merge_requests/1487/diffs).
 As an example of a unit test file, here is a test for the `DIG`
 instruction (at `tests/unit/dig_01.tzt`):
 
