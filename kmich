@@ -91,6 +91,18 @@ run_symbtest() {
 
 [[ $# -gt 0 ]] && { run_command="$1" ; shift ; }
 
+if [[ "$run_command" == 'version' ]] || [[ "$run_command" == '--version' ]]; then
+    notif "KMich Version"
+    git rev-parse --short HEAD
+    notif "K Version"
+    kompile --version
+    notif "Kore Version"
+    kore-exec --version
+    notif "Z3 Version"
+    z3 --version
+    exit 0
+fi
+
 if [[ $# -le 0 ]] || [[ "$run_command" == 'help' ]] || [[ "$run_command" == '--help' ]] ; then
     echo "
         usage: $0 run       [--backend (llvm|symbolic|contract-expander|extractor|input-creator|output-compare)] <pgm>  <K arg>*
@@ -117,18 +129,6 @@ if [[ $# -le 0 ]] || [[ "$run_command" == 'help' ]] || [[ "$run_command" == '--h
                  <output format> is the format for Kast to output the term in.
                  <def_module> is the module to take as axioms when doing verification.
     "
-    exit 0
-fi
-
-if [[ "$run_command" == 'version' ]] || [[ "$run_command" == '--version' ]]; then
-    notif "KMich Version"
-    git rev-parse --short HEAD
-    notif "K Version"
-    kompile --version
-    notif "Kore Version"
-    kore-exec --version
-    notif "Z3 Version"
-    z3 --version
     exit 0
 fi
 
