@@ -1,20 +1,3 @@
-tests/unit/compare_bytes_00.tzt
-tests/unit/compare_bytes_01.tzt
-tests/unit/compare_bytes_02.tzt
-tests/unit/compare_bytes_03.tzt
-tests/unit/compare_bytes_04.tzt
-tests/unit/concat_bytes_00.tzt
-tests/unit/concat_bytes_01.tzt
-tests/unit/concat_listbytes_00.tzt
-tests/unit/concat_listbytes_01.tzt
-tests/unit/concat_listbytes_02.tzt
-tests/unit/createcontract_00.tzt
-tests/unit/size_bytes_00.tzt
-tests/unit/slice_bytes_00.tzt
-tests/unit/slice_bytes_01.tzt
-tests/unit/slice_bytes_02.tzt
-tests/unit/slice_bytes_03.tzt
-tests/unit/slice_bytes_04.tzt
 tests/unit/sub_timestamp-int_04.tzt
 
 tests/macros/pair_00.tzt

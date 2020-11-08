@@ -375,8 +375,8 @@ The following macros are currently disabled.
     #doUnparse(P, false) +String
     ";"
 
-  rule #doUnparse(Elt S:String T:Type, _) =>
-    "Elt " +String
+  rule #doUnparse(Contract S:String T:Type, _) =>
+    "Contract " +String
     #doUnparse(S, false) +String
     " " +String
     #doUnparse(T, false)
@@ -454,36 +454,33 @@ The following macros are currently disabled.
     #doUnparse(S, false) +String
     "}"
 
-  rule #doUnparse(Create_contract(I, C, O, M, D), _) =>
-    "Create_contract (" +String
-    #doUnparse(I, true) +String
-    ", " +String
+  rule #doUnparse(Create_contract { C } O M D I, _) =>
+    "Create_contract { " +String
     #doUnparse(C, true) +String
-    ", " +String
+    " } " +String
     #doUnparse(O, true) +String
-    ", " +String
+    " " +String
     #doUnparse(M, true) +String
-    ", " +String
+    " " +String
     #doUnparse(D, true) +String
-    ")"
+    " " +String
+    #doUnparse(I, true)
 
-  rule #doUnparse(Transfer_tokens(I, O, M, A), _) =>
-    "Transfer_tokens (" +String
-    #doUnparse(I, true) +String
-    ", " +String
+  rule #doUnparse(Transfer_tokens O M A I, _) =>
+    "Transfer_tokens " +String
     #doUnparse(O, true) +String
-    ", " +String
+    " " +String
     #doUnparse(M, true) +String
-    ", " +String
+    " " +String
     #doUnparse(A, true) +String
-    ")"
+    " " +String
+    #doUnparse(I, true)
 
-  rule #doUnparse(Set_delegate(I, O), _) =>
-    "Set_delegate (" +String
-    #doUnparse(I, true) +String
-    ", " +String
+  rule #doUnparse(Set_delegate O I, _) =>
+    "Set_delegate " +String
     #doUnparse(O, true) +String
-    ")"
+    " " +String
+    #doUnparse(I, true)
 
   rule #doUnparse(( Failed D ), _) => "( Failed " +String #doUnparse(D, true) +String ")"
 

@@ -63,18 +63,13 @@ def emit_reveal(obj):
 
 def emit_transaction(obj):
     emit("Transfer_tokens")
-    emit("(")
-    emit(obj["nonce"])
-    emit(",")
     if "parameters" in obj:
         emit_expression(obj["parameters"]["value"])
     else:
         emit("Unit")
-    emit(",")
     emit(obj["amount"])
-    emit(",")
     emit(wrap_string(obj["destination"]))
-    emit(")")
+    emit(obj["nonce"])
 
 def emit_optional_delegate(obj):
     if "delegate" in obj:
@@ -85,25 +80,18 @@ def emit_optional_delegate(obj):
 
 def emit_origination(obj):
     emit("Create_contract")
-    emit("(")
-    emit(obj["nonce"])
-    emit(",")
+    emit("{")
     emit_expression(obj["script"]["code"], True)
-    emit(",")
+    emit("}")
     emit_optional_delegate(obj)
-    emit(",")
     emit(obj["balance"])
-    emit(",")
     emit_expression(obj["script"]["storage"])
-    emit(")")
+    emit(obj["nonce"])
 
 def emit_delegation(obj):
     emit("Set_delegate")
-    emit("(")
-    emit(obj["nonce"])
-    emit(",")
     emit_optional_delegate(obj)
-    emit(")")
+    emit(obj["nonce"])
 
 def emit_operation(obj):
     global BUFFER
@@ -136,7 +124,7 @@ if __name__ == "__main__":
   # get paths to important pieces
   path = os.path.dirname(os.path.realpath(__file__))
   tezos_codec = os.path.join(path, "..", "ext",    "tezos", "tezos-codec")
-  k_def_path  = os.path.join(path, "..", ".build", "defn",  "llvm")
+  k_def_path  = os.path.join(path, "..", ".build", "defn",  "contract-expander")
   # run tezos codec to get json encoded string
   json_str = run([tezos_codec, "decode", "005-PsBabyM1.operation.internal", "from", sys.argv[1]])
   # run emit operation to get K encoding of operation

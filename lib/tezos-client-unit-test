@@ -67,11 +67,16 @@ fix_address() {
     export ORIGINATION_SUBS="$TEMP_DIR/origination_subs"
     export ALL_SUBS="$TEMP_DIR/subs"
 
-    if ! grep -o '@Address([^)"]*)' "$test" | sort | uniq > "$FOUND_ADDRESSES"; then
-        touch "$FOUND_ADDRESSES"
-    fi
+    # grep pattern is for tezos contract account address literals
+    # contract account address literals are double-quoted strings with:
+    # 1. the prefix KT1
+    # 2. a suffix of length 33 written with the bitcoin base 58 alphabet, i.e., with "I", "O", "0" and "l" removed.
+    # The entire pipeline should succeed and do nothing if the grep fails
+    touch "$FOUND_ADDRESSES"
+    grep --only-matching --extended-regexp '"KT1[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{33}"' "$test" \
+        | tr -d '"' | sort | uniq > "$FOUND_ADDRESSES" || true
 
-    extract other_contracts true | tr -d '{}' | tr ';' '\n' | sed -E 's/^\s*//;s/\s*$//;s/Elt\s*"([^"]*)"\s*(.*)/\1#\2/;/^\s*$/d' > "$REAL_ADDRESSES_UNSORTED"
+    extract other_contracts true | tr -d '{}' | tr ';' '\n' | sed -E 's/^\s*//;s/\s*$//;s/Contract\s*"([^"]*)"\s*(.*)/\1#\2/;/^\s*$/d' > "$REAL_ADDRESSES_UNSORTED"
 
     export FAKE_SENDER=$(extract sender true)
     if [ ! -z $FAKE_SENDER ] && ! ( grep "$FAKE_SENDER" "$REAL_ADDRESSES_UNSORTED" ); then
