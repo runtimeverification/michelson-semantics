@@ -937,9 +937,12 @@ Core Operations
        <stack> [ int I ] ; SS => [ bool I >=Int 0 ] ; SS </stack>
 ```
 
-```k
-    rule A  >Int B => notBool( A <=Int B ) [simplification]
-    rule A >=Int B => notBool( A  <Int B ) [simplification]
+We add lemmas for symbolic reasoning which normalize integer comparisons to
+greater than; this lets us avoid writing symmetric lemmas for both cases.
+
+```symbolic
+    rule A  <Int B => B >Int  A [simplification]
+    rule A <=Int B => B >=Int A [simplification]
 ```
 
 ### Boolean Operations
@@ -1181,23 +1184,25 @@ We define `COMPARE` in terms of a `#DoCompare` function.
 The `#DoCompare` function requires additional lemmas for symbolic execution.
 
 ```symbolic
-  rule #DoCompare(V1, V2)  ==Int 0 => V1  ==K V2 [simplification]
-  rule #DoCompare(V1, V2) =/=Int 0 => V1 =/=K V2 [simplification]
+  rule 0 ==Int  #DoCompare(V1, V2) => V1  ==K V2  [simplification]
+  rule 0 =/=Int #DoCompare(V1, V2) => V1 =/=K V2  [simplification]
+  rule #DoCompare(V1, V2)  ==Int 0 => V1  ==K V2  [simplification]
+  rule #DoCompare(V1, V2) =/=Int 0 => V1 =/=K V2  [simplification]
 
   rule #DoCompare(I1:Bool, I2:Bool) <Int 0  => (I1 ==Bool false) andBool (I2 ==Bool true)                       [simplification]
   rule #DoCompare(I1:Bool, I2:Bool) <=Int 0 => ((I1 ==Bool false) andBool (I2 ==Bool true)) orBool I1 ==Bool I2 [simplification]
   rule #DoCompare(I1:Bool, I2:Bool) >=Int 0 => ((I1 ==Bool true) andBool (I2 ==Bool false)) orBool I1 ==Bool I2 [simplification]
   rule #DoCompare(I1:Bool, I2:Bool) >Int 0  => (I1 ==Bool true) andBool (I2 ==Bool false)                       [simplification]
 
-  rule #DoCompare(I1:Int, I2:Int) <Int 0  => I1 <Int I2  [simplification]
-  rule #DoCompare(I1:Int, I2:Int) <=Int 0 => I1 <=Int I2 [simplification]
+  rule 0  >Int #DoCompare(I1:Int, I2:Int) => I2 >Int I1  [simplification]
+  rule 0 >=Int #DoCompare(I1:Int, I2:Int) => I2 >=Int I1 [simplification]
   rule #DoCompare(I1:Int, I2:Int) >=Int 0 => I1 >=Int I2 [simplification]
   rule #DoCompare(I1:Int, I2:Int) >Int 0  => I1 >Int I2  [simplification]
 
-  rule #DoCompare(I1:String, I2:String) <Int 0  => I1 <String I2  [simplification]
-  rule #DoCompare(I1:String, I2:String) <=Int 0 => I1 <=String I2 [simplification]
+  rule 0  >Int #DoCompare(I1:String, I2:String) => I1 <String I2  [simplification]
+  rule 0 >=Int #DoCompare(I1:String, I2:String) => I1 <=String I2 [simplification]
   rule #DoCompare(I1:String, I2:String) >=Int 0 => I1 >=String I2 [simplification]
-  rule #DoCompare(I1:String, I2:String) >Int 0  => I1 >String I2  [simplification]
+  rule #DoCompare(I1:String, I2:String)  >Int 0 => I1 >String I2  [simplification]
 
   // TODO: at some point this rule should be builtin
   rule X ==String X => true [simplification]
