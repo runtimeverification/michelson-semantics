@@ -62,7 +62,7 @@ run_prove() {
 }
 
 run_interpret() {
-    kx --directory "$backend_dir" "${llvm_krun_args[@]}" "$run_file" "$@"
+    kx --directory "$backend_dir" "${kx_args[@]}" "$run_file" "$@"
 }
 
 run_symbtest() {
@@ -156,11 +156,9 @@ if [[ "$run_file" == '-' ]]; then
 fi
 [[ -f "$run_file" ]] || fatal "File does not exist: $run_file"
 
-llvm_krun_args=()
+kx_args=()
 ! $debug \
-    || llvm_krun_args+=(--debug)
-! echo "$backend_dir" | grep -e contract-expander -e extractor -e input-creator -e output-compare &> /dev/null \
-    || llvm_krun_args+=(-c IO '\dv{SortString{}}("on")' String kore)
+    || kx_args+=(--debug)
 
 case "$run_command-$backend" in
 
