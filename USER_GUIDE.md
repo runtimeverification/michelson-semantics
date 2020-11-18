@@ -290,9 +290,9 @@ output { FIXME }
 For example, suppose we have the following simple concrete test:
 
 ```tzt
-# simple test that passes
-input { Stack_elt int 5 ; Stack_elt int 9 }
-code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD }
+# simple_v1 - passing test
+input { Stack_elt int 5 ; Stack_elt int 9 } ;
+code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD } ;
 output { Stack_elt int 7 }
 ```
 
@@ -309,9 +309,9 @@ final output stack `5 + 2` which equals `7`.
 When we swap the two input stack elements (as shown below), it also succeeds:
 
 ```tzt
-# simple test with swapped stack that still passes
-input { Stack_elt int 9 ; Stack_elt int 5 }
-code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD }
+# simple_v2 - passing test with swapped stack
+input { Stack_elt int 9 ; Stack_elt int 5 } ;
+code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD } ;
 output { Stack_elt int 7 }
 ```
 
@@ -321,9 +321,9 @@ so obtain the final output stack `9 - 2` which also equals `7`.
 On the other hand, the following test fails:
 
 ```tzt
-# simple test that fails
-input { Stack_elt int 5 ; Stack_elt int 9 }
-code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD }
+# simple_v3 - failing test
+input { Stack_elt int 5 ; Stack_elt int 9 } ;
+code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD } ;
 output { Stack_elt int 8 }
 ```
 
@@ -388,9 +388,9 @@ values. For example, suppose we want to abstract the simple concrete test we
 saw above:
 
 ```tzt
-# simple test
-input { Stack_elt int 5 ; Stack_elt int 9 }
-code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD }
+# simple_v1 - passing test
+input { Stack_elt int 5 ; Stack_elt int 9 } ;
+code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD } ;
 output { Stack_elt int 7 }
 ```
 
@@ -399,9 +399,9 @@ output { Stack_elt int 7 }
 We can abstract the test's input stack as follows:
 
 ```tzt
-# simple test with abstracted input stack
-input { Stack_elt int $I ; Stack_elt int $J }
-code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD }
+# simple_v4 - failing test with abstracted input stack
+input { Stack_elt int $I ; Stack_elt int $J } ;
+code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD } ;
 output { Stack_elt int 7 }
 ```
 
@@ -427,12 +427,12 @@ stack element is greater than the first. We can add this constraint using a
 precondition:
 
 ```tzt
-# simple test with abstracted and constrained input stack
-input { Stack_elt int $I ; Stack_elt int $J }
+# simple_v5 - failing test with abstracted and constrained input stack
+input { Stack_elt int $I ; Stack_elt int $J } ;
 precondition {
-               { PUSH int $I ; PUSH int $J ; GT }
-             }
-code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD }
+               { PUSH int $I ; PUSH int $J ; CMPGT }
+             } ;
+code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD } ;
 output { Stack_elt int 7 }
 ```
 
@@ -449,14 +449,14 @@ We can abstract our output stack using the same mechanism we saw for
 abstracting our input stack:
 
 ```tzt
-# simple test with:
+# simple_v6 - passing test with:
 # - abstracted and constrained input stack
 # - abstracted output stack
-input { Stack_elt int $I ; Stack_elt int $J }
+input { Stack_elt int $I ; Stack_elt int $J } ;
 precondition {
-               { PUSH int $I ; PUSH int $J ; GT }
-             }
-code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD }
+               { PUSH int $I ; PUSH int $J ; CMPGT }
+             } ;
+code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD } ;
 output { Stack_elt int $K }
 ```
 
@@ -483,17 +483,17 @@ with _postconditions_. Let's add a postcondition that makes our test more
 meaningful:
 
 ```tzt
-# simple test with:
+# simple_v7 - passing test with:
 # - abstracted and constrained input stack
 # - abstracted and constrained output stack
-input { Stack_elt int $I ; Stack_elt int $J }
+input { Stack_elt int $I ; Stack_elt int $J } ;
 precondition {
-               { PUSH int $I ; PUSH int $J ; GT }
-             }
-code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD }
-output { Stack_elt int $K }
+               { PUSH int $I ; PUSH int $J ; CMPGT }
+             } ;
+code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD } ;
+output { Stack_elt int $K } ;
 postcondition {
-                { PUSH int $I ; PUSH int $K ; GT }
+                { PUSH int $I ; PUSH int $K ; CMPGT }
               }
 ```
 
