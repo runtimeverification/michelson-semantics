@@ -1055,6 +1055,12 @@ These operations map directly to their K equivalents.
   rule BinOpNumType(nat, nat) => nat
 ```
 
+For symbolic reasoning purposes, we add some simple lemmas about arithmetic:
+
+```symbolic
+  rule V:Int -Int V:Int => 0 [simplification]
+```
+
 Bitwise operations on Michelson `int`s map directly onto K `Int` functions.
 The `LSL` and `LSR` operations produce exceptions when their shift arugment
 overflows.
