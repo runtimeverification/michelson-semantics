@@ -247,13 +247,13 @@ code) if and only if:
 1.  The test file follows the extended `.tzt` format properly;
 2.  The `code` block is well-typed with respect to the (possibly symbolic)
     `input` and `output` stacks;
-3.  Given the provided `input` stack;
-    assuming each predicate in the `precondition` holds;
-    after symbolically executing the `code`;
-    the expected `output` stack _matches_ the actual (possibly symbolic)
-    output stack with assignment α;
-    and each predicate in the `postcondition`, after applying substitution α,
-    holds.
+3.  Given the provided `input` stack:
+    -   each predicate `p` in the `precondition` holds;
+    -   symbolically executing the `code` produces actual output stack `S`
+    -   the expected `output` stack _matches_ actual output stack `S`
+        with assignment α;
+    -   each predicate `q` in the `postcondition`, after applying substitution
+        α, holds.
 
 Clearly, the satisfaction conditions for symbolic tests are much more complex
 than concrete tests. On the flip side, symbolic tests have much more
