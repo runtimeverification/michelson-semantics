@@ -1,0 +1,4 @@
+# simple_v4 - failing test with abstracted input stack
+input { Stack_elt int $I ; Stack_elt int $J } ;
+code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD } ;
+output { Stack_elt int 7 }
