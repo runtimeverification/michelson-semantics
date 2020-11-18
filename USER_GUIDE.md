@@ -541,7 +541,8 @@ problem can observed even in short programs:
 
 ```tzt
 input { Stack_elt nat $N ; Stack_elt bool True } ; # N B
-code { DUP ; INT ; GT ;                            # N B
+code { DUP ;                                       # N N B
+       INT ; GT ;                                  # (N>0) N B
        LOOP { DIP { NOT } ;                        # N ¬B
               PUSH int 1 ; SWAP ; SUB ;            # (N-1) ¬B
               DUP ;                                # (N-1) (N-1) ¬B
