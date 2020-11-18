@@ -1189,10 +1189,10 @@ The `#DoCompare` function requires additional lemmas for symbolic execution.
   rule #DoCompare(V1, V2)  ==Int 0 => V1  ==K V2  [simplification]
   rule #DoCompare(V1, V2) =/=Int 0 => V1 =/=K V2  [simplification]
 
-  rule #DoCompare(I1:Bool, I2:Bool) <Int 0  => (I1 ==Bool false) andBool (I2 ==Bool true)                       [simplification]
-  rule #DoCompare(I1:Bool, I2:Bool) <=Int 0 => ((I1 ==Bool false) andBool (I2 ==Bool true)) orBool I1 ==Bool I2 [simplification]
-  rule #DoCompare(I1:Bool, I2:Bool) >=Int 0 => ((I1 ==Bool true) andBool (I2 ==Bool false)) orBool I1 ==Bool I2 [simplification]
-  rule #DoCompare(I1:Bool, I2:Bool) >Int 0  => (I1 ==Bool true) andBool (I2 ==Bool false)                       [simplification]
+  rule 0  >Int #DoCompare(I1:Bool, I2:Bool) => (notBool I1) andBool I2 [simplification]
+  rule 0 >=Int #DoCompare(I1:Bool, I2:Bool) => I1 impliesBool I2       [simplification]
+  rule #DoCompare(I1:Bool, I2:Bool) >=Int 0 => I2 impliesBool I1       [simplification]
+  rule #DoCompare(I1:Bool, I2:Bool)  >Int 0 => I1 andBool (notBool I2) [simplification]
 
   rule 0  >Int #DoCompare(I1:Int, I2:Int) => I2 >Int I1  [simplification]
   rule 0 >=Int #DoCompare(I1:Int, I2:Int) => I2 >=Int I1 [simplification]
