@@ -972,6 +972,17 @@ Core Operations
        </stack>
 ```
 
+For symbolic reasoning purposes, we add a few lemmas about boolean logic.
+
+```symbolic
+  rule false      ==Bool B            => notBool B    [simplification]
+  rule true       ==Bool B            => B            [simplification]
+  rule B          ==Bool false        => notBool B    [simplification]
+  rule B          ==Bool true         => B            [simplification]
+  rule notBool (notBool B)            => B            [simplification]
+  rule notBool B1 ==Bool notBool B2   => B1 ==Bool B2 [simplification]
+```
+
 ### Integer and Natural Operations
 
 Michelson `int` and `nat` datatypes are both represnted using the K `Int` type.
