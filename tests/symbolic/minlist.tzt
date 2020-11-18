@@ -1,0 +1,63 @@
+input  { Stack_elt (list nat) $l } ;
+code   { DUP ;                                # List List
+         IF_CONS {                            # Min Rest
+                   SWAP ;                     # Rest Min
+                   ITER @i {                  # Elt Min
+                             DUP 2 ;          # Min Elt Min
+                             DUP 2 ;          # Elt Min Elt Min
+                             CMPLT ;          # Elt<Min Elt Min
+                             IF { SWAP } {} ; # Elt Min
+                             DROP             # Min
+                           } ;
+                   SOME
+                 }
+                 { NONE nat ; }
+       } ;
+output { Stack_elt nat $min } ;
+
+invariant @i $pre { Stack_elt nat $elt ; Stack_elt nat $min }
+                  {
+                    # minimum is less than or equal to each prefix element
+                    { PUSH nat $min ; PUSH (list nat) $pre ; FOREACH { DUP 2 ; CMPLE } ; SWAP ; DROP }
+                  } ;
+
+postcondition {
+                # minimum is less than or equal to each list element
+                { IF_NONE {} { PUSH nat $min ; PUSH (list nat) $l ; FOREACH { DUP 2 ; CMPLE } } } ;
+
+                # the list is empty OR the minimum is an element in the list
+                { PUSH (list nat) $l ; PUSH nat $min ; IF_NONE { SWAP ; SIZE ; PUSH nat 0 ; CMPEQ }
+                                                               { SWAP ; EXISTS { CMPEQ } ; DROP   } }
+              }
+
+# FOREACH / EXISTS Macro Definitions
+#
+# =========================================================
+#
+# Body         /      t : S => bool : S
+# FOREACH Body / coll t : S => bool : S
+#
+# FOREACH Body => {
+#                   PUSH bool True ;  # bool   : coll t : S
+#                   SWAP ;            # coll t : bool   : S
+#                   ITER {            # t      : bool   : S
+#                          SWAP ;     # bool   : t      : S
+#                          DIG Body ; # bool   : bool   : S
+#                          AND        #          bool   : S
+#                        }
+#                 }
+#
+# =========================================================
+#
+# Body        /      t : S => bool : S
+# EXISTS Body / coll t : S => bool : S
+#
+# EXISTS Body => {
+#                  PUSH bool False ; # bool   : coll t : S
+#                  SWAP ;            # coll t : bool   : S
+#                  ITER {            # t      : bool   : S
+#                         SWAP ;     # bool   : t      : S
+#                         DIG Body ; # bool   : bool   : S
+#                         OR         #          bool   : S
+#                       }
+#                }
