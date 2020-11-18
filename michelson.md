@@ -1890,7 +1890,7 @@ identical to those defined over integers.
             => [option pair mutez mutez Some (Pair #Mutez(I1 /Int I2) #Mutez(I1 %Int I2))] ;
                SS
        </stack>
-       requires I2 >Int 0
+    requires I2 >Int 0
 ```
 
 Debugging Operations
