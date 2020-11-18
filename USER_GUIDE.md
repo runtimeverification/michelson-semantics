@@ -533,6 +533,67 @@ integer, including, for example, `-5`. Adding the constraint
 means that all negative (non-natural) values are forbidden, and thus, the
 assignment of `I` to `-5` is forbidden.
 
+#### Symbolic Tests with Loops
+
+Note that our simple test did not have any loops. That was intentional. Adding
+loops almost always complicates the analysis and verification of programs. The
+problem can observed even in short programs:
+
+```tzt
+input { Stack_elt nat $N ; Stack_elt bool True } ; # N B
+code { DUP ; INT ; GT ;                            # N B
+       LOOP { DIP { NOT } ;                        # N ¬B
+              PUSH int 1 ; SWAP ; SUB ;            # (N-1) ¬B
+              DUP ;                                # (N-1) (N-1) ¬B
+              GT                                   # (N-1>0) (N-1) ¬B
+            } ;                                    # N B
+       DROP                                        # B
+     } ;
+output { Stack_elt bool False }
+```
+
+The code for program is only 7 lines long.
+For readability, we have annotated each line with a representation of the
+stack which results from executing that line of code, where the leftmost
+item represents the stack top and the rightmost item represents the stack
+bottom.
+The program consists of a simple loop which counts down from `N` to 0.
+Each time the loop iterates once, it flips the value of the boolean in the
+second position of the input stack.
+
+Here is our burning question: is the final value of that boolean `True` or
+`False`?
+
+Given just the information in the test above, it is impossible to know.
+With some careful thought, we may realize that if we additionally know whether
+the value `N` is even or odd, we can compute the final value of the program.
+That is, the result is `True` if `N` is even and `False` if `N` is odd.
+
+However, the K-Michelson test framework is not as clever as a programmer.
+Instead of using the shortcut we identified above, it will blindly execute the
+loop until termination. In other words, the test runner will loop infinitely
+by guessing different starting values of `N`.
+
+How can we escape this endless cycle? The answer lies in a concept called a
+_loop invariant_ which allows us to summarize the unending behavior of a loop
+in a finite way.
+
+In K-Michelson, we write loop invariants in a two step process:
+
+1.  in the `code` field, we must annotate each symbolic loop with a unique
+    name, e.g. `@MYLOOP`;
+2.  for each named symbolic loop, we introduce an `invariant` field of the
+    form `invariant @MYLOOP` which defines the loop invariant for loop
+    `@MYLOOP` using a stack predicate list (see the
+    [field types reference](#field-types) for more info).
+
+In general, it is impossible to develop a method that will always give us the
+loop invariants that we want, so writing good loop invariants will always be
+somewhat of an art.
+
+For more information on this advanced topic, see our
+[primer on loop invariants](loop-invariants.md)
+
 Cross-Validating K-Michelson
 ----------------------------
 
