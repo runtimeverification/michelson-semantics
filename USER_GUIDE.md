@@ -90,31 +90,33 @@ We now survey the two available test formats:
     it asserts that its input and output are always identical.
 
     ```tzt
-    input  { Stack_elt nat $N } ;
-    output { Stack_elt nat $C } ;
-    code   { DUP ;
-             PUSH nat 0 ;
-             SWAP ;
-             INT ;
-             GT ;
-             LOOP @I { PUSH nat 1 ;
-                       ADD ;
-                       DUP ;
-                       DUP 3 ;
-                       SWAP ;
-                       CMPLT
-                     } ;
-             DIP { DROP }
+    input { Stack_elt nat $N0 } ;
+    code { INT ;
+           DUP ;
+           PUSH nat 0 ;
+           SWAP ;
+           GT ;
+           LOOP @I {
+               PUSH nat 1 ;
+               ADD ;
+               DIP {
+                 PUSH nat 1 ;
+                 SWAP ;
+                 SUB
+               } ;
+               DUP 2 ;
+               GT
            } ;
+           DIP { DROP }
+    } ;
     invariant @I
-      { Stack_elt bool $GUARD ; Stack_elt nat $C ; Stack_elt nat $N  }
-      { { PUSH nat $N ; PUSH nat $C ; COMPARE ; LE }
-      ; { PUSH nat $N ; PUSH nat $C ; COMPARE ; LT ;
-          PUSH bool $GUARD ;
-          COMPARE ; EQ
-        }
+      { Stack_elt bool $GUARD ; Stack_elt nat $C ; Stack_elt int $N }
+      { { PUSH int $N ; PUSH nat $N0 ; INT ; CMPGE ; PUSH int $N ; GE ; AND }
+      ; { PUSH int $N ; PUSH nat $N0 ; SUB ; PUSH nat $C ; INT ; CMPEQ }
+      ; { PUSH int $N ; GT ; PUSH bool $GUARD ; CMPEQ }
       } ;
-    postcondition { { PUSH nat $N ; PUSH nat $C ; COMPARE ; EQ } }
+    output { Stack_elt nat $C } ;
+    postcondition { { PUSH nat $N0 ; PUSH nat $C ; COMPARE ; EQ } }
     ```
 
 Note that, in many cases, type (1) tests are already sufficient to explore a
@@ -199,6 +201,15 @@ Concrete unit tests are run using the `kmich interpret` subcommand, e.g.,
 ./kmich interpret tests/unit/concat_bytes_00.tzt
 ```
 
+The test runner will consider a concrete test passed (i.e. return a `0` exit
+code) if and only if:
+
+1.  The test file follows the `.tzt` format properly;
+2.  The `code` block is well-typed with respect to the `input` and `output`
+    stacks;
+3.  Given the provided `input`, after executing the `code`, the Michelson
+    interpreter returns exactly the `output` stack.
+
 ### Running a Symbolic Unit Test
 
 Symbolic unit tests reside in the `/tests/symbolic` folder in this archive.
@@ -230,13 +241,297 @@ Symbolic unit tests are run using the `kmich symbtest` subcommand, e.g.,
 ./kmich symbtest tests/symbolic/add-parity.tzt
 ```
 
+The test runner will consider a symbolic test passed (i.e. return a `0` exit
+code) if and only if:
+
+1.  The test file follows the extended `.tzt` format properly;
+2.  The `code` block is well-typed with respect to the (possibly symbolic)
+    `input` and `output` stacks;
+3.  Given the provided `input` stack;
+    assuming each predicate in the `precondition` holds;
+    after symbolically executing the `code`;
+    the expected `output` stack _matches_ the actual (possibly symbolic)
+    output stack with assignment α;
+    and each predicate in the `postcondition`, after applying substitution α,
+    holds.
+
+Clearly, the satisfaction conditions for symbolic tests are much more complex
+than concrete tests. On the flip side, symbolic tests have much more
+expressive power than concrete tests; they can _prove_ correctness of a
+program for _any_ valid input as opposed to just _some_ valid input.
+
 Writing Your Own K-Michelson Tests
 ----------------------------------
 
-An easy way to boostrap writing a new test is to copy and existing test and
-modify it. This helps ensure that the test file has the correct format.
+As mentioned above, K-Michelson supports concrete and symbolic tests.
+We consider both cases separately.
 
-**TODO**: finish writing this section.
+### Concrete Tests
+
+Writing your own concrete tests is as simple as writing three fields:
+
+1. an input stack
+2. a code block to execute using (1)
+3. an expected output stack after executing (2)
+
+An easy way to get started is to copy the concrete test template below and
+replace each instance of `FIXME` with a valid expression of the correct type
+such that the resulting Michelson expression in the `code` field is well-typed
+with respect to the input stack and output stack.
+
+See the [field type reference](#field-types) for more information.
+
+```tzt
+input { FIXME } ;
+code { FIXME } ;
+output { FIXME }
+```
+
+For example, suppose we have the following simple concrete test:
+
+```tzt
+# simple test that passes
+input { Stack_elt int 5 ; Stack_elt int 9 }
+code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD }
+output { Stack_elt int 7 }
+```
+
+In words, this test does the following:
+
+1. Check if the first stack element is less than the second;
+2. If yes, return the first stack element plus two;
+3. Otherwise, return the first stack element minus two.
+
+This test passes according to our definition of successful concrete test
+because, given the input stack, we observe that `5 < 9`, and so obtain the
+final output stack `5 + 2` which equals `7`.
+
+When we swap the two input stack elements (as shown below), it also succeeds:
+
+```tzt
+# simple test with swapped stack that still passes
+input { Stack_elt int 9 ; Stack_elt int 5 }
+code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD }
+output { Stack_elt int 7 }
+```
+
+This is because, given the input stack, we see that `9 < 5` is _not_ true, and
+so obtain the final output stack `9 - 2` which also equals `7`.
+
+On the other hand, the following test fails:
+
+```tzt
+# simple test that fails
+input { Stack_elt int 5 ; Stack_elt int 9 }
+code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD }
+output { Stack_elt int 8 }
+```
+
+This is because, our final actual output stack is `7` but our expected output
+stack is `8`.
+
+### Symbolic Tests
+
+For symbolic tests, the situation is slightly more complex. As in the concrete
+case, the three fields above are required. However, in the case of symbolic
+tests, the `input` and `output` fields are slightly more flexible, because
+they support symbolic as well as concrete stacks. Before we continue, it will
+be helpful to review what concrete and symbolic stacks look like and what
+we can do with them.
+
+#### Symbolic Stacks and Matching
+
+As a simple example, the following stack is _concrete_:
+
+```
+# Concrete Stack A
+{ Stack_elt bool true ; Stack_elt int -15 ; Stack_elt nat 87 }
+```
+
+On the other hand, the following stack is _symbolic_ (we interchangeably use
+the word _abstract_):
+
+```
+# Abstract Stack B
+{ Stack_elt bool $T ; Stack_elt int -15 ; Stack_elt nat $P }
+```
+
+Why? Because it has two variables, `T` and `P`. Concrete stacks have no
+variables, by definition.
+
+Furthermore, we say that a stack called `B` _matches_ a stack called `A` if
+and only if:
+
+-   each concrete value in stack `B` is equivalent to a concrete element in
+    the corresponding position in stack `A`
+-   each variable in stack `B` matches the type of the element in the
+    corresponding position in stack `A`.
+-   if a variable in stack `B` occurs more than once, the corresponding values
+    at each position in `A` are equivalent.
+
+In the example above, `B` does indeed match `A` becuase:
+
+1.  Variable `T` in stack `B` at position 1 has type `bool`. The concrete
+    value `true` in stack `A` at position 1 also has type `bool`.
+
+2.  Similarly, the concrete value `-15` with type `int` occurs as position 2
+    in both stack `B` and stack `A`.
+
+3.  Finally, the variable `P` in stack `B` at position 3 has type `nat` and
+    the element at position 3 in stack `A` also has type `nat`.
+
+#### Writing Tests by Abstraction
+
+A common way that symbolic tests are written is by _abstraction_, that is,
+we replace concrete values in the input and output stacks with symbolic
+values. For example, suppose we want to abstract the simple concrete test we
+saw above:
+
+```tzt
+# simple test
+input { Stack_elt int 5 ; Stack_elt int 9 }
+code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD }
+output { Stack_elt int 7 }
+```
+
+##### Input Stack Abstraction
+
+We can abstract the test's input stack as follows:
+
+```tzt
+# simple test with abstracted input stack
+input { Stack_elt int $I ; Stack_elt int $J }
+code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD }
+output { Stack_elt int 7 }
+```
+
+Clearly, at this point, the test is incorrect. Why? In the abstracted stack,
+all information about the relationship between the two stack values is lost,
+except their type information. This means, for one thing, that both branches
+of the `IF` are possible, depending on whether `I < J` is true or false.
+
+Additionally, we need to sure that for any two integers `I` and `J` that:
+
+-   if `I < J` is true, then `7 = I + 2`
+-   if `I < J` is _not_ true, then `7 = I - 2`
+
+But we can find examples where this does not follow. For example, let `I`
+equal `4`.
+
+- if `J` equals `5`, then `I < J` is true but `7 != 4 + 2`
+- if `J` equals `2`, then `I < J` is _not_ true but `7 != 4 - 2`
+
+For this reason, we need to introduce _preconditions_ to constrain our input
+stack. For example, we may want to reintroduce the constraint that the second
+stack element is greater than the first. We can add this constraint using a
+precondition:
+
+```tzt
+# simple test with abstracted and constrained input stack
+input { Stack_elt int $I ; Stack_elt int $J }
+precondition {
+               { PUSH int $I ; PUSH int $J ; GT }
+             }
+code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD }
+output { Stack_elt int 7 }
+```
+
+Observe that, given this precondition, the second branch of the `IF`
+expression is no longer viable. Thus, we have simplified our test state space.
+However, our test is still incorrect, since the counterexample that we saw
+above where `I` equals `4` and `J` equals `5` still holds.
+
+To resolve this problem, we also need to abstract our output stack.
+
+##### Output Stack Abstraction
+
+We can abstract our output stack using the same mechanism we saw for
+abstracting our input stack:
+
+```tzt
+# simple test with:
+# - abstracted and constrained input stack
+# - abstracted output stack
+input { Stack_elt int $I ; Stack_elt int $J }
+precondition {
+               { PUSH int $I ; PUSH int $J ; GT }
+             }
+code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD }
+output { Stack_elt int $K }
+```
+
+Here, the concrete value `7` was replaced by the variable `K`. Perhaps
+surprisingly, this test now _passes_. Why? There is a fundamental asymmetry
+between abstracting the input stack and the output stack.
+
+When we abstract the input stack, we need to check that the test passes for
+_all_ possible instances of our input variables.
+
+When we abstract the expected output stack, we only need to check that the
+test passes for _any_ possible instance of our output variables.
+
+The upshot of all of this is: for this version of our symbolic test, the test
+will pass if it well-typed, that is, if it produces a singleton stack with an
+integer.
+
+We may rightly feel that this test is too weak, since we can type-check
+Michelson contracts directly using the type-checker; a complex test like
+ours is entirely unnecessary.
+
+Instead, much as we did for input stacks, we can constrain our output stack
+with _postconditions_. Let's add a postcondition that makes our test more
+meaningful:
+
+```tzt
+# simple test with:
+# - abstracted and constrained input stack
+# - abstracted and constrained output stack
+input { Stack_elt int $I ; Stack_elt int $J }
+precondition {
+               { PUSH int $I ; PUSH int $J ; GT }
+             }
+code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD }
+output { Stack_elt int $K }
+postcondition {
+                { PUSH int $I ; PUSH int $K ; GT }
+              }
+```
+
+This postcondition (correctly) asserts that our output value `K` has a value
+which is greater than our input argument `I`. It must hold because, by our
+precondition, the exact value of our output stack will be `I + 2`.
+When we substitute `K` for `I + 2` by stack matching, we see that `I + 2 > I`,
+as required.
+
+##### Aside on Stack Abstraction and Constraints
+
+In general, due to the asymmetry between abstracted input and output stacks:
+
+-   abstracting our input stack makes a test _less_ likely to pass;
+-   abstracting our output stack makes a test _more_ likely to pass.
+
+In the end, if we fully abstract both our input and output stacks with unique
+and non-repeated variable names, a successful test run just means that our
+Michelson expression was well-typed.
+
+To compensate for the imprecision introduced by abstraction, we can add
+constraints via preconditions and postconditions, as we did above. These
+constraints reverse the trends above, that is:
+
+-   adding more constraints via preconditions to an abstract input stack makes
+    a test _more_ likely to pass:
+-   adding more constraints via postconditions to an abstract output stack
+    makes a test _less_ likely to pass.
+
+One way to think about constraints is that they make an abstract stack
+_less abstract_, because the constraints forbid some assignments of variables
+to values that would otherwise be permitted.
+
+For example, the abstract stack `{ Stack_elt int $I }` permits `I` to be any
+integer, including, for example, `-5`. Adding the constraint
+`{ PUSH int $I ; ISNAT }`
+means that all negative (non-natural) values are forbidden, and thus, the
+assignment of `I` to `-5` is forbidden.
 
 Cross-Validating K-Michelson
 ----------------------------
@@ -275,7 +570,7 @@ For convenience, we briefly explain the `.tzt` grammar here.
 The `.tzt` format can be understood as schemas applied to the
 [Micheline format](http://tezos.gitlab.io/whitedoc/micheline.html).
 More abstractly, it is an unordered set of typed fields that optionally
-contains associated data.
+contain associated data.
 
 #### Michelson Grammar Extensions
 
@@ -333,6 +628,19 @@ _one_ type.
     Ex. `{ Stack_elt bool True }`
 
     Ex. `{}`
+
+-   result stack - a typed Michelson stack or a stack representing a failed
+    computation which comes in four forms:
+
+    Ex. Any stack literal
+
+    Ex. `(Failed D)` where `D` is any Michelson data literal
+
+    Ex. `(MutezOverflow I J)` where `I` and `J` are mutez literals
+
+    Ex. `(MutezUnderflow I J)` where `I` and `J` are mutez literals
+
+    Ex. `(GeneralOverflow I J)` where `I` and `J` are number literals
 
 -   type - any Michelson type
 
@@ -417,8 +725,8 @@ The set of required fields and their types is listed below:
 
 -   `input` (stack) the input stack supplied to the code in the `code` field
 
--   `output` (stack) the expected output stack of the `code` field given the
-    input stack defined in `input`
+-   `output` (result stack) the expected output stack of the `code` field
+    given the input stack defined in `input`
 
 The format also allows for optional fields which have default values. The set
 of optional fields is defined below:
