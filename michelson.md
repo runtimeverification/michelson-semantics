@@ -2336,11 +2336,12 @@ The following two macros are left for future implementation work.
   rule <k> M:UnpairMacro  _ => #Eval(#Trim(2,1,#UnpairMacroToString(M)),  M) ... </k>
 ```
 
-### Logical Macro Definition
+### Logical Macro Evaluation
 
-Logical macros have separate concrete and symbolic implementations. The
-concrete implementation is based off of a functional fold implemented in
-Michelson.
+Logical macros are primarily used to enable specialized symbolic reasoning;
+however, given our desire to have a notation that can be used for formal
+proof and simultaneously is valid Michelson code, we also provide a concrete
+implementation.
 
 ```concrete
   rule <k> FORALL _ ContextType SeqType Body
@@ -2365,18 +2366,27 @@ Michelson.
 
   syntax Block ::= #FOLD(Type, Type, Type, Block, Data, Block) [function]
   // --------------------------------------------------------------------
-  rule #FOLD(CT,ST,RT,Body,Const,Fold)
-    => { LAMBDA .AnnotationList (pair .AnnotationList CT ST) RT Body ;
+  rule #FOLD(ContextType,
+             SeqType,
+             AccumulatorType,
+             MapFunc,  // (ContextType, SeqType) -> AccumulatorType
+             AccumulatorBase,
+             FoldFunc) // AccumulatorType AccumulatorType -> AccumulatorType
+    => { LAMBDA .AnnotationList
+           (pair .AnnotationList ContextType SeqType)
+           AccumulatorType
+           MapFunc ;
          DIG .AnnotationList 2 ;             // D L S
          APPLY .AnnotationList ;             // L' S
-         PUSH .AnnotationList RT Const ;     // B L' S
+         PUSH .AnnotationList
+           AccumulatorType AccumulatorBase ; // B L' S
          SWAP .AnnotationList ;              // L' B S
          DIG .AnnotationList 2 ;             // S L' B
          ITER .AnnotationList {              // E L' B
                 DUP .AnnotationList 2 ;      // L' E L' B
                 DIP .AnnotationList {        // L' | E L' B
                       EXEC .AnnotationList ; // L' | B1 B
-                      Fold                   // L' | B2
+                      FoldFunc               // L' | B2
                     }                        // L' B2
               } ;
          DROP .AnnotationList                // B2
