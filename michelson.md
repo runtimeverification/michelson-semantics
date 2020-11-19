@@ -2348,8 +2348,8 @@ Michelson.
                  SeqType,
                  bool .AnnotationList,
                  Body,
-                 #Push(bool, true),
-                 AND .AnnotationList)
+                 true,
+                 { AND .AnnotationList })
            ...
        </k>
 
@@ -2358,18 +2358,18 @@ Michelson.
                  SeqType,
                  bool .AnnotationList,
                  Body,
-                 #Push(bool, false),
-                 OR .AnnotationList)
+                 false,
+                 { OR .AnnotationList })
            ...
        </k>
 
-  syntax Block ::= FOLD(Type, Type, Type, Block, Instruction, Instruction) [function]
-  // --------------------------------------------------------------------------------
+  syntax Block ::= #FOLD(Type, Type, Type, Block, Data, Block) [function]
+  // --------------------------------------------------------------------
   rule #FOLD(CT,ST,RT,Body,Const,Fold)
     => { LAMBDA .AnnotationList (pair .AnnotationList CT ST) RT Body ;
          DIG .AnnotationList 2 ;             // D L S
          APPLY .AnnotationList ;             // L' S
-         Const ;                             // B L' S
+         PUSH .AnnotationList RT Const ;     // B L' S
          SWAP .AnnotationList ;              // L' B S
          DIG .AnnotationList 2 ;             // S L' B
          ITER .AnnotationList {              // E L' B
