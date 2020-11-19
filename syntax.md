@@ -387,6 +387,14 @@ The following macros can be validated at parse-time.
   syntax Macro ::= "MAP_CDR" AnnotationList Block
 ```
 
+The following macros are specialized; they have different implementations in
+the concrete and symbolic backends.
+
+```k
+  syntax Macro ::= "FORALL" AnnotationList Type Type Block
+                 | "EXISTS" AnnotationList Type Type Block
+```
+
 ### Primitive Applications
 
 We do not correctly parse Micheline primitive applications; we currently work

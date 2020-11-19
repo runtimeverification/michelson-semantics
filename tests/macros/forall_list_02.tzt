@@ -1,0 +1,3 @@
+code { FORALL int int { UNPAIR ; CMPLT } } ;
+input { Stack_elt (list int) { 4 ; 2 ; 6 } ; Stack_elt int 3 } ;
+output { Stack_elt bool False }

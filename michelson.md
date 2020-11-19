@@ -2327,13 +2327,60 @@ Michelson instructions.
     rule #DIP(S,Body) => DIP .AnnotationList lengthString(S) Body
     ```
 
-#### Unimplemented Macros
+### Unimplemented Macros
 
 The following two macros are left for future implementation work.
 
 ```disabled
   rule <k> M:PairMacro    _ => #Eval(#Trim(1,1,#PairMacroToString(M)),    M) ... </k>
   rule <k> M:UnpairMacro  _ => #Eval(#Trim(2,1,#UnpairMacroToString(M)),  M) ... </k>
+```
+
+### Logical Macro Definition
+
+Logical macros have separate concrete and symbolic implementations. The
+concrete implementation is based off of a functional fold implemented in
+Michelson.
+
+```concrete
+  rule <k> FORALL _ ContextType SeqType Body
+        => #FOLD(ContextType,
+                 SeqType,
+                 bool .AnnotationList,
+                 Body,
+                 #Push(bool, true),
+                 AND .AnnotationList)
+           ...
+       </k>
+
+  rule <k> EXISTS _ ContextType SeqType Body
+        => #FOLD(ContextType,
+                 SeqType,
+                 bool .AnnotationList,
+                 Body,
+                 #Push(bool, false),
+                 OR .AnnotationList)
+           ...
+       </k>
+
+  syntax Block ::= FOLD(Type, Type, Type, Block, Instruction, Instruction) [function]
+  // --------------------------------------------------------------------------------
+  rule #FOLD(CT,ST,RT,Body,Const,Fold)
+    => { LAMBDA .AnnotationList (pair .AnnotationList CT ST) RT Body ;
+         DIG .AnnotationList 2 ;             // D L S
+         APPLY .AnnotationList ;             // L' S
+         Const ;                             // B L' S
+         SWAP .AnnotationList ;              // L' B S
+         DIG .AnnotationList 2 ;             // S L' B
+         ITER .AnnotationList {              // E L' B
+                DUP .AnnotationList 2 ;      // L' E L' B
+                DIP .AnnotationList {        // L' | E L' B
+                      EXEC .AnnotationList ; // L' | B1 B
+                      Fold                   // L' | B2
+                    }                        // L' B2
+              } ;
+         DROP .AnnotationList                // B2
+       }
 ```
 
 ### Macro Evaluation Auxiliary Functions
