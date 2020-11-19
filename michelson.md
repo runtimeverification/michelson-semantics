@@ -2343,6 +2343,14 @@ however, given our desire to have a notation that can be used for formal
 proof and simultaneously is valid Michelson code, we also provide a concrete
 implementation.
 
+First, we give the typing rules:
+
+- `FORALL t t' Body : (seq t') t A -> bool A`
+- `EXISTS t t' Body : (seq t') t A -> bool A`
+
+where `t` is the context type, `t'` is the sequence type, and `A` is an
+arbitrary stack type.
+
 ```concrete
   rule <k> FORALL _ ContextType SeqType Body
         => #FOLD(ContextType,
@@ -2391,6 +2399,31 @@ implementation.
               } ;
          DROP .AnnotationList                // B2
        }
+```
+
+The symbolic implementation is based on true quantification.
+
+FIXME: we probably need to compile the body code into some kind of low-level
+       expression her if we want to get any kind of mileage out of this.
+
+```symbolic
+  rule <k> FORALL _ CT ST Body => #MakeFresh(ST) ~> #FORALL CT ST Body... </k>
+
+  rule <k> #FORALL CT ST Body
+        ~> PAIR
+        ~> Body
+        ~> #FORALL(ST, Seq, Stack)
+           ...
+       </k>
+       <stack> [ST Abs] ; [list ST Seq] ; [CT Context] ; Stack
+            => [ST Abs] ; [CT Context] ; .Stack
+       </stack>
+
+  rule <k> #FORALL(ST, Seq, Stack) => .K
+       </k>
+       <stack> [bool Exp] </stack>
+
+  rule <k> EXISTS CT ST Body => .K ... </k>
 ```
 
 ### Macro Evaluation Auxiliary Functions
