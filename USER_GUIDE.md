@@ -145,14 +145,8 @@ documentation for more details if needed.
 Running Existing K-Michelson Tests
 ----------------------------------
 
-Since K-Michelson is derived from the K Framework, running tests just means
-calling one of the K utilities, e.g., `krun`, `kprove`, etc. However, due to
-their general nature, these utilities must accept a wide range of options that
-K-Michelson does not need.
-
-Thus, we provide a runner script `kmich` which invokes the underlying K
-utilities with the correct options automatically.
-
+To run a `tzt` test we may use the `kmich` script. 
+This script is a thin wrapper around K tools such as `krun`, `kprove`, and provides a more user friendly, but constrained interface, for running tests.
 To see the full range of options avaialable, run:
 
 ```
@@ -165,7 +159,7 @@ non-zero code indicates an error.
 
 ### Running a Concrete Unit Test
 
-Concrete unit tests reside in the `/tests/unit` folder in this archive.
+Example concrete unit tests reside in the `/tests/unit` folder in this archive.
 The file `/tests/unit/concate_bytes_00.tzt` is a unit test for the `CONCAT`
 instruction.
 
@@ -192,7 +186,7 @@ code) if and only if:
 
 ### Running a Symbolic Unit Test
 
-Symbolic unit tests reside in the `/tests/symbolic` folder in this archive.
+Example symbolic unit tests reside in the `/tests/symbolic` folder in this archive.
 The file `/tests/symbolic/add-party.tzt` is a unit test which tests whether
 adding two numbers of opposite parity (an even and odd number) always produces
 an odd number:
