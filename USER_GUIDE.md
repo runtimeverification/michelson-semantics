@@ -44,7 +44,7 @@ Testing with K-Michelson is more thorough because it enables you to:
 -   verify correctness of _concrete and symbolic_ Michelson programs.
     That is, while traditional testing allows checking pairs of input and output values,
     K-Michelson allows testing over classes of inputs (such as all integers).
-    This is explained in greater detail in the [symbolic test below.](#quick-start-and-examples)
+    This is explained in greater detail in the [symbolic test below.](#symbolic-tests)
 
 A secondary purpose of K-Michelson is to provide a formal, executable, and
 human-readable semantics of the Michelson blockchain programming language
