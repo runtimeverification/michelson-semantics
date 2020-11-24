@@ -66,6 +66,9 @@ information.
 
 The `tzt` test format is similar to the Tezos script format.
 A minimal test must include the `code`, `input` and `output` parameters.
+The  `code` field specifies the Michelson expression to be tested.
+The `input` field specifies the initial stack.
+The `output` field specifies the expected final stack.
 
 For example, this test asserts adding `5` to `5` produces `10`.
 
@@ -75,8 +78,8 @@ input { Stack_elt int 5 ; Stack_elt int 5 } ;
 output { Stack_elt int 10 }
 ```
 
-Tests may also be run over classes of inputs instead of particular concete values.
-To do so, we must use "symbolic variables" such as `$N` in the next example.
+Tests may also be run over classes of inputs instead of particular concrete values.
+To do so, we may use "symbolic variables" in the `input` and `output` fields such as `$N` in the next example.
 Here, we assert that `N + 1 > 0` for any natural number `N`.
 
 ```tzt
@@ -85,9 +88,9 @@ input { Stack_elt nat $N ; Stack_elt nat 1 ; Stack_elt nat 0 ; }
 output { Stack_elt bool True }
 ```
 
-For tests that use loops, K-Michelson needs each loop to be anotated with a
+For tests that use loops, K-Michelson needs each loop to be annotated with a
 "loop invariant". Invariants are required to hold when the program reaches the
-loop, and also at the end of the loop iteration.
+loop, and also at the end of each loop iteration.
 
 ```tzt
 input { Stack_elt nat $N0 } ;
@@ -119,9 +122,18 @@ output { Stack_elt nat $C } ;
 postcondition { { PUSH nat $N0 ; PUSH nat $C ; COMPARE ; EQ } }
 ```
 
+Here, the `precondition` field specifies the test preconditions, i.e., a list of
+boolean functions that must hold before `code` executes for the test to succeed;
+in particular, preconditions can constrain symbolic input values.
+The  `postcondition` field specifies the test postconditions, i.e., a list of boolean
+functions that must hold after `code` executes for the test to succeed;
+in particular, postconditions can constrian symbolic output values.
+The `invariant` field specifies loop invariants for `LOOP` and `LOOP_LEFT`; in
+particular, loop invariants are necessary when looping with symbolic
+values. One `invariant` field is required for each loop in the code.
+
 We call tests that use symbolic variables "symbolic tests", and all other tests
 "concrete tests".
-
 Concrete tests are already sufficient to explore a wide range of script behaviors and can be executed much more quickly.
 Symbolic tests tests allow us to perform a full _proof of correctness_ when required, but are much more expensive to run.
 
@@ -129,40 +141,6 @@ Since K-Michelson is derived from the K Framework, it also allows us to use the
 full power `kprove` for more advanced proofs, but a full definition of such
 tests is outside the scope of this document. Consult the K Framework
 documentation for more details if needed.
-
-### Test Field Overview
-
-Essentially, a K-Michelson test file can be understood a set of fields.
-We survey only the most important fields here; a complete listing of test
-fields can be found in the
-[K-Michelson Test Grammar Reference](#k-michelson-test-grammar-reference).
-
-The following fields are useful for all kinds of K-Michelson tests:
-
--   `code` specifies the Michelson expression to be tested.
-
--   `input` specifies the input stack (possibly with symbolic values).
-
--   `output` specifies the expected output stack (possibly with symbolic
-    values).
-
-The following fields are primarily useful for _symbolic_ tests:
-
--   `precondition` specifies the test preconditions, i.e., a list of boolean
-    functions that must hold before `code` executes for the test to succeed;
-    in particular, preconditions can constrain symbolic input values.
-
--   `postcondition` specifies the test postconditions, i.e., a list of boolean
-    functions that must hold after `code` executes for the test to succeed;
-    in particular, postconditions can constrian symbolic output values.
-
--   `invariant` specifies loop invariants for `LOOP` and `LOOP_LEFT`; in
-    particular, loop invariants are necessary when looping with symbolic
-    values.
-
-See
-[Writing Your Own K-Michelson Tests](#writing-your-own-k-michelson-tests)
-for more details on how to use these fields.
 
 Running Existing K-Michelson Tests
 ----------------------------------
