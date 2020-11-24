@@ -12,7 +12,7 @@ Table of Contents
 
 1.  [Table of Contents](#table-of-contents)
 2.  [Introduction to K-Michelson](#introduction-to-k-michelson)
-3.  [Running Existing K-Michelson Tests](#running-existing-k-michelson-tests)
+3.  [Quick start and examples](#quick-start-and-examples)
 4.  [Writing Your Own K-Michelson Tests](#writing-your-own-k-michelson-tests)
 5.  [Cross-Validating K-Michelson](#cross-validating-k-michelson)
 6.  [K-Michelson Test Grammar Reference](#k-michelson-test-grammar-reference)
@@ -44,7 +44,7 @@ Testing with K-Michelson is more thorough because it enables you to:
 -   verify correctness of _concrete and symbolic_ Michelson programs.
     That is, while traditional testing allows checking pairs of input and output values,
     K-Michelson allows testing over classes of inputs (such as all integers).
-    This is explained in greater detail in the [symbolic test below.](#the-tezos-test-format-tzt)
+    This is explained in greater detail in the [symbolic test below.](#quick-start-and-examples)
 
 A secondary purpose of K-Michelson is to provide a formal, executable, and
 human-readable semantics of the Michelson blockchain programming language
@@ -62,7 +62,7 @@ using the K Framework. In this sense, it acts as:
 See [Cross-Validating K-Michelson](#cross-validating-k-michelson) for more
 information.
 
-### The Tezos Test format (`tzt`)
+## Quick start and examples
 
 The `tzt` test format is similar to the Tezos script format.
 A minimal test must include the `code`, `input` and `output` parameters.
@@ -73,19 +73,76 @@ The `output` field specifies the expected final stack.
 For example, this test asserts adding `5` to `5` produces `10`.
 
 ```tzt
+# add_5_5.tzt
 code { ADD } ;
 input { Stack_elt int 5 ; Stack_elt int 5 } ;
 output { Stack_elt int 10 }
 ```
 
-Tests may also be run over classes of inputs instead of particular concrete values.
-To do so, we may use "symbolic variables" in the `input` and `output` fields such as `$N` in the next example.
-Here, we assert that `N + 1 > 0` for any natural number `N`.
+These `tzt` tests we may be run with the `interpret` subcommand of the `kmich` script: 
+
+```sh
+./kmich interpret add_5_5.tzt
+```
+
+When the `kmich` script finishes executing a test, it returns an exit code
+indicating whether an error occurred, i.e., `0` indicates success and a
+non-zero code indicates an error.
+
+This script is a thin wrapper around K tools such as `krun`, `kprove`, and
+provides a more user friendly, but constrained interface, for running tests.
+To see the full range of options avaialable, run:
+
+```sh
+./kmich help
+```
+
+Additional example concrete unit tests reside in the `/tests/unit` folder in this archive.
+The file `/tests/unit/concate_bytes_00.tzt` is a unit test for the `CONCAT`
+instruction.
 
 ```tzt
+code { CONCAT } ;
+input { Stack_elt bytes 0xFF ; Stack_elt bytes 0xcd } ;
+output { Stack_elt bytes 0xffcd }
+```
+
+These may be run using a similar command:
+
+```sh
+./kmich interpret tests/unit/concat_bytes_00.tzt
+```
+
+The test runner will consider a concrete test passed (i.e. return a `0` exit
+code) if and only if:
+
+1.  The test file follows the `.tzt` format properly;
+2.  The `code` block is well-typed with respect to the `input` and `output`
+    stacks;
+3.  Given the provided `input`, after executing the `code`, the Michelson
+    interpreter returns exactly the `output` stack.
+
+#### Symbolic tests
+
+Tests may also be run over classes of inputs instead of particular concrete values.
+To do so, we may use "symbolic variables" in the `input` and `output` fields such as `$N` in the next example.
+We call tests that use symbolic variables "symbolic tests", and all other tests "concrete tests".
+Concrete tests are already sufficient to explore a wide range of script behaviors and can be executed much more quickly.
+Symbolic tests tests allow us to perform a full _proof of correctness_ when required, but are much more expensive to run.
+
+In the next test, we assert that `N + 1 > 0` for any natural number `N`:
+
+```tzt
+# n_plus_1.tzt
 code { ADD ; CMPGT }
 input { Stack_elt nat $N ; Stack_elt nat 1 ; Stack_elt nat 0 ; }
 output { Stack_elt bool True }
+```
+
+Symbolic unit tests are run using the `kmich symbtest` subcommand:
+
+```sh
+./kmich symbtest n_plus_1.tzt
 ```
 
 For tests that use loops, K-Michelson needs each loop to be annotated with a
@@ -132,61 +189,7 @@ The `invariant` field specifies loop invariants for `LOOP` and `LOOP_LEFT`; in
 particular, loop invariants are necessary when looping with symbolic
 values. One `invariant` field is required for each loop in the code.
 
-We call tests that use symbolic variables "symbolic tests", and all other tests
-"concrete tests".
-Concrete tests are already sufficient to explore a wide range of script behaviors and can be executed much more quickly.
-Symbolic tests tests allow us to perform a full _proof of correctness_ when required, but are much more expensive to run.
-
-Since K-Michelson is derived from the K Framework, it also allows us to use the
-full power `kprove` for more advanced proofs, but a full definition of such
-tests is outside the scope of this document. Consult the K Framework
-documentation for more details if needed.
-
-Running Existing K-Michelson Tests
-----------------------------------
-
-To run a `tzt` test we may use the `kmich` script. 
-This script is a thin wrapper around K tools such as `krun`, `kprove`, and provides a more user friendly, but constrained interface, for running tests.
-To see the full range of options avaialable, run:
-
-```
-./kmich help
-```
-
-When the `kmich` runner finishes executing a test, it returns an exit code
-indicating whether an error occurred, i.e., `0` indicates success and a
-non-zero code indicates an error.
-
-### Running a Concrete Unit Test
-
-Example concrete unit tests reside in the `/tests/unit` folder in this archive.
-The file `/tests/unit/concate_bytes_00.tzt` is a unit test for the `CONCAT`
-instruction.
-
-```tzt
-code { CONCAT } ;
-input { Stack_elt bytes 0xFF ; Stack_elt bytes 0xcd } ;
-output { Stack_elt bytes 0xffcd }
-```
-
-Concrete unit tests are run using the `kmich interpret` subcommand, e.g.,
-
-```sh
-./kmich interpret tests/unit/concat_bytes_00.tzt
-```
-
-The test runner will consider a concrete test passed (i.e. return a `0` exit
-code) if and only if:
-
-1.  The test file follows the `.tzt` format properly;
-2.  The `code` block is well-typed with respect to the `input` and `output`
-    stacks;
-3.  Given the provided `input`, after executing the `code`, the Michelson
-    interpreter returns exactly the `output` stack.
-
-### Running a Symbolic Unit Test
-
-Example symbolic unit tests reside in the `/tests/symbolic` folder in this archive.
+Additional example symbolic unit tests reside in the `/tests/symbolic` folder in this archive.
 The file `/tests/symbolic/add-party.tzt` is a unit test which tests whether
 adding two numbers of opposite parity (an even and odd number) always produces
 an odd number:
@@ -209,11 +212,16 @@ postcondition { { PUSH nat 2 ; PUSH nat $I3 ; EDIV ;
                           { CDR ; PUSH nat 1 ; COMPARE ; EQ } } }
 ```
 
-Symbolic unit tests are run using the `kmich symbtest` subcommand, e.g.,
+These may be run similarly:
 
 ```sh
 ./kmich symbtest tests/symbolic/add-parity.tzt
 ```
+
+Since K-Michelson is derived from the K Framework, it also allows us to use the
+full power `kprove` for more advanced proofs, but a full definition of such
+tests is outside the scope of this document. Consult the K Framework
+documentation for more details if needed.
 
 The test runner will consider a symbolic test passed (i.e. return a `0` exit
 code) if and only if:
