@@ -356,8 +356,8 @@ In the example above, `B` does indeed match `A` becuase:
 
 #### Writing Tests by Abstraction
 
-A common way that symbolic tests are written is by _abstraction_, that is,
-we replace concrete values in the input and output stacks with symbolic
+A common way that symbolic tests are written is through _abstraction_, that is,
+we replace concrete values in the input and output stacks with more general symbolic
 values. For example, suppose we want to abstract the simple concrete test we
 saw above:
 
@@ -370,7 +370,7 @@ output { Stack_elt int 7 }
 
 ##### Input Stack Abstraction
 
-We can abstract the test's input stack as follows:
+We could try abstracting the test's input stack as follows:
 
 ```tzt
 # simple_v4 - failing test with abstracted input stack
@@ -380,9 +380,8 @@ output { Stack_elt int 7 }
 ```
 
 Clearly, at this point, the test is incorrect. Why? In the abstracted stack,
-all information about the relationship between the two stack values is lost,
-except their type information. This means, for one thing, that both branches
-of the `IF` are possible, depending on whether `I < J` is true or false.
+information about the relationship between the two stack values is lost.
+This means, for one thing, that both branches of the `IF` are possible, depending on whether `I < J` is true or false.
 
 Additionally, we need to sure that for any two integers `I` and `J` that:
 
