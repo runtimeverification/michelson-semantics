@@ -41,10 +41,10 @@ Testing with K-Michelson is more thorough because it enables you to:
 -   test `operation` and `big_map` emitting instructions, which is difficult
     to achieve normally because we cannot `COMPARE` such values;
 
--   verify correctness of _concrete and symbolic_ Michelson programs, i.e.,
-    even Michelson programs with unknown values can be proved correct for all
-    possible, valid choices of unknowns (if this is still unclear, see the
-    example symbolic test below).
+-   verify correctness of _concrete and symbolic_ Michelson programs.
+    That is, while traditional testing allows checking pairs of input and output values,
+    K-Michelson allows testing over classes of inputs (such as all integers).
+    This is explained in greater detail in the [symbolic test below.](#test-formats)
 
 A secondary purpose of K-Michelson is to provide a formal, executable, and
 human-readable semantics of the Michelson blockchain programming language
