@@ -24,7 +24,7 @@ The main purpose of this toolkit is to enable Michelson smart contract
 developers to test their contracts more easily and thoroughly.
 
 Testing with K-Michelson is easier because it is a local client with a simple
-test format (`.tzt`) which is just a slight extension of (`.tz`) scripts that
+test format (`.tzt`) which is just a slight extension of Tezos scripts (`.tz`) that
 you are used to writing. That means you do _not_ need to:
 
 -   spin up a local test net;
@@ -44,7 +44,7 @@ Testing with K-Michelson is more thorough because it enables you to:
 -   verify correctness of _concrete and symbolic_ Michelson programs.
     That is, while traditional testing allows checking pairs of input and output values,
     K-Michelson allows testing over classes of inputs (such as all integers).
-    This is explained in greater detail in the [symbolic test below.](#test-formats)
+    This is explained in greater detail in the [symbolic test below.](#the-tezos-test-format-tzt)
 
 A secondary purpose of K-Michelson is to provide a formal, executable, and
 human-readable semantics of the Michelson blockchain programming language
@@ -62,71 +62,73 @@ using the K Framework. In this sense, it acts as:
 See [Cross-Validating K-Michelson](#cross-validating-k-michelson) for more
 information.
 
-### Test Formats
+### The Tezos Test format (`tzt`)
 
-We now survey the two available test formats:
+The `tzt` test format is similar to the Tezos script format.
+A minimal test must include the `code`, `input` and `output` parameters.
 
-1.  concrete tests using the `.tzt` format;
+For example, this test asserts adding `5` to `5` produces `10`.
 
-    Ex. This test asserts adding `5` to `5` produces `10`.
+```tzt
+code { ADD } ;
+input { Stack_elt int 5 ; Stack_elt int 5 } ;
+output { Stack_elt int 10 }
+```
 
-    ```tzt
-    code { ADD } ;
-    input { Stack_elt int 5 ; Stack_elt int 5 } ;
-    output { Stack_elt int 10 }
-    ```
+Tests may also be run over classes of inputs instead of particular concete values.
+To do so, we must use "symbolic variables" such as `$N` in the next example.
+Here, we assert that `N + 1 > 0` for any natural number `N`.
 
-2.  symbolic tests using an extended `.tzt` format;
+```tzt
+code { ADD ; CMPGT }
+input { Stack_elt nat $N ; Stack_elt nat 1 ; Stack_elt nat 0 ; }
+output { Stack_elt bool True }
+```
 
-    Ex. This test asserts that `N + 1 > 0` for any natural number `N`.
+For tests that use loops, K-Michelson needs each loop to be anotated with a
+"loop invariant". Invariants are required to hold when the program reaches the
+loop, and also at the end of the loop iteration.
 
-    ```tzt
-    code { ADD ; CMPGT }
-    input { Stack_elt nat $N ; Stack_elt nat 1 ; Stack_elt nat 0 ; }
-    output { Stack_elt bool True }
-    ```
-
-    Ex. This test is somewhat more complex due to the presence of loops;
-    it asserts that its input and output are always identical.
-
-    ```tzt
-    input { Stack_elt nat $N0 } ;
-    code { INT ;
-           DUP ;
-           PUSH nat 0 ;
-           SWAP ;
-           GT ;
-           LOOP @I {
-               PUSH nat 1 ;
-               ADD ;
-               DIP {
-                 PUSH nat 1 ;
-                 SWAP ;
-                 SUB
-               } ;
-               DUP 2 ;
-               GT
+```tzt
+input { Stack_elt nat $N0 } ;
+code { INT ;
+       DUP ;
+       PUSH nat 0 ;
+       SWAP ;
+       GT ;
+       LOOP @I {
+           PUSH nat 1 ;
+           ADD ;
+           DIP {
+             PUSH nat 1 ;
+             SWAP ;
+             SUB
            } ;
-           DIP { DROP }
-    } ;
-    invariant @I
-      { Stack_elt bool $GUARD ; Stack_elt nat $C ; Stack_elt int $N }
-      { { PUSH int $N ; PUSH nat $N0 ; INT ; CMPGE ; PUSH int $N ; GE ; AND }
-      ; { PUSH int $N ; PUSH nat $N0 ; SUB ; PUSH nat $C ; INT ; CMPEQ }
-      ; { PUSH int $N ; GT ; PUSH bool $GUARD ; CMPEQ }
-      } ;
-    output { Stack_elt nat $C } ;
-    postcondition { { PUSH nat $N0 ; PUSH nat $C ; COMPARE ; EQ } }
-    ```
+           DUP 2 ;
+           GT
+       } ;
+       DIP { DROP }
+} ;
+invariant @I
+  { Stack_elt bool $GUARD ; Stack_elt nat $C ; Stack_elt int $N }
+  { { PUSH int $N ; PUSH nat $N0 ; INT ; CMPGE ; PUSH int $N ; GE ; AND }
+  ; { PUSH int $N ; PUSH nat $N0 ; SUB ; PUSH nat $C ; INT ; CMPEQ }
+  ; { PUSH int $N ; GT ; PUSH bool $GUARD ; CMPEQ }
+  } ;
+output { Stack_elt nat $C } ;
+postcondition { { PUSH nat $N0 ; PUSH nat $C ; COMPARE ; EQ } }
+```
 
-Note that, in many cases, type (1) tests are already sufficient to explore a
-wide range of script behaviors. Type (2) tests should only be used when a full
-_proof of correctness_ is required.
+We call tests that use symbolic variables "symbolic tests", and all other tests
+"concrete tests".
 
-Since K-Michelson is derived from the K Framework, it inherits native support
-for `kprove`-style tests, but a full definition of such tests is outside the
-scope of this document. Consult the K Framework documentation for more details
-if needed.
+Concrete tests are already sufficient to explore a wide range of script behaviors and can be executed much more quickly.
+Symbolic tests tests allow us to perform a full _proof of correctness_ when required, but are much more expensive to run.
+
+Since K-Michelson is derived from the K Framework, it also allows us to use the
+full power `kprove` for more advanced proofs, but a full definition of such
+tests is outside the scope of this document. Consult the K Framework
+documentation for more details if needed.
 
 ### Test Field Overview
 
