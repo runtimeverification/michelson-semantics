@@ -128,7 +128,7 @@ Tests may also be run over classes of inputs instead of particular concrete valu
 To do so, we may use "symbolic variables" in the `input` and `output` fields such as `$N` in the next example.
 We call tests that use symbolic variables "symbolic tests", and all other tests "concrete tests".
 Concrete tests are already sufficient to explore a wide range of script behaviors and can be executed much more quickly.
-Symbolic tests tests allow us to perform a full _proof of correctness_ when required, but are much more expensive to run.
+Symbolic tests allow us to perform a full _proof of correctness_ when required, but are much more expensive to run.
 
 In the next test, we assert that `N + 1 > 0` for any natural number `N`:
 
