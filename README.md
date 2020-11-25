@@ -36,7 +36,9 @@ K-Michelson is:
 Getting Started
 ---------------
 
-See the [user guide](USER_GUIDE.md) for installation and usage instructions.
+See [INSTALL.md](INSTALL.md) for installation instructions.
+
+See [USER_GUIDE.md](USER_GUIDE.md) for usage instructions.
 
 Project Structure
 -----------------
