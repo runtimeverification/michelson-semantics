@@ -36,9 +36,9 @@ module KORE-UNPARSE
     rule unparsePattern(KVar : Sort)                  => NameToString(KVar) +String ":" +String unparseSort(Sort)
     rule unparsePattern(\dv { S } (Value))            => "\\dv{" +String unparseSort(S)  +String "} (\"" +String Value +String "\")"
     rule unparsePattern(\top { S } ())                => "\\top{" +String unparseSort(S)  +String "} ()"
-    rule unparsePattern(\bottom { S } ())                => "\\bottom{" +String unparseSort(S)  +String "} ()"
+    rule unparsePattern(\bottom { S } ())             => "\\bottom{" +String unparseSort(S)  +String "} ()"
     rule unparsePattern(inj { S1 , S2 } (P1))         => "inj{" +String unparseSort(S1) +String "," +String unparseSort(S2)  +String "} (" +String unparsePattern(P1) +String ")"
-    rule unparsePattern(\not { S1 } (P1))         => "\\not{" +String unparseSort(S1) +String "} (" +String unparsePattern(P1) +String ")"
+    rule unparsePattern(\not { S1 } (P1))             => "\\not{" +String unparseSort(S1) +String "} (" +String unparsePattern(P1) +String ")"
     rule unparsePattern(S(Args:Patterns))             => unparseSymbol(S) +String "(" +String unparsePatterns(Args) +String ")"
     rule unparsePattern(\and { S1 } (P1, P2))
       => "\\and{" +String unparseSort(S1) +String "} (" +String unparsePatterns(P1) +String "," +String unparsePatterns(P2) +String  ")"
@@ -182,7 +182,7 @@ endmodule
 
 ```k
 module DRIVER
-    imports KORE
+    imports KORE-UNPARSE
     imports META-K
     imports LIST
 ```
@@ -198,18 +198,31 @@ module DRIVER
 
     syntax KItem ::= init(filename: String)
     rule  <k> init(ProgramFile)
-           => krun(ProgramFile, michelsonDefinition())
+           => koreExec(initialConfiguration(ProgramFile, michelsonDefinition() +String "/michelson-kompiled/"))
               ...
           </k>
  
-    syntax PrePattern ::= krun(filename: PreString, definition: String) [seqstrict(1), result(String)]
-    // TODO: Can we do this without using krun?
+    syntax PrePattern ::= initialConfiguration(filename: PreString, definition: String) [seqstrict(1), result(String)]
     // TODO: The parser here isn't generated
-    rule krun(Filename, Definition)
-      => parseKore( parse( system("krun --depth 0 --output kore --directory " +String Definition +String " " +String Filename)
-                       , koreDefinition() +String "/../../../parser_PGM"
-                       )
+    rule initialConfiguration(Filename, Definition)
+      => parseKore( parse( system( "llvm-krun --dry-run --directory " +String Definition
+                                   +String " -c PGM " +String Filename +String " Pgm prettyfile") 
+                         , koreDefinition() +String "/../../../parser_PGM"
+                         )
                   )
+
+    syntax PrePattern ::= koreExec(config: PrePattern) [seqstrict(1), result(Pattern)]
+                        | koreExec(file:   PreString)  [seqstrict(1), result(String)]
+
+    rule koreExec(Configuration) => koreExec(writeTempFile(unparsePattern(Configuration)))
+    rule koreExec(File)
+      => parseKore( parse( system("kore-exec " +String michelsonDefinition() +String "/michelson-kompiled/definition.kore" +String
+                                      " --strategy all" +String
+                                      " --module MICHELSON" +String
+                                      " --pattern " +String File
+                                 )
+                         , koreDefinition() +String "/../../../parser_PGM"
+                  )      )
 
     syntax String ::= michelsonDefinition() [function, functional]
     rule [[ michelsonDefinition() => DefnDir +String "/symbolic/" ]]
