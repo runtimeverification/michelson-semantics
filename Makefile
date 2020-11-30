@@ -181,17 +181,17 @@ driver_files         := lib/driver.md
 driver_main_file     := lib/driver
 driver_main_module   := DRIVER
 driver_syntax_module := KORE 
-driver_kompiled      := $(driver_dir)/$(notdir $(driver_main_file))-kompiled/definition.kore
+driver_kompiled      := $(driver_dir)/$(notdir $(driver_main_file))-kompiled/interpreter
 
 defn-driver:  $(driver_files)
 build-driver: $(driver_kompiled)
 
 $(driver_kompiled): tangle_haskell := k | driver
 $(driver_kompiled): $(driver_files)
-	$(KOMPILE_HASKELL) $(driver_main_file).md                  \
-	                   --directory $(driver_dir) -I $(CURDIR)  \
-	                   --main-module $(driver_main_module)     \
-	                   --syntax-module $(driver_syntax_module)
+	$(KOMPILE_LLVM) $(driver_main_file).md                  \
+	                --directory $(driver_dir) -I $(CURDIR)  \
+	                --main-module $(driver_main_module)     \
+	                --syntax-module $(driver_syntax_module)
 
 ### Symbolic
 
@@ -320,7 +320,7 @@ tests/symbolic/%.fail.tzt.symbolic:  EXPECTED_EXITCODE = 1
 tests/symbolic/%.stuck.tzt.symbolic: EXPECTED_EXITCODE = 2
 
 tests/%.symbolic: tests/% $(symbolic_kompiled)
-	$(LIB_DIR)/check-exit-code $(EXPECTED_EXITCODE) $(TEST) symbtest --backend symbolic $< > /dev/null
+	$(LIB_DIR)/check-exit-code $(EXPECTED_EXITCODE) $(TEST) symbtest $< > /dev/null
 
 # Cross Validation
 

@@ -78,12 +78,12 @@ run_interpret() {
 }
 
 run_symbtest() {
-    output=$(run_krun --search-final --output json "$@")
-    if [ $? -ne 0 ]; then
-        echo "$output" >&2
-        fatal "krun encountered an error: skipping post-processing"
-    fi
-    echo "$output" | $kmich_dir/lib/michelson-test-check "$kompiled_dir"
+    export K_OPTS=-Xss500m
+    set -x
+    krun --directory "$backend_dir"   \
+         -cInput="\"$run_file\""      \
+         -cDefnDir="\"$defn_dir\""    \
+         "$@"
 }
 
 # Main
@@ -107,7 +107,7 @@ if [[ $# -le 0 ]] || [[ "$run_command" == 'help' ]] || [[ "$run_command" == '--h
     echo "
         usage: $0 run       [--backend (llvm|symbolic|contract-expander|extractor|input-creator|output-compare)] <pgm>  <K arg>*
                $0 kast      [--backend (llvm|symbolic|contract-expander|extractor|input-creator|output-compare)] <pgm>  <output format> <K arg>*
-               $0 symbtest  [--backend symbolic]                                                                 <pgm>                  <K arg>*
+               $0 symbtest                                                                                       <pgm>                  <K arg>*
                $0 prove     [--backend symbolic]                                                                 <spec> <def_module>    <K arg>*
                $0 interpret [--backend (llvm|symbolic|contract-expander|extractor|input-creator|output-compare)] <pgm>  <LLVM KRun arg>*
 
@@ -136,7 +136,7 @@ backend="llvm"
 debug=false
 repl=false
 [[ ! "$run_command" == 'prove' ]]    || backend='prove'
-[[ ! "$run_command" == 'symbtest' ]] || backend='symbolic'
+[[ ! "$run_command" == 'symbtest' ]] || backend='driver'
 args=()
 while [[ $# -gt 0 ]]; do
     arg="$1"
@@ -178,7 +178,7 @@ case "$run_command-$backend" in
     # Running
     run-@(llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare)       ) run_krun       "$@" ;;
     kast-@(llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare)      ) run_kast       "$@" ;;
-    symbtest-symbolic                                                                         ) run_symbtest   "$@" ;;
+    symbtest-driver                                                                           ) run_symbtest   "$@" ;;
     prove-@(prove|symbolic)                                                                   ) run_prove      "$@" ;;
     interpret-@(llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare) ) run_interpret  "$@" ;;
     *) $0 help ; fatal "Unknown command on backend: $run_command $backend" ;;
