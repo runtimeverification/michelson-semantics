@@ -174,6 +174,25 @@ $(prove_kompiled): $(prove_files)
 	                   --main-module $(prove_main_module)     \
 	                   --syntax-module $(prove_syntax_module)
 
+### Symbolic Driver
+
+driver_dir           := $(DEFN_DIR)/driver
+driver_files         := lib/driver.md
+driver_main_file     := lib/driver
+driver_main_module   := DRIVER
+driver_syntax_module := KORE 
+driver_kompiled      := $(driver_dir)/$(notdir $(driver_main_file))-kompiled/definition.kore
+
+defn-driver:  $(driver_files)
+build-driver: $(driver_kompiled)
+
+$(driver_kompiled): tangle_haskell := k | driver
+$(driver_kompiled): $(driver_files)
+	$(KOMPILE_HASKELL) $(driver_main_file).md                  \
+	                   --directory $(driver_dir) -I $(CURDIR)  \
+	                   --main-module $(driver_main_module)     \
+	                   --syntax-module $(driver_syntax_module)
+
 ### Symbolic
 
 symbolic_dir           := $(DEFN_DIR)/symbolic
