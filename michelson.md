@@ -937,9 +937,12 @@ Core Operations
        <stack> [ int I ] ; SS => [ bool I >=Int 0 ] ; SS </stack>
 ```
 
-```k
-    rule A  >Int B => notBool( A <=Int B ) [simplification]
-    rule A >=Int B => notBool( A  <Int B ) [simplification]
+We add lemmas for symbolic reasoning which normalize integer comparisons to
+greater than; this lets us avoid writing symmetric lemmas for both cases.
+
+```symbolic
+    rule A  <Int B => B >Int  A [simplification]
+    rule A <=Int B => B >=Int A [simplification]
 ```
 
 ### Boolean Operations
@@ -970,6 +973,17 @@ Core Operations
        <stack> [ bool B ] ; SS
             => [ bool (notBool B) ] ; SS
        </stack>
+```
+
+For symbolic reasoning purposes, we add a few lemmas about boolean logic.
+
+```symbolic
+  rule false      ==Bool B            => notBool B    [simplification]
+  rule true       ==Bool B            => B            [simplification]
+  rule B          ==Bool false        => notBool B    [simplification]
+  rule B          ==Bool true         => B            [simplification]
+  rule notBool (notBool B)            => B            [simplification]
+  rule notBool B1 ==Bool notBool B2   => B1 ==Bool B2 [simplification]
 ```
 
 ### Integer and Natural Operations
@@ -1042,6 +1056,12 @@ These operations map directly to their K equivalents.
   rule BinOpNumType(_:NumTypeName, int) => int
   rule BinOpNumType(int, _:NumTypeName) => int
   rule BinOpNumType(nat, nat) => nat
+```
+
+For symbolic reasoning purposes, we add some simple lemmas about arithmetic:
+
+```symbolic
+  rule V:Int -Int V:Int => 0 [simplification]
 ```
 
 Bitwise operations on Michelson `int`s map directly onto K `Int` functions.
@@ -1164,23 +1184,25 @@ We define `COMPARE` in terms of a `#DoCompare` function.
 The `#DoCompare` function requires additional lemmas for symbolic execution.
 
 ```symbolic
-  rule #DoCompare(V1, V2)  ==Int 0 => V1  ==K V2 [simplification]
-  rule #DoCompare(V1, V2) =/=Int 0 => V1 =/=K V2 [simplification]
+  rule 0 ==Int  #DoCompare(V1, V2) => V1  ==K V2  [simplification]
+  rule 0 =/=Int #DoCompare(V1, V2) => V1 =/=K V2  [simplification]
+  rule #DoCompare(V1, V2)  ==Int 0 => V1  ==K V2  [simplification]
+  rule #DoCompare(V1, V2) =/=Int 0 => V1 =/=K V2  [simplification]
 
-  rule #DoCompare(I1:Bool, I2:Bool) <Int 0  => (I1 ==Bool false) andBool (I2 ==Bool true)                       [simplification]
-  rule #DoCompare(I1:Bool, I2:Bool) <=Int 0 => ((I1 ==Bool false) andBool (I2 ==Bool true)) orBool I1 ==Bool I2 [simplification]
-  rule #DoCompare(I1:Bool, I2:Bool) >=Int 0 => ((I1 ==Bool true) andBool (I2 ==Bool false)) orBool I1 ==Bool I2 [simplification]
-  rule #DoCompare(I1:Bool, I2:Bool) >Int 0  => (I1 ==Bool true) andBool (I2 ==Bool false)                       [simplification]
+  rule 0  >Int #DoCompare(I1:Bool, I2:Bool) => (notBool I1) andBool I2 [simplification]
+  rule 0 >=Int #DoCompare(I1:Bool, I2:Bool) => I1 impliesBool I2       [simplification]
+  rule #DoCompare(I1:Bool, I2:Bool) >=Int 0 => I2 impliesBool I1       [simplification]
+  rule #DoCompare(I1:Bool, I2:Bool)  >Int 0 => I1 andBool (notBool I2) [simplification]
 
-  rule #DoCompare(I1:Int, I2:Int) <Int 0  => I1 <Int I2  [simplification]
-  rule #DoCompare(I1:Int, I2:Int) <=Int 0 => I1 <=Int I2 [simplification]
+  rule 0  >Int #DoCompare(I1:Int, I2:Int) => I2 >Int I1  [simplification]
+  rule 0 >=Int #DoCompare(I1:Int, I2:Int) => I2 >=Int I1 [simplification]
   rule #DoCompare(I1:Int, I2:Int) >=Int 0 => I1 >=Int I2 [simplification]
   rule #DoCompare(I1:Int, I2:Int) >Int 0  => I1 >Int I2  [simplification]
 
-  rule #DoCompare(I1:String, I2:String) <Int 0  => I1 <String I2  [simplification]
-  rule #DoCompare(I1:String, I2:String) <=Int 0 => I1 <=String I2 [simplification]
+  rule 0  >Int #DoCompare(I1:String, I2:String) => I1 <String I2  [simplification]
+  rule 0 >=Int #DoCompare(I1:String, I2:String) => I1 <=String I2 [simplification]
   rule #DoCompare(I1:String, I2:String) >=Int 0 => I1 >=String I2 [simplification]
-  rule #DoCompare(I1:String, I2:String) >Int 0  => I1 >String I2  [simplification]
+  rule #DoCompare(I1:String, I2:String)  >Int 0 => I1 >String I2  [simplification]
 
   // TODO: at some point this rule should be builtin
   rule X ==String X => true [simplification]
@@ -1868,7 +1890,7 @@ identical to those defined over integers.
             => [option pair mutez mutez Some (Pair #Mutez(I1 /Int I2) #Mutez(I1 %Int I2))] ;
                SS
        </stack>
-       requires I2 >Int 0
+    requires I2 >Int 0
 ```
 
 Debugging Operations

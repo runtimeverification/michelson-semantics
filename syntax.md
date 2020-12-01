@@ -458,112 +458,99 @@ endmodule
 Michelson Internal Syntax
 =========================
 
+Michelson internal syntax describes an extension of the base Michelson grammar
+to allow for defining values of types which are unrepresentable in the
+standard Michelson syntax.
+
 ```k
 module MICHELSON-INTERNAL-SYNTAX
   imports MICHELSON-COMMON-SYNTAX
-
 ```
-
-This extends the normal Michelson syntax to describe Blockchain operations
-and error conditions. This module should remain separate from MICHELSON-SYNTAX
-to prevent normal contracts from using these productions, which are intended
-only for unit tests. However, this cannot be merged into the UNIT-TEST-SYNTAX
-module, as the MICHELSON module needs to be able to use them, and MICHELSON
-should not depend upon UNIT-TEST-SYNTAX.
 
 Operation literals
 ------------------
 
-Here we define literals of type `operation`.
-They are not representable in standard Michelson code;
-instead, they can only be pushed on the stack by the Michelson
-`CREATE_CONTRACT`, `TRANSFER_TOKENS`, and `SET_DELEGATE` instructions.
-
-1. We need an `operation` literal to create a new contract:
-
-```k
-  syntax BlockchainOperation ::=
-    "Create_contract" "{" Contract "}" OptionData Mutez Data Data
-```
-
-- Nonce (`int`): A cryptographic nonce attached to each new `operation` literal
-  created; no two operations created separately will ever share the same nonce
-- Contract (`contract`): The source code of the contract to originate. The type
-  of this contract will determine the expected type of the initial storage
-- Delegate (`option key_hash`): An optional delegate specified by key hash
-- Initial Balance (`mutez`): An initial balance to transfer to the new contract
-- Initial Storage (`T`): An initial storage value, expected to be the same type
-  as specified in the originated contract
-
-2. We need an `operation` literal to transfer mutez to a contract (including
-   the case of invoking a contract):
-
-```k
-  syntax BlockchainOperation ::= "Transfer_tokens" Data Mutez Address Data
-```
-
-- Nonce (`int`): A cryptographic nonce attached to each new `ooeration` literal
-  created; no two operations created separately will ever share the same nonce
-- Parameter (`T`): The parameter passed to the contract being invoked
-  (or Unit, if the target contract is an implicit account)
-- Amount (`mutez`): The quantity of mutez to transfer to the target contract
-- Address (`address`): The address of the target contract
-
-3. We need an `operation` literal to set the delegate of an account.
-
-```k
-  syntax BlockchainOperation ::= "Set_delegate" OptionData Data
-```
-
-- Nonce (`int`): A cryptographic nonce attached to each new `operation` literal
-  created; no two operations created separately will ever share the same nonce
-- Delegate (`option key_hash`): An optional new delegate specified by key hash;
-  if `None`, then this operation clears the current delegate of the contract
-
-We need to be able to represent `operation` literals stored on the stack.
-Thus, we make `BlockchainOperation` a subsort of `Data`.
+Here we define literals of type `operation` which correspond to values
+produced by the `CREATE_CONTRACT`, `TRANSFER_TOKENS`, and `SET_DELEGATE`
+instructions.
 
 ```k
   syntax SimpleData ::= BlockchainOperation
 ```
 
+1.  Values produced by the `CREATE_CONTRACT` instruction:
+
+    ```k
+    syntax BlockchainOperation ::=
+      "Create_contract" "{" Contract "}" OptionData Mutez Data Data
+    ```
+
+    - Contract (`contract`) The source code of the contract to originate; the
+      type of this contract determines storage type.
+    - Delegate (`option key_hash`) An optional delegate specified by key hash.
+    - Initial Balance (`mutez`) An initial balance to transfer to the new
+      contract.
+    - Initial Storage (`T`) An initial storage value of the correct type.
+    - Nonce (`byte`): A unique cryptographic nonce for this operation.
+
+2.  Values produced by the `TRANSFER_TOKENS` instruction:
+
+    ```k
+    syntax BlockchainOperation ::= "Transfer_tokens" Data Mutez Address Data
+    ```
+
+    - Parameter (`T`) The parameter passed to the contract being invoked
+      (or `Unit`, if the target contract is an implicit account).
+    - Amount (`mutez`) The amount of mutez to transfer to the target contract.
+    - Address (`address`) The address of the target contract.
+    - Nonce (`byte`): A unique cryptographic nonce for this operation.
+
+3.  Values produced by the `SET_DELEGATE` instruction:
+
+    ```k
+    syntax BlockchainOperation ::= "Set_delegate" OptionData Data
+    ```
+
+    - Delegate (`option key_hash`) An optional new delegate specified by
+      key hash; if `None`, then this operation clears the current delegate.
+    - Nonce (`byte`): A unique cryptographic nonce for this operation.
+
 Failed Stack Literals
 ---------------------
 
-We need to represent the stack of Michelson code that fails to execute properly.
+We need to represent the stack of Michelson code when execution fails.
+We have failed stack literals for the following exceptional conditions:
 
-1. We need to represent a stack resulting from a `FAILWITH` instruction. Its
-   argument is the element on top of the stack when `FAILWITH` was executed.
+1.  Exceuting a `FAILWITH` instruction; its argument is the value passed to
+    `FAILWITH`.
 
-```k
-  syntax FailedStack ::= "(" "Failed" Data ")"
-```
+    ```k
+    syntax FailedStack ::= "(" "Failed" Data ")"
+    ```
 
-2. We need to represent a stack resulting from an operation on mutez which
-   would have created a mutez value greater than the maximum representable
-   value of 2^63 - 1. Its arguments are the two input mutez values involved in
-   the operation.
+2.  Executing an instruction that causes a `mutez` value to overflow
+    (producing a mutez value greater than 2^63-1); its arguments are the
+    mutez inputs to the instruction which overflowed.
 
-```k
-  syntax FailedStack ::= "(" "MutezOverflow" Int Int ")"
-```
+    ```k
+    syntax FailedStack ::= "(" "MutezOverflow" Int Int ")"
+    ```
 
-3. Similarly, we need to represent a stack resulting from an operation on mutez
-   which would have created a mutez value less than the minimum representable
-   value of 0. Its arguments are the two input mutez values involved in the
-   operation.
+3.  Executing an instruction that causes a `mutez` value to underflow
+    (producing a mutez value less than 0); its arguments are the mutez inputs
+    to the instruction which underflowed.
 
-```k
-  syntax FailedStack ::= "(" "MutezUnderflow" Int Int ")"
-```
+    ```k
+    syntax FailedStack ::= "(" "MutezUnderflow" Int Int ")"
+    ```
 
-4. This production represents a stack resulting from a non-mutez overflow, such
-   as those produced by the `LSL` and `LSR` instructions when their shift
-   argument is greater than 256.
+4.  Executing an instruction which produces a non-mutez out-of-bound value
+    (e.g. the `LSL` and `LSR` instructions); its arguments are the numeric
+    inputs to the overflowing instruction.
 
-```k
-  syntax FailedStack ::= "(" "GeneralOverflow" Int Int ")"
-```
+    ```k
+    syntax FailedStack ::= "(" "GeneralOverflow" Int Int ")"
+    ```
 
 Michelson Assertions
 --------------------
@@ -592,27 +579,8 @@ endmodule
 Unit Test Syntax
 ================
 
-This module extends the Michelson contract format to include the .tzt unit
-testing format proposed by the Tezos foundation
-[here](https://gitlab.com/tezos/tezos/-/merge_requests/1487/diffs).
-The first module, `UNIT-TEST-SYNTAX` attempts to follow the proposal as closely
-as possible. The second, `SYMBOLIC-UNIT-TEST-SYNTAX` further extends the syntax
-with contructs needed for symbolic tests.
-
-Concrete Unit Test Syntax
-=========================
-
-In order to test Michelson code at a finer level than a full smart
-contract script, the following extension of the Michelson language can
-be used. It adds syntax to specify an instruction (or sequence of
-instructions) to test, a concrete input stack and the expected output
-stack.
-
-These unit tests can be useful for both smart contract developers that
-need to independently test various parts of the smart contracts they
-develop and to the developers of new implementations of the Michelson
-interpreter that need to check that their new implementations behave
-as the reference implementation by passing a conformance test suite.
+This module extends the Michelson script grammar to the `.tzt` [unit test
+grammar](https://gitlab.com/tezos/tezos/-/merge_requests/1487/diffs).
 
 ```k
 module UNIT-TEST-SYNTAX
@@ -627,78 +595,71 @@ module UNIT-TEST-COMMON-SYNTAX
   imports MICHELSON-INTERNAL-SYNTAX
 ```
 
-Syntax of concrete stacks
--------------------------
+Michelson Stack Syntax
+----------------------
 
-A concrete stack is written as a Micheline sequence whose elements are
-of the form ``Stack_elt ty x`` where ``x`` is a Michelson value and
-``ty`` is its type. For example, ``{ Stack_elt bool True ; Stack_elt
-nat 42 }`` is a concrete stack of length 2 whose top element is the
-boolean ``True`` and the bottom element is the natural number ``42``.
+A stack is a Micheline sequence whose elements have the form `Stack_elt ty x`
+where `x` is a Michelson value and `ty` is its type, e.g.
+
+`{ Stack_elt bool True ; Stack_elt nat 42 }`
+
+is a stack of length 2 whose top element is `True` and bottom element `42`.
+We require that input stacks are well-formed. However, output stacks include
+the degenerate case of failed stacks.
 
 ```k
   syntax StackElementLiteral ::= "Stack_elt" Type Data
   syntax StackElementList ::= List{ StackElementLiteral, ";" } [klabel(StackElementList)]
   syntax LiteralStack ::= "{" StackElementList "}"
-```
 
-While the input stack must be a full literal, the output stack may be either a
-literal or a failed stack (see `michelson-internal-syntax.k` for details),
-indicating that the code snippet should fail in a specific way during execution.
-
-```k
   syntax OutputStack ::= LiteralStack | FailedStack
 ```
 
 The wildcard pattern `_` can be used to omit part of the output stack. This is
-typically used to omit the cryprographic nonce in values of type `operation`.
-To reduce potential ambiguities, in the internal representation we refer to the
-wildcard pattern via the name `Wildcard`.
+typically used to omit the cryprographic nonce in `operation` values.
 
 ```k
   syntax Wildcard [token]
   syntax Data ::= Wildcard
 ```
 
-Unit test groups
+Unit Test Groups
 ----------------
 
-Unit test files allow the following additional groups, in any order:
+Unit test files allow the following additional groups.
 
-`input` (mandatory): the input stack is the initial stack to pass to the Code
-block or instruction.
+### Mandatory Groups
 
-```k
-  syntax Group ::= InputGroup
-  syntax InputGroup ::= "input" LiteralStack
-```
+-  `input` the initial stack to pass to the `code` block or instruction.
 
-`code` (mandatory): the instruction or sequence of instructions to test.
-We promote `CodeDecl` from the contract syntax to a `Group`.
+    ```k
+    syntax Group ::= InputGroup
+    syntax InputGroup ::= "input" LiteralStack
+    ```
 
-```k
-  syntax Group ::= CodeGroup
-  syntax CodeGroup ::= CodeDecl
-```
+-   `code` the instruction or instruction sequence to test.
 
-`output` (mandatory): the expected output stack:
+    ```k
+    syntax Group ::= CodeGroup
+    syntax CodeGroup ::= CodeDecl
+    ```
 
-```k
-  syntax Group ::= OutputGroup
-  syntax OutputGroup ::= "output" OutputStack
-```
+-   `output` the expected output stack.
 
-`parameter` (optional, defaults to `unit`): the type of the parameter of the
-contract pushed by the `SELF` instruction.
+    ```k
+    syntax Group ::= OutputGroup
+    syntax OutputGroup ::= "output" OutputStack
+    ```
 
-```k
-  syntax Group ::= ParameterGroup
-  syntax ParameterGroup ::= ParameterDecl
-```
+### Optional Groups
 
-Besides these, the `now`, `sender`, `source`, `chain_id`, `self`, `amount`, and
-`balance`, `other_contracts`, and `big_maps` groups are defined in
-[michelson/syntax.md](michelson/syntax.md)
+-   `parameter` (default `unit`) the type of the parameter of the contract
+    pushed by the `SELF` instruction.
+
+    ```k
+    syntax Group ::= ParameterGroup
+    syntax ParameterGroup ::= ParameterDecl
+    ```
 
 ```k
 endmodule
