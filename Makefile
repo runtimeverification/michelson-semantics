@@ -319,7 +319,7 @@ EXPECTED_EXITCODE = 0
 tests/symbolic/%.fail.tzt.symbolic:  EXPECTED_EXITCODE = 1
 tests/symbolic/%.stuck.tzt.symbolic: EXPECTED_EXITCODE = 2
 
-tests/%.symbolic: tests/% $(symbolic_kompiled)
+tests/%.symbolic: tests/% $(driver_kompiled) $(symbolic_kompiled)
 	$(LIB_DIR)/check-exit-code $(EXPECTED_EXITCODE) $(TEST) symbtest $< > /dev/null
 
 # Cross Validation
