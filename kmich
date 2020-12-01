@@ -78,12 +78,15 @@ run_interpret() {
 }
 
 run_symbtest() {
+    output="--output none"
+    ! $debug || { set -x; output=""; }
+
     export K_OPTS=-Xss500m
-    set -x
     krun --directory "$backend_dir"   \
-         -cInput="\"$run_file\""      \
-         -cDefnDir="\"$defn_dir\""    \
-         "$@"
+       -cInput="\"$run_file\""      \
+       -cDefnDir="\"$defn_dir\""    \
+       $output                      \
+       "$@"
 }
 
 # Main
