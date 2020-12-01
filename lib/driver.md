@@ -1,6 +1,4 @@
 ```k
-requires "substitution.md"
-
 module KORE
     imports STRING-SYNTAX
 
