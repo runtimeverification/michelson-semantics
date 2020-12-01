@@ -3,13 +3,12 @@ requires "substitution.md"
 
 module KORE
     imports STRING-SYNTAX
-    imports KVAR-SYNTAX
 
-    syntax KVar ::= r"[A-Za-z'-][A-Za-z'0-9-]*" [token]
-    syntax Sort ::= KVar "{" "}"
-    syntax Symbol ::= KVar "{" Sorts "}"
+    syntax KoreName ::= r"[A-Za-z'-][A-Za-z'0-9-]*" [token]
+    syntax Sort ::= KoreName "{" "}"
+    syntax Symbol ::= KoreName "{" Sorts "}"
     syntax Pattern ::= "\\dv" "{" Sort "}" "(" String ")"                           [klabel(\dv)]
-                     | KVar ":" Sort                                                [klabel(variable)]
+                     | KoreName ":" Sort                                            [klabel(variable)]
                      | Symbol "(" Patterns ")"                                      [klabel(application)]
                      | "\\not" "{" Sort "}" "(" Pattern ")"                         [klabel(\not)]
                      | "inj" "{" Sort "," Sort "}" "(" Pattern ")"                  [klabel(inj)]
@@ -33,7 +32,7 @@ module KORE-UNPARSE
 
     syntax String ::= unparsePattern(Pattern) [function, functional]
     rule unparsePattern(\equals { S1 , S2 } (P1, P2)) => "\\equals{" +String unparseSort(S1) +String "," +String unparseSort(S2)  +String "} (" +String unparsePattern(P1) +String " , " +String unparsePattern(P2) +String ")"
-    rule unparsePattern(KVar : Sort)                  => NameToString(KVar) +String ":" +String unparseSort(Sort)
+    rule unparsePattern(Var : Sort)                   => KoreNameToString(Var) +String ":" +String unparseSort(Sort)
     rule unparsePattern(\dv { S } (Value))            => "\\dv{" +String unparseSort(S)  +String "} (\"" +String Value +String "\")"
     rule unparsePattern(\top { S } ())                => "\\top{" +String unparseSort(S)  +String "} ()"
     rule unparsePattern(\bottom { S } ())             => "\\bottom{" +String unparseSort(S)  +String "} ()"
@@ -47,13 +46,13 @@ module KORE-UNPARSE
     rule unparsePattern(\forall  { S1 } (P1, P2)) => "\\forall {" +String unparseSort(S1) +String "} (" +String unparsePattern(P1) +String " , " +String unparsePattern(P2) +String ")"
     rule unparsePattern(\exists  { S1 } (P1, P2)) => "\\exists {" +String unparseSort(S1) +String "} (" +String unparsePattern(P1) +String " , " +String unparsePattern(P2) +String ")"
 
-    syntax String ::= NameToString(KVar) [function, functional, hook(STRING.token2string)]
+    syntax String ::= KoreNameToString(KoreName) [function, functional, hook(STRING.token2string)]
 
     syntax String ::= unparseSort(Sort) [function, functional]
-    rule unparseSort(KVar {}) => NameToString(KVar) +String "{}"
+    rule unparseSort(KoreName {}) => KoreNameToString(KoreName) +String "{}"
 
     syntax String ::= unparseSymbol(Symbol) [function, functional]
-    rule unparseSymbol(KVar {Sorts}) => NameToString(KVar) +String "{" +String unparseSorts(Sorts) +String "}"
+    rule unparseSymbol(KoreName {Sorts}) => KoreNameToString(KoreName) +String "{" +String unparseSorts(Sorts) +String "}"
 
     syntax String ::= unparsePatterns(Patterns) [function, functional]
     rule unparsePatterns(P, Ps) => unparsePattern(P) +String "," +String unparsePatterns(Ps) requires notBool Ps ==K .Patterns
