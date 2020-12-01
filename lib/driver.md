@@ -1,79 +1,15 @@
-```k
-module KORE
-    imports STRING-SYNTAX
+In this file, we implement a utility that replaces `krun` for symbolic Michelson
+tests. We use the low-level K plumbing such as `kore-exec` and `llvm-run`
+directly.
 
-    syntax KoreName ::= r"[A-Za-z'-][A-Za-z'0-9-]*" [token]
-    syntax Sort ::= KoreName "{" "}"
-    syntax Symbol ::= KoreName "{" Sorts "}"
-    syntax Pattern ::= "\\dv" "{" Sort "}" "(" String ")"                           [klabel(\dv)]
-                     | KoreName ":" Sort                                            [klabel(variable)]
-                     | Symbol "(" Patterns ")"                                      [klabel(application)]
-                     | "\\not" "{" Sort "}" "(" Pattern ")"                         [klabel(\not)]
-                     | "inj" "{" Sort "," Sort "}" "(" Pattern ")"                  [klabel(inj)]
-                     | "\\ceil" "{" Sort "," Sort "}" "(" Pattern  ")"              [klabel(\ceil)]
-                     | "\\equals" "{" Sort "," Sort "}" "(" Pattern "," Pattern ")" [klabel(\equals)]
-                     | "\\and" "{" Sort "}" "(" Pattern "," Pattern ")"             [klabel(\and)]
-                     | "\\or" "{" Sort "}" "(" Pattern "," Pattern ")"              [klabel(\or)]
-                     | "\\top" "{" Sort "}" "(" ")"                                 [klabel(\top)]
-                     | "\\bottom" "{" Sort "}" "(" ")"                              [klabel(\bottom)]
-                     | "\\forall" "{" Sort "}" "(" Pattern "," Pattern ")"          [klabel(\forall)]
-                     | "\\exists" "{" Sort "}" "(" Pattern "," Pattern ")"          [klabel(\exists)]
+Rule based IO
+=============
 
-    syntax Patterns ::= List{Pattern, ","} [klabel(Patterns)]
-    syntax Sorts ::= List{Sort, ","}       [klabel(Sorts)]
-endmodule
-```
+The following module implements a wrapper around `K-IO`.
+It uses strictness to allow convenient sequential composition of variable IO functions implemented there.
 
 ```k
-module KORE-UNPARSE
-    imports KORE
-    imports STRING
-
-    syntax String ::= unparsePattern(Pattern) [function, functional]
-    rule unparsePattern(\equals { S1 , S2 } (P1, P2)) => "\\equals{" +String unparseSort(S1) +String "," +String unparseSort(S2)  +String "} (" +String unparsePattern(P1) +String " , " +String unparsePattern(P2) +String ")"
-    rule unparsePattern(Var : Sort)                   => KoreNameToString(Var) +String ":" +String unparseSort(Sort)
-    rule unparsePattern(\dv { S } (Value))            => "\\dv{" +String unparseSort(S)  +String "} (\"" +String Value +String "\")"
-    rule unparsePattern(\top { S } ())                => "\\top{" +String unparseSort(S)  +String "} ()"
-    rule unparsePattern(\bottom { S } ())             => "\\bottom{" +String unparseSort(S)  +String "} ()"
-    rule unparsePattern(inj { S1 , S2 } (P1))         => "inj{" +String unparseSort(S1) +String "," +String unparseSort(S2)  +String "} (" +String unparsePattern(P1) +String ")"
-    rule unparsePattern(\ceil { S1 , S2 } (P1))       => "\\ceil{" +String unparseSort(S1) +String "," +String unparseSort(S2)  +String "} (" +String unparsePattern(P1) +String ")"
-    rule unparsePattern(\not { S1 } (P1))             => "\\not{" +String unparseSort(S1) +String "} (" +String unparsePattern(P1) +String ")"
-    rule unparsePattern(S(Args:Patterns))             => unparseSymbol(S) +String "(" +String unparsePatterns(Args) +String ")"
-    rule unparsePattern(\and { S1 } (P1, P2))
-      => "\\and{" +String unparseSort(S1) +String "} (" +String unparsePatterns(P1) +String "," +String unparsePatterns(P2) +String  ")"
-    rule unparsePattern(\or { S1 } (P1, P2))
-      => "\\or{" +String unparseSort(S1) +String "} (" +String unparsePatterns(P1) +String "," +String unparsePatterns(P2) +String  ")"
-    rule unparsePattern(\forall  { S1 } (P1, P2)) => "\\forall {" +String unparseSort(S1) +String "} (" +String unparsePattern(P1) +String " , " +String unparsePattern(P2) +String ")"
-    rule unparsePattern(\exists  { S1 } (P1, P2)) => "\\exists {" +String unparseSort(S1) +String "} (" +String unparsePattern(P1) +String " , " +String unparsePattern(P2) +String ")"
-
-    syntax String ::= KoreNameToString(KoreName) [function, functional, hook(STRING.token2string)]
-
-    syntax String ::= unparseSort(Sort) [function, functional]
-    rule unparseSort(KoreName {}) => KoreNameToString(KoreName) +String "{}"
-
-    syntax String ::= unparseSymbol(Symbol) [function, functional]
-    rule unparseSymbol(KoreName {Sorts}) => KoreNameToString(KoreName) +String "{" +String unparseSorts(Sorts) +String "}"
-
-    syntax String ::= unparsePatterns(Patterns) [function, functional]
-    rule unparsePatterns(P, Ps) => unparsePattern(P) +String "," +String unparsePatterns(Ps) requires notBool Ps ==K .Patterns
-    rule unparsePatterns(P, .Patterns) => unparsePattern(P)
-    rule unparsePatterns(.Patterns) => ""
-
-    syntax String ::= unparseSorts(Sorts) [function, functional]
-    rule unparseSorts(S, Ss) => unparseSort(S) +String "," +String unparseSorts(Ss) requires notBool Ss ==K .Sorts
-    rule unparseSorts(S, .Sorts) => unparseSort(S)
-    rule unparseSorts(.Sorts) => ""
-endmodule
-```
-
-Plumbing
-========
-
-The following module implements (non-functional) IO, calls to system, and other
-the nitty-gritty details.
-
-```k
-module CELL-IO
+module IO-NONFUNCTIONAL
     imports K-IO
     imports STRING
     imports INT
@@ -160,35 +96,116 @@ strictness instead of the following hack:
 endmodule
 ```
 
+
+`KORE`
+======
+
+This module defines the syntax of kore, a language used for communication
+between the various K utilities.
+
 ```k
-module META-K
-    imports CELL-IO
+module KORE
+    imports STRING-SYNTAX
+
+    syntax KoreName ::= r"[A-Za-z'-][A-Za-z'0-9-]*" [token]
+    syntax Sort ::= KoreName "{" "}"
+    syntax Symbol ::= KoreName "{" Sorts "}"
+    syntax Pattern ::= "\\dv" "{" Sort "}" "(" String ")"                           [klabel(\dv)]
+                     | KoreName ":" Sort                                            [klabel(variable)]
+                     | Symbol "(" Patterns ")"                                      [klabel(application)]
+                     | "\\not" "{" Sort "}" "(" Pattern ")"                         [klabel(\not)]
+                     | "inj" "{" Sort "," Sort "}" "(" Pattern ")"                  [klabel(inj)]
+                     | "\\ceil" "{" Sort "," Sort "}" "(" Pattern  ")"              [klabel(\ceil)]
+                     | "\\equals" "{" Sort "," Sort "}" "(" Pattern "," Pattern ")" [klabel(\equals)]
+                     | "\\and" "{" Sort "}" "(" Pattern "," Pattern ")"             [klabel(\and)]
+                     | "\\or" "{" Sort "}" "(" Pattern "," Pattern ")"              [klabel(\or)]
+                     | "\\top" "{" Sort "}" "(" ")"                                 [klabel(\top)]
+                     | "\\bottom" "{" Sort "}" "(" ")"                              [klabel(\bottom)]
+                     | "\\forall" "{" Sort "}" "(" Pattern "," Pattern ")"          [klabel(\forall)]
+                     | "\\exists" "{" Sort "}" "(" Pattern "," Pattern ")"          [klabel(\exists)]
+
+    syntax Patterns ::= List{Pattern, ","} [klabel(Patterns)]
+    syntax Sorts ::= List{Sort, ","}       [klabel(Sorts)]
+endmodule
+```
+
+`KORE-UNPARSE`
+==============
+
+```k
+module KORE-UNPARSE
+    imports KORE
+    imports STRING
+
+    syntax String ::= unparsePattern(Pattern) [function, functional]
+    rule unparsePattern(\equals { S1 , S2 } (P1, P2)) => "\\equals{" +String unparseSort(S1) +String "," +String unparseSort(S2)  +String "} (" +String unparsePattern(P1) +String " , " +String unparsePattern(P2) +String ")"
+    rule unparsePattern(Var : Sort)                   => KoreNameToString(Var) +String ":" +String unparseSort(Sort)
+    rule unparsePattern(\dv { S } (Value))            => "\\dv{" +String unparseSort(S)  +String "} (\"" +String Value +String "\")"
+    rule unparsePattern(\top { S } ())                => "\\top{" +String unparseSort(S)  +String "} ()"
+    rule unparsePattern(\bottom { S } ())             => "\\bottom{" +String unparseSort(S)  +String "} ()"
+    rule unparsePattern(inj { S1 , S2 } (P1))         => "inj{" +String unparseSort(S1) +String "," +String unparseSort(S2)  +String "} (" +String unparsePattern(P1) +String ")"
+    rule unparsePattern(\ceil { S1 , S2 } (P1))       => "\\ceil{" +String unparseSort(S1) +String "," +String unparseSort(S2)  +String "} (" +String unparsePattern(P1) +String ")"
+    rule unparsePattern(\not { S1 } (P1))             => "\\not{" +String unparseSort(S1) +String "} (" +String unparsePattern(P1) +String ")"
+    rule unparsePattern(S(Args:Patterns))             => unparseSymbol(S) +String "(" +String unparsePatterns(Args) +String ")"
+    rule unparsePattern(\and { S1 } (P1, P2))
+      => "\\and{" +String unparseSort(S1) +String "} (" +String unparsePatterns(P1) +String "," +String unparsePatterns(P2) +String  ")"
+    rule unparsePattern(\or { S1 } (P1, P2))
+      => "\\or{" +String unparseSort(S1) +String "} (" +String unparsePatterns(P1) +String "," +String unparsePatterns(P2) +String  ")"
+    rule unparsePattern(\forall  { S1 } (P1, P2)) => "\\forall {" +String unparseSort(S1) +String "} (" +String unparsePattern(P1) +String " , " +String unparsePattern(P2) +String ")"
+    rule unparsePattern(\exists  { S1 } (P1, P2)) => "\\exists {" +String unparseSort(S1) +String "} (" +String unparsePattern(P1) +String " , " +String unparsePattern(P2) +String ")"
+
+    syntax String ::= KoreNameToString(KoreName) [function, functional, hook(STRING.token2string)]
+
+    syntax String ::= unparseSort(Sort) [function, functional]
+    rule unparseSort(KoreName {}) => KoreNameToString(KoreName) +String "{}"
+
+    syntax String ::= unparseSymbol(Symbol) [function, functional]
+    rule unparseSymbol(KoreName {Sorts}) => KoreNameToString(KoreName) +String "{" +String unparseSorts(Sorts) +String "}"
+
+    syntax String ::= unparsePatterns(Patterns) [function, functional]
+    rule unparsePatterns(P, Ps) => unparsePattern(P) +String "," +String unparsePatterns(Ps) requires notBool Ps ==K .Patterns
+    rule unparsePatterns(P, .Patterns) => unparsePattern(P)
+    rule unparsePatterns(.Patterns) => ""
+
+    syntax String ::= unparseSorts(Sorts) [function, functional]
+    rule unparseSorts(S, Ss) => unparseSort(S) +String "," +String unparseSorts(Ss) requires notBool Ss ==K .Sorts
+    rule unparseSorts(S, .Sorts) => unparseSort(S)
+    rule unparseSorts(.Sorts) => ""
+endmodule
+```
+
+`KORE-PARSE`
+============
+
+```k
+module KORE-PARSE
+    imports IO-NONFUNCTIONAL
     imports KORE
     imports K-REFLECTION
 
-    syntax PreString ::= parse(input: PreString, parser: String)
-                       | parseFile(filename: PreString, parser: String) [seqstrict(1), result(String)]
+    syntax PrePattern ::= Pattern
+
+    syntax PrePattern ::= parse(input: PreString, parser: String)
+                        | parseFile(filename: PreString, parser: String) [seqstrict(1), result(String)]
     rule parse(Program, Parser) => parseFile(writeTempFile(Program), Parser)
-    rule parseFile(File, Parser) => system(Parser +String " " +String File)
+    rule parseFile(File, Parser) => parseKore(system(Parser +String " " +String File))
 
     syntax PrePattern ::= parseKore(PreString) [seqstrict(1), result(String)]
     rule parseKore(String) => #parseKORE(String):Pattern
 
-    syntax PrePattern ::= Pattern
-
 endmodule
 ```
 
-```k
-module DRIVER
-    imports KORE-UNPARSE
-    imports META-K
-    imports LIST
-```
+`KORE-HELPERS`
+==============
 
-Generic helpers
+Various generic library functions over kore.
 
 ```k
+module KORE-UTILITIES
+    imports KORE
+    imports K-EQUAL
+
     syntax Patterns ::= Patterns "+Patterns" Patterns [function, functional, left]
     rule (P1, P1s) +Patterns P2s => P1, (P1s +Patterns P2s)
     rule .Patterns +Patterns P2s =>                    P2s 
@@ -204,7 +221,23 @@ Generic helpers
     syntax Patterns ::= findSubTermsByConstructorPs(KoreName, Patterns) [function, functional]
     rule findSubTermsByConstructorPs(Ctor, P, Ps) => findSubTermsByConstructor(Ctor, P) +Patterns findSubTermsByConstructorPs(Ctor, Ps)
     rule findSubTermsByConstructorPs(   _, .Patterns) => .Patterns
+endmodule
+```
 
+`DRIVER`
+========
+
+```k
+module DRIVER
+    imports KORE-PARSE
+    imports KORE-UNPARSE
+    imports KORE-UTILITIES
+    imports LIST
+```
+
+Utilities instatiated for KMichelson
+
+```k
     syntax  KoreName ::= "Lbl'-LT-'k'-GT-'" [token]
     syntax Patterns ::= getKCell(Pattern) [function]
     rule getKCell(Term) => findSubTermsByConstructor(Lbl'-LT-'k'-GT-', Term)
@@ -212,14 +245,25 @@ Generic helpers
     syntax  KoreName ::= "Lbl'-LT-'returncode'-GT-'" [token]
     syntax Patterns ::= getReturncodeCell(Pattern) [function]
     rule getReturncodeCell(Term) => findSubTermsByConstructor(Lbl'-LT-'returncode'-GT-', Term)
+
+    syntax PrePattern ::= parse(input: PreString)
+    rule parse(Input) =>  parse(Input, driverDefiniton() +String "/driver-kompiled/parser_Pattern")
+
+    syntax String ::= michelsonDefinition() [function, functional]
+    rule [[ michelsonDefinition() => DefnDir +String "/symbolic/" ]]
+         <defnDir> DefnDir </defnDir>
+
+    syntax String ::= driverDefiniton() [function, functional]
+    rule [[ driverDefiniton() => DefnDir +String "/driver/" ]]
+         <defnDir> DefnDir </defnDir>
 ```
 
 ```k
     configuration <k> init($Input) </k>
-                  <out stream="stdout"> .List </out>
                   <defnDir> $DefnDir:String </defnDir>
                   <success>  0 </success>
                   <failures> 0 </failures>
+                  <out stream="stdout"> .List </out>
                   <exitcode exit="0"> 2 </exitcode>
 
     rule  <k> .K </k>
@@ -234,32 +278,21 @@ Generic helpers
     syntax PrePattern ::= initialConfiguration(filename: PreString, definition: String) [seqstrict(1), result(String)]
     // TODO: The parser here isn't generated
     rule initialConfiguration(Filename, Definition)
-      => parseKore( parse( system( "llvm-krun --dry-run --directory " +String Definition
-                                   +String " -c PGM " +String Filename +String " Pgm prettyfile") 
-                         , koreDefinition() +String "/driver-kompiled/parser_Pattern"
-                         )
-                  )
-
+      => parse( system( "llvm-krun --dry-run --directory " +String Definition
+                        +String " -c PGM " +String Filename +String " Pgm prettyfile") 
+              )
+         
     syntax PrePattern ::= koreExec(config: PrePattern) [seqstrict(1), result(Pattern)]
                         | koreExec(file:   PreString)  [seqstrict(1), result(String)]
 
     rule koreExec(Configuration) => koreExec(writeTempFile(unparsePattern(Configuration)))
     rule koreExec(File)
-      => parseKore( parse( system("kore-exec " +String michelsonDefinition() +String "/michelson-kompiled/definition.kore" +String
-                                      " --strategy all" +String
-                                      " --module MICHELSON" +String
-                                      " --pattern " +String File
-                                 )
-                         , koreDefinition() +String "/driver-kompiled/parser_Pattern"
-                  )      )
-
-    syntax String ::= michelsonDefinition() [function, functional]
-    rule [[ michelsonDefinition() => DefnDir +String "/symbolic/" ]]
-         <defnDir> DefnDir </defnDir>
-
-    syntax String ::= koreDefinition() [function, functional]
-    rule [[ koreDefinition() => DefnDir +String "/driver/" ]]
-         <defnDir> DefnDir </defnDir>
+      => parse( system("kore-exec " +String michelsonDefinition() +String "/michelson-kompiled/definition.kore" +String
+                           " --strategy all" +String
+                           " --module MICHELSON" +String
+                           " --pattern " +String File
+                      )
+              )
 
     syntax KItem ::= init(filename: String)
     rule  <k> init(ProgramFile)
