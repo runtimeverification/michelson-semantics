@@ -12,6 +12,7 @@ module KORE
                      | Symbol "(" Patterns ")"                                      [klabel(application)]
                      | "\\not" "{" Sort "}" "(" Pattern ")"                         [klabel(\not)]
                      | "inj" "{" Sort "," Sort "}" "(" Pattern ")"                  [klabel(inj)]
+                     | "\\ceil" "{" Sort "," Sort "}" "(" Pattern  ")"              [klabel(\ceil)]
                      | "\\equals" "{" Sort "," Sort "}" "(" Pattern "," Pattern ")" [klabel(\equals)]
                      | "\\and" "{" Sort "}" "(" Pattern "," Pattern ")"             [klabel(\and)]
                      | "\\or" "{" Sort "}" "(" Pattern "," Pattern ")"              [klabel(\or)]
@@ -37,6 +38,7 @@ module KORE-UNPARSE
     rule unparsePattern(\top { S } ())                => "\\top{" +String unparseSort(S)  +String "} ()"
     rule unparsePattern(\bottom { S } ())             => "\\bottom{" +String unparseSort(S)  +String "} ()"
     rule unparsePattern(inj { S1 , S2 } (P1))         => "inj{" +String unparseSort(S1) +String "," +String unparseSort(S2)  +String "} (" +String unparsePattern(P1) +String ")"
+    rule unparsePattern(\ceil { S1 , S2 } (P1))       => "\\ceil{" +String unparseSort(S1) +String "," +String unparseSort(S2)  +String "} (" +String unparsePattern(P1) +String ")"
     rule unparsePattern(\not { S1 } (P1))             => "\\not{" +String unparseSort(S1) +String "} (" +String unparsePattern(P1) +String ")"
     rule unparsePattern(S(Args:Patterns))             => unparseSymbol(S) +String "(" +String unparsePatterns(Args) +String ")"
     rule unparsePattern(\and { S1 } (P1, P2))
