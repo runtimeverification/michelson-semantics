@@ -194,7 +194,7 @@ $(driver_kompiled): $(driver_files)
 	                --main-module $(driver_main_module)     \
 	                --syntax-module $(driver_syntax_module)
 
-$(driver_pattern_parser): $(driver_files)
+$(driver_pattern_parser): $(driver_files) $(driver_kompiled)
 	kast --gen-parser --directory $(driver_dir) --sort Pattern $@
 
 ### Symbolic
