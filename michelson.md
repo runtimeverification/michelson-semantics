@@ -282,7 +282,7 @@ of Michelson code. We list these configuration cells here:
    executes successfully.
 
    ```k
-                 <returncode exit=""> 1 </returncode>
+                 <returncode exit=""> 111 </returncode>
    ```
 
 7. The following cell is a debugging aid, indicating whether an `#Assume`
@@ -598,7 +598,7 @@ When the `<k>` cell is empty, we consider execution successful.
 
 ```k
   rule <k> . </k>
-       <returncode> 1 => 0 </returncode>
+       <returncode> 111 => 0 </returncode>
 ```
 
 We handle sequence and block semantics here.

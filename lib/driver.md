@@ -154,8 +154,8 @@ TODO: We'd like `#systemResult` to be of a more specific sort so we could apply
 strictness instead of the following hack:
 
 ```k
-    rule #systemResult(0, StdOut, _) => StdOut
-    rule #systemResult(1, StdOut, _) => StdOut // krun --depth 0 returns with exit code 1
+    rule #systemResult(0,   StdOut, _) => StdOut
+    rule #systemResult(111, StdOut, _) => StdOut // krun failures indicate that exit code is non-zero
 ```
 
 ```k
