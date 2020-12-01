@@ -235,7 +235,24 @@ module DRIVER
     imports LIST
 ```
 
+`kore-exec`
+-----------
+
+```k
+    syntax PrePattern ::= koreExec(config: PrePattern) [seqstrict(1), result(Pattern)]
+                        | koreExec(file:   PreString)  [seqstrict(1), result(String)]
+    rule koreExec(Configuration) => koreExec(writeTempFile(unparsePattern(Configuration)))
+    rule koreExec(File)
+      => parse( system("kore-exec " +String michelsonDefinition() +String "/michelson-kompiled/definition.kore" +String
+                           " --strategy all" +String
+                           " --module MICHELSON" +String
+                           " --pattern " +String File
+                      )
+              )
+```
+
 Utilities instatiated for KMichelson
+------------------------------------
 
 ```k
     syntax  KoreName ::= "Lbl'-LT-'k'-GT-'" [token]
@@ -258,14 +275,90 @@ Utilities instatiated for KMichelson
          <defnDir> DefnDir </defnDir>
 ```
 
+
+Main
+----
+
+We initialize the configuration with the input filename.
+
 ```k
-    configuration <k> init($Input) </k>
-                  <defnDir> $DefnDir:String </defnDir>
-                  <success>  0 </success>
-                  <failures> 0 </failures>
+    configuration <k> init($InputFilename) </k>
+                  <success>  0 </success>               // Number of successful branches
+                  <failures> 0 </failures>              // Number of failing    branches
+                  <defnDir> $DefnDir:String </defnDir>  // Path to kompiled definitions
                   <out stream="stdout"> .List </out>
                   <exitcode exit="0"> 2 </exitcode>
+```
 
+
+### Initialization
+
+We then parse the program syntax into kore using `llvm-krun`, and then parse the kore string into a `Pattern` we then exuecute this pattern with `kore-exec`.
+
+```k
+    syntax KItem ::= init(filename: String)
+    rule  <k> init(ProgramFile)
+           => koreExec(initialConfiguration(ProgramFile, michelsonDefinition() +String "/michelson-kompiled/"))
+              ...
+          </k>
+
+    syntax PrePattern ::= initialConfiguration(filename: PreString, definition: String) [seqstrict(1), result(String)]
+    // TODO: The parser here isn't generated
+    rule initialConfiguration(Filename, Definition)
+      => parse( system( "llvm-krun --dry-run --directory " +String Definition
+                        +String " -c PGM " +String Filename +String " Pgm prettyfile") 
+              )
+```
+
+### Normalization
+
+The resulting configuration is a disjunction of constrained configurations. We handle each of these in turn.
+
+```k
+    rule <k> \or { SortGeneratedTopCell { } } (P1, P2) => P1 ~> P2 ... </k>
+```
+
+We normalize this configuration so that it is in the form of a constrained term.
+
+```k
+    syntax KoreName ::= "SortGeneratedTopCell" [token]
+    rule <k> Lbl'-LT-'generatedTop'-GT-' { .Sorts } ( _ ) #as Pgm => \and { SortGeneratedTopCell { } } (Pgm, \top {SortGeneratedTopCell { }}()) ... </k>
+```
+
+We also apply associativity laws for `\and`.
+
+```k
+    rule \and { S }(\and { S } (P1, P2), P3) => \and { S }(P1, \and { S } (P2, P3)) [anywhere]
+```
+
+### Triaging
+
+We then triage each branch according to the contents of its `<k>` and `<returncode>` cell.
+
+```k
+    syntax KoreName ::= "Lbl'-LT-'generatedTop'-GT-'" [token]
+    syntax KItem ::= triage(kcell: Patterns, returncode: Patterns, config: Pattern)
+    rule <k> \and { SortGeneratedTopCell { } }(Lbl'-LT-'generatedTop'-GT-' { .Sorts } (_) #as Config, _Constraints) #as ConstrainedConfiguration
+          => triage(getKCell(Config), getReturncodeCell(Config), ConstrainedConfiguration)
+             ...
+         </k>
+```
+
+```k
+    syntax KoreName ::= "SortInt" [token]
+    rule <k> triage( _, \dv { SortInt { } } ( "0" ), _) => .K ... </k>
+         <success> N => N +Int 1 </success>
+
+    syntax KoreName ::= "Lbl'Hash'AssertFailed" [token] | "kseq" [token]
+    rule <k> triage( kseq { .Sorts } (Lbl'Hash'AssertFailed {.Sorts } (.Patterns), _ ) , _, _) => .K ... </k>
+         <failures> N => N +Int 1 </failures>
+```
+
+### Finalization
+
+Finally, we print the total number of sucessful and failed branches.
+
+```k
     rule  <k> .K </k>
           <out> ... .List
              => ListItem(Int2String(Successes)) ListItem(" branch(es) succeeded; ")
@@ -274,55 +367,6 @@ Utilities instatiated for KMichelson
           <success> Successes </success>
           <failures> Failures </failures>
           <exitcode> 2 => #if Failures ==Int 0 #then 0 #else 1 #fi </exitcode>
-
-    syntax PrePattern ::= initialConfiguration(filename: PreString, definition: String) [seqstrict(1), result(String)]
-    // TODO: The parser here isn't generated
-    rule initialConfiguration(Filename, Definition)
-      => parse( system( "llvm-krun --dry-run --directory " +String Definition
-                        +String " -c PGM " +String Filename +String " Pgm prettyfile") 
-              )
-         
-    syntax PrePattern ::= koreExec(config: PrePattern) [seqstrict(1), result(Pattern)]
-                        | koreExec(file:   PreString)  [seqstrict(1), result(String)]
-
-    rule koreExec(Configuration) => koreExec(writeTempFile(unparsePattern(Configuration)))
-    rule koreExec(File)
-      => parse( system("kore-exec " +String michelsonDefinition() +String "/michelson-kompiled/definition.kore" +String
-                           " --strategy all" +String
-                           " --module MICHELSON" +String
-                           " --pattern " +String File
-                      )
-              )
-
-    syntax KItem ::= init(filename: String)
-    rule  <k> init(ProgramFile)
-           => koreExec(initialConfiguration(ProgramFile, michelsonDefinition() +String "/michelson-kompiled/"))
-              ...
-          </k>
-
-    syntax KoreName ::= "SortGeneratedTopCell" [token]
-    rule <k> \or { SortGeneratedTopCell { } } (P1, P2) => P1 ~> P2 ... </k>
-
-    rule \and { S }(\and { S } (P1, P2), P3)
-      => \and { S }(P1, \and { S } (P2, P3)) [anywhere]
-
-    rule <k> Lbl'-LT-'generatedTop'-GT-' { .Sorts } ( _ ) #as Pgm => \and { SortGeneratedTopCell { } } (Pgm, \top {SortGeneratedTopCell { }}()) ... </k>
-
-    syntax KoreName ::= "Lbl'-LT-'generatedTop'-GT-'" [token]
-    syntax KItem ::= triage(kcell: Patterns, returncode: Patterns, config: Pattern)
-    rule <k> \and { SortGeneratedTopCell { } }(Lbl'-LT-'generatedTop'-GT-' { .Sorts } (_) #as Config, _Constraints) #as ConstrainedConfiguration
-          => triage(getKCell(Config), getReturncodeCell(Config), ConstrainedConfiguration)
-             ...
-         </k>
-
-    syntax KoreName ::= "SortInt" [token]
-    rule <k> triage( _, \dv { SortInt { } } ( "0" ), _) => .K ... </k>
-         <success> N => N +Int 1 </success>
-
-    syntax KoreName ::= "Lbl'Hash'AssertFailed" [token]
-                      | "kseq" [token]
-    rule <k> triage( kseq { .Sorts } (Lbl'Hash'AssertFailed {.Sorts } (.Patterns), _ ) , _, _) => .K ... </k>
-         <failures> N => N +Int 1 </failures>
 ```
 
 ```k

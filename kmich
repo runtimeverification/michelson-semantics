@@ -83,7 +83,7 @@ run_symbtest() {
 
     export K_OPTS=-Xss500m
     krun --directory "$backend_dir"   \
-       -cInput="\"$run_file\""      \
+       -cInputFilename="\"$run_file\""      \
        -cDefnDir="\"$defn_dir\""    \
        $output                      \
        "$@"
