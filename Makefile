@@ -176,15 +176,16 @@ $(prove_kompiled): $(prove_files)
 
 ### Symbolic Driver
 
-driver_dir           := $(DEFN_DIR)/driver
-driver_files         := lib/driver.md
-driver_main_file     := lib/driver
-driver_main_module   := DRIVER
-driver_syntax_module := KORE 
-driver_kompiled      := $(driver_dir)/$(notdir $(driver_main_file))-kompiled/interpreter
+driver_dir            := $(DEFN_DIR)/driver
+driver_files          := lib/driver.md
+driver_main_file      := lib/driver
+driver_main_module    := DRIVER
+driver_syntax_module  := KORE
+driver_kompiled       := $(driver_dir)/$(notdir $(driver_main_file))-kompiled/interpreter
+driver_pattern_parser := $(driver_dir)/$(notdir $(driver_main_file))-kompiled/parser_Pattern
 
 defn-driver:  $(driver_files)
-build-driver: $(driver_kompiled)
+build-driver: $(driver_kompiled) $(driver_pattern_parser)
 
 $(driver_kompiled): tangle_haskell := k | driver
 $(driver_kompiled): $(driver_files)
@@ -192,6 +193,9 @@ $(driver_kompiled): $(driver_files)
 	                --directory $(driver_dir) -I $(CURDIR)  \
 	                --main-module $(driver_main_module)     \
 	                --syntax-module $(driver_syntax_module)
+
+$(driver_pattern_parser): $(driver_files)
+	kast --gen-parser --directory $(driver_dir) --sort Pattern $@
 
 ### Symbolic
 
@@ -203,7 +207,7 @@ symbolic_syntax_module := SYMBOLIC-UNIT-TEST-SYNTAX
 symbolic_kompiled      := $(symbolic_dir)/$(notdir $(symbolic_main_file))-kompiled/definition.kore
 
 defn-symbolic:  $(symbolic_files)
-build-symbolic: $(symbolic_kompiled)
+build-symbolic: $(symbolic_kompiled) build-driver
 
 $(symbolic_kompiled): tangle_haskell := k | symbolic | internalized-rl
 $(symbolic_kompiled): $(symbolic_files)
@@ -319,7 +323,7 @@ EXPECTED_EXITCODE = 0
 tests/symbolic/%.fail.tzt.symbolic:  EXPECTED_EXITCODE = 1
 tests/symbolic/%.stuck.tzt.symbolic: EXPECTED_EXITCODE = 2
 
-tests/%.symbolic: tests/% $(driver_kompiled) $(symbolic_kompiled)
+tests/%.symbolic: tests/% build-symbolic
 	$(LIB_DIR)/check-exit-code $(EXPECTED_EXITCODE) $(TEST) symbtest $< > /dev/null
 
 # Cross Validation

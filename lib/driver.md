@@ -238,7 +238,7 @@ Generic helpers
     rule initialConfiguration(Filename, Definition)
       => parseKore( parse( system( "llvm-krun --dry-run --directory " +String Definition
                                    +String " -c PGM " +String Filename +String " Pgm prettyfile") 
-                         , koreDefinition() +String "/../../../parser_PGM"
+                         , koreDefinition() +String "/driver-kompiled/parser_Pattern"
                          )
                   )
 
@@ -252,7 +252,7 @@ Generic helpers
                                       " --module MICHELSON" +String
                                       " --pattern " +String File
                                  )
-                         , koreDefinition() +String "/../../../parser_PGM"
+                         , koreDefinition() +String "/driver-kompiled/parser_Pattern"
                   )      )
 
     syntax String ::= michelsonDefinition() [function, functional]
