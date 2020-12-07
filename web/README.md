@@ -1,9 +1,10 @@
-# K Website
+# Website
 
 Please make sure you have nodejs and npm installed
 
 ```bash
-$ npm install     # install necessary dependencies
-$ npm run build   # build the website to ./public_content directory
-$ npm run serve   # start the development server
+$ npm install           # install necessary dependencies
+$ npm run build         # build the website to ./public_content directory
+$ npm run serve         # start the development server
+$ npm run build-sitemap # build the sitemap
 ```
