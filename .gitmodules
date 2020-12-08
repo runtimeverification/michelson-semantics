@@ -6,3 +6,6 @@
 	path = ext/tezos
 	url = https://gitlab.com/tezos/tezos.git
 	ignore = untracked
+[submodule "web/k-web-theme"]
+	path = web/k-web-theme
+	url = https://github.com/runtimeverification/k-web-theme

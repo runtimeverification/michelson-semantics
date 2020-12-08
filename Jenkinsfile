@@ -38,15 +38,18 @@ pipeline {
                   git clone 'ssh://github.com/runtimeverification/michelson-semantics.git'
                   cd michelson-semantics
                   git checkout -B gh-pages origin/master
-                  # delete all non-markdown files EXCEPT the _config.yml file which defines the website theme
-                  # note: since we are in a groovy string, we need to escape each backslash
-                  rm -r $(git ls-files | grep -v -E '\\.md$|^_config\\.yml$')
-                  # delete media directory which we don't care about
-                  rm -rf media
+                  cd web
+                  npm install
+                  npm run build
+                  npm run build-sitemap
+                  cd -
+                  mv web/public_content ./
+                  rm -rf $(find . -maxdepth 1 -not -name public_content -a -not -name .git -a -not -path . -a -not -path .. -a -not -name CNAME)
+                  mv public_content/* ./
+                  rm -rf public_content
                   git add ./
-                  git commit -m 'gh-pages: remove unrelated content'
-                  git fetch origin gh-pages
-                  git merge --strategy ours FETCH_HEAD
+                  git commit -m 'gh-pages: Updated the website'
+                  git merge --strategy ours origin/gh-pages --allow-unrelated-histories
                   git push origin gh-pages
                 '''
               }
