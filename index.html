@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="Design and implement your programming language and software analysis tools with mathematical rigor."
+/>
+<meta name="keywords" content="runtime, verification, rv, k" />
+<meta name="author" content="IELE Semantics | Runtime Verification Inc" />
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<link rel="icon" type="image/png" href="./assets/img/favicon.ico" />
+
+<title>Michelson Semantics | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="./assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="./assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="./index.html"> IELE Semantics </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/iele-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="./downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="./">Homepage</a>
+      <a class="bd-toc-link" href="./INSTALL">Install</a>
+      <a class="bd-toc-link" href="./USER_GUIDE">User Guide</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-9 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="k-michelson%3A-a-michelson-semantics">K-Michelson: A Michelson Semantics</h1>
+<h2 id="introduction">Introduction</h2>
+<p>K-Michelson is:</p>
+<ul>
+<li>
+<p>a formal, executable, and human-readable semantics of the Michelson
+blockchain programming language using the K framework;</p>
+</li>
+<li>
+<p>a unit test framework for Michelson programs that allows testing program
+behavior at a finer granularity than contract invocation;</p>
+</li>
+<li>
+<p>a formal verification framework for Michelson programs using a slight
+extension of Michelson as an assertion language.</p>
+</li>
+</ul>
+<h3 id="goals">Goals</h3>
+<ul>
+<li>
+<p>Serve as a human-readable and executable reference document specifying how
+Michelson programs should operate.</p>
+</li>
+<li>
+<p>Provide tools for testing and verifying Michelson programs operate as
+designed.</p>
+</li>
+</ul>
+<h3 id="non-goals">Non-Goals</h3>
+<ul>
+<li>
+<p>Provide a complete formal model of the Tezos blockchain. In particular, we
+do <em>not</em> model things like: networking and peer-to-peer communication,
+block baking or validation, transaction pools, protocol amendment, etc.</p>
+</li>
+<li>
+<p>Replace existing Tezos CLI tools. Developers should still use
+<code>tezos-client</code> for interfacing with Tezos nodes, <code>tezos-node</code> for running
+your own nodes, etc.</p>
+</li>
+</ul>
+<h2 id="getting-started">Getting Started</h2>
+<p>See <a href="INSTALL/">INSTALL.md</a> for installation instructions.</p>
+<p>See <a href="USER_GUIDE/">USER_GUIDE.md</a> for usage instructions.</p>
+<h2 id="project-structure">Project Structure</h2>
+<p>The project has a very simple layout. Source files live at the project root.</p>
+<ul>
+<li>
+<p><a href="syntax/">syntax.md</a> specifies the syntax of Michelson and other input
+data</p>
+</li>
+<li>
+<p><a href="common/">common.md</a> specifies common infrastructure used in the type
+checker and the core semantics</p>
+</li>
+<li>
+<p><a href="types/">types.md</a> contains a rudimentary type-checker for Michelson</p>
+</li>
+<li>
+<p><a href="michelson/">michelson.md</a> specifies:</p>
+<ul>
+<li>the configuration (state representation) of Michelson programs (module
+<code>MICHELSON-CONFIG</code>)</li>
+<li>the core semantic rules of Michelson as well as semantic extensions to
+support unit testing (module <code>MICHELSON</code>)</li>
+</ul>
+</li>
+<li>
+<p><a href="compat/">compat.md</a> is a compatability layer between K-Michelson and
+the Tezos Reference client used for cross-validation testing</p>
+</li>
+</ul>
+<p>Other directories include:</p>
+<ul>
+<li><code>/ext</code> - Git submodules for our direct dependencies</li>
+<li><code>/hooks</code> - C++ definitions which implement some low-level operations</li>
+<li><code>/lib</code> - scripts used by the test harness</li>
+<li><code>/media</code> - source code for presentations about K-Michelson</li>
+<li><code>/tests</code> - source code for all tests</li>
+</ul>
+<p>See the tests <a href="tests/">README</a> for more information on test formats
+and organization.</p>
+</body></html></div>
+        </main>
+      </div>
+    </div>
+<footer class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-2 mb-md-0 mb-4">
+        <span class="pr-md-5 pr-0 py-3">
+          <a href="https://runtimeverification.com" target="_blank">
+            <picture>
+              <source
+                srcset="./assets/img/rv-logo-dark.png"
+                media="(prefers-color-scheme: dark)"
+              />
+              <img
+                class="pr-3 footer-logo"
+                src="./assets/img/rv-logo.png"
+                alt="Runtime Verification Inc logo"
+              />
+            </picture>
+          </a>
+        </span>
+      </div>
+      <div class="col-md-6 mb-md-0 mb-4"></div>
+      <div class="col-md-4 text-md-right">
+        <p class="copyright">
+          &copy; 2020 Runtime Verification Inc. All right reserved.
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Typist/1.2/typist.min.js"></script>
+    <script src="./assets/js/index.js"></script>
+  </body>
+</html>
