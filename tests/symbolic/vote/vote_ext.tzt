@@ -1,0 +1,63 @@
+parameter string ;
+storage (map string int) ;
+code {
+       # verify balance is sufficient to run contract
+       AMOUNT ;
+       PUSH mutez 5000000 ;
+       COMPARE ; GT ;
+       IF { FAIL } { } ;
+
+       # get the storage (map) and parameter (string key)
+       DUP ; DIP { CDR ; DUP } ; CAR ; DUP ;
+
+       # lookup map[key] and return Some (map[key] + 1)
+       DIP { GET ; ASSERT_SOME ;
+             PUSH int 1 ; ADD ; SOME } ;
+
+       # assign map[key] := map[key] + 1
+       UPDATE ;
+
+       # update map in storage
+       NIL operation; PAIR
+     } ;
+
+amount 5000001 ;
+
+input  { Stack_elt (pair string           (map string int)) $I } ;
+output { Stack_elt (pair (list operation) (map string int)) $O } ;
+
+precondition  { { PUSH (pair string (map string int)) $I ; UNPAIR ; MEM } } ;
+postcondition { { PUSH (pair string (map string int)) $I                          # (S,M)
+                ; CAR                                                             # S
+                ; PUSH string $K                                                  # K S
+                ; COMPARE ; EQ                                                    # K=S
+                ; IF # K = S
+                     { TRACE("==")
+                     ; PUSH (pair string (map string int)) $I                     # (S,M)
+                     ; UNPAIR                                                     # S M
+                     ; GET                                                        # M[S]
+                     ; IF_NONE { PUSH bool False }
+                               { PUSH int 1                                       # 1 + M[S]
+                               ; ADD                                              # M[S]+1
+                               ; PUSH (pair (list operation) (map string int)) $O # (L,M') M[S]+1
+                               ; CDR                                              # M' M[S]+1
+                               ; PUSH (pair string (map string int)) $I ; CAR     # S M' M[S]+1
+                               ; GET                                              # M'[S] M[S]+1
+                               ; IF_NONE { PUSH bool False }
+                                         { COMPARE ; EQ    }                      # M'[S] == M[S]+1
+                               }
+                     }
+                     # S != K
+                     { TRACE("=/=")
+                     ; PUSH (pair string (map string int)) $I                     # (S,M)
+                     ; CDR                                                        # M
+                     ; PUSH string $K                                             # K M
+                     ; GET                                                        # M[K]?
+                     ; PUSH (pair (list operation) (map string int)) $O           # (L,M') M[K]
+                     ; CDR                                                        # M' M[K]
+                     ; PUSH string $K                                             # K M' M[K]
+                     ; GET                                                        # M'[K] M[K]
+                     ; COMPARE ; EQ                                               # M'[K] == M[K]
+                     }
+                }
+              }
