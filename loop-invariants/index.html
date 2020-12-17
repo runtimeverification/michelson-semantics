@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="A Michelson semantics for Tezos built using the K Framework."
+/>
+<meta name="keywords" content="runtime, verification, rv, k" />
+<meta name="author" content="Michelson Semantics | Runtime Verification Inc" />
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<link rel="icon" type="image/png" href="../assets/img/favicon.ico" />
+
+<title>Michelson Semantics | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../index.html"> IELE Semantics </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/michelson-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../">Homepage</a>
+      <a class="bd-toc-link" href="../INSTALL">Install</a>
+      <a class="bd-toc-link" href="../USER_GUIDE">User Guide</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-9 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="michelson-loop-invariant-analysis">Michelson Loop Invariant Analysis</h1>
+<h2 id="introduction">Introduction</h2>
+<p>We would like to define Hoare logic rules for Michelson loops, to help us
+ensure that we have the proper loop invariant semantics. Michelson, like other
+languages, divides looping instructions into two types:</p>
+<ul>
+<li>predicate-based loops (colloquially called <code>while</code> loops)</li>
+<li>sequence-based loops (colloquially called <code>for</code> loops)</li>
+</ul>
+<p>For brevity and clarity, we document the different parts of the loop as we
+will need to refer to them later. Let us recall the syntax of imperative-style
+loops using Python&apos;s syntax as well as Michelson&apos;s loops.</p>
+<h3 id="while-loops">While Loops</h3>
+<pre class="language-python"><code><span class="token keyword">while</span> guard<span class="token punctuation">:</span>
+  loop_body
+</code></pre>
+<pre class="language-text"><code>LOOP { loop_body }
+</code></pre>
+<pre class="language-text"><code>LOOP_LEFT { loop_body }
+</code></pre>
+<h3 id="for-loops">For Loops</h3>
+<pre class="language-python"><code><span class="token keyword">for</span> element <span class="token keyword">in</span> sequence<span class="token punctuation">:</span>
+  loop_body
+</code></pre>
+<pre class="language-text"><code>ITER { loop_body }
+</code></pre>
+<h2 id="loop-terminology">Loop Terminology</h2>
+<p>It will be helpful to define some general loop terminology based on our
+examples above.</p>
+<h3 id="loop-header-and-body">Loop Header and Body</h3>
+<p>Syntactically, most loop constructs subdivide into two parts:</p>
+<ul>
+<li>the <em>loop header</em> which usually precedes the <em>loop body</em> and describes the
+conditions for loop termination</li>
+<li>the <em>loop body</em> which is the block of the code that will be executed once
+for each loop iteration</li>
+</ul>
+<p>Note that, unlike imperative-style <code>while</code> loops, Michelson <code>while</code> loop
+headers do not contain their guard. Instead, the guard is set up:</p>
+<ul>
+<li>in the expressions preceding the loop</li>
+<li>inside the loop body</li>
+</ul>
+<p>This relates to the point-free nature of stack-based languages like Michelson
+which have: (a) no or limited usage of variables; (b) no or limited means to
+create new execution contexts that do not refer to the global stack.</p>
+<h3 id="loop-guard">Loop Guard</h3>
+<p>The most fundamental concept underlying the definition of the loop is its
+<em>guard</em>, that is, the predicate that must hold true for the loop to continue
+execution. For <code>while</code> loops, the guard is the predicate directly embedded in
+the loop syntax. In the example above, we referred to it as <code>guard</code>. For <code>for</code>
+loops, the loop guard is more implict. We can rewrite a <code>for</code> loop as a
+<code>while</code> loop to make this guard explicit:</p>
+<pre class="language-python"><code>index <span class="token operator">=</span> <span class="token number">0</span>
+<span class="token keyword">while</span> index <span class="token operator">&lt;</span> <span class="token builtin">len</span><span class="token punctuation">(</span>sequence<span class="token punctuation">)</span><span class="token punctuation">:</span>
+  element <span class="token operator">=</span> sequence<span class="token punctuation">[</span>index<span class="token punctuation">]</span>
+  loop_body
+  index <span class="token operator">+=</span> <span class="token number">1</span>
+</code></pre>
+<p>Here, we see that the implicit loop guard asserts that the index of our
+sequence element is less than the length of the sequence.</p>
+<p>Alternatively, we may view the loop guard as either a <em>continuation condition</em>
+in the postive sense or a <em>termination condition</em> in the negative sense.</p>
+<h3 id="loop-schema">Loop Schema</h3>
+<p>Given the fact that the guard is somewhat abstracted in the case of
+sequence-based loops, we define a related concept that we call the <em>loop
+schema</em> as follows:</p>
+<ul>
+<li>for <code>while</code> loops, the loop schema is just the loop guard</li>
+<li>for <code>for</code> loops, the loop schema is the iterated-over sequence</li>
+</ul>
+<p>In either case, the loop schema defines how the loop will execute. At runtime,
+the schema formal parameters are instantiated with values from the program
+environment.</p>
+<h3 id="loop-object">Loop Object</h3>
+<p>Each loop iteration considers or focuses a particular program value. We call
+this value the <em>loop iteration object</em> or just <em>loop object</em>. For <code>while</code>
+loops, this only exists in a degenerate sense as the boolean value of the loop
+guard. For <code>for</code> loops, this is the current sequence element which
+instantiates the loop&apos;s <code>element</code> formal parameter.</p>
+<p>In either case, in Michelson, the loop object appears on top of the stack
+either immediately before entering the loop body (in the case of <code>LOOP</code> and
+<code>LOOP_LEFT</code>) or else immediately after entering the loop body (in the
+case of <code>ITER</code>).</p>
+<h3 id="loop-prefix-and-suffix">Loop Prefix and Suffix</h3>
+<p><code>For</code> style loops, in addition to having a loop object, also have a loop
+<em>prefix</em> and <em>suffix</em> which refer to the subsequences of the iterated-over
+sequence occuring before and after the loop object, respectively.</p>
+<h3 id="loop-state">Loop State</h3>
+<p>At any point of time during the execution of a loop, its <em>state</em> is given by
+the current program environment which binds its body variables to values.</p>
+<h3 id="loop-invariant">Loop Invariant</h3>
+<p>A <em>loop invariant</em> is a formula parameterized by loop variables which
+summarizes the effect of executing a loop for zero or more iterations.</p>
+<p>In most cases, the invariant formula must be provided by the user; in general,
+inferring a loop invariant is undecidable.</p>
+<h3 id="loop-invariant-checkpoints">Loop Invariant Checkpoints</h3>
+<p>A <em>loop invariant checkpoint</em> or <em>checkpoint</em>, if the context is clear, refers
+to the points during execution when we require that a loop invariant to hold.
+They are:</p>
+<ol>
+<li>immediately before entering the loop</li>
+<li>before each loop iteration starts</li>
+<li>after exiting the loop</li>
+</ol>
+<p>There are some points worth noting:</p>
+<ul>
+<li>first two cases can be merged, if we consider the branching point of the
+loop, i.e. the moment when the flow of control may pass into the loop body
+or jump immediately after the loop;</li>
+<li>the loop invariant is <em>not</em> required to hold inside the body.</li>
+</ul>
+<h3 id="loop-miscellanea">Loop Miscellanea</h3>
+<h4 id="alternative-loop-invariant-checkpoint-definition">Alternative Loop Invariant Checkpoint Definition</h4>
+<p>One may consider instead loop invariant checkpoints occuring:</p>
+<ol>
+<li>before entering the loop</li>
+<li>after each loop iteration ends</li>
+</ol>
+<p>This has the disadvantage that it is less natural when we consider loops
+with <code>break</code> statements which allow us to exit the loop midway through a loop
+iteration. In that case, it is unclear if the loop iteration has &quot;ended.&quot;
+On the other hand, the formulation above does not suffer from this ambiguity,
+since it is always clear where a loop iteration may begin.</p>
+<h4 id="predicate-loops-with-effectful-guards">Predicate Loops with Effectful Guards</h4>
+<p>Note that, for technical reasons, we generally assume that evaluating the loop
+guard is side-effect free. If it is not, we can always apply a simple loop
+transformation to make guard evaluation side-effect free, i.e., a <code>while</code> loop
+like the one above is equivalent to:</p>
+<pre class="language-python"><code>guard_value <span class="token operator">=</span> guard
+<span class="token keyword">while</span> guard_value<span class="token punctuation">:</span>
+  loop_body
+  guard_value <span class="token operator">=</span> guard
+</code></pre>
+<p>Thus, without loss of generality, we assume loop guards are side-effect free.</p>
+<h4 id="aside-on-c-style-for-loops">Aside on C-Style For Loops</h4>
+<p>Note that C-style <code>for</code> loops, despite using the <code>for</code> keyword, are actually
+predicate-based loops which do not necessarily iterate over the elements in
+some sequence.</p>
+<p>Sometimes the term <code>foreach</code> loop is used to refer to the style of
+sequence-based loops that we consider above to avoid confusion with C-style
+<code>for</code> loops.</p>
+<h2 id="stack-based-langauge-notation">Stack-based Langauge Notation</h2>
+<p>It will be helpful to define some notation which precisely describes
+strongly typed, stack-based languages like Michelson.</p>
+<h3 id="stack-notation">Stack Notation</h3>
+<p>Since we are dealing with a stack-based language, we need a way to specify stack
+shapes in our Hoare rules. Thus, we have developed a typed stack notation. For
+example, the expression below:</p>
+<pre class="language-text"><code>(T&#x2081; E&#x2081;) ... (T&#x2096; E&#x2096;)
+</code></pre>
+<p>represents the stack with elements <code>E&#x2081; ... E&#x2096;</code> such that element <code>E&#x209A;</code> has type
+<code>T&#x209A;</code> for <code>1 &#x2264; p &#x2264; k</code>. To sipmlify our rule descriptions, we let variables
+prefixed with two dots, e.g. <code>..S</code> represent an arbitrary stack. Thus,</p>
+<p><code>(T&#x2081; E&#x2081;) (T&#x2082; E&#x2082;) ..S</code></p>
+<p>represent any stack with <em>at least</em> two elements on top.
+By convention, for a stack variable <code>..S</code>, we let <code>..S&apos;</code> represent a stack
+variable of the sames shape (i.e. elements have the same type) but with
+different values.</p>
+<h3 id="constraint-language">Constraint Language</h3>
+<p>We need to represent constraints on Michelson program states. We will use:</p>
+<ul>
+<li>standard logical notation from first-order logic (FOL), i.e.&#xA0;<code>&#x2227;</code>,<code>&#x2228;</code>,<code>&#xAC;</code>,
+etc...</li>
+<li>typed stacks are understood as <em>predicates</em> representing the actual
+Michelson program stack has the same shape as typed stack</li>
+</ul>
+<p>Thus, the following would be a valid constraint:</p>
+<p><code>(int I) ..S &#x2227; I &#x2265; 5</code></p>
+<p>which specifies the stack has one integer element on top such that its value is
+greater than or equal to 5.</p>
+<h3 id="program-notation">Program Notation</h3>
+<p>We represent program states as pairs of programs and constraints separated by
+a forward slash <code>/</code>.
+Thus, the following expression:</p>
+<p><code>LOOP { Body } / (bool False) ..S</code></p>
+<p>represents an input stack with a with one boolean value <code>False</code> on top
+executing the program <code>LOOP { Body }</code>.</p>
+<h2 id="hoare-rules-for-imperative-loop-statements">Hoare Rules for Imperative Loop Statements</h2>
+<p>Before considering the Hoare logic rules for Michelson loops, let us review
+the rules for imperative style loop statements. We first show the Hoare logic
+rule for a <code>while</code> loop:</p>
+<pre class="language-text"><code>      [ Invariant &#x2227; guard ] body [ Invariant ]
+------------------------------------------------------
+[ Invariant ] while guard: body [ Invariant &#x2227; &#xAC;guard ]
+</code></pre>
+<p>Using the <code>for</code> to <code>while</code> loop encoding that we saw above, we can produce
+a Hoare logic rule for <code>for</code> loops. Note that, since the loop guard mentions
+a ghost variable <code>i</code> which is only in scope inside the loop.</p>
+<pre class="language-text"><code>[ Invariant &#x2227; 0 &#x2264; i &lt; len(seq) ] elem = seq[i] ; body [ Invariant ]
+-------------------------------------------------------------------
+ [ Invariant ] for elem&#x1D62; in seq: body [ i = len(seq) &#x2227; Invariant ]
+</code></pre>
+<p>Note that, the above Hoare rules do not properly capture loops with <code>break</code>
+statements, since such statements allow for early loop termination so that
+the loop guard may not necessarily become falsified.</p>
+<h2 id="michelson-loop-semantics">Michelson Loop Semantics</h2>
+<p>Michelson <code>LOOP</code>s are different from C while loops.
+Let us define it with small step style semantic rules:</p>
+<pre class="language-text"><code>LOOP Body / (bool False) ..S =&gt; {}               / ..S
+LOOP Body / (bool True)  ..S =&gt; Body ; LOOP Body / ..S
+</code></pre>
+<p>where <code>{}</code> is the empty/terminal program (sometimes denoted <code>skip</code>) and <code>DROP</code>
+is the Michelson instruction which drops the top stack element.</p>
+<p><code>ITER</code> style loops have a similar definition:</p>
+<pre class="language-text"><code>ITER Body / (seq t {}         ) ..S =&gt; {}               /                       ..S
+ITER Body / (seq t {Elt ; Seq}) ..S =&gt; Body ; ITER Body / (t Elt) (seq t {Seq}) ..S
+</code></pre>
+<p>Note that Michelson loops have an implicit loop guard, i.e. the loop guard
+requires that the stack top equals <code>True</code> or that the stack top is a
+non-empty sequence.</p>
+<h3 id="relation-to-c-style-loops">Relation to C-style Loops</h3>
+<p>It is a useful exercise to compare the Michelson <code>LOOP</code> instruction to C-style
+&quot;while&quot; loops to understand how we might apply standard Hoare logic rules for
+C programs.</p>
+<p>Assuming that:</p>
+<ol>
+<li>our C code has an implicit, global, typed value stack that we can operate
+on called <code>stack</code></li>
+<li>the <code>stack</code> exposes a function <code>pop</code> which pops the top stack element and
+returns it</li>
+<li>the Michelson code <code>LOOP Body</code> is well-typed</li>
+</ol>
+<p>converting the Michelson code <code>LOOP Body</code> to C might look like:</p>
+<pre class="language-c"><code><span class="token keyword">while</span> <span class="token punctuation">(</span><span class="token function">pop</span><span class="token punctuation">(</span>stack<span class="token punctuation">)</span> <span class="token operator">==</span> BOOL_TRUE<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  Body
+<span class="token punctuation">}</span>
+</code></pre>
+<p>Of course, as we explained above, the loop guard here is not amenable to
+static analysis because it is not side-effect free. We can convert it into a
+side-effect form using a variation of the trick that we mentioned above:</p>
+<pre class="language-c"><code><span class="token keyword">int</span> cond <span class="token operator">=</span> <span class="token function">pop</span><span class="token punctuation">(</span>stack<span class="token punctuation">)</span> <span class="token operator">==</span> BOOL_TRUE<span class="token punctuation">;</span>
+<span class="token keyword">while</span> <span class="token punctuation">(</span>cond<span class="token punctuation">)</span> <span class="token punctuation">{</span> <span class="token comment">// 1</span>
+  Body
+  cond <span class="token operator">=</span> <span class="token function">pop</span><span class="token punctuation">(</span>stack<span class="token punctuation">)</span> <span class="token operator">==</span> BOOL_TRUE<span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+<span class="token comment">// 2</span>
+</code></pre>
+<p>Then, by our discussion above, it is enough to consider invariant checkpoints:</p>
+<ul>
+<li>before a loop iteration potentially executes at point (1)</li>
+<li>after loop execution ends (2)</li>
+</ul>
+<h3 id="hoare-loop-rules-for-michelson-loops">Hoare Loop Rules for Michelson LOOPs</h3>
+<p>To ensure soundness, we must properly convert our invariant checkpoints from
+the C-style code to Michelson code so that we can do reasoning over pure
+Michelson code.</p>
+<p>Naturally, this means it is sufficient to check the invariant when:</p>
+<ul>
+<li>in the top-level proof, when we encounter the <code>LOOP</code> instruction but
+<em>before</em> descending into loop:</li>
+<li>in the subproof, after we have symbolically executed the loop body</li>
+</ul>
+<p>This corresponds to the following Hoare logic rule:</p>
+<pre class="language-text"><code>(&#x3B1;)    [ ..S1 &#x2227; Inv(True, S1) ] Body [ (bool B1&apos;) ..S1&apos; &#x2227; Inv(B1&apos;, S1&apos;) ]
+    ------------------------------------------------------------------------
+(&#x3B2;)   [ (bool B) ..S &#x2227; Inv(B, S) ] LOOP { Body } [ ..S&apos; &#x2227; Inv(False, S&apos;) ]
+</code></pre>
+<p>As noted above, our loop rule only implicitly mentions the guard by referring to
+the boolean element at the top of stack.
+Here we see that our invariant formula <code>Inv</code> is parameterized by <em>the value of
+the stack when our current continuation is of the form <code>LOOP { Body }</code></em>.
+This means that our invariant formula may be parameterized by stack values
+which no longer exist, as seen on the righthand side of line <code>(&#x3B2;)</code>, where the
+invariant formula&apos;s first argument is the stack element <code>False</code> which by then
+has already been popped off of the stack.</p>
+<h2 id="usable-program-annotation-for-verification">Usable Program Annotation for Verification</h2>
+<p>Due to the complexity of correctly setting up and applying formal proof rules
+to real programs, hand-proofs of complex programs are typically avoided. A
+more common approach is to:</p>
+<ol>
+<li>annotate program loops/functions/etc. with invariants;</li>
+<li>use a computer program to generate the necessary claims corresponding to
+loop invariants, functions, etc. and finally partial program correctness;</li>
+<li>use a computerized theorem prover to discharge the claims generated in
+step (2).</li>
+</ol>
+<p>However, in practice, invariant annotations are not sufficient, because
+invariants may need to refer to state fragments which are not explicitly named
+in program code. The solution to this problem is to add <em>ghost variables</em> and
+possibly <em>ghost code</em> which we will define below.</p>
+<h3 id="motivation">Motivation</h3>
+<p>Let us first motivate this problem with two examples of Python loops and
+invariants:</p>
+<h4 id="temporally-hidden-values">Temporally Hidden Values</h4>
+<p>Consider the following program which takes a number <code>num</code>, multiplies it
+times 2, and returns that value as its result.</p>
+<pre class="language-python"><code><span class="token keyword">def</span> <span class="token function">times2</span><span class="token punctuation">(</span>num<span class="token punctuation">)</span><span class="token punctuation">:</span>
+  counter <span class="token operator">=</span> <span class="token number">0</span>
+  <span class="token keyword">while</span> num <span class="token operator">&gt;</span> <span class="token number">0</span><span class="token punctuation">:</span>
+    counter <span class="token operator">+=</span> <span class="token number">2</span>
+    num <span class="token operator">-=</span> <span class="token number">1</span>
+  <span class="token keyword">return</span> counter
+</code></pre>
+<p>It&apos;s invariant can be written as:</p>
+<pre class="language-text"><code>counter = (num&#x2080; - num) * 2
+</code></pre>
+<p>where <code>num&#x2080;</code> refers to the original value of <code>num</code> passed to the function.
+The problem here is that the program overwrites the value of <code>num</code> during loop
+execution so that we have no way to refer to its original value in the
+&quot;middle&quot; of the loop. We say that its original value was <em>temporally hidden</em>.</p>
+<h4 id="unnamed-values">Unnamed Values</h4>
+<p>Consider the following program which takes a non-empty list and finds its
+minimum value:</p>
+<pre class="language-python"><code><span class="token keyword">def</span> <span class="token function">minlist</span><span class="token punctuation">(</span>seq<span class="token punctuation">)</span><span class="token punctuation">:</span>
+  <span class="token keyword">assert</span><span class="token punctuation">(</span><span class="token builtin">len</span><span class="token punctuation">(</span>seq<span class="token punctuation">)</span> <span class="token operator">!=</span> <span class="token number">0</span><span class="token punctuation">)</span>
+  minimum <span class="token operator">=</span> seq<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span>
+  <span class="token keyword">for</span> elt <span class="token keyword">in</span> seq<span class="token punctuation">:</span>
+    minimum <span class="token operator">=</span> <span class="token builtin">min</span><span class="token punctuation">(</span>elt<span class="token punctuation">,</span> minimum<span class="token punctuation">)</span>
+  <span class="token keyword">return</span> minimum
+</code></pre>
+<p>It&apos;s invariant can be written as:</p>
+<pre class="language-text"><code>( &#x2200; elt &#x2208; seq&#x209A; . minimum &#x2264; elt ) &#x2227;
+{ ( &#x2203; elt &#x2208; seq&#x209A; . minimum = elt ) &#x2228; minimum = seq[0] }
+</code></pre>
+<p>where <code>seq&#x209A;</code> refers to the <em>loop prefix</em> as defined above. Clearly, the list
+prefix value is never exposed in the language.</p>
+<p>Alternatively, we can write this as follows:</p>
+<pre class="language-text"><code>( &#x2200; j &#x2208; N . j &lt; elt&#x1D62; =&gt; minimum &#x2264; seq[j] ) &#x2227;
+{ ( &#x2203; j &#x2208; N . j &lt; elt&#x1D62; &#x2227; minimum = seq[j] ) &#x2228; minimum = seq[0] }
+</code></pre>
+<p>using:</p>
+<ul>
+<li>the index of the <code>elt</code> variable <code>elt&#x1D62;</code> and;</li>
+<li>a function that returns a list value at a certain index (or) a function
+which returns a subsequence from the first element upto to some index.</li>
+</ul>
+<p>Again, as above, the element index value is not exposed in the source code.</p>
+<h3 id="ghost-varibles-and-ghost-code">Ghost Varibles and Ghost Code</h3>
+<p>A <em>ghost variable</em> is a program variable that is only added for verification
+purposes and is <em>inaccessible</em> to standard program code (alternatively
+<em>only</em> accessible from our verification metalanguage).</p>
+<p><em>Ghost code</em> is special code fragments whose results are only used for
+verification purposes, and like ghost variables, <em>inaccessible</em> to standard
+program code.</p>
+<p>In our two examples above, it was enough to add ghost variables <code>num&#x2080;</code> and
+<code>seq&#x209A;</code> to define our desired invariants. We conjecture that the following
+ghost variables are sufficient for all loop verification purposes:</p>
+<ul>
+<li>
+<p>one ghost variable <code>seq&#x209A;</code> for each <code>for</code> loop sequence <code>seq</code> prefix (or)
+one ghost variable <code>elt&#x1D62;</code> for each <code>for</code> loop element variable <code>elt</code></p>
+</li>
+<li>
+<p>one ghost variable <code>v&#x2080;</code> for each loop variable <code>v</code> coming from a
+super-scope which stores <code>v</code>s value immediately before loop execution</p>
+</li>
+</ul>
+</body></html></div>
+        </main>
+      </div>
+    </div>
+<footer class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-2 mb-md-0 mb-4">
+        <span class="pr-md-5 pr-0 py-3">
+          <a href="https://runtimeverification.com" target="_blank">
+            <picture>
+              <source
+                srcset="../assets/img/rv-logo-dark.png"
+                media="(prefers-color-scheme: dark)"
+              />
+              <img
+                class="pr-3 footer-logo"
+                src="../assets/img/rv-logo.png"
+                alt="Runtime Verification Inc logo"
+              />
+            </picture>
+          </a>
+        </span>
+      </div>
+      <div class="col-md-6 mb-md-0 mb-4"></div>
+      <div class="col-md-4 text-md-right">
+        <p class="copyright">
+          &copy; 2020 Runtime Verification Inc. All right reserved.
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Typist/1.2/typist.min.js"></script>
+    <script src="../assets/js/index.js"></script>
+  </body>
+</html>
