@@ -179,8 +179,8 @@ output { Stack_elt nat $C } ;
 postcondition { { PUSH nat $N0 ; PUSH nat $C ; COMPARE ; EQ } }
 ```
 
-Here, the `precondition` field specifies the test preconditions, i.e., a list of
-boolean functions that must hold before `code` executes for the test to succeed;
+We can use the `precondition` field (not shown above) to specify test preconditions,
+i.e., a list of boolean functions that must hold before `code` executes for the test to succeed;
 in particular, preconditions can constrain symbolic input values.
 The  `postcondition` field specifies the test postconditions, i.e., a list of boolean
 functions that must hold after `code` executes for the test to succeed;
@@ -323,6 +323,15 @@ we can do with them.
 
 #### Symbolic Stacks and Matching
 
+In K-Michelson, we use the following stack notation:
+
+```
+{ Stack_elt type-1 value-1 ; Stack_elt type-2 value-2 ; ... }
+```
+
+where `value-1` occurs at the top of the stack, `value-2` is
+the second from the top, etc. We divide our stacks into
+concrete and symbolic variants. Let us describe them below.
 As a simple example, the following stack is _concrete_:
 
 ```
@@ -344,23 +353,25 @@ variables, by definition.
 Furthermore, we say that a stack called `B` _matches_ a stack called `A` if
 and only if:
 
--   each concrete value in stack `B` is equivalent to a concrete element in
+1.  each concrete value in stack `B` is equivalent to a concrete element in
     the corresponding position in stack `A`
--   each variable in stack `B` matches the type of the element in the
+2.  each variable in stack `B` matches the type of the element in the
     corresponding position in stack `A`.
--   if a variable in stack `B` occurs more than once, the corresponding values
+3.  if a variable in stack `B` occurs more than once, the corresponding values
     at each position in `A` are equivalent.
 
 In the example above, `B` does indeed match `A` becuase:
 
-1.  Variable `T` in stack `B` at position 1 has type `bool`. The concrete
-    value `true` in stack `A` at position 1 also has type `bool`.
-
-2.  Similarly, the concrete value `-15` with type `int` occurs as position 2
+1.  The only concrete value `-15` with type `int` occurs as position 2
     in both stack `B` and stack `A`.
 
-3.  Finally, the variable `P` in stack `B` at position 3 has type `nat` and
+2.  Variable `T` in stack `B` at position 1 has type `bool`. The concrete
+    value `true` in stack `A` at position 1 also has type `bool`.
+    Similarly, the variable `P` in stack `B` at position 3 has type `nat` and
     the element at position 3 in stack `A` also has type `nat`.
+
+3.  Since no variables are duplicated in this example, this condition
+    holds trivially.
 
 #### Writing Tests by Abstraction
 
@@ -411,14 +422,28 @@ precondition:
 # simple_v5 - failing test with abstracted and constrained input stack
 input { Stack_elt int $I ; Stack_elt int $J } ;
 precondition {
-               { PUSH int $I ; PUSH int $J ; CMPGT }
+               { PUSH int $J ; PUSH int $I ; CMPLT }
              } ;
 code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD } ;
 output { Stack_elt int 7 }
 ```
 
-Observe that, given this precondition, the second branch of the `IF`
-expression is no longer viable. Thus, we have simplified our test state space.
+Note that when we `PUSH` elements onto our stack, they appear in reverse
+order relative to our stack notation, i.e., if we have the stack:
+
+```
+{ Stack_elt int 1 ; Stack_elt int 0 }
+```
+
+and then perform a `PUSH int 2`, we would have the result stack:
+
+```
+{ Stack_elt int 2 ; Stack_elt int 1 ; Stack_elt int 0 }
+```
+
+With this explanation, bbserve that, given this precondition, the
+second branch of the `IF` expression is no longer viable.
+Thus, we have simplified our test state space.
 However, our test is still incorrect, since the counterexample that we saw
 above where `I` equals `4` and `J` equals `5` still holds.
 
@@ -435,7 +460,7 @@ abstracting our input stack:
 # - abstracted output stack
 input { Stack_elt int $I ; Stack_elt int $J } ;
 precondition {
-               { PUSH int $I ; PUSH int $J ; CMPGT }
+               { PUSH int $J ; PUSH int $I ; CMPLT }
              } ;
 code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD } ;
 output { Stack_elt int $K }
@@ -469,7 +494,7 @@ meaningful:
 # - abstracted and constrained output stack
 input { Stack_elt int $I ; Stack_elt int $J } ;
 precondition {
-               { PUSH int $I ; PUSH int $J ; CMPGT }
+               { PUSH int $J ; PUSH int $I ; CMPLT }
              } ;
 code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD } ;
 output { Stack_elt int $K } ;
