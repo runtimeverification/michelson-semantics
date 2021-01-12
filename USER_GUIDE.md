@@ -79,7 +79,7 @@ input { Stack_elt int 5 ; Stack_elt int 5 } ;
 output { Stack_elt int 10 }
 ```
 
-These `tzt` tests we may be run with the `interpret` subcommand of the `kmich` script: 
+These `tzt` tests we may be run with the `interpret` subcommand of the `kmich` script:
 
 ```sh
 ./kmich interpret add_5_5.tzt
@@ -546,6 +546,7 @@ loops almost always complicates the analysis and verification of programs. The
 problem can observed even in short programs:
 
 ```tzt
+# loop-parity.tzt - failing test
 input { Stack_elt nat $N ; Stack_elt bool True } ; # N B
 code { DUP ;                                       # N N B
        INT ; GT ;                                  # (N>0) N B
@@ -556,7 +557,7 @@ code { DUP ;                                       # N N B
             } ;                                    # N B
        DROP                                        # B
      } ;
-output { Stack_elt bool False }
+output { Stack_elt bool $EVENNESS_RESULT }
 ```
 
 The code for program is only 7 lines long.
@@ -568,18 +569,48 @@ The program consists of a simple loop which counts down from `N` to 0.
 Each time the loop iterates once, it flips the value of the boolean in the
 second position of the input stack.
 
-Here is our burning question: is the final value of that boolean `True` or
-`False`?
+Here is our burning question: is the final value of that boolean, i.e., the
+value of the variable `$EVENNESS_RESULT`, `True` or `False`?
 
 Given just the information in the test above, it is impossible to know.
 With some careful thought, we may realize that if we additionally know whether
 the value `N` is even or odd, we can compute the final value of the program.
 That is, the result is `True` if `N` is even and `False` if `N` is odd.
+We can express this requirement as a postcondition:
 
-However, the K-Michelson test framework is not as clever as a programmer.
-Instead of using the shortcut we identified above, it will blindly execute the
-loop until termination. In other words, the test runner will loop infinitely
-by guessing different starting values of `N`.
+```
+# loop-parity.tzt - failing test with
+# - postcondition
+input { Stack_elt nat $N ; Stack_elt bool True } ; # N B
+code { INT ; DUP ;                                 # N N B
+       GT ;                                        # (N>0) N B
+       LOOP @I { DIP { NOT } ;                     # N ¬B
+                 PUSH int 1 ; SWAP ; SUB ;         # (N-1) ¬B
+                 DUP ;                             # (N-1) (N-1) ¬B
+                 GT                                # (N-1>0) (N-1) ¬B
+               } ;                                 # N B
+       DROP                                        # B
+     } ;
+output { Stack_elt bool $EVENNESS_RESULT } ;
+postcondition { # EVENNESS_RESULT = (N % 2) == 0
+                { PUSH nat 2 ; PUSH nat $N ;
+                  EDIV ; ASSERT_SOME ; CDR ;
+                  PUSH nat 0 ; CMPEQ ;
+                  PUSH bool $EVENNESS_RESULT ; CMPEQ } }
+```
+
+Unforunately, even after adding a postcondition, we still cannot complete the
+proof.
+The problem lies in the fact that the K-Michelson test framework verifies
+programs by performing symbolic execution, i.e., by executing the program all
+possible ways and checking that we get the result we want each time.
+In particular, this means the framework does *not know how many* times to
+execute a loop.
+Given any initial value of variable `N`, we can always pick a larger initial
+value.
+This means we will never be sure we have executed the loop *all possible ways*.
+In other words, the test runner will loop infinitely by guessing different
+initial values of `N`.
 
 How can we escape this endless cycle? The answer lies in a concept called a
 _loop invariant_ which allows us to summarize the unending behavior of a loop
@@ -598,6 +629,113 @@ In general, it is impossible to develop a method that will always give us the
 loop invariants that we want, so writing good loop invariants will always be
 somewhat of an art.
 
+As an example, we can extend our previous test case to add a loop invariant:
+
+```
+# loop-parity.tzt - failing test with
+# - postcondition
+# - loop invariant
+input { Stack_elt nat $N ; Stack_elt bool True } ; # N B
+code { INT ; DUP ;                                 # N N B
+       GT ;                                        # (N>0) N B
+       LOOP @I { DIP { NOT } ;                     # N ¬B
+                 PUSH int +1 ; SWAP ; SUB ;        # (N-1) ¬B
+                 DUP ;                             # (N-1) (N-1) ¬B
+                 GT                                # (N-1>0) (N-1) ¬B
+               } ;                                 # N B
+       DROP                                        # B
+     } ;
+output { Stack_elt bool $EVENNESS_RESULT } ;
+postcondition { # EVENNESS_RESULT = (N % 2) == 0
+                { PUSH nat 2 ; PUSH nat $N ;
+                  EDIV ; ASSERT_SOME ; CDR ;
+                  PUSH nat 0 ; CMPEQ ;
+                  PUSH bool $EVENNESS_RESULT ; CMPEQ } } ;
+invariant @I
+          { Stack_elt bool $GUARD ; Stack_elt int $CURRENT ; Stack_elt bool $EVENNESS }
+          {  # CURRENT >= 0
+           ; { PUSH int 0 ; PUSH int $CURRENT ; CMPGE }
+
+             # GUARD = CURRENT > 0
+           ; { PUSH int $CURRENT ; GT ; PUSH bool $GUARD ; CMPEQ }
+
+             # EVENNESS = (N - CURRENT) % 2 == 0
+           ; { PUSH nat 2 ;
+               PUSH int $CURRENT ; PUSH nat $N ; INT ; SUB ;
+               EDIV ; ASSERT_SOME ; CDR ;
+               PUSH nat 0 ; CMPEQ ; PUSH bool $EVENNESS ; CMPEQ }
+          }
+```
+
+The invariant has three parts:
+
+1.  a name written with an at-sign `@` followed by an alphanumeric pattern
+    (above the name is `@I`)
+
+2.  a stack pattern describing the stack shape when the looping instruction is
+    encountered (above the stack pattern is
+    `{ Stack_elt bool $GUARD ; Stack_elt int $CURRENT ; Stack_elt bool $EVENNESS }`)
+
+3.  an invariant specification which is a list of Michelson blocks which
+    consume an empty stack and produce a stack with a single boolean value on
+    top (above the invariant specification has three clauses representing the
+    predicates `CURRENT >= 0`, `GUARD = CURRENT > 0`, and
+    `EVENNESS = (N - CURRENT) % 2 == 0`);
+    note that invariant specification blocks may reference any variables which
+    are bound by the stack pattern
+
+The most important part is (3) whose purpose is to serve as a *finite* summary
+of the infinite loop behavior.
+The exact criteria that are needed for a loop invariant are beyond the scope
+of this tutorial.
+Intuitively, a loop invariant defines *what must be true immediately before
+the loop and also after each loop iteration*.
+We then can replace the loop execution by its summarized logical form in our
+proof.
+
+In the above example, we carefully chose our three predicates in our invariant
+specification to precisely describe our loop behavior.
+Let us consider each of them briefly below:
+
+1.  `CURRENT >= 0` - This invariant follows from a straightforward analysis of
+    the loop; since the value of `CURRENT` varies between the positive-valued
+    `N` and `0`, it must always be greater than `0` during loop execution.
+
+2.  `GUARD = CURRENT > 0` - This invariant defines the value of loop guard
+    variable (i.e., the loop will continue as long as the guard is true); we
+    see that the `GUARD` holds if and only `CURRENT > 0`.
+
+3.  `EVENNESS = (N - CURRENT) % 2 == 0` - This is the key component of the
+    invariant; it describes the partially computed `EVENNESS_RESULT`.
+    After any number of loop iterations, `EVENNESS` will be true if and only
+    if `N - CURRENT` is even.
+
+To complete our proof, we must show that our postcondition
+`EVENNESS_RESULT = (N % 2) == 0` is true.
+We can do so by the following chain of deduction:
+
+1.  Since we know that the loop will terminate when `GUARD` is false, putting
+    invariants (1) and (2) together lets us determine that when the loop
+    terminates, `CURRENT = 0`.
+
+2.  By plugging this assignment into (3), we know that when the loop
+    terminates, `EVENNESS = (N - 0) % 2 == 0` which reduces to
+    `EVENNESS = (N % 2) == 0`.
+
+3.  The value of `EVENNESS_RESULT` is identical to `EVENNESS` at loop
+    termination, i.e., `EVENNESS_RESULT = EVENNESS`.
+
+4.  Using the assignment dervied in (3), we can replace each occurence of
+    `EVENNESS_RESULT` in our postcondition by `EVENNESS`. But then, note that
+    this is exactly the fact we derived in (2).
+    [QED](https://en.wikipedia.org/wiki/Q.E.D.).
+
+##### Final Words on Loop Invariants
+
+There is one other detail one should be aware of when write loop invariants.
+In particular, one must be careful to check that the loop invariant is truly
+an invariant, i.e., that the invariant always holds immediately before the
+loop and after each loop iteration.
 For more information on this advanced topic, see our
 [primer on loop invariants](loop-invariants.md)
 
