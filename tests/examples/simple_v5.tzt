@@ -1,7 +1,0 @@
-# simple_v5 - failing test with abstracted and constrained input stack
-input { Stack_elt int $I ; Stack_elt int $J } ;
-precondition {
-               { PUSH int $I ; PUSH int $J ; CMPGT }
-             } ;
-code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD } ;
-output { Stack_elt int 7 }
