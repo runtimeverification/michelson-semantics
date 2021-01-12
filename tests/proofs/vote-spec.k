@@ -31,6 +31,7 @@ module VOTE-SPEC
     requires A >Int 5000000
      andBool A <Int 9223372036854775808
      andBool M[S] ==K ?I:Int
+     andBool #lookup( M, S, int) ==K Some ?I:Int
 
   rule <k> AMOUNT .AnnotationList ;
            PUSH .AnnotationList mutez .AnnotationList 5000000 ;
@@ -48,8 +49,10 @@ module VOTE-SPEC
            } ;
            UPDATE .AnnotationList ;
            NIL .AnnotationList operation .AnnotationList ;
-           PAIR .AnnotationList => .K </k>
-        <stack> [(pair string (map string int)) Pair S:String M:Map ] ; .Stack => ?_ </stack>
+           PAIR .AnnotationList
+        => Aborted(?_,?_,?_,?_)
+        </k>
+        <stack> [(pair string (map string int)) Pair S:String M:Map ] ; .Stack => ( Failed Unit ) </stack>
         <myamount> #Mutez(A) </myamount>
     requires A >Int 5000000
      andBool A <Int 9223372036854775808
@@ -71,8 +74,10 @@ module VOTE-SPEC
            } ;
            UPDATE .AnnotationList ;
            NIL .AnnotationList operation .AnnotationList ;
-           PAIR .AnnotationList => .K </k>
-        <stack> [(pair string (map string int)) Pair S:String M:Map ] ; .Stack => ?_ </stack>
+           PAIR .AnnotationList
+        => Aborted(?_,?_,?_,?_)
+        </k>
+        <stack> [(pair string (map string int)) Pair S:String M:Map ] ; .Stack => ( Failed Unit ) </stack>
         <myamount> #Mutez(A) </myamount>
     requires 0 <=Int A
      andBool 5000000 >Int A
