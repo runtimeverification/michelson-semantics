@@ -572,7 +572,7 @@ second position of the input stack.
 Here is our burning question: is the final value of that boolean, i.e., the
 value of the variable `$EVENNESS_RESULT`, `True` or `False`?
 
-Given just the information in the test above, it is impossible to know.
+Given just the information in the test above, it seems that there may be cases when it is `True`, and others when it is `False`.
 With some careful thought, we may realize that if we additionally know whether
 the value `N` is even or odd, we can compute the final value of the program.
 That is, the result is `True` if `N` is even and `False` if `N` is odd.
