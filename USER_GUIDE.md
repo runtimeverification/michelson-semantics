@@ -546,7 +546,7 @@ loops almost always complicates the analysis and verification of programs. The
 problem can observed even in short programs:
 
 ```tzt
-# loop-parity.tzt - failing test
+# loop-parity.tzt - test which infinitely loops
 input { Stack_elt nat $N ; Stack_elt bool True } ; # N B
 code { DUP ;                                       # N N B
        INT ; GT ;                                  # (N>0) N B
@@ -579,7 +579,7 @@ That is, the result is `True` if `N` is even and `False` if `N` is odd.
 We can express this requirement as a postcondition:
 
 ```
-# loop-parity.tzt - failing test with
+# loop-parity.tzt - test which infinitely loops with
 # - postcondition
 input { Stack_elt nat $N ; Stack_elt bool True } ; # N B
 code { INT ; DUP ;                                 # N N B
