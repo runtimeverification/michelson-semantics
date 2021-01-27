@@ -599,21 +599,22 @@ postcondition { # EVENNESS_RESULT = (N % 2) == 0
                   PUSH bool $EVENNESS_RESULT ; CMPEQ } }
 ```
 
-Unforunately, even after adding a postcondition, we still cannot complete the
+Unfortunately, even after adding a postcondition, we still cannot complete the
 proof.
-The problem lies in the fact that the K-Michelson test framework verifies
-programs by performing symbolic execution, i.e., by executing the program all
+This is because the K-Michelson verifies
+programs using symbolic execution, i.e., by executing the program all
 possible ways and checking that we get the result we want each time.
 In particular, this means the framework does *not know how many* times to
 execute a loop.
-Given any initial value of variable `N`, we can always pick a larger initial
-value.
-This means we will never be sure we have executed the loop *all possible ways*.
-In other words, the test runner will loop infinitely by guessing different
-initial values of `N`.
+Depending on the initial value of variable `N`, we may need to execute the loop body 100 times, or 500.
+This means we will never be sure we have executed the loop *all possible ways*, and the runner will get stuck executing the program for larger and larger values of `N`.
 
-How can we escape this endless cycle? The answer lies in a concept called a
-_loop invariant_ which allows us to summarize the unending behavior of a loop
+How can we escape this endless cycle?
+It seems clear that we shouldn't need to execute the loop in all possible ways --
+we can argue by induction that the post-condition holds. 
+We claim that the current value of $B$ equals `True` if the difference between initial value of $N$ and it's current value is even, otherwise it is `False`. When $N$'s initial value is `0` its clear that this since $B$ is initially `True`, and the body is not executed. When $N$ is greater than $0$, the body reduces the value of `$N` by `1` and flips `$B`. By applying the inductive hypothesis, our claim must hold.
+
+This is called a _loop invariant_ . It allows us to summarize the properties of an loop we care about, so that we do not need to execute it to arbitrary depth.
 in a finite way.
 
 In K-Michelson, we write loop invariants in a two step process:
