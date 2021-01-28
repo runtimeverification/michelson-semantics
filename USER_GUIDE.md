@@ -547,15 +547,15 @@ problem can observed even in short programs:
 
 ```tzt
 # loop-parity.tzt - test which infinitely loops
-input { Stack_elt nat $N ; Stack_elt bool True } ; # N B
-code { DUP ;                                       # N N B
-       INT ; GT ;                                  # (N>0) N B
-       LOOP { DIP { NOT } ;                        # N ¬B
-              PUSH int 1 ; SWAP ; SUB ;            # (N-1) ¬B
-              DUP ;                                # (N-1) (N-1) ¬B
-              GT                                   # (N-1>0) (N-1) ¬B
-            } ;                                    # N B
-       DROP                                        # B
+input { Stack_elt nat $N_INIT ; Stack_elt bool True } ; # N E
+code { DUP ;                                            # N N E
+       INT ; GT ;                                       # (N>0) N E
+       LOOP { DIP { NOT } ;                             # N ¬E
+              PUSH int 1 ; SWAP ; SUB ;                 # (N-1) ¬E
+              DUP ;                                     # (N-1) (N-1) ¬E
+              GT                                        # (N-1>0) (N-1) ¬E
+            } ;                                         # N E
+       DROP                                             # E
      } ;
 output { Stack_elt bool $EVENNESS_RESULT }
 ```
@@ -565,8 +565,8 @@ For readability, we have annotated each line with a representation of the
 stack which results from executing that line of code, where the leftmost
 item represents the stack top and the rightmost item represents the stack
 bottom.
-The program consists of a simple loop which counts down from `N` to 0.
-Each time the loop iterates once, it flips the value of the boolean in the
+The program consists of a simple loop which counts down from `N_INIT` to 0.
+Each time the loop iterates once, it flips the value of the boolean `E` (for evenness) in the
 second position of the input stack.
 
 Here is our burning question: is the final value of that boolean, i.e., the
@@ -581,19 +581,19 @@ We can express this requirement as a postcondition:
 ```
 # loop-parity.tzt - test which infinitely loops with
 # - postcondition
-input { Stack_elt nat $N ; Stack_elt bool True } ; # N B
-code { INT ; DUP ;                                 # N N B
-       GT ;                                        # (N>0) N B
-       LOOP @I { DIP { NOT } ;                     # N ¬B
-                 PUSH int 1 ; SWAP ; SUB ;         # (N-1) ¬B
-                 DUP ;                             # (N-1) (N-1) ¬B
-                 GT                                # (N-1>0) (N-1) ¬B
-               } ;                                 # N B
-       DROP                                        # B
+input { Stack_elt nat $N_INIT ; Stack_elt bool True } ; # N E
+code { INT ; DUP ;                                      # N N E
+       GT ;                                             # (N>0) N E
+       LOOP @I { DIP { NOT } ;                          # N ¬E
+                 PUSH int 1 ; SWAP ; SUB ;              # (N-1) ¬E
+                 DUP ;                                  # (N-1) (N-1) ¬E
+                 GT                                     # (N-1>0) (N-1) ¬E
+               } ;                                      # N E
+       DROP                                             # E
      } ;
 output { Stack_elt bool $EVENNESS_RESULT } ;
 postcondition { # EVENNESS_RESULT = (N % 2) == 0
-                { PUSH nat 2 ; PUSH nat $N ;
+                { PUSH nat 2 ; PUSH nat $N_INIT ;
                   EDIV ; ASSERT_SOME ; CDR ;
                   PUSH nat 0 ; CMPEQ ;
                   PUSH bool $EVENNESS_RESULT ; CMPEQ } }
@@ -612,7 +612,10 @@ This means we will never be sure we have executed the loop *all possible ways*, 
 How can we escape this endless cycle?
 It seems clear that we shouldn't need to execute the loop in all possible ways --
 we can argue by induction that the post-condition holds. 
-We claim that the current value of $B$ equals `True` if the difference between initial value of $N$ and it's current value is even, otherwise it is `False`. When $N$'s initial value is `0` its clear that this since $B$ is initially `True`, and the body is not executed. When $N$ is greater than $0$, the body reduces the value of `$N` by `1` and flips `$B`. By applying the inductive hypothesis, our claim must hold.
+We claim that the current value of $E$ equals `True` if the difference between `N` and it's current value is even, otherwise it is `False`.
+When `N`'s initial value is `0` its clear that this since `E` is initially `True`, and the body is not executed.
+When `N` is greater than $0$, the body reduces the value of `N` by `1` and flips `E`.
+By applying the inductive hypothesis, our claim must hold.
 
 This is called a _loop invariant_ . It allows us to summarize the properties of an loop we care about, so that we do not need to execute it to arbitrary depth.
 in a finite way.
@@ -636,15 +639,15 @@ As an example, we can extend our previous test case to add a loop invariant:
 # loop-parity.tzt - failing test with
 # - postcondition
 # - loop invariant
-input { Stack_elt nat $N ; Stack_elt bool True } ; # N B
-code { INT ; DUP ;                                 # N N B
-       GT ;                                        # (N>0) N B
-       LOOP @I { DIP { NOT } ;                     # N ¬B
-                 PUSH int +1 ; SWAP ; SUB ;        # (N-1) ¬B
-                 DUP ;                             # (N-1) (N-1) ¬B
-                 GT                                # (N-1>0) (N-1) ¬B
-               } ;                                 # N B
-       DROP                                        # B
+input { Stack_elt nat $N ; Stack_elt bool True } ; # N E
+code { INT ; DUP ;                                 # N N E
+       GT ;                                        # (N>0) N E
+       LOOP @I { DIP { NOT } ;                     # N ¬E
+                 PUSH int +1 ; SWAP ; SUB ;        # (N-1) ¬E
+                 DUP ;                             # (N-1) (N-1) ¬E
+                 GT                                # (N-1>0) (N-1) ¬E
+               } ;                                 # N E
+       DROP                                        # E
      } ;
 output { Stack_elt bool $EVENNESS_RESULT } ;
 postcondition { # EVENNESS_RESULT = (N % 2) == 0
