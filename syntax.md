@@ -291,6 +291,12 @@ Otherwise, instructions are defined as expected.
   syntax Instruction ::= "CREATE_CONTRACT" AnnotationList "{" Contract "}"
 ```
 
+The `FORALL` instruction allows quantifing over expressions in symbolic tests.
+
+```k
+  syntax Instruction ::= "FORALL" Block
+```
+
 The following instructions are an extension of the core Michelson instruction
 set used for debugging purposes.
 
