@@ -79,7 +79,7 @@ input { Stack_elt int 5 ; Stack_elt int 5 } ;
 output { Stack_elt int 10 }
 ```
 
-These `tzt` tests we may be run with the `interpret` subcommand of the `kmich` script: 
+These `tzt` tests we may be run with the `interpret` subcommand of the `kmich` script:
 
 ```sh
 ./kmich interpret add_5_5.tzt
@@ -179,8 +179,8 @@ output { Stack_elt nat $C } ;
 postcondition { { PUSH nat $N0 ; PUSH nat $C ; COMPARE ; EQ } }
 ```
 
-Here, the `precondition` field specifies the test preconditions, i.e., a list of
-boolean functions that must hold before `code` executes for the test to succeed;
+We can use the `precondition` field (not shown above) to specify test preconditions,
+i.e., a list of boolean functions that must hold before `code` executes for the test to succeed;
 in particular, preconditions can constrain symbolic input values.
 The  `postcondition` field specifies the test postconditions, i.e., a list of boolean
 functions that must hold after `code` executes for the test to succeed;
@@ -323,6 +323,15 @@ we can do with them.
 
 #### Symbolic Stacks and Matching
 
+In K-Michelson, we use the following stack notation:
+
+```
+{ Stack_elt type-1 value-1 ; Stack_elt type-2 value-2 ; ... }
+```
+
+where `value-1` occurs at the top of the stack, `value-2` is
+the second from the top, etc. We divide our stacks into
+concrete and symbolic variants. Let us describe them below.
 As a simple example, the following stack is _concrete_:
 
 ```
@@ -344,23 +353,25 @@ variables, by definition.
 Furthermore, we say that a stack called `B` _matches_ a stack called `A` if
 and only if:
 
--   each concrete value in stack `B` is equivalent to a concrete element in
+1.  each concrete value in stack `B` is equivalent to a concrete element in
     the corresponding position in stack `A`
--   each variable in stack `B` matches the type of the element in the
+2.  each variable in stack `B` matches the type of the element in the
     corresponding position in stack `A`.
--   if a variable in stack `B` occurs more than once, the corresponding values
+3.  if a variable in stack `B` occurs more than once, the corresponding values
     at each position in `A` are equivalent.
 
 In the example above, `B` does indeed match `A` becuase:
 
-1.  Variable `T` in stack `B` at position 1 has type `bool`. The concrete
-    value `true` in stack `A` at position 1 also has type `bool`.
-
-2.  Similarly, the concrete value `-15` with type `int` occurs as position 2
+1.  The only concrete value `-15` with type `int` occurs as position 2
     in both stack `B` and stack `A`.
 
-3.  Finally, the variable `P` in stack `B` at position 3 has type `nat` and
+2.  Variable `T` in stack `B` at position 1 has type `bool`. The concrete
+    value `true` in stack `A` at position 1 also has type `bool`.
+    Similarly, the variable `P` in stack `B` at position 3 has type `nat` and
     the element at position 3 in stack `A` also has type `nat`.
+
+3.  Since no variables are duplicated in this example, this condition
+    holds trivially.
 
 #### Writing Tests by Abstraction
 
@@ -411,14 +422,28 @@ precondition:
 # simple_v5 - failing test with abstracted and constrained input stack
 input { Stack_elt int $I ; Stack_elt int $J } ;
 precondition {
-               { PUSH int $I ; PUSH int $J ; CMPGT }
+               { PUSH int $J ; PUSH int $I ; CMPLT }
              } ;
 code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD } ;
 output { Stack_elt int 7 }
 ```
 
-Observe that, given this precondition, the second branch of the `IF`
-expression is no longer viable. Thus, we have simplified our test state space.
+Note that when we `PUSH` elements onto our stack, they appear in reverse
+order relative to our stack notation, i.e., if we have the stack:
+
+```
+{ Stack_elt int 1 ; Stack_elt int 0 }
+```
+
+and then perform a `PUSH int 2`, we would have the result stack:
+
+```
+{ Stack_elt int 2 ; Stack_elt int 1 ; Stack_elt int 0 }
+```
+
+With this explanation, bbserve that, given this precondition, the
+second branch of the `IF` expression is no longer viable.
+Thus, we have simplified our test state space.
 However, our test is still incorrect, since the counterexample that we saw
 above where `I` equals `4` and `J` equals `5` still holds.
 
@@ -435,7 +460,7 @@ abstracting our input stack:
 # - abstracted output stack
 input { Stack_elt int $I ; Stack_elt int $J } ;
 precondition {
-               { PUSH int $I ; PUSH int $J ; CMPGT }
+               { PUSH int $J ; PUSH int $I ; CMPLT }
              } ;
 code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD } ;
 output { Stack_elt int $K }
@@ -469,7 +494,7 @@ meaningful:
 # - abstracted and constrained output stack
 input { Stack_elt int $I ; Stack_elt int $J } ;
 precondition {
-               { PUSH int $I ; PUSH int $J ; CMPGT }
+               { PUSH int $J ; PUSH int $I ; CMPLT }
              } ;
 code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD } ;
 output { Stack_elt int $K } ;
@@ -521,17 +546,18 @@ loops almost always complicates the analysis and verification of programs. The
 problem can observed even in short programs:
 
 ```tzt
-input { Stack_elt nat $N ; Stack_elt bool True } ; # N B
-code { DUP ;                                       # N N B
-       INT ; GT ;                                  # (N>0) N B
-       LOOP { DIP { NOT } ;                        # N ¬B
-              PUSH int 1 ; SWAP ; SUB ;            # (N-1) ¬B
-              DUP ;                                # (N-1) (N-1) ¬B
-              GT                                   # (N-1>0) (N-1) ¬B
-            } ;                                    # N B
-       DROP                                        # B
+# loop-parity.tzt - test which infinitely loops
+input { Stack_elt nat $N_INIT ; Stack_elt bool True } ; # N E
+code { DUP ;                                            # N N E
+       INT ; GT ;                                       # (N>0) N E
+       LOOP { DIP { NOT } ;                             # N ¬E
+              PUSH int 1 ; SWAP ; SUB ;                 # (N-1) ¬E
+              DUP ;                                     # (N-1) (N-1) ¬E
+              GT                                        # (N-1>0) (N-1) ¬E
+            } ;                                         # N E
+       DROP                                             # E
      } ;
-output { Stack_elt bool False }
+output { Stack_elt bool $EVENNESS_RESULT }
 ```
 
 The code for program is only 7 lines long.
@@ -539,25 +565,59 @@ For readability, we have annotated each line with a representation of the
 stack which results from executing that line of code, where the leftmost
 item represents the stack top and the rightmost item represents the stack
 bottom.
-The program consists of a simple loop which counts down from `N` to 0.
-Each time the loop iterates once, it flips the value of the boolean in the
+The program consists of a simple loop which counts down from `N_INIT` to 0.
+Each time the loop iterates once, it flips the value of the boolean `E` (for evenness) in the
 second position of the input stack.
 
-Here is our burning question: is the final value of that boolean `True` or
-`False`?
+Here is our burning question: is the final value of that boolean, i.e., the
+value of the variable `$EVENNESS_RESULT`, `True` or `False`?
 
-Given just the information in the test above, it is impossible to know.
+Given just the information in the test above, it seems that there may be cases when it is `True`, and others when it is `False`.
 With some careful thought, we may realize that if we additionally know whether
 the value `N` is even or odd, we can compute the final value of the program.
 That is, the result is `True` if `N` is even and `False` if `N` is odd.
+We can express this requirement as a postcondition:
 
-However, the K-Michelson test framework is not as clever as a programmer.
-Instead of using the shortcut we identified above, it will blindly execute the
-loop until termination. In other words, the test runner will loop infinitely
-by guessing different starting values of `N`.
+```
+# loop-parity.tzt - test which infinitely loops with
+# - postcondition
+input { Stack_elt nat $N_INIT ; Stack_elt bool True } ; # N E
+code { INT ; DUP ;                                      # N N E
+       GT ;                                             # (N>0) N E
+       LOOP @I { DIP { NOT } ;                          # N ¬E
+                 PUSH int 1 ; SWAP ; SUB ;              # (N-1) ¬E
+                 DUP ;                                  # (N-1) (N-1) ¬E
+                 GT                                     # (N-1>0) (N-1) ¬E
+               } ;                                      # N E
+       DROP                                             # E
+     } ;
+output { Stack_elt bool $EVENNESS_RESULT } ;
+postcondition { # EVENNESS_RESULT = (N % 2) == 0
+                { PUSH nat 2 ; PUSH nat $N_INIT ;
+                  EDIV ; ASSERT_SOME ; CDR ;
+                  PUSH nat 0 ; CMPEQ ;
+                  PUSH bool $EVENNESS_RESULT ; CMPEQ } }
+```
 
-How can we escape this endless cycle? The answer lies in a concept called a
-_loop invariant_ which allows us to summarize the unending behavior of a loop
+Unfortunately, even after adding a postcondition, we still cannot complete the
+proof.
+This is because the K-Michelson verifies
+programs using symbolic execution, i.e., by executing the program all
+possible ways and checking that we get the result we want each time.
+In particular, this means the framework does *not know how many* times to
+execute a loop.
+Depending on the initial value of variable `N`, we may need to execute the loop body 100 times, or 500.
+This means we will never be sure we have executed the loop *all possible ways*, and the runner will get stuck executing the program for larger and larger values of `N`.
+
+How can we escape this endless cycle?
+It seems clear that we shouldn't need to execute the loop in all possible ways --
+we can argue by induction that the post-condition holds. 
+We claim that the current value of $E$ equals `True` if the difference between `N` and it's current value is even, otherwise it is `False`.
+When `N`'s initial value is `0` its clear that this since `E` is initially `True`, and the body is not executed.
+When `N` is greater than $0$, the body reduces the value of `N` by `1` and flips `E`.
+By applying the inductive hypothesis, our claim must hold.
+
+This is called a _loop invariant_ . It allows us to summarize the properties of an loop we care about, so that we do not need to execute it to arbitrary depth.
 in a finite way.
 
 In K-Michelson, we write loop invariants in a two step process:
@@ -573,6 +633,113 @@ In general, it is impossible to develop a method that will always give us the
 loop invariants that we want, so writing good loop invariants will always be
 somewhat of an art.
 
+As an example, we can extend our previous test case to add a loop invariant:
+
+```
+# loop-parity.tzt - failing test with
+# - postcondition
+# - loop invariant
+input { Stack_elt nat $N ; Stack_elt bool True } ; # N E
+code { INT ; DUP ;                                 # N N E
+       GT ;                                        # (N>0) N E
+       LOOP @I { DIP { NOT } ;                     # N ¬E
+                 PUSH int +1 ; SWAP ; SUB ;        # (N-1) ¬E
+                 DUP ;                             # (N-1) (N-1) ¬E
+                 GT                                # (N-1>0) (N-1) ¬E
+               } ;                                 # N E
+       DROP                                        # E
+     } ;
+output { Stack_elt bool $EVENNESS_RESULT } ;
+postcondition { # EVENNESS_RESULT = (N % 2) == 0
+                { PUSH nat 2 ; PUSH nat $N ;
+                  EDIV ; ASSERT_SOME ; CDR ;
+                  PUSH nat 0 ; CMPEQ ;
+                  PUSH bool $EVENNESS_RESULT ; CMPEQ } } ;
+invariant @I
+          { Stack_elt bool $GUARD ; Stack_elt int $CURRENT ; Stack_elt bool $EVENNESS }
+          {  # CURRENT >= 0
+           ; { PUSH int 0 ; PUSH int $CURRENT ; CMPGE }
+
+             # GUARD = CURRENT > 0
+           ; { PUSH int $CURRENT ; GT ; PUSH bool $GUARD ; CMPEQ }
+
+             # EVENNESS = (N - CURRENT) % 2 == 0
+           ; { PUSH nat 2 ;
+               PUSH int $CURRENT ; PUSH nat $N ; INT ; SUB ;
+               EDIV ; ASSERT_SOME ; CDR ;
+               PUSH nat 0 ; CMPEQ ; PUSH bool $EVENNESS ; CMPEQ }
+          }
+```
+
+The invariant has three parts:
+
+1.  a name written with an at-sign `@` followed by an alphanumeric pattern
+    (above the name is `@I`)
+
+2.  a stack pattern describing the stack shape when the looping instruction is
+    encountered (above the stack pattern is
+    `{ Stack_elt bool $GUARD ; Stack_elt int $CURRENT ; Stack_elt bool $EVENNESS }`)
+
+3.  an invariant specification which is a list of Michelson blocks which
+    consume an empty stack and produce a stack with a single boolean value on
+    top (above the invariant specification has three clauses representing the
+    predicates `CURRENT >= 0`, `GUARD = CURRENT > 0`, and
+    `EVENNESS = (N - CURRENT) % 2 == 0`);
+    note that invariant specification blocks may reference any variables which
+    are bound by the stack pattern
+
+The most important part is (3) whose purpose is to serve as a *finite* summary
+of the infinite loop behavior.
+The exact criteria that are needed for a loop invariant are beyond the scope
+of this tutorial.
+Intuitively, a loop invariant defines *what must be true immediately before
+the loop and also after each loop iteration*.
+We then can replace the loop execution by its summarized logical form in our
+proof.
+
+In the above example, we carefully chose our three predicates in our invariant
+specification to precisely describe our loop behavior.
+Let us consider each of them briefly below:
+
+1.  `CURRENT >= 0` - This invariant follows from a straightforward analysis of
+    the loop; since the value of `CURRENT` varies between the positive-valued
+    `N` and `0`, it must always be greater than `0` during loop execution.
+
+2.  `GUARD = CURRENT > 0` - This invariant defines the value of loop guard
+    variable (i.e., the loop will continue as long as the guard is true); we
+    see that the `GUARD` holds if and only `CURRENT > 0`.
+
+3.  `EVENNESS = (N - CURRENT) % 2 == 0` - This is the key component of the
+    invariant; it describes the partially computed `EVENNESS_RESULT`.
+    After any number of loop iterations, `EVENNESS` will be true if and only
+    if `N - CURRENT` is even.
+
+To complete our proof, we must show that our postcondition
+`EVENNESS_RESULT = (N % 2) == 0` is true.
+We can do so by the following chain of deduction:
+
+1.  Since we know that the loop will terminate when `GUARD` is false, putting
+    invariants (1) and (2) together lets us determine that when the loop
+    terminates, `CURRENT = 0`.
+
+2.  By plugging this assignment into (3), we know that when the loop
+    terminates, `EVENNESS = (N - 0) % 2 == 0` which reduces to
+    `EVENNESS = (N % 2) == 0`.
+
+3.  The value of `EVENNESS_RESULT` is identical to `EVENNESS` at loop
+    termination, i.e., `EVENNESS_RESULT = EVENNESS`.
+
+4.  Using the assignment dervied in (3), we can replace each occurence of
+    `EVENNESS_RESULT` in our postcondition by `EVENNESS`. But then, note that
+    this is exactly the fact we derived in (2).
+    [QED](https://en.wikipedia.org/wiki/Q.E.D.).
+
+##### Final Words on Loop Invariants
+
+There is one other detail one should be aware of when write loop invariants.
+In particular, one must be careful to check that the loop invariant is truly
+an invariant, i.e., that the invariant always holds immediately before the
+loop and after each loop iteration.
 For more information on this advanced topic, see our
 [primer on loop invariants](loop-invariants.md)
 
