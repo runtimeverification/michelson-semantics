@@ -42,7 +42,7 @@ Returns `.K` on success
 ```k
     syntax PreString ::= read(filename: PreString)
                        | read(fd: PreInt, length: Int) [seqstrict, result(Int)]
-    rule read(File) => read(open(File, "r"), 99999)
+    rule read(File) => read(open(File, "r"), 99999) // TODO: read until end of file instead of hard-coding a number
     rule read(Fd:Int, Length) => #read(Fd, Length)
 ```
 
@@ -210,6 +210,7 @@ module KORE-UTILITIES
     rule (P1, P1s) +Patterns P2s => P1, (P1s +Patterns P2s)
     rule .Patterns +Patterns P2s =>                    P2s 
 
+    // TODO: consider adding cases for other ML operators
     syntax Patterns ::= findSubTermsByConstructor(KoreName, Pattern) [function]
     rule findSubTermsByConstructor(Ctor, Ctor { .Sorts } ( Arg, .Patterns ) ) => Arg, .Patterns
     rule findSubTermsByConstructor(Ctor, S { _ } ( Args ) ) => findSubTermsByConstructorPs(Ctor, Args) requires S =/=K Ctor
@@ -303,7 +304,6 @@ We then parse the program syntax into kore using `llvm-krun`, and then parse the
           </k>
 
     syntax PrePattern ::= initialConfiguration(filename: PreString, definition: String) [seqstrict(1), result(String)]
-    // TODO: The parser here isn't generated
     rule initialConfiguration(Filename, Definition)
       => parse( system( "llvm-krun --dry-run --directory " +String Definition
                         +String " -c PGM " +String Filename +String " Pgm prettyfile") 
