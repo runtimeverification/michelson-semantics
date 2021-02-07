@@ -613,7 +613,8 @@ For now, we ignore annotations.
 
 ```k
   syntax Instruction ::= #HandleAnnotations(AnnotationList)
-  rule #HandleAnnotations(_) => .
+  rule <k> #HandleAnnotations(_) => .K ... </k>
+  rule <k> #HandleAnnotations(.AnnotationList) => .K ... </k>
 ```
 
 Control Structures
