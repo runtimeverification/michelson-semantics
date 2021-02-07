@@ -73,7 +73,7 @@ Creates a temp file, writes contents to it, and returns the filename.
     syntax PreString ::= writeTempFile(contents: PreString) [seqstrict(1), result(String)]
                        | writeTempFile(PreTempFile, contents: String) [seqstrict(1), result(IOFile)]
     rule writeTempFile(Contents) => writeTempFile(createTempFile("/tmp/kmichelson-XXXXXX"), Contents)
-    rule writeTempFile(#tempFile(Filename, Fd), Content) 
+    rule writeTempFile(#tempFile(Filename, Fd), Content)
       => write(Fd, Content) ~> close(Fd) ~> Filename
 ```
 
@@ -208,7 +208,7 @@ module KORE-UTILITIES
 
     syntax Patterns ::= Patterns "+Patterns" Patterns [function, functional, left]
     rule (P1, P1s) +Patterns P2s => P1, (P1s +Patterns P2s)
-    rule .Patterns +Patterns P2s =>                    P2s 
+    rule .Patterns +Patterns P2s =>                    P2s
 
     // TODO: consider adding cases for other ML operators
     syntax Patterns ::= findSubTermsByConstructor(KoreName, Pattern) [function]
@@ -252,6 +252,27 @@ module DRIVER
               )
 ```
 
+Pretty print
+------------
+
+```k
+    syntax KItem ::= prettyPrint(config: PrePattern) [seqstrict(1), result(Pattern)]
+                   | prettyPrint(file:   PreString)  [seqstrict(1), result(String)]
+    rule prettyPrint(Configuration)
+      => prettyPrint(writeTempFile(unparsePattern(Configuration)))
+    rule prettyPrint(File)
+      => print(system("kprint " +String michelsonDefinition() +String "/michelson-kompiled/ " +String
+                    " " +String File +String
+                    " true true"
+               ))
+```
+
+```k
+    syntax KItem ::= print(PreString) [seqstrict(1), result(String)]
+    rule <k> print(Str:String) => .K ... </k>
+         <out> ... .List => ListItem(Str) </out>
+```
+
 Utilities instatiated for KMichelson
 ------------------------------------
 
@@ -286,11 +307,11 @@ We initialize the configuration with the input filename.
     configuration <k> init($InputFilename) </k>
                   <success>  0 </success>               // Number of successful branches
                   <failures> 0 </failures>              // Number of failing    branches
+                  <stucks>   0 </stucks>                // Number of stuck      branches
                   <defnDir> $DefnDir:String </defnDir>  // Path to kompiled definitions
                   <out stream="stdout"> .List </out>
                   <exitcode exit="0"> 2 </exitcode>
 ```
-
 
 ### Initialization
 
@@ -306,7 +327,7 @@ We then parse the program syntax into kore using `llvm-krun`, and then parse the
     syntax PrePattern ::= initialConfiguration(filename: PreString, definition: String) [seqstrict(1), result(String)]
     rule initialConfiguration(Filename, Definition)
       => parse( system( "llvm-krun --dry-run --directory " +String Definition
-                        +String " -c PGM " +String Filename +String " Pgm prettyfile") 
+                        +String " -c PGM " +String Filename +String " Pgm prettyfile")
               )
 ```
 
@@ -350,8 +371,19 @@ We then triage each branch according to the contents of its `<k>` and `<returnco
          <success> N => N +Int 1 </success>
 
     syntax KoreName ::= "Lbl'Hash'AssertFailed" [token] | "kseq" [token]
-    rule <k> triage( kseq { .Sorts } (Lbl'Hash'AssertFailed {.Sorts } (.Patterns), _ ) , _, _) => .K ... </k>
+    rule <k> triage( kseq { .Sorts } (Lbl'Hash'AssertFailed {.Sorts } (.Patterns), _ ) , _, Config)
+          => print("Failure:\n") ~> prettyPrint(Config)
+             ...
+         </k>
          <failures> N => N +Int 1 </failures>
+    syntax KoreName ::= "Lbl'Hash'AssertFailed" [token] | "kseq" [token]
+
+    rule <k> triage( kseq { .Sorts } (KHead, _ ), \dv { SortInt { } } ( ExitCode ) , Config)
+          => print("Stuck configuration:\n") ~> prettyPrint(Config)
+             ...
+         </k>
+         <stucks> N => N +Int 1 </stucks>
+      requires ExitCode =/=K "0" andBool KHead =/=K Lbl'Hash'AssertFailed {.Sorts } (.Patterns)
 ```
 
 ### Finalization
@@ -366,7 +398,8 @@ Finally, we print the total number of sucessful and failed branches.
           </out>
           <success> Successes </success>
           <failures> Failures </failures>
-          <exitcode> 2 => #if Failures ==Int 0 #then 0 #else 1 #fi </exitcode>
+          <stucks> Stucks </stucks>
+          <exitcode> 2 => #if Failures +Int Stucks ==Int 0 #then 0 #else 1 #fi </exitcode>
 ```
 
 ```k
