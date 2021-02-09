@@ -446,6 +446,7 @@ action of one instruction.
   syntax Group ::= ContractGroup
                  | ParameterValueGroup
                  | StorageValueGroup
+                 | StorageDecl
                  | NowGroup
                  | SenderGroup
                  | SourceGroup

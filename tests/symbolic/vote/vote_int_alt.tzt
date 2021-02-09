@@ -1,29 +1,32 @@
+parameter int ;
+storage (map int int) ;
 code {
-  DUP ; DIP { CDR ; DUP } ;
-  CAR ; DUP ;
-  DIP {
-      GET ;
-      IF_NONE { UNIT ; FAILWITH } { } ; # ASSERT_SOME ;
-      PUSH int 1 ;
-      ADD ;
-      SOME
-  } ;
-  UPDATE ;
-  NIL operation ;
-  PAIR
-} ;
+       # verify balance is sufficient to run contract
+       AMOUNT ;
+       PUSH mutez 5000000 ;
+       COMPARE ; GT ;
+       IF { FAIL } { } ;
 
-# storage (map int int) ;
-# parameter int ;
-input { Stack_elt (pair int (map int int)) $I } ;
+       # get the storage (map) and parameter (string key)
+       DUP ; DIP { CDR ; DUP } ; CAR ; DUP ;
 
-precondition { { PUSH (pair int (map int int)) $I                             # (S, M)
-               ; UNPAIR                                                       # S M
-               ; MEM                                                          # (S \in M)
-               }
-             } ;
+       # lookup map[key] and return Some (map[key] + 1)
+       DIP { GET ; ASSERT_SOME ;
+             PUSH int 1 ; ADD ; SOME } ;
 
+       # assign map[key] := map[key] + 1
+       UPDATE ;
+
+       # update map in storage
+       NIL operation; PAIR
+     } ;
+
+amount 5000001 ;
+
+input  { Stack_elt (pair int              (map int int)) $I } ;
 output { Stack_elt (pair (list operation) (map int int)) $O } ;
+
+precondition  { { PUSH (pair int (map int int)) $I ; UNPAIR ; MEM } } ;
 postcondition { { PUSH (pair int (map int int)) $I                            # (S,M)
                 ; CDR                                                         # M
                 ; PUSH int $K                                                 # K M
@@ -36,12 +39,12 @@ postcondition { { PUSH (pair int (map int int)) $I                            # 
                   ; IF_NONE { UNIT ; FAILWITH } { }                           # M'[K]  M[K]
                   ; SWAP                                                      # M'[K]  M[K]
 
-                  ; PUSH int $K                                               # K       M[K]  M'[K]
-                  ; PUSH (pair int (map int int)) $I                          # (M,S) K    M[K]  M'[K]
-                  ; CAR                                                       # S K      M[K]  M'[K]
-                  ; COMPARE ; EQ                                              # S=K      M[K]  M'[K]
-                  ; IF { TRACE("1") ; PUSH nat 1; ADD ; COMPARE ; EQ }        # M[K]+1=M'[K]
-                       { TRACE("2") ;                   COMPARE ; EQ }        # M[K] = M'[K]
+                  ; PUSH int $K                                               # K  M[K]  M'[K]
+                  ; PUSH (pair int (map int int)) $I                          # (M,S)  K  M[K]   M'[K]
+                  ; CAR                                                       # S  K  M[K]  M'[K]
+                  ; COMPARE ; EQ                                              # S=K  M[K]  M'[K]
+                  ; IF { TRACE("==") ; PUSH nat 1; ADD ; COMPARE ; EQ }       # M[K]+1=M'[K]
+                       { TRACE("!=") ;                   COMPARE ; EQ }       # M[K] = M'[K]
                   }
                 }
              }

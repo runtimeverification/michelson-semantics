@@ -1407,6 +1407,9 @@ This rule is not supported by the LLVM backend, so we only include it in Haskell
   rule #lookup(M [ K1 <- undef ], K2, _ ) => None               requires K1 ==K  K2                                        [simplification]
   rule #lookup(M [ K1 <- _     ], K2, VT) => #lookup(M, K2, VT) requires K1 =/=K K2                                        [simplification]
   rule #lookup(M [ K1 <- undef ], K2, VT) => #lookup(M, K2, VT) requires K1 =/=K K2                                        [simplification]
+
+  rule #lookup(M,K,_) ==K None => notBool K in_keys(M) [simplification]
+  rule #Unwrap(#lookup(M, K, _) #as D, T) => {M[K]}:>Data requires D =/=K None [simplification]
 ```
 
 ```k
@@ -1559,12 +1562,29 @@ since it does not need to track the new map while keeping it off the stack.
 
   rule <k> NONE A T:Type => #HandleAnnotations(A)  ... </k>
        <stack> SS => [option #Name(T) None] ; SS </stack>
+```
 
+```concrete
   rule <k> IF_NONE A BT _  => #HandleAnnotations(A) ~> BT ... </k>
        <stack> [option _ None] ; SS => SS </stack>
 
   rule <k> IF_NONE A _  BF => #HandleAnnotations(A) ~> BF ... </k>
        <stack> [option T Some V] ; SS => [T V] ; SS </stack>
+```
+
+```symbolic
+  rule <k> IF_NONE A BT _  => #HandleAnnotations(A) ~> BT ... </k>
+       <stack> [option _ D:OptionData] ; SS => SS </stack>
+    requires D ==K None
+
+  rule <k> IF_NONE A _  BF => #HandleAnnotations(A) ~> BF ... </k>
+       <stack> [option T D:OptionData] ; SS => [T #Unwrap(D,T)] ; SS </stack>
+    requires D =/=K None
+
+  syntax Data ::= #Unwrap(OptionData,TypeName) [function]
+  // ----------------------------------------------------
+  rule #Unwrap(Some V, T) => V requires isValue(T, V)
+  rule #Unwrap(None,   _) => #Bottom
 ```
 
 ### Union Operations
@@ -1970,8 +1990,8 @@ These operations are used internally for implementation purposes.
 
 ```k
   syntax KItem ::= #Assume(BoolExp) [strict, result(Bool)]
-  rule <k> #Assume(true)  => .             ... </k>
-  rule <k> #Assume(false) ~> _:K => . </k>
+  rule <k> #Assume(true)         => .K ... </k>
+  rule <k> #Assume(false) ~> _:K => .K     </k>
        <assumeFailed> _ => true </assumeFailed> [transition]
 ```
 
