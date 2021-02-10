@@ -1200,7 +1200,8 @@ The `#DoCompare` function requires additional lemmas for symbolic execution.
   rule #DoCompare(I1:String, I2:String)  >Int 0 => I1 >String I2  [simplification]
 
   // TODO: at some point this rule should be builtin
-  rule X ==String X => true [simplification]
+  rule X ==String X => true  [simplification]
+  rule X  <String X => false [simplification]
 ```
 
 ### String Operations
