@@ -310,7 +310,7 @@ We initialize the configuration with the input filename.
                   <stucks>   0 </stucks>                // Number of stuck      branches
                   <defnDir> $DefnDir:String </defnDir>  // Path to kompiled definitions
                   <out stream="stdout"> .List </out>
-                  <exitcode exit="0"> 2 </exitcode>
+                  <exitcode exit="0"> -1 </exitcode>
 ```
 
 ### Initialization
@@ -399,7 +399,12 @@ Finally, we print the total number of sucessful and failed branches.
           <success> Successes </success>
           <failures> Failures </failures>
           <stucks> Stucks </stucks>
-          <exitcode> 2 => #if Failures +Int Stucks ==Int 0 #then 0 #else 1 #fi </exitcode>
+          <exitcode> -1
+                  =>       #if Stucks   =/=Int 0    #then 2
+                     #else #if Failures =/=Int 0    #then 1
+                     #else                                0
+                     #fi #fi
+          </exitcode>
 ```
 
 ```k
