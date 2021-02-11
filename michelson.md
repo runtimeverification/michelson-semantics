@@ -1742,7 +1742,7 @@ We introduce several pseudo-instructions that are used for debugging:
   rule <k> PAUSE    => STOP              ... </k>
   rule <k> PAUSE(S) => TRACE(S) ~> PAUSE ... </k>
   rule <k> TRACE(S) => .K ... </k>
-       <trace> K:K => (K ~> S) </trace>
+       <trace> .K => S ... </trace>
 ```
 
 Internal Operations
