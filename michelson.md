@@ -1421,7 +1421,11 @@ since it does not need to track the new map while keeping it off the stack.
   rule <k> NIL _A T => .  ... </k>
        <stack> SS => [list #Name(T) .InternalList] ; SS </stack>
 
-  rule <k> IF_CONS _A BT _  => BT ... </k>
+  rule <k> IF_CONS _A BT _
+        => #Assume(E == #MakeFresh(#Type(T)))
+        ~> BT
+           ...
+       </k>
        <stack> [list T [ E ] ;; L] ; SS => [T E] ; [list T L] ; SS </stack>
 
   rule <k> IF_CONS _A _  BF => BF ... </k>
@@ -1434,7 +1438,8 @@ since it does not need to track the new map while keeping it off the stack.
        <stack> [list _ .InternalList] ; SS => SS </stack>
 
   rule <k> ITER _A Body
-        => Body
+        => #Assume(E == #MakeFresh(#Type(T)))
+        ~> Body
         ~> #Push(list T,L)
         ~> ITER .AnnotationList Body
            ...
@@ -2279,7 +2284,7 @@ It has an untyped and typed variant.
 
 `#MakeFresh` is responsible for generating a fresh value of a given type.
 
-```internalized-rl
+```symbolic
   syntax Data ::= #MakeFresh(Type)
 
   rule <k> #MakeFresh(nat       _:AnnotationList) => #Assume(?V >=Int 0)             ~> ?V:Int         ... </k>
@@ -2319,7 +2324,7 @@ It has an untyped and typed variant.
 
 We implement fresh lambdas as fresh uninterpreted functions.
 
-```internalized-rl
+```symbolic
   rule <k> #MakeFresh(lambda _:AnnotationList T1 T2)
         => #Lambda(#Name(T1), #Name(T2), { #Uninterpreted(!_Id, #Name(T1), #Name(T2)) })
            ...
