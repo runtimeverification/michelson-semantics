@@ -617,7 +617,7 @@ Control Structures
 The `FAILWITH` instruction lets users terminate execution at any point.
 
 ```k
-  rule <k> FAILWITH A ~> Rk
+  rule <k> FAILWITH _A ~> Rk
         => Aborted("FAILWITH instruction reached", D, Rk, Rs)
         ~> Rk
        </k>
@@ -656,10 +656,10 @@ Keeping this similarity, unless absolutely prevented for performance or K style
 reasons, was a major design goal of the semantics.
 
 ```k
-  rule <k> IF A  BT _  => BT ... </k>
+  rule <k> IF _A  BT _  => BT ... </k>
        <stack> [ bool true  ] ; SS => SS </stack>
 
-  rule <k> IF A  _  BF => BF ... </k>
+  rule <k> IF _A  _  BF => BF ... </k>
        <stack> [ bool false ] ; SS => SS </stack>
 ```
 
@@ -733,12 +733,12 @@ The `DIP` instruction uses the `#Push` pseudo-instruction to replace the
 element it pops off for its block.
 
 ```k
-  rule <k> DIP A B => B ~> #Push(T,D) ... </k>
+  rule <k> DIP _A B => B ~> #Push(T,D) ... </k>
        <stack> [ T D ] ; SS => SS </stack>
 
-  rule <k> DIP A 0 B => B ... </k>
+  rule <k> DIP _A 0 B => B ... </k>
 
-  rule <k> DIP A N B
+  rule <k> DIP _A N B
          => .
          ~> DIP .AnnotationList { DIP .AnnotationList N -Int 1 B }
             ...
@@ -753,14 +753,14 @@ documentation.
   rule <k> DROP _A =>  . ... </k>
        <stack> _:StackElement ; SS => SS </stack>
 
-  rule <k> DROP A I
+  rule <k> DROP _A I
         => DROP .AnnotationList
         ~> DROP .AnnotationList I -Int 1
            ...
        </k>
     requires I >Int 0
 
-  rule <k> DROP A 0 => . ... </k>
+  rule <k> DROP _A 0 => . ... </k>
 ```
 
 `DUP` and `SWAP` are essentially lifted directly from the docs.
@@ -780,7 +780,7 @@ documentation.
 climb back up, respectively.
 
 ```k
-  rule <k> DIG A N => DIG_DOWN(N, .Stack) ... </k>
+  rule <k> DIG _A N => DIG_DOWN(N, .Stack) ... </k>
 
   syntax Instruction ::= "DIG_DOWN" "(" Int "," Stack ")"
                        | "DIG_UP" "(" Stack "," StackElement ")"
@@ -798,7 +798,7 @@ climb back up, respectively.
   rule <k> DIG_UP(.Stack, T) => . ... </k>
        <stack> SS => T ; SS </stack>
 
-  rule <k> DUG A N => DUG_DOWN(N, .Stack, T) ... </k>
+  rule <k> DUG _A N => DUG_DOWN(N, .Stack, T) ... </k>
        <stack> T ; SS => SS </stack>
 
   syntax Instruction ::= "DUG_DOWN" "(" Int "," Stack "," StackElement ")"
@@ -822,7 +822,7 @@ climb back up, respectively.
 `PUSH` puts its syntactic argument on the stack *when it is a `Value`*.
 
 ```k
-  rule <k> PUSH A T X => . ... </k>
+  rule <k> PUSH _A T X => . ... </k>
        <stack> SS => [ #Name(T) X ] ; SS </stack>
     requires isValue(#Name(T), X)
 ```
@@ -853,7 +853,7 @@ up/creating a new symbol in the symbol table.
   rule <k> UNIT _A => . ... </k>
        <stack> SS => [ unit  Unit] ; SS </stack>
 
-  rule <k> LAMBDA A T1 T2 C => . ... </k>
+  rule <k> LAMBDA _A T1 T2 C => . ... </k>
        <stack> SS
             => [ (lambda #Name(T1) #Name(T2)) #Lambda(#Name(T1), #Name(T2), C) ] ; SS
        </stack>
@@ -1031,7 +1031,7 @@ These operations map directly to their K equivalents.
                SS
        </stack>
 
-  rule <k> EDIV A  => . ... </k>
+  rule <k> EDIV _A  => . ... </k>
        <stack> [ T1:NumTypeName I1:Int ] ;
                [ T2:NumTypeName I2:Int ] ;
                SS
@@ -1075,7 +1075,7 @@ overflows.
        <stack> [ nat X ] ; [ nat S ] ; SS => [ nat X <<Int S ] ; SS </stack>
     requires S <=Int 256
 
-  rule <k> LSL A ~> Rk
+  rule <k> LSL _A ~> Rk
         => Aborted("LSL out of range", S, Rk, Rs)
         ~> Rk
         </k>
@@ -1086,7 +1086,7 @@ overflows.
        <stack> [ nat X ] ; [ nat S ] ; SS => [ nat X >>Int S ] ; SS </stack>
     requires S <=Int 256
 
-  rule <k> LSR A ~> Rk
+  rule <k> LSR _A ~> Rk
         => Aborted("LSR out of range", S, Rk, Rs)
         ~> Rk
         </k>
@@ -1322,7 +1322,7 @@ strings, allowing for code reuse.
 ### Set Operations
 
 ```k
-  rule <k> EMPTY_SET A T:Type => . ... </k>
+  rule <k> EMPTY_SET _A T:Type => . ... </k>
        <stack> SS => [set #Name(T) .Set] ; SS </stack>
 
   rule <k> MEM _A => . ... </k>
@@ -1348,10 +1348,10 @@ actually defined (the set is iterated over in ascending order).
 For simplicity we implement this by repeatedly selecting the minimal element.
 
 ```k
-  rule <k> ITER A _ => . ... </k>
+  rule <k> ITER _A _ => . ... </k>
        <stack> [set _ .Set] ; SS => SS </stack>
 
-  rule <k> ITER A Body
+  rule <k> ITER _A Body
         => Body
         ~> #Push(set T,S -Set SetItem(#MinimalElement(Set2List(S))))
         ~> ITER .AnnotationList Body
@@ -1397,9 +1397,9 @@ This rule is not supported by the LLVM backend, so we only include it in Haskell
 ```
 
 ```symbolic
-  rule #lookup(M [ K1 <- V1    ], K2, VT) => Some {V1}:>Data    requires K1 ==K  K2 andBool         isValue(VT,{V1}:>Data) [simplification]
-  rule #lookup(M [ K1 <- V1    ], K2, VT) => #Bottom            requires K1 ==K  K2 andBool notBool isValue(VT,{V1}:>Data) [simplification]
-  rule #lookup(M [ K1 <- undef ], K2, _ ) => None               requires K1 ==K  K2                                        [simplification]
+  rule #lookup(_ [ K1 <- V1    ], K2, VT) => Some {V1}:>Data    requires K1 ==K  K2 andBool         isValue(VT,{V1}:>Data) [simplification]
+  rule #lookup(_ [ K1 <- V1    ], K2, VT) => #Bottom            requires K1 ==K  K2 andBool notBool isValue(VT,{V1}:>Data) [simplification]
+  rule #lookup(_ [ K1 <- undef ], K2, _ ) => None               requires K1 ==K  K2                                        [simplification]
   rule #lookup(M [ K1 <- _     ], K2, VT) => #lookup(M, K2, VT) requires K1 =/=K K2                                        [simplification]
   rule #lookup(M [ K1 <- undef ], K2, VT) => #lookup(M, K2, VT) requires K1 =/=K K2                                        [simplification]
 ```
@@ -1609,7 +1609,7 @@ since it does not need to track the new map while keeping it off the stack.
 The `MAP` operation over `list`s is defined in terms of a helper function.
 
 ```k
-  rule <k> MAP A Body
+  rule <k> MAP _A Body
         => #DoMap(T, NoneType, L, .InternalList, Body)
            ...
        </k>
@@ -1667,7 +1667,7 @@ however forces us to use two rules for each operation.
 ### Blockchain Operations
 
 ```k
-  rule <k> CREATE_CONTRACT A:AnnotationList { C } => . ... </k>
+  rule <k> CREATE_CONTRACT _:AnnotationList { C } => . ... </k>
        <stack> [option key_hash Delegate:OptionData] ;
                [mutez Initial:Mutez] ;
                [_ Storage:Data] ;
@@ -1678,7 +1678,7 @@ however forces us to use two rules for each operation.
        </stack>
        <nonce> #Nonce(O) => #NextNonce(#Nonce(O)) </nonce>
 
-  rule <k> TRANSFER_TOKENS AL => . ... </k>
+  rule <k> TRANSFER_TOKENS _A => . ... </k>
        <stack> [T D] ; [mutez M] ; [contract T #Contract(A, _)] ; SS
             => [operation Transfer_tokens D M A O] ; SS
        </stack>
@@ -1702,17 +1702,17 @@ These instructions push fresh `contract` literals on the stack corresponding
 to the given addresses/key hashes.
 
 ```k
-  rule <k> CONTRACT AL T => . ... </k>
+  rule <k> CONTRACT _AL T => . ... </k>
        <stack> [address A] ; SS => [option contract #Name(T) Some {M[A]}:>Data] ; SS </stack>
        <knownaddrs> M </knownaddrs>
     requires A in_keys(M)
      andBool #TypeFromContractStruct({M[A]}:>Data) ==K T
 
-  rule <k> CONTRACT AL T => . ... </k>
+  rule <k> CONTRACT _AL T => . ... </k>
        <stack> [address _] ; SS => [option contract #Name(T) None] ; SS </stack>
        <knownaddrs> _ </knownaddrs> [owise]
 
-  rule <k> IMPLICIT_ACCOUNT AL => . ... </k>
+  rule <k> IMPLICIT_ACCOUNT _AL => . ... </k>
        <stack> [key_hash #KeyHash(A)] ; SS
             => [contract unit #Contract(#Address(A), unit .AnnotationList)] ; SS
        </stack>
@@ -1728,19 +1728,19 @@ These instructions push blockchain state on the stack.
        <stack> SS => [mutez B] ; SS </stack>
        <mybalance> B </mybalance>
 
-  rule <k> ADDRESS AL => . ... </k>
+  rule <k> ADDRESS _AL => . ... </k>
        <stack> [contract TN #Contract(A, T)] ; SS => [address A] ; SS </stack>
     requires TN ==K #Name(T)
 
-  rule <k> SOURCE AL => . ... </k>
+  rule <k> SOURCE _AL => . ... </k>
        <stack> SS => [address A] ; SS </stack>
        <sourceaddr> A </sourceaddr>
 
-  rule <k> SENDER AL => . ... </k>
+  rule <k> SENDER _AL => . ... </k>
        <stack> SS => [address A] ; SS </stack>
        <senderaddr> A </senderaddr>
 
-  rule <k> SELF AL => . ... </k>
+  rule <k> SELF _AL => . ... </k>
        <stack> SS => [contract #Name(T) #Contract(A, T)] ; SS </stack>
        <paramtype> T </paramtype>
        <myaddr> A </myaddr>
@@ -1831,28 +1831,28 @@ Other than the mutez validation step, these arithmetic rules are essentially
 identical to those defined over integers.
 
 ```k
-  rule <k> ADD A
+  rule <k> ADD _A
         => #ValidateMutezAndPush(#Mutez(I1 +Int I2), I1, I2)
         ~> .
            ...
        </k>
        <stack> [mutez #Mutez(I1)] ; [mutez #Mutez(I2)] ; SS => SS </stack>
 
-  rule <k> SUB A
+  rule <k> SUB _A
         => #ValidateMutezAndPush(#Mutez(I1 -Int I2), I1, I2)
         ~> .
            ...
        </k>
        <stack> [mutez #Mutez(I1)] ; [mutez #Mutez(I2)] ; SS => SS </stack>
 
-  rule <k> MUL A
+  rule <k> MUL _A
         => #ValidateMutezAndPush(#Mutez(I1 *Int I2), I1, I2)
         ~> .
            ...
        </k>
        <stack> [mutez #Mutez(I1)] ; [nat I2] ; SS => SS </stack>
 
-  rule <k> MUL A
+  rule <k> MUL _A
         => #ValidateMutezAndPush(#Mutez(I1 *Int I2), I1, I2)
         ~> .
            ...
