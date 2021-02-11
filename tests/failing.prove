@@ -1,4 +1,3 @@
-tests/proofs/add-spec.k
 tests/proofs/lemmas.md
 tests/proofs/listsum-spec.k
 tests/proofs/sum-simple-spec.k
