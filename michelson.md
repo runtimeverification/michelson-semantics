@@ -1432,7 +1432,7 @@ since it does not need to track the new map while keeping it off the stack.
        <stack> [list _ .InternalList ] ; SS => SS </stack>
 
   rule <k> SIZE _A => .  ... </k>
-       <stack> [list _ L:InternalList] ; SS => [nat size(L,0)] ; SS </stack>
+       <stack> [list _ L:InternalList] ; SS => [nat size(L)] ; SS </stack>
 
   rule <k> ITER _A _ => . ... </k>
        <stack> [list _ .InternalList] ; SS => SS </stack>

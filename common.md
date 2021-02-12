@@ -83,10 +83,10 @@ We represent values of collection types (lists, sets, maps) as follows:
   syntax WrappedData  ::= "[" Data "]"
   syntax InternalList ::= List{WrappedData, ";;"}
 
-  syntax Int ::= size(InternalList, Int) [function, functional]
+  syntax Int ::= size(InternalList) [function, functional]
   // ----------------------------------------------------------
-  rule size(_ ;; L,        S) => size(L, S +Int 1)
-  rule size(.InternalList, S) => S
+  rule size(_ ;; L       ) => size(L) +Int 1
+  rule size(.InternalList) => 0
 
   syntax SimpleData ::= Set | Map | InternalList
 ```
