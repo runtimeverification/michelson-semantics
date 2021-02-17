@@ -1251,7 +1251,7 @@ the actual serialization format is not formally unspecified.
   rule <k> PACK _A => . ... </k>
        <stack> [T V] ; SS => [bytes #Packed(T,V)] ; SS </stack>
 
-  rule <k> UNPACK A _ => . ... </k>
+  rule <k> UNPACK _A _ => . ... </k>
        <stack> [bytes #Packed(T,V)] ; SS => [option T Some V] ; SS </stack>
 ```
 
@@ -1436,7 +1436,7 @@ This rule is not supported by the LLVM backend, so we only include it in Haskell
 The `MAP` operation over maps is defined via psuedoinstruction `#DoMap`.
 
 ```k
-  rule <k> MAP A Body
+  rule <k> MAP _A Body
         => #DoMap(#MapOpInfo(KT, VT, NoneType, M, .Map, Body))
            ...
        </k>
@@ -1522,10 +1522,10 @@ We define auxiliary functions for computing the result type of `MAP`.
 since it does not need to track the new map while keeping it off the stack.
 
 ```k
-  rule <k> ITER A _ => .  ... </k>
+  rule <k> ITER _A _ => .  ... </k>
        <stack> [map _ _ .Map] ; SS => SS </stack>
 
-  rule <k> ITER A Body
+  rule <k> ITER _A Body
         => Body
         ~> #Push(map KT VT, M[#MinKey(M) <- undef])
         ~> ITER .AnnotationList Body
@@ -1550,29 +1550,29 @@ since it does not need to track the new map while keeping it off the stack.
   rule <k> SOME _A => .  ... </k>
        <stack> [T X] ; SS => [option T Some X] ; SS </stack>
 
-  rule <k> NONE A T:Type => .  ... </k>
+  rule <k> NONE _A T:Type => .  ... </k>
        <stack> SS => [option #Name(T) None] ; SS </stack>
 
-  rule <k> IF_NONE A BT _  => BT ... </k>
+  rule <k> IF_NONE _A BT _  => BT ... </k>
        <stack> [option _ None] ; SS => SS </stack>
 
-  rule <k> IF_NONE A _  BF => BF ... </k>
+  rule <k> IF_NONE _A _  BF => BF ... </k>
        <stack> [option T Some V] ; SS => [T V] ; SS </stack>
 ```
 
 ### Union Operations
 
 ```k
-  rule <k> LEFT A RTy:Type => .  ... </k>
+  rule <k> LEFT _A RTy:Type => .  ... </k>
        <stack> [LTy X:Data] ; SS => [or LTy #Name(RTy) Left X] ; SS </stack>
 
-  rule <k> RIGHT A LTy:Type => . ... </k>
+  rule <k> RIGHT _A LTy:Type => . ... </k>
        <stack> [RTy X:Data] ; SS => [or #Name(LTy) RTy Right X] ; SS </stack>
 
-  rule <k> IF_LEFT A BT _  => BT ... </k>
+  rule <k> IF_LEFT _A BT _  => BT ... </k>
        <stack> [or LTy _   Left V] ; SS => [LTy V] ; SS </stack>
 
-  rule <k> IF_LEFT A _  BF => BF ... </k>
+  rule <k> IF_LEFT _A _  BF => BF ... </k>
        <stack> [or _   RTy Right V] ; SS => [RTy V] ; SS </stack>
 ```
 
@@ -1582,22 +1582,22 @@ since it does not need to track the new map while keeping it off the stack.
   rule <k> CONS _A => .  ... </k>
        <stack> [T V] ; [list T L] ; SS => [list T [ V ] ;; L] ; SS </stack>
 
-  rule <k> NIL A T => .  ... </k>
+  rule <k> NIL _A T => .  ... </k>
        <stack> SS => [list #Name(T) .InternalList] ; SS </stack>
 
-  rule <k> IF_CONS A BT _  => BT ... </k>
+  rule <k> IF_CONS _A BT _  => BT ... </k>
        <stack> [list T [ E ] ;; L] ; SS => [T E] ; [list T L] ; SS </stack>
 
-  rule <k> IF_CONS A _  BF => BF ... </k>
+  rule <k> IF_CONS _A _  BF => BF ... </k>
        <stack> [list _ .InternalList ] ; SS => SS </stack>
 
   rule <k> SIZE _A => .  ... </k>
        <stack> [list _ L:InternalList] ; SS => [nat size(L,0)] ; SS </stack>
 
-  rule <k> ITER A _ => . ... </k>
+  rule <k> ITER _A _ => . ... </k>
        <stack> [list _ .InternalList] ; SS => SS </stack>
 
-  rule <k> ITER A Body
+  rule <k> ITER _A Body
         => Body
         ~> #Push(list T,L)
         ~> ITER .AnnotationList Body
@@ -2475,18 +2475,18 @@ It has an untyped and typed variant.
            ...
        </k>
 
-  rule <k> #MakeFresh(option _:AnnotationList T) => None               ... </k>
+  rule <k> #MakeFresh(option _:AnnotationList _) => None               ... </k>
   rule <k> #MakeFresh(option _:AnnotationList T) => Some #MakeFresh(T) ... </k>
 
-  rule <k> #MakeFresh(or _:AnnotationList T1 T2) => Left  #MakeFresh(T1) ... </k>
-  rule <k> #MakeFresh(or _:AnnotationList T1 T2) => Right #MakeFresh(T2) ... </k>
+  rule <k> #MakeFresh(or _:AnnotationList T1 _T2) => Left  #MakeFresh(T1) ... </k>
+  rule <k> #MakeFresh(or _:AnnotationList _T1 T2) => Right #MakeFresh(T2) ... </k>
 ```
 
 We implement fresh lambdas as fresh uninterpreted functions.
 
 ```internalized-rl
   rule <k> #MakeFresh(lambda _:AnnotationList T1 T2)
-        => #Lambda(#Name(T1), #Name(T2), { #Uninterpreted(!Id, #Name(T1), #Name(T2)) })
+        => #Lambda(#Name(T1), #Name(T2), { #Uninterpreted(!_Id, #Name(T1), #Name(T2)) })
            ...
        </k>
 
