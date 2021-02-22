@@ -306,6 +306,13 @@ configuration cell.
                 </michelsonTop>
 ```
 
+Additional state needed for fuzzing:
+
+```k
+                <pgm> $PGM:Pgm ~> .K </pgm>
+                <ruleInstrumentation> .K </ruleInstrumentation>
+```
+
 ```k
 endmodule
 ```
@@ -604,9 +611,9 @@ When the `<k>` cell is empty, we consider execution successful.
 We handle sequence and block semantics here.
 
 ```k
-  rule I:Instruction ; Is => I ~> Is [structural]
-  rule {}                 => .K      [structrual]
-  rule { Is:DataList }    => Is      [structural]
+  rule <k> I:Instruction ; Is => I ~> Is ... </k> <ruleInstrumentation> .K => "sequence" ... </ruleInstrumentation>
+  rule <k> {}                 => .K      ... </k> <ruleInstrumentation> .K => "block"    ... </ruleInstrumentation>
+  rule <k> { Is:DataList }    => Is      ... </k> <ruleInstrumentation> .K => "block"    ... </ruleInstrumentation>
 ```
 
 Control Structures
