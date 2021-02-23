@@ -277,7 +277,7 @@ output_compare_dir           := $(DEFN_DIR)/output-compare
 output_compare_files         := $(ALL_FILES)
 output_compare_main_file     := $(MICHELSON_ROOT)/compat
 output_compare_main_module   := OUTPUT-COMPARE
-output_compare_syntax_module := $(output_compare_m/ain_module)-SYNTAX
+output_compare_syntax_module := $(output_compare_main_module)-SYNTAX
 output_compare_kompiled      := $(output_compare_dir)/$(notdir $(output_compare_main_file))-kompiled/interpreter
 
 defn-output-compare:  $(output_compare_files)
