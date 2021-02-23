@@ -1,14 +1,15 @@
 # Settings
 # --------
 
-DEPS_DIR      := ext
-LIB_DIR       := lib
-BUILD_DIR     := .build
-SUBDEFN_DIR   := .
-DEFN_BASE_DIR := $(BUILD_DIR)/defn
-DEFN_DIR      := $(DEFN_BASE_DIR)/$(SUBDEFN_DIR)
-BUILD_LOCAL   := $(abspath $(BUILD_DIR)/local)
-LOCAL_LIB     := $(BUILD_LOCAL)/lib
+MICHELSON_ROOT ?= ./
+BUILD_DIR      ?= $(MICHELSON_ROOT)/.build
+DEPS_DIR       := $(MICHELSON_ROOT)/ext
+LIB_DIR        := $(MICHELSON_ROOT)/lib
+SUBDEFN_DIR    := .
+DEFN_BASE_DIR  := $(BUILD_DIR)/defn
+DEFN_DIR       := $(DEFN_BASE_DIR)/$(SUBDEFN_DIR)
+BUILD_LOCAL    := $(abspath $(BUILD_DIR)/local)
+LOCAL_LIB      := $(BUILD_LOCAL)/lib
 
 K_SUBMODULE     := $(DEPS_DIR)/k
 TEZOS_SUBMODULE := $(DEPS_DIR)/tezos
@@ -96,7 +97,7 @@ SOURCE_FILES       := compat    \
                       syntax    \
                       types
 EXTRA_SOURCE_FILES :=
-ALL_FILES          := $(patsubst %, %.md, $(SOURCE_FILES) $(EXTRA_SOURCE_FILES))
+ALL_FILES          := $(patsubst %, $(MICHELSON_ROOT)/%.md, $(SOURCE_FILES) $(EXTRA_SOURCE_FILES))
 
 tangle_haskell := k | symbolic
 tangle_llvm    := k | concrete
@@ -110,7 +111,7 @@ ifneq (,$(RELEASE))
     KOMPILE_OPTS += -O3
 endif
 
-CPP_FILES := hooks/time.cpp
+CPP_FILES := $(MICHELSON_ROOT)/hooks/time.cpp
 
 LLVM_KOMPILE_OPTS += -L$(LOCAL_LIB) -I$(K_RELEASE)/include/kllvm \
                      $(abspath $(CPP_FILES))                     \
@@ -142,7 +143,7 @@ build-compat: build-contract-expander build-extractor build-input-creator build-
 
 llvm_dir           := $(DEFN_DIR)/llvm
 llvm_files         := $(ALL_FILES)
-llvm_main_file     := michelson
+llvm_main_file     := $(MICHELSON_ROOT)/michelson
 llvm_main_module   := MICHELSON
 llvm_syntax_module := UNIT-TEST-SYNTAX
 llvm_kompiled      := $(llvm_dir)/$(notdir $(llvm_main_file))-kompiled/interpreter
@@ -152,7 +153,7 @@ build-llvm: $(llvm_kompiled)
 
 $(llvm_kompiled): $(llvm_files)
 	$(KOMPILE_LLVM) $(llvm_main_file).md                  \
-	                --directory $(llvm_dir) -I $(CURDIR)  \
+	                --directory $(llvm_dir) -I $(MICHELSON_ROOT)  \
 	                --main-module $(llvm_main_module)     \
 	                --syntax-module $(llvm_syntax_module)
 
@@ -160,7 +161,7 @@ $(llvm_kompiled): $(llvm_files)
 
 prove_dir           := $(DEFN_DIR)/prove
 prove_files         := $(ALL_FILES)
-prove_main_file     := michelson
+prove_main_file     := $(MICHELSON_ROOT)/michelson
 prove_main_module   := MICHELSON
 prove_syntax_module := UNIT-TEST-SYNTAX
 prove_kompiled      := $(prove_dir)/$(notdir $(prove_main_file))-kompiled/definition.kore
@@ -170,15 +171,15 @@ build-prove: $(prove_kompiled)
 
 $(prove_kompiled): $(prove_files)
 	$(KOMPILE_HASKELL) $(prove_main_file).md                  \
-	                   --directory $(prove_dir) -I $(CURDIR)  \
+	                   --directory $(prove_dir) -I $(MICHELSON_ROOT)  \
 	                   --main-module $(prove_main_module)     \
 	                   --syntax-module $(prove_syntax_module)
 
 ### Symbolic Driver
 
 driver_dir            := $(DEFN_DIR)/driver
-driver_files          := lib/driver.md
-driver_main_file      := lib/driver
+driver_files          := $(MICHELSON_ROOT)/lib/driver.md
+driver_main_file      := $(MICHELSON_ROOT)/lib/driver
 driver_main_module    := DRIVER
 driver_syntax_module  := KORE
 driver_kompiled       := $(driver_dir)/$(notdir $(driver_main_file))-kompiled/interpreter
@@ -190,7 +191,7 @@ build-driver: $(driver_kompiled) $(driver_pattern_parser)
 $(driver_kompiled): tangle_haskell := k | driver
 $(driver_kompiled): $(driver_files)
 	$(KOMPILE_LLVM) $(driver_main_file).md                  \
-	                --directory $(driver_dir) -I $(CURDIR)  \
+	                --directory $(driver_dir) -I $(MICHELSON_ROOT)  \
 	                --main-module $(driver_main_module)     \
 	                --syntax-module $(driver_syntax_module)
 
@@ -201,7 +202,7 @@ $(driver_pattern_parser): $(driver_files) $(driver_kompiled)
 
 symbolic_dir           := $(DEFN_DIR)/symbolic
 symbolic_files         := $(ALL_FILES)
-symbolic_main_file     := michelson
+symbolic_main_file     := $(MICHELSON_ROOT)/michelson
 symbolic_main_module   := MICHELSON
 symbolic_syntax_module := SYMBOLIC-UNIT-TEST-SYNTAX
 symbolic_kompiled      := $(symbolic_dir)/$(notdir $(symbolic_main_file))-kompiled/definition.kore
@@ -212,7 +213,7 @@ build-symbolic: $(symbolic_kompiled) build-driver
 $(symbolic_kompiled): tangle_haskell := k | symbolic | internalized-rl
 $(symbolic_kompiled): $(symbolic_files)
 	$(KOMPILE_HASKELL) $(symbolic_main_file).md                  \
-	                   --directory $(symbolic_dir) -I $(CURDIR)  \
+	                   --directory $(symbolic_dir) -I $(MICHELSON_ROOT)  \
 	                   --main-module $(symbolic_main_module)     \
 	                   --syntax-module $(symbolic_syntax_module)
 
@@ -220,7 +221,7 @@ $(symbolic_kompiled): $(symbolic_files)
 
 contract_expander_dir           := $(DEFN_DIR)/contract-expander
 contract_expander_files         := $(ALL_FILES)
-contract_expander_main_file     := compat
+contract_expander_main_file     := $(MICHELSON_ROOT)/compat
 contract_expander_main_module   := CONTRACT-EXPANDER
 contract_expander_syntax_module := $(contract_expander_main_module)-SYNTAX
 contract_expander_kompiled      := $(contract_expander_dir)/$(notdir $(contract_expander_main_file))-kompiled/interpreter
@@ -230,7 +231,7 @@ build-contract-expander: $(contract_expander_kompiled)
 
 $(contract_expander_kompiled): $(contract_expander_files)
 	$(KOMPILE_LLVM) $(contract_expander_main_file).md                  \
-	                --directory $(contract_expander_dir) -I $(CURDIR)  \
+	                --directory $(contract_expander_dir) -I $(MICHELSON_ROOT)  \
 	                --main-module $(contract_expander_main_module)     \
 	                --syntax-module $(contract_expander_syntax_module)
 
@@ -238,7 +239,7 @@ $(contract_expander_kompiled): $(contract_expander_files)
 
 extractor_dir           := $(DEFN_DIR)/extractor
 extractor_files         := $(ALL_FILES)
-extractor_main_file     := compat
+extractor_main_file     := $(MICHELSON_ROOT)/compat
 extractor_main_module   := EXTRACTOR
 extractor_syntax_module := $(extractor_main_module)-SYNTAX
 extractor_kompiled      := $(extractor_dir)/$(notdir $(extractor_main_file))-kompiled/interpreter
@@ -248,7 +249,7 @@ build-extractor: $(extractor_kompiled)
 
 $(extractor_kompiled): $(extractor_files)
 	$(KOMPILE_LLVM) $(extractor_main_file).md                  \
-	                --directory $(extractor_dir) -I $(CURDIR)  \
+	                --directory $(extractor_dir) -I $(MICHELSON_ROOT)  \
 	                --main-module $(extractor_main_module)     \
 	                --syntax-module $(extractor_syntax_module)
 
@@ -256,7 +257,7 @@ $(extractor_kompiled): $(extractor_files)
 
 input_creator_dir           := $(DEFN_DIR)/input-creator
 input_creator_files         := $(ALL_FILES)
-input_creator_main_file     := compat
+input_creator_main_file     := $(MICHELSON_ROOT)/compat
 input_creator_main_module   := INPUT-CREATOR
 input_creator_syntax_module := $(input_creator_main_module)-SYNTAX
 input_creator_kompiled      := $(input_creator_dir)/$(notdir $(input_creator_main_file))-kompiled/interpreter
@@ -266,7 +267,7 @@ build-input-creator: $(input_creator_kompiled)
 
 $(input_creator_kompiled): $(input_creator_files)
 	$(KOMPILE_LLVM) $(input_creator_main_file).md                  \
-	                --directory $(input_creator_dir) -I $(CURDIR)  \
+	                --directory $(input_creator_dir) -I $(MICHELSON_ROOT)  \
 	                --main-module $(input_creator_main_module)     \
 	                --syntax-module $(input_creator_syntax_module)
 
@@ -274,9 +275,9 @@ $(input_creator_kompiled): $(input_creator_files)
 
 output_compare_dir           := $(DEFN_DIR)/output-compare
 output_compare_files         := $(ALL_FILES)
-output_compare_main_file     := compat
+output_compare_main_file     := $(MICHELSON_ROOT)/compat
 output_compare_main_module   := OUTPUT-COMPARE
-output_compare_syntax_module := $(output_compare_main_module)-SYNTAX
+output_compare_syntax_module := $(output_compare_m/ain_module)-SYNTAX
 output_compare_kompiled      := $(output_compare_dir)/$(notdir $(output_compare_main_file))-kompiled/interpreter
 
 defn-output-compare:  $(output_compare_files)
@@ -284,7 +285,7 @@ build-output-compare: $(output_compare_kompiled)
 
 $(output_compare_kompiled): $(output_compare_files)
 	$(KOMPILE_LLVM) $(output_compare_main_file).md                  \
-	                --directory $(output_compare_dir) -I $(CURDIR)  \
+	                --directory $(output_compare_dir) -I $(MICHELSON_ROOT)  \
 	                --main-module $(output_compare_main_module)     \
 	                --syntax-module $(output_compare_syntax_module)
 
@@ -300,52 +301,52 @@ test: test-unit test-cross test-prove
 
 # Unit
 
-unit_tests         := $(wildcard tests/unit/*.tzt) $(wildcard tests/macros/*.tzt)
-unit_tests_failing := $(shell cat tests/failing.unit)
+unit_tests         := $(wildcard $(MICHELSON_ROOT)/tests/unit/*.tzt) $(wildcard $(MICHELSON_ROOT)/tests/macros/*.tzt)
+unit_tests_failing := $(shell cat $(MICHELSON_ROOT)/tests/failing.unit)
 unit_tests_passing := $(filter-out $(unit_tests_failing), $(unit_tests))
 
 test-unit:         $(unit_tests_passing:=.unit)
 test-unit-failing: $(unit_tests_failing:=.unit)
 
-tests/%.unit: tests/% $(llvm_kompiled)
+$(MICHELSON_ROOT)/tests/%.unit: $(MICHELSON_ROOT)/tests/% $(llvm_kompiled)
 	$(TEST) interpret --backend llvm $< --output-file /dev/null
 
 # symbolic
 
-symbolic_tests         := $(shell find tests/symbolic -type f -name '*.tzt')
-symbolic_tests_failing := $(shell cat tests/failing.symbolic)
+symbolic_tests         := $(shell find $(MICHELSON_ROOT)/tests/symbolic -type f -name '*.tzt')
+symbolic_tests_failing := $(shell cat $(MICHELSON_ROOT)/tests/failing.symbolic)
 symbolic_tests_passing := $(filter-out $(symbolic_tests_failing), $(symbolic_tests))
 
 test-symbolic:         $(symbolic_tests_passing:=.symbolic)
 test-symbolic-failing: $(symbolic_tests_failing:=.symbolic)
 
 EXPECTED_EXITCODE = 0
-tests/symbolic/%.fail.tzt.symbolic:  EXPECTED_EXITCODE = 1
-tests/symbolic/%.stuck.tzt.symbolic: EXPECTED_EXITCODE = 2
+$(MICHELSON_ROOT)/tests/symbolic/%.fail.tzt.symbolic:  EXPECTED_EXITCODE = 1
+$(MICHELSON_ROOT)/tests/symbolic/%.stuck.tzt.symbolic: EXPECTED_EXITCODE = 2
 
-tests/%.symbolic: tests/% build-symbolic
+$(MICHELSON_ROOT)/tests/%.symbolic: $(MICHELSON_ROOT)/tests/% build-symbolic
 	$(LIB_DIR)/check-exit-code $(EXPECTED_EXITCODE) $(TEST) symbtest $< > /dev/null
 
 # Cross Validation
 
-cross_tests         := $(wildcard tests/unit/*.tzt) $(wildcard tests/macros/*.tzt)
-cross_tests_failing := $(shell cat tests/failing.cross)
+cross_tests         := $(wildcard $(MICHELSON_ROOT)/tests/unit/*.tzt) $(wildcard $(MICHELSON_ROOT)/tests/macros/*.tzt)
+cross_tests_failing := $(shell cat $(MICHELSON_ROOT)/tests/failing.cross)
 cross_tests_passing := $(filter-out $(cross_tests_failing), $(cross_tests))
 
 test-cross:         $(cross_tests_passing:=.cross)
 test-cross-failing: $(cross_tests_failing:=.cross)
 
-tests/%.cross: tests/% $(input_creator_kompiled) $(extractor_kompiled) $(contract_expander_kompiled) $(output_compare_kompiled)
+$(MICHELSON_ROOT)/tests/%.cross: $(MICHELSON_ROOT)/tests/% $(input_creator_kompiled) $(extractor_kompiled) $(contract_expander_kompiled) $(output_compare_kompiled)
 	$(LIB_DIR)/tezos-client-unit-test $< > $@
 
 # Prove
 
-prove_tests         := $(wildcard tests/proofs/*-spec.k)
-prove_tests_failing := $(shell cat tests/failing.prove)
+prove_tests         := $(wildcard $(MICHELSON_ROOT)/tests/proofs/*-spec.k)
+prove_tests_failing := $(shell cat $(MICHELSON_ROOT)/tests/failing.prove)
 prove_tests_passing := $(filter-out $(prove_tests_failing), $(prove_tests))
 
 test-prove:         $(prove_tests_passing:=.prove)
 test-prove-failing: $(prove_tests_failing:=.prove)
 
-tests/%.prove: tests/% $(prove_kompiled)
+$(MICHELSON_ROOT)/tests/%.prove: $(MICHELSON_ROOT)/tests/% $(prove_kompiled)
 	$(TEST) prove --backend prove $< $(KPROVE_MODULE)
