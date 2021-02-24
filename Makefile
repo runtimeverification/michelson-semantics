@@ -1,7 +1,7 @@
 # Settings
 # --------
 
-MICHELSON_ROOT ?= ./
+MICHELSON_ROOT ?= .
 BUILD_DIR      ?= $(MICHELSON_ROOT)/.build
 DEPS_DIR       := $(MICHELSON_ROOT)/ext
 LIB_DIR        := $(MICHELSON_ROOT)/lib
