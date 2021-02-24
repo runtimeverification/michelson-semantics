@@ -302,7 +302,7 @@ test: test-unit test-cross test-prove
 # Unit
 
 unit_tests         := $(wildcard $(MICHELSON_ROOT)/tests/unit/*.tzt) $(wildcard $(MICHELSON_ROOT)/tests/macros/*.tzt)
-unit_tests_failing := $(shell cat $(MICHELSON_ROOT)/tests/failing.unit)
+unit_tests_failing := $(addprefix $(MICHELSON_ROOT)/, $(shell cat $(MICHELSON_ROOT)/tests/failing.unit))
 unit_tests_passing := $(filter-out $(unit_tests_failing), $(unit_tests))
 
 test-unit:         $(unit_tests_passing:=.unit)
@@ -314,7 +314,7 @@ $(MICHELSON_ROOT)/tests/%.unit: $(MICHELSON_ROOT)/tests/% $(llvm_kompiled)
 # symbolic
 
 symbolic_tests         := $(shell find $(MICHELSON_ROOT)/tests/symbolic -type f -name '*.tzt')
-symbolic_tests_failing := $(shell cat $(MICHELSON_ROOT)/tests/failing.symbolic)
+symbolic_tests_failing := $(addprefix $(MICHELSON_ROOT)/, $(shell cat $(MICHELSON_ROOT)/tests/failing.symbolic))
 symbolic_tests_passing := $(filter-out $(symbolic_tests_failing), $(symbolic_tests))
 
 test-symbolic:         $(symbolic_tests_passing:=.symbolic)
@@ -330,7 +330,7 @@ $(MICHELSON_ROOT)/tests/%.symbolic: $(MICHELSON_ROOT)/tests/% build-symbolic
 # Cross Validation
 
 cross_tests         := $(wildcard $(MICHELSON_ROOT)/tests/unit/*.tzt) $(wildcard $(MICHELSON_ROOT)/tests/macros/*.tzt)
-cross_tests_failing := $(shell cat $(MICHELSON_ROOT)/tests/failing.cross)
+cross_tests_failing := $(addprefix $(MICHELSON_ROOT)/, $(shell cat $(MICHELSON_ROOT)/tests/failing.cross))
 cross_tests_passing := $(filter-out $(cross_tests_failing), $(cross_tests))
 
 test-cross:         $(cross_tests_passing:=.cross)
@@ -342,7 +342,7 @@ $(MICHELSON_ROOT)/tests/%.cross: $(MICHELSON_ROOT)/tests/% $(input_creator_kompi
 # Prove
 
 prove_tests         := $(wildcard $(MICHELSON_ROOT)/tests/proofs/*-spec.k)
-prove_tests_failing := $(shell cat $(MICHELSON_ROOT)/tests/failing.prove)
+prove_tests_failing := $(addprefix $(MICHELSON_ROOT)/, $(shell cat $(MICHELSON_ROOT)/tests/failing.prove))
 prove_tests_passing := $(filter-out $(prove_tests_failing), $(prove_tests))
 
 test-prove:         $(prove_tests_passing:=.prove)
