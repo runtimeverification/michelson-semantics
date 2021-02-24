@@ -61,7 +61,8 @@ Type annotations only exist as tokens in the internal representation.
 Types are defined as expected.
 
 ```k
-  syntax NumTypeName ::= "int" | "nat"
+  syntax NumTypeName ::= "int"
+                       | "nat"
 
   syntax NullaryTypeName ::= NumTypeName
                            | "string"
@@ -72,7 +73,7 @@ Types are defined as expected.
                            | "timestamp"
                            | "address"
                            | "key"
-                           | "unit"
+                           | "unit" [klabel(typeNameUnit)]
                            | "signature"
                            | "operation"
                            | "chain_id"
@@ -150,7 +151,7 @@ Simple recursive data structures are defined as expected.
 Collection sorts (maps, lists, and sets) are defined below.
 
 ```k
-  syntax EmptyBlock ::= "{" "}"
+  syntax EmptyBlock ::= "{" "}" [klabel(emptyBlock), symbol]
 
   syntax MapEntry ::= "Elt" Data Data
   syntax MapEntryList ::= MapEntry | MapEntry ";" MapEntryList
