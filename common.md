@@ -81,7 +81,7 @@ We represent values of collection types (lists, sets, maps) as follows:
 
 ```k
   syntax WrappedData  ::= "[" Data "]"
-  syntax InternalList ::= List{WrappedData, ";;"}
+  syntax InternalList ::= List{WrappedData, ";;"} [klabel(InternalList), symbol]
 
   syntax Int ::= size(InternalList, Int) [function, functional]
   // ----------------------------------------------------------

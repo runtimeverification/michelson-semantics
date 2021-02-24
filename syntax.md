@@ -104,7 +104,7 @@ Simple data literals have efficiently detectable normal forms at runtime.
   syntax SimpleData ::= String
   syntax SimpleData ::= MichelsonBool
   syntax SimpleData ::= MichelsonBytes
-  syntax SimpleData ::= "Unit"
+  syntax SimpleData ::= "Unit" [klabel(Unit)]
   syntax SimpleData ::= Mutez
   syntax SimpleData ::= Address
   syntax Data ::= SimpleData
