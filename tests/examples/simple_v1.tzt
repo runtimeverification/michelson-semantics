@@ -1,4 +1,0 @@
-# simple_v1 - passing test
-input { Stack_elt int 5 ; Stack_elt int 9 } ;
-code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD } ;
-output { Stack_elt int 7 }
