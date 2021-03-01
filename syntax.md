@@ -586,6 +586,8 @@ grammar](https://gitlab.com/tezos/tezos/-/merge_requests/1487/diffs).
 module UNIT-TEST-SYNTAX
   imports UNIT-TEST-COMMON-SYNTAX
   imports MICHELSON-SYNTAX
+
+  syntax TestName ::= r"[a-zA-Z][a-zA-Z_0-9]*" [token]
 endmodule
 ```
 
@@ -652,6 +654,14 @@ Unit test files allow the following additional groups.
     ```
 
 ### Optional Groups
+
+-   `test` wraps tests allowing for multiple tests in one file
+
+    ```k
+    syntax Group ::= TestGroup
+    syntax TestGroup ::= "test" TestName "{" Groups "}"
+    syntax TestName
+    ```
 
 -   `parameter` (default `unit`) the type of the parameter of the contract
     pushed by the `SELF` instruction.
