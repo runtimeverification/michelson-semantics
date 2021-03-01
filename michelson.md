@@ -50,6 +50,7 @@ cells inside a topmost cell, which we call `<michelsonTop>`.
 ```k
   configuration
     <michelsonTop>
+      <context>
 ```
 
 ### Blockchain Context
@@ -57,24 +58,24 @@ cells inside a topmost cell, which we call `<michelsonTop>`.
 The values of many of these cells are accessible via Michelson instructions.
 
 ```k
-      <timestamp> #Timestamp(0) </timestamp>
-      <chainid> #ChainId(.Bytes) </chainid>
-      <knownaddrs> .Map </knownaddrs>
-      <bigmaps> .Map </bigmaps>
+        <timestamp> #Timestamp(0) </timestamp>
+        <chainid> #ChainId(.Bytes) </chainid>
+        <knownaddrs> .Map </knownaddrs>
+        <bigmaps> .Map </bigmaps>
 
-      <account-addr> #Address("InvalidMyAddr") </account-addr>
-      <account-paramtype> #NotSet </account-paramtype>
-      <account-storagetype> #NotSet </account-storagetype>
-      <account-script> #NoData </account-script>
+        <account-addr> #Address("InvalidMyAddr") </account-addr>
+        <account-paramtype> #NotSet </account-paramtype>
+        <account-storagetype> #NotSet </account-storagetype>
+        <account-script> #NoData </account-script>
 
-      <account-storage> #NoData </account-storage>
-      <account-balance> #Mutez(0) </account-balance>
-      <account-nonce> #Nonce(0) </account-nonce>
+        <account-storage> #NoData </account-storage>
+        <account-balance> #Mutez(0) </account-balance>
+        <account-nonce> #Nonce(0) </account-nonce>
 
-      <txn-param> #NoData </txn-param>
-      <txn-amount> #Mutez(0) </txn-amount>
-      <txn-source> #Address("InvalidSourceAddr") </txn-source>
-      <txn-sender> #Address("InvalidSenderAddr") </txn-sender>
+        <txn-param> #NoData </txn-param>
+        <txn-amount> #Mutez(0) </txn-amount>
+        <txn-source> #Address("InvalidSourceAddr") </txn-source>
+        <txn-sender> #Address("InvalidSenderAddr") </txn-sender>
 ```
 
 ### Test Context
@@ -82,11 +83,12 @@ The values of many of these cells are accessible via Michelson instructions.
 These cells are used to initialize the test context.
 
 ```k
-      <inputstack> { .StackElementList } </inputstack>
-      <expected> ({ .StackElementList }):OutputStack </expected>
-      <pre> .BlockList </pre>
-      <post> .BlockList </post>
-      <invs> .Map </invs>
+        <inputstack> { .StackElementList } </inputstack>
+        <expected> ({ .StackElementList }):OutputStack </expected>
+        <pre> .BlockList </pre>
+        <post> .BlockList </post>
+        <invs> .Map </invs>
+      </context>
 ```
 
 ### Interpreter Runtime State
@@ -101,11 +103,41 @@ These cells store the Michelson interpreter runtime state.
       <trace> .K </trace>
       <symbols> .Map </symbols>
       <cutpoints> .Set </cutpoints>
-      <multiTest> true </multiTest>
+      <savedContext> NoContext </savedContext>
+      <currentContext> _default </currentContext>
 ```
 
 ```k
     </michelsonTop>
+```
+
+### Context Update
+
+```k
+  syntax TestName ::= "_default"
+  syntax TestContextStruct ::= TestContext(K, TestName, ContextCell)
+                             | "NoContext"
+
+  syntax KItem ::= #SwapContext(TestName, K)
+                 | "#LoadContext"
+  // ----------------------------
+  rule <k> #SwapContext(NewCtxtName, NewCont) ~> Cont:K
+        => NewCont ~> #Init ~> #LoadContext
+       </k>
+       <savedContext>
+           NoContext
+        => TestContext(Cont, CtxtName, <context> Context </context>)
+       </savedContext>
+       <currentContext> CtxtName => NewCtxtName </currentContext>
+       (<context> Context </context> => initContextCell)
+
+  rule <k> #LoadContext => Cont </k>
+       <savedContext> TestContext(Cont, CtxtName, <context> Context </context>) => NoContext </savedContext>
+       <currentContext> _ => CtxtName </currentContext>
+       <context> _ => Context </context>
+```
+
+```k
 endmodule
 ```
 
@@ -383,7 +415,10 @@ version.
        <post> Postconditions </post>
 
   syntax KItem ::= "#ExecuteScript"
-  rule <k> #ExecuteScript => Script ... </k>
+  rule <k> #ExecuteScript
+        => #if Script ==K #NoData #then {} #else Script #fi
+           ...
+       </k>
        <account-script> Script </account-script>
 ```
 
@@ -396,7 +431,7 @@ Miscellaneous
 When the `<k>` cell is empty, we consider execution successful.
 
 ```k
-  rule <k> . </k>
+  rule <k> .K </k>
        <returncode> 111 => 0 </returncode>
 ```
 
