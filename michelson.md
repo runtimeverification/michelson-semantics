@@ -58,24 +58,24 @@ cells inside a topmost cell, which we call `<michelsonTop>`.
 The values of many of these cells are accessible via Michelson instructions.
 
 ```k
-        <timestamp> #Timestamp(0) </timestamp>
-        <chainid> #ChainId(.Bytes) </chainid>
+        <mynow> #Timestamp(0) </mynow>
+        <mychainid> #ChainId(.Bytes) </mychainid>
         <knownaddrs> .Map </knownaddrs>
         <bigmaps> .Map </bigmaps>
 
-        <account-addr> #Address("InvalidMyAddr") </account-addr>
-        <account-paramtype> #NotSet </account-paramtype>
-        <account-storagetype> #NotSet </account-storagetype>
-        <account-script> #NoData </account-script>
+        <myaddr> #Address("InvalidMyAddr") </myaddr>
+        <paramtype> #NotSet </paramtype>
+        <storagetype> #NotSet </storagetype>
+        <script> #NoData </script>
 
-        <account-storage> #NoData </account-storage>
-        <account-balance> #Mutez(0) </account-balance>
-        <account-nonce> #Nonce(0) </account-nonce>
+        <storagevalue> #NoData </storagevalue>
+        <mybalance> #Mutez(0) </mybalance>
+        <nonce> #Nonce(0) </nonce>
 
-        <txn-param> #NoData </txn-param>
-        <txn-amount> #Mutez(0) </txn-amount>
-        <txn-source> #Address("InvalidSourceAddr") </txn-source>
-        <txn-sender> #Address("InvalidSenderAddr") </txn-sender>
+        <paramvalue> #NoData </paramvalue>
+        <myamount> #Mutez(0) </myamount>
+        <sourceaddr> #Address("InvalidSourceAddr") </sourceaddr>
+        <senderaddr> #Address("InvalidSenderAddr") </senderaddr>
 ```
 
 ### Test Context
@@ -189,13 +189,13 @@ Below are the rules for loading specific groups.
 
 ```k
   rule <k> parameter T => .K ... </k>
-       <account-paramtype> #NotSet => T </account-paramtype>
+       <paramtype> #NotSet => T </paramtype>
 
   rule <k> storage T => .K ... </k>
-       <account-storagetype> #NotSet => T </account-storagetype>
+       <storagetype> #NotSet => T </storagetype>
 
   rule <k> code C => .K ... </k>
-       <account-script> #NoData => C </account-script>
+       <script> #NoData => C </script>
 ```
 
 #### Extended Unit Test Gruops
@@ -204,26 +204,26 @@ Below are the rules for loading specific groups.
   rule <k> G:Group ; Gs:Groups => G:Group ~> Gs ... </k>
 
   rule <k> now I => .K ... </k>
-       <timestamp> #Timestamp(0 => I) </timestamp>
+       <mynow> #Timestamp(0 => I) </mynow>
 
   rule <k> sender A => .K ... </k>
-       <txn-sender> #Address("InvalidSenderAddr" => A) </txn-sender>
+       <senderaddr> #Address("InvalidSenderAddr" => A) </senderaddr>
 
   rule <k> source A => .K ...  </k>
-       <txn-source> #Address("InvalidSourceAddr" => A) </txn-source>
+       <sourceaddr> #Address("InvalidSourceAddr" => A) </sourceaddr>
 
   rule <k> chain_id M => .K ... </k>
-       <chainid> #ChainId(_ => M) </chainid>
+       <mychainid> #ChainId(_ => M) </mychainid>
 
   rule <k> self A => .K ... </k>
-       <account-addr> #Address("InvalidMyAddr" => A) </account-addr>
+       <myaddr> #Address("InvalidMyAddr" => A) </myaddr>
 
   rule <k> amount I => .K ... </k>
-       <txn-amount> #Mutez(0 => I) </txn-amount>
+       <myamount> #Mutez(0 => I) </myamount>
     requires #IsLegalMutezValue(I)
 
   rule <k> balance I => .K ... </k>
-       <account-balance> #Mutez(0 => I) </account-balance>
+       <mybalance> #Mutez(0 => I) </mybalance>
     requires #IsLegalMutezValue(I)
 
   rule <k> other_contracts { M } => .K ... </k>
@@ -280,23 +280,23 @@ Below are the rules for loading specific groups.
 ```k
   syntax KItem ::= "#ConvertParamToNative"
   rule <k> #ConvertParamToNative => .K ... </k>
-       <txn-param>          D:Data => #MichelineToNative(D, #ConvertToType(T), .Map, BigMaps) </txn-param>
-       <account-paramtype>  T      => #ConvertToType(T)                                       </account-paramtype>
+       <paramvalue> D:Data => #MichelineToNative(D, #ConvertToType(T), .Map, BigMaps) </paramvalue>
+       <paramtype>  T      => #ConvertToType(T)                                       </paramtype>
        <bigmaps> BigMaps </bigmaps>
 
   rule <k> #ConvertParamToNative => .K ... </k>
-       <txn-param> #NoData                </txn-param>
-       <account-paramtype>  T => #ConvertToType(T) </account-paramtype>
+       <paramvalue> #NoData                </paramvalue>
+       <paramtype>  T => #ConvertToType(T) </paramtype>
 
   syntax KItem ::= "#ConvertStorageToNative"
   rule <k> #ConvertStorageToNative => .K ... </k>
-       <account-storage>      D:Data => #MichelineToNative(D, #ConvertToType(T), .Map, BigMaps) </account-storage>
-       <account-storagetype>  T      => #ConvertToType(T)                                       </account-storagetype>
+       <storagevalue> D:Data => #MichelineToNative(D, #ConvertToType(T), .Map, BigMaps) </storagevalue>
+       <storagetype>  T      => #ConvertToType(T)                                       </storagetype>
        <bigmaps> BigMaps </bigmaps>
 
   rule <k> #ConvertStorageToNative => .K ... </k>
-       <account-storage> #NoData                </account-storage>
-       <account-storagetype>  T => #ConvertToType(T) </account-storagetype>
+       <storagevalue> #NoData                </storagevalue>
+       <storagetype>  T => #ConvertToType(T) </storagetype>
 
   syntax Type ::= #ConvertToType(PreType) [function]
   rule #ConvertToType(#NotSet) => unit .AnnotationList
@@ -421,7 +421,7 @@ version.
         => #if Script ==K #NoData #then {} #else Script #fi
            ...
        </k>
-       <account-script> Script </account-script>
+       <script> Script </script>
 ```
 
 Execution Semantics
@@ -1512,17 +1512,17 @@ however forces us to use two rules for each operation.
                [address #Address("@Address(" +String Int2String(!_:Int) +String ")")] ;
                SS
        </stack>
-       <account-nonce> #Nonce(O) => #NextNonce(#Nonce(O)) </account-nonce>
+       <nonce> #Nonce(O) => #NextNonce(#Nonce(O)) </nonce>
 
   rule <k> TRANSFER_TOKENS _A => . ... </k>
        <stack> [T D] ; [mutez M] ; [contract T #Contract(A, _)] ; SS
             => [operation Transfer_tokens D M A O] ; SS
        </stack>
-       <account-nonce> #Nonce(O) => #NextNonce(#Nonce(O)) </account-nonce>
+       <nonce> #Nonce(O) => #NextNonce(#Nonce(O)) </nonce>
 
   rule <k> SET_DELEGATE _A => . ... </k>
        <stack> [option key_hash D] ; SS => [operation Set_delegate D O] ; SS </stack>
-       <account-nonce> #Nonce(O) => #NextNonce(#Nonce(O)) </account-nonce>
+       <nonce> #Nonce(O) => #NextNonce(#Nonce(O)) </nonce>
 ```
 
 Each `operation` value must have a unique nonce.
@@ -1562,7 +1562,7 @@ These instructions push blockchain state on the stack.
 ```k
   rule <k> BALANCE _A => . ... </k>
        <stack> SS => [mutez B] ; SS </stack>
-       <account-balance> B </account-balance>
+       <mybalance> B </mybalance>
 
   rule <k> ADDRESS _AL => . ... </k>
        <stack> [contract TN #Contract(A, T)] ; SS => [address A] ; SS </stack>
@@ -1570,28 +1570,28 @@ These instructions push blockchain state on the stack.
 
   rule <k> SOURCE _AL => . ... </k>
        <stack> SS => [address A] ; SS </stack>
-       <txn-source> A </txn-source>
+       <sourceaddr> A </sourceaddr>
 
   rule <k> SENDER _AL => . ... </k>
        <stack> SS => [address A] ; SS </stack>
-       <txn-sender> A </txn-sender>
+       <senderaddr> A </senderaddr>
 
   rule <k> SELF _AL => . ... </k>
        <stack> SS => [contract #Name(T) #Contract(A, T)] ; SS </stack>
-       <account-paramtype> T </account-paramtype>
-       <account-addr> A </account-addr>
+       <paramtype> T </paramtype>
+       <myaddr> A </myaddr>
 
   rule <k> AMOUNT _A => . ... </k>
        <stack> SS => [mutez M] ; SS </stack>
-       <txn-amount> M </txn-amount>
+       <myamount> M </myamount>
 
   rule <k> CHAIN_ID _A => . ... </k>
        <stack> SS => [chain_id C] ; SS </stack>
-       <chainid> C </chainid>
+       <mychainid> C </mychainid>
 
   rule <k> NOW _A => . ... </k>
        <stack> SS => [timestamp N] ; SS </stack>
-       <timestamp> N </timestamp>
+       <mynow> N </mynow>
 ```
 
 ### Cryptographic Operations
