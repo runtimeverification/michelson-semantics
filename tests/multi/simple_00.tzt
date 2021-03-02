@@ -1,0 +1,17 @@
+test abs00 {
+  code { ABS } ;
+  input { Stack_elt int -5 } ;
+  output { Stack_elt nat 5 }
+} ;
+
+test abs01 {
+   code { ABS } ;
+   input { Stack_elt int 5 } ;
+   output { Stack_elt nat 5 }
+} ;
+
+test abs02 {
+  code { ABS } ;
+  input { Stack_elt int 0 } ;
+  output { Stack_elt nat 0 }
+}

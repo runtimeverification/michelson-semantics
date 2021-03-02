@@ -300,7 +300,7 @@ test: test-unit test-cross test-prove
 
 # Unit
 
-unit_tests         := $(wildcard tests/unit/*.tzt) $(wildcard tests/macros/*.tzt)
+unit_tests         := $(wildcard tests/unit/*.tzt) $(wildcard tests/macros/*.tzt) $(wildcard tests/multi/*.tzt)
 unit_tests_failing := $(shell cat tests/failing.unit)
 unit_tests_passing := $(filter-out $(unit_tests_failing), $(unit_tests))
 
