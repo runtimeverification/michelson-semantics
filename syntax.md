@@ -587,7 +587,7 @@ module UNIT-TEST-SYNTAX
   imports UNIT-TEST-COMMON-SYNTAX
   imports MICHELSON-SYNTAX
 
-  syntax TestName ::= r"[a-zA-Z][a-zA-Z_0-9]*" [token]
+  syntax TestName ::= r"[t][e][s][t][ ][a-zA-Z][a-zA-Z_0-9]*" [token]
 endmodule
 ```
 
@@ -659,7 +659,7 @@ Unit test files allow the following additional groups.
 
     ```k
     syntax Group ::= TestGroup
-    syntax TestGroup ::= "test" TestName "{" Groups "}"
+    syntax TestGroup ::= TestName "{" Groups "}"
     syntax TestName
     ```
 
