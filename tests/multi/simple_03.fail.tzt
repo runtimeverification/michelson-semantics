@@ -2,7 +2,7 @@
 
 code { ABS } ;
 
-test abs00 {
+test "abs00" {
   code { ABS } ;
   input { Stack_elt int -5 } ;
   output { Stack_elt nat 10 }
@@ -10,7 +10,7 @@ test abs00 {
 
 input { Stack_elt int -17 } ;
 
-test abs01 {
+test "abs01" {
    code { ABS } ;
    input { Stack_elt int 5 } ;
    output { Stack_elt nat 5 }
@@ -18,7 +18,7 @@ test abs01 {
 
 output { Stack_elt nat 17 } ;
 
-test abs02 {
+test "abs02" {
   code { ABS } ;
   input { Stack_elt int 0 } ;
   output { Stack_elt nat 0 }
