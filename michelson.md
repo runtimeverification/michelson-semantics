@@ -1422,7 +1422,7 @@ since it does not need to track the new map while keeping it off the stack.
        <stack> SS => [list #Name(T) .InternalList] ; SS </stack>
 
   rule <k> IF_CONS _A BT _
-        => #Assume(E == #MakeFresh(#Type(T)))
+        => #AssumeHasType(E, T)
         ~> BT
            ...
        </k>
@@ -1438,7 +1438,7 @@ since it does not need to track the new map while keeping it off the stack.
        <stack> [list _ .InternalList] ; SS => SS </stack>
 
   rule <k> ITER _A Body
-        => #Assume(E == #MakeFresh(#Type(T)))
+        => #AssumeHasType(E, T)
         ~> Body
         ~> #Push(list T,L)
         ~> ITER .AnnotationList Body
@@ -2339,6 +2339,26 @@ We implement fresh lambdas as fresh uninterpreted functions.
        </k>
        <stack> [ArgT Arg] ; SS => [RetT uninterpreted(Id, Arg):Data] ; SS </stack>
     requires isValue(ArgT, Arg)
+```
+
+### `#AssumeHasType`
+
+Michelson containers are parametric over a type. However, they are implemented
+in K as non-parametric containers such as `InternalList`, `Map` and `Set` that
+all allow arbitary `Data`s.
+When unfolding a symbolic container, we thus need to add a constraint forcing
+the item to be of the correct type.
+
+```k
+    syntax KItem ::= #AssumeHasType(KItem, TypeName) 
+```
+
+```concrete
+    rule <k> #AssumeHasType(_, _) => .K ... </k>
+```
+
+```symbolic
+    rule <k> #AssumeHasType(E, T) => #Assume(E == #MakeFresh(#Type(T))) ... </k>
 ```
 
 ```k
