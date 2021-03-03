@@ -260,7 +260,7 @@ Below are the rules for loading specific groups.
   rule <k> postcondition { Bs } => .K ... </k>
        <post> .BlockList => Bs </post>
 
-  rule <k> Test:TestName { TestBlock } => #SwapContext(Test, TestBlock) ... </k>
+  rule <k> test Name { TestBlock } => #SwapContext(Name, TestBlock) ... </k>
 ```
 
 ### Micheline to Native Conversion
