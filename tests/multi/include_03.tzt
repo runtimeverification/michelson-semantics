@@ -4,8 +4,7 @@ test "ABS00" {
   include "ABS" ;
   input { Stack_elt int -5 } ;
   output { Stack_elt nat 5 }
-}
-
+} ;
 
 test "ABS01" {
   input { Stack_elt int -10 } ;
