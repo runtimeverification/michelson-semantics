@@ -105,6 +105,7 @@ These cells store the Michelson interpreter runtime state.
       <cutpoints> .Set </cutpoints>
       <savedContext> NoContext </savedContext>
       <currentContext> _default </currentContext>
+      <importMap> .Map </importMap>
 ```
 
 ```k
@@ -161,6 +162,7 @@ discussed in that document.
 module MICHELSON
   imports MICHELSON-CONFIG
   imports MATCHER
+  imports K-REFLECTION
 ```
 
 Semantics Initialization
@@ -196,13 +198,13 @@ Below are the rules for loading specific groups.
 
   rule <k> code C => .K ... </k>
        <script> #NoData => C </script>
+
+  rule <k> G:Group ; Gs:Groups => G:Group ~> Gs ... </k>
 ```
 
 #### Extended Unit Test Gruops
 
 ```k
-  rule <k> G:Group ; Gs:Groups => G:Group ~> Gs ... </k>
-
   rule <k> now I => .K ... </k>
        <mynow> #Timestamp(0 => I) </mynow>
 
@@ -261,6 +263,22 @@ Below are the rules for loading specific groups.
        <post> .BlockList => Bs </post>
 
   rule <k> test Name { TestBlock } => #SwapContext(Name, TestBlock) ... </k>
+
+  rule <k> import Path as Name => .K ... </k>
+       <importMap> Imports => Imports[Name <- loadFile(Path)] </importMap>
+    requires notBool Name in_keys(Imports)
+
+  rule <k> include Name => Imports[Name] ... </k>
+       <importMap> Imports </importMap>
+    requires Name in_keys(Imports)
+
+  rule <k> include-file Path => loadFile(Path) ... </k>
+
+  syntax Pgm ::= loadFile(String) [function]
+               | parseFile(KItem) [function]
+  // ---------------------------------------
+  rule loadFile(Path) => parseFile(#system("parser_PGM \"" +String Path +String "\""))
+  rule parseFile(#systemResult(0, Stdout, _)) => #parseKORE(Stdout)
 ```
 
 ### Micheline to Native Conversion

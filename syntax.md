@@ -670,6 +670,21 @@ Unit test files allow the following additional groups.
     syntax ParameterGroup ::= ParameterDecl
     ```
 
+-   `import` groups map test fragments in files to strings for future usage
+
+    ```k
+    syntax Group ::= ImportGroup
+    syntax ImportGroup ::= "import" String "as" String
+    ```
+
+-   `include` groups load either imported test fragments or raw files
+
+    ```k
+    syntax Group ::= IncludeGroup
+    syntax IncludeGroup ::= "include" String
+                          | "include-file" String
+    ```
+
 ```k
 endmodule
 ```
