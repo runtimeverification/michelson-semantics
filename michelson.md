@@ -1806,7 +1806,8 @@ These operations are used internally for implementation purposes.
 ```
 
 ```symbolic
-  rule <k> #Assume(false) => #Bottom ... </k>
+  rule <k> #Assume(false) ... </k>
+       <returncode> 111 => 0 </returncode>
 ```
 
 Note that the first value is a `KItem` and not heated/cooled. This is to work
