@@ -1421,20 +1421,25 @@ since it does not need to track the new map while keeping it off the stack.
   rule <k> NIL _A T => .  ... </k>
        <stack> SS => [list #Name(T) .InternalList] ; SS </stack>
 
-  rule <k> IF_CONS _A BT _  => BT ... </k>
+  rule <k> IF_CONS _A BT _
+        => #AssumeHasType(E, T)
+        ~> BT
+           ...
+       </k>
        <stack> [list T [ E ] ;; L] ; SS => [T E] ; [list T L] ; SS </stack>
 
   rule <k> IF_CONS _A _  BF => BF ... </k>
        <stack> [list _ .InternalList ] ; SS => SS </stack>
 
   rule <k> SIZE _A => .  ... </k>
-       <stack> [list _ L:InternalList] ; SS => [nat size(L,0)] ; SS </stack>
+       <stack> [list _ L:InternalList] ; SS => [nat size(L)] ; SS </stack>
 
   rule <k> ITER _A _ => . ... </k>
        <stack> [list _ .InternalList] ; SS => SS </stack>
 
   rule <k> ITER _A Body
-        => Body
+        => #AssumeHasType(E, T)
+        ~> Body
         ~> #Push(list T,L)
         ~> ITER .AnnotationList Body
            ...
@@ -1737,7 +1742,7 @@ We introduce several pseudo-instructions that are used for debugging:
   rule <k> PAUSE    => STOP              ... </k>
   rule <k> PAUSE(S) => TRACE(S) ~> PAUSE ... </k>
   rule <k> TRACE(S) => .K ... </k>
-       <trace> K:K => (K ~> S) </trace>
+       <trace> .K => S ... </trace>
 ```
 
 Internal Operations
@@ -1797,11 +1802,21 @@ These operations are used internally for implementation purposes.
 
 ```k
   syntax KItem ::= #Assume(BoolExp) [strict, result(Bool)]
-  rule <k> #Assume(true)  => .             ... </k>
-  rule <k> #Assume(false) ~> _:K => . </k>
-       <assumeFailed> _ => true </assumeFailed> [transition]
+  rule <k> #Assume(true)  => . ... </k>
 ```
 
+```symbolic
+  rule <k> #Assume(false) => #Bottom ... </k>
+```
+
+TODO: We let this rule run in both symbolic and concrete cases, to avoid a
+possible bug in the haskell backend that prevents the `=> #Bottom` rule from
+executing when using `krun`.
+
+```k
+  rule <k> #Assume(false) ... </k>
+       <returncode> 111 => 0 </returncode>
+```
 
 Note that the first value is a `KItem` and not heated/cooled. This is to work
 around the need for sort coersion in the map `GET` operation.
@@ -2280,7 +2295,7 @@ It has an untyped and typed variant.
 
 `#MakeFresh` is responsible for generating a fresh value of a given type.
 
-```internalized-rl
+```symbolic
   syntax Data ::= #MakeFresh(Type)
 
   rule <k> #MakeFresh(nat       _:AnnotationList) => #Assume(?V >=Int 0)             ~> ?V:Int         ... </k>
@@ -2320,7 +2335,7 @@ It has an untyped and typed variant.
 
 We implement fresh lambdas as fresh uninterpreted functions.
 
-```internalized-rl
+```symbolic
   rule <k> #MakeFresh(lambda _:AnnotationList T1 T2)
         => #Lambda(#Name(T1), #Name(T2), { #Uninterpreted(!_Id, #Name(T1), #Name(T2)) })
            ...
@@ -2335,6 +2350,26 @@ We implement fresh lambdas as fresh uninterpreted functions.
        </k>
        <stack> [ArgT Arg] ; SS => [RetT uninterpreted(Id, Arg):Data] ; SS </stack>
     requires isValue(ArgT, Arg)
+```
+
+### `#AssumeHasType`
+
+Michelson containers are parametric over a type. However, they are implemented
+in K as non-parametric containers such as `InternalList`, `Map` and `Set` that
+all allow arbitary `Data`s.
+When unfolding a symbolic container, we thus need to add a constraint forcing
+the item to be of the correct type.
+
+```k
+    syntax KItem ::= #AssumeHasType(KItem, TypeName) 
+```
+
+```concrete
+    rule <k> #AssumeHasType(_, _) => .K ... </k>
+```
+
+```symbolic
+    rule <k> #AssumeHasType(E, T) => #Assume(E == #MakeFresh(#Type(T))) ... </k>
 ```
 
 ```k

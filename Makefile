@@ -295,6 +295,7 @@ TEST  := ./kmich
 CHECK := git --no-pager diff --no-index --ignore-all-space -R
 
 KPROVE_MODULE := VERIFICATION
+KPROVE_OPTIONS :=
 
 test: test-unit test-cross test-prove
 
@@ -344,8 +345,10 @@ prove_tests         := $(wildcard tests/proofs/*-spec.k)
 prove_tests_failing := $(shell cat tests/failing.prove)
 prove_tests_passing := $(filter-out $(prove_tests_failing), $(prove_tests))
 
+tests/proofs/multisig-spec.k.prove: KPROVE_OPTIONS=--haskell-backend-command 'kore-exec --solver-transcript transcript --smt-timeout 1000'
+
 test-prove:         $(prove_tests_passing:=.prove)
 test-prove-failing: $(prove_tests_failing:=.prove)
 
 tests/%.prove: tests/% $(prove_kompiled)
-	$(TEST) prove --backend prove $< $(KPROVE_MODULE)
+	$(TEST) prove --backend prove $< $(KPROVE_MODULE) $(KPROVE_OPTIONS)

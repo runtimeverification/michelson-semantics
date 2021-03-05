@@ -19,5 +19,9 @@ module LEMMAS
 
   rule #MichelineToNative(M:Map, map _ _ _, _, _) => M
     [simplification]
+
+  rule size(_:InternalList)      >=Int 0 => true [simplification, smt-lemma]
+  rule size(_ ;; _:InternalList)  >Int 0 => true [simplification, smt-lemma]
+
 endmodule
 ```
