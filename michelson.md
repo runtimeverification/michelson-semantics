@@ -280,19 +280,29 @@ The following unit test groups are not supported by the symbolic interpreter.
 
 ```concrete
   rule <k> import Path as Name => .K ... </k>
-       <importMap> Imports => Imports[Name <- loadFile(Path)] </importMap>
-    requires notBool Name in_keys(Imports)
+       <importMap> Imports => Imports[Name <- loadFile(Dir,Path)] </importMap>
+       <fileLocation> Dir </fileLocation>
+    requires validPath(Path)
+     andBool notBool Name in_keys(Imports)
 
   rule <k> include Name => Imports[Name] ... </k>
        <importMap> Imports </importMap>
     requires Name in_keys(Imports)
 
-  rule <k> include-file Path => loadFile(Path) ... </k>
+  rule <k> include-file Path => loadFile(Dir,Path) ... </k>
+       <fileLocation> Dir </fileLocation>
+    requires validPath(Path)
 
-  syntax Pgm ::= loadFile(String) [function]
-               | parseFile(KItem) [function]
-  // ---------------------------------------
-  rule loadFile(Path) => parseFile(#system("parser_PGM \"" +String Path +String "\""))
+  syntax Bool ::= validPath(String) [function]
+  // -----------------------------------------
+  rule validPath(Path) =>         lengthString(Path) >=Int 0
+                          andBool substrString(Path,0,1) =/=String "/"
+
+  syntax Pgm ::= loadFile(String, String) [function]
+               | parseFile(KItem)         [function]
+  // -----------------------------------------------
+  rule loadFile(Dir, Path)
+    => parseFile(#system("parser_PGM \"" +String Dir +String "/" +String Path +String "\""))
   rule parseFile(#systemResult(0, Stdout, _)) => #parseKORE(Stdout)
 ```
 

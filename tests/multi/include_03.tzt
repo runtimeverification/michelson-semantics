@@ -1,4 +1,4 @@
-import "tests/lib/abs.tzt" as "ABS" ;
+import "../lib/abs.tzt" as "ABS" ;
 
 test "ABS00" {
   include "ABS" ;

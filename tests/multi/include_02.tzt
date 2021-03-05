@@ -1,4 +1,4 @@
-import "tests/unit/abs_00.tzt" as "ABS" ;
+import "../unit/abs_00.tzt" as "ABS" ;
 
 test "ABS" {
   include "ABS"
