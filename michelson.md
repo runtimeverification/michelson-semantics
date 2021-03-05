@@ -1806,6 +1806,14 @@ These operations are used internally for implementation purposes.
 ```
 
 ```symbolic
+  rule <k> #Assume(false) => #Bottom ... </k>
+```
+
+TODO: We let this rule run in both symbolic and concrete cases, to avoid a
+possible bug in the haskell backend that prevents the `=> #Bottom` rule from
+executing when using `krun`.
+
+```k
   rule <k> #Assume(false) ... </k>
        <returncode> 111 => 0 </returncode>
 ```
