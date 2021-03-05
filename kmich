@@ -21,7 +21,7 @@ if [[ ! -f "${k_release_dir}/bin/kompile" ]]; then
     fi
 fi
 
-export PATH="$scriptpath/lib:$k_release_dir/bin:$PATH"
+PATH="$scriptpath/lib:$k_release_dir/bin:$PATH"
 export LD_LIBRARY_PATH="$k_release_dir/lib/native/linux64:$lib_dir:${LD_LIBRARY_PATH:-}"
 export PYTHONPATH="$k_release_dir/lib/kframework:${PYTHONPATH:-}"
 
@@ -175,6 +175,8 @@ llvm_krun_args=()
     || llvm_krun_args+=(--debug)
 ! echo "$backend_dir" | grep -e contract-expander -e extractor -e input-creator -e output-compare &> /dev/null \
     || llvm_krun_args+=(-c IO '\dv{SortString{}}("on")' String kore)
+
+export PATH="$kompiled_dir:$PATH"
 
 case "$run_command-$backend" in
 
