@@ -105,7 +105,16 @@ These cells store the Michelson interpreter runtime state.
       <cutpoints> .Set </cutpoints>
       <savedContext> NoContext </savedContext>
       <currentContext> _default </currentContext>
+```
+
+#### Concrete Interpreter Runtime State
+
+The following runtime state cells are not supported by the symbolic
+interpreter.
+
+```concrete
       <importMap> .Map </importMap>
+      <fileLocation parser="PATH,STRING-SYNTAX"> $PATH:String </fileLocation>
 ```
 
 ```k
@@ -263,7 +272,13 @@ Below are the rules for loading specific groups.
        <post> .BlockList => Bs </post>
 
   rule <k> test Name { TestBlock } => #SwapContext(Name, TestBlock) ... </k>
+```
 
+##### Concrete Extended Unit Test Groups
+
+The following unit test groups are not supported by the symbolic interpreter.
+
+```concrete
   rule <k> import Path as Name => .K ... </k>
        <importMap> Imports => Imports[Name <- loadFile(Path)] </importMap>
     requires notBool Name in_keys(Imports)

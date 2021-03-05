@@ -175,6 +175,8 @@ llvm_krun_args=()
     || llvm_krun_args+=(--debug)
 ! echo "$backend_dir" | grep -e contract-expander -e extractor -e input-creator -e output-compare &> /dev/null \
     || llvm_krun_args+=(-c IO '\dv{SortString{}}("on")' String kore)
+[[ ! "$backend" == "llvm" ]] \
+    || llvm_krun_args+=(-c PATH "\"$(dirname $run_file)\"" String pretty)
 
 export PATH="$kompiled_dir:$PATH"
 
