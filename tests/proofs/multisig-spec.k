@@ -27,7 +27,7 @@ module VERIFICATION
 
 endmodule
 
-module MULTISIG
+module MULTISIG-SPEC
   imports VERIFICATION
 
   // Main claim
