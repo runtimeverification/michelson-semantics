@@ -291,12 +291,6 @@ Otherwise, instructions are defined as expected.
   syntax Instruction ::= "CREATE_CONTRACT" AnnotationList "{" Contract "}"
 ```
 
-The `FORALL` instruction allows quantifing over expressions in symbolic tests.
-
-```k
-  syntax Instruction ::= "FORALL" Block
-```
-
 The following instructions are an extension of the core Michelson instruction
 set used for debugging purposes.
 
@@ -592,6 +586,7 @@ grammar](https://gitlab.com/tezos/tezos/-/merge_requests/1487/diffs).
 module UNIT-TEST-SYNTAX
   imports UNIT-TEST-COMMON-SYNTAX
   imports MICHELSON-SYNTAX
+
 endmodule
 ```
 
@@ -658,6 +653,14 @@ Unit test files allow the following additional groups.
     ```
 
 ### Optional Groups
+
+-   `test` wraps tests allowing for multiple tests in one file
+
+    ```k
+    syntax Group ::= TestGroup
+    syntax TestGroup ::= "test" TestName "{" Groups "}"
+    syntax TestName ::= String
+    ```
 
 -   `parameter` (default `unit`) the type of the parameter of the contract
     pushed by the `SELF` instruction.
