@@ -159,6 +159,7 @@ Collection sorts (maps, lists, and sets) are defined below.
   syntax Data ::= MapLiteral
 
   syntax DataList ::= Data | Data ";" DataList
+
   syntax Block ::= "{" DataList "}" | EmptyBlock
   syntax Data ::= Block
 ```

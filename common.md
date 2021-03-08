@@ -12,8 +12,10 @@ representation. We define all our internal representations below.
 module MICHELSON-COMMON
   imports SYMBOLIC-UNIT-TEST-COMMON-SYNTAX
   imports BYTES
-  imports DOMAINS
-  imports COLLECTIONS
+  imports INT
+  imports STRING
+  imports SET
+  imports MAP
 ```
 
 Type Representation

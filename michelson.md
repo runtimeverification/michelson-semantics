@@ -9,7 +9,7 @@ Michelson Interpreter State
 ```k
 module MICHELSON-CONFIG
   imports MICHELSON-COMMON
-  imports DOMAINS
+  imports LIST
 ```
 
 The K-Michelson Configuration
@@ -161,6 +161,7 @@ discussed in that document.
 module MICHELSON
   imports MICHELSON-CONFIG
   imports MATCHER
+  imports COLLECTIONS
 ```
 
 Semantics Initialization
