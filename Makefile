@@ -345,7 +345,7 @@ prove_tests         := $(wildcard tests/proofs/*-spec.k)
 prove_tests_failing := $(shell cat tests/failing.prove)
 prove_tests_passing := $(filter-out $(prove_tests_failing), $(prove_tests))
 
-tests/proofs/multisig-spec.k.prove: KPROVE_OPTIONS=--haskell-backend-command 'kore-exec --solver-transcript transcript --smt-timeout 1000'
+tests/proofs/multisig-spec.md.prove: export KORE_EXEC_OPTS=--smt-timeout 1000
 
 test-prove:         $(prove_tests_passing:=.prove)
 test-prove-failing: $(prove_tests_failing:=.prove)
