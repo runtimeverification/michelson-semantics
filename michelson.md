@@ -107,6 +107,16 @@ These cells store the Michelson interpreter runtime state.
       <currentContext> _default </currentContext>
 ```
 
+#### Concrete Interpreter Runtime State
+
+The following runtime state cells are not supported by the symbolic
+interpreter.
+
+```concrete
+      <importMap> .Map </importMap>
+      <fileLocation parser="PATH,STRING-SYNTAX"> $PATH:String </fileLocation>
+```
+
 ```k
     </michelsonTop>
 ```
@@ -161,6 +171,7 @@ discussed in that document.
 module MICHELSON
   imports MICHELSON-CONFIG
   imports MATCHER
+  imports K-REFLECTION
 ```
 
 Semantics Initialization
@@ -196,13 +207,13 @@ Below are the rules for loading specific groups.
 
   rule <k> code C => .K ... </k>
        <script> #NoData => C </script>
+
+  rule <k> G:Group ; Gs:Groups => G:Group ~> Gs ... </k>
 ```
 
 #### Extended Unit Test Gruops
 
 ```k
-  rule <k> G:Group ; Gs:Groups => G:Group ~> Gs ... </k>
-
   rule <k> now I => .K ... </k>
        <mynow> #Timestamp(0 => I) </mynow>
 
@@ -261,6 +272,38 @@ Below are the rules for loading specific groups.
        <post> .BlockList => Bs </post>
 
   rule <k> test Name { TestBlock } => #SwapContext(Name, TestBlock) ... </k>
+```
+
+##### Concrete Extended Unit Test Groups
+
+The following unit test groups are not supported by the symbolic interpreter.
+
+```concrete
+  rule <k> import Path as Name => .K ... </k>
+       <importMap> Imports => Imports[Name <- loadFile(Dir,Path)] </importMap>
+       <fileLocation> Dir </fileLocation>
+    requires validPath(Path)
+     andBool notBool Name in_keys(Imports)
+
+  rule <k> include Name => Imports[Name] ... </k>
+       <importMap> Imports </importMap>
+    requires Name in_keys(Imports)
+
+  rule <k> include-file Path => loadFile(Dir,Path) ... </k>
+       <fileLocation> Dir </fileLocation>
+    requires validPath(Path)
+
+  syntax Bool ::= validPath(String) [function]
+  // -----------------------------------------
+  rule validPath(Path) =>         lengthString(Path) >=Int 0
+                          andBool substrString(Path,0,1) =/=String "/"
+
+  syntax Pgm ::= loadFile(String, String) [function]
+               | parseFile(KItem)         [function]
+  // -----------------------------------------------
+  rule loadFile(Dir, Path)
+    => parseFile(#system("parser_PGM \"" +String Dir +String "/" +String Path +String "\""))
+  rule parseFile(#systemResult(0, Stdout, _)) => #parseKORE(Stdout)
 ```
 
 ### Micheline to Native Conversion
