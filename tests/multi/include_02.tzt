@@ -1,0 +1,5 @@
+import "../unit/abs_00.tzt" as "ABS" ;
+
+test "ABS" {
+  include "ABS"
+}

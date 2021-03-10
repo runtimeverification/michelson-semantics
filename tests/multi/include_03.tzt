@@ -1,0 +1,13 @@
+import "../lib/abs.tzt" as "ABS" ;
+
+test "ABS00" {
+  include "ABS" ;
+  input { Stack_elt int -5 } ;
+  output { Stack_elt nat 5 }
+} ;
+
+test "ABS01" {
+  input { Stack_elt int -10 } ;
+  include "ABS" ;
+  output { Stack_elt nat 10 }
+}
