@@ -194,102 +194,131 @@ Note that, because of `lambda` data literals, instructions are also data.
   syntax Data ::= Instruction
 ```
 
-We view a blocks of instructions as a kind of instruction.
+Most instructions are defined via particular arity, except for blocks, which
+are a kind of psuedo-instruction, and special instructions, i.e., instructions
+with a unique arity.
 
 ```k
   syntax Instruction ::= Block
+                       | NullaryInstName AnnotationList
+                       | UnaryIntInstName AnnotationList Int
+                       | UnaryTypeInstName AnnotationList Type
+                       | UnaryBlockInstName AnnotationList Block
+                       | BinaryTypeInstName AnnotationList Type Type
+                       | BinaryBlockInstName AnnotationList Block Block
+                       | SpecialInstruction
 ```
 
-Otherwise, instructions are defined as expected.
+#### Nullary Instructions
 
 ```k
-  syntax Instruction ::= "DROP" AnnotationList
-  syntax Instruction ::= "DROP" AnnotationList Int
-  syntax Instruction ::= "DIG" AnnotationList Int
-  syntax Instruction ::= "DUG" AnnotationList Int
-  syntax Instruction ::= "DUP" AnnotationList
-  syntax Instruction ::= "SWAP" AnnotationList
-  syntax Instruction ::= "PUSH" AnnotationList Type Data
-  syntax Instruction ::= "SOME" AnnotationList
-  syntax Instruction ::= "NONE" AnnotationList Type
-  syntax Instruction ::= "UNIT" AnnotationList
-  syntax Instruction ::= "IF_NONE" AnnotationList Block Block
-  syntax Instruction ::= "PAIR" AnnotationList
-  syntax Instruction ::= "UNPAIR" AnnotationList
-  syntax Instruction ::= "CAR" AnnotationList
-  syntax Instruction ::= "CDR" AnnotationList
-  syntax Instruction ::= "LEFT" AnnotationList Type
-  syntax Instruction ::= "RIGHT" AnnotationList Type
-  syntax Instruction ::= "IF_LEFT" AnnotationList Block Block
-  syntax Instruction ::= "NIL" AnnotationList Type
-  syntax Instruction ::= "CONS" AnnotationList
-  syntax Instruction ::= "IF_CONS" AnnotationList Block Block
-  syntax Instruction ::= "SIZE" AnnotationList
-  syntax Instruction ::= "EMPTY_SET" AnnotationList Type
-  syntax Instruction ::= "EMPTY_MAP" AnnotationList Type Type
-  syntax Instruction ::= "EMPTY_BIG_MAP" AnnotationList Type Type
-  syntax Instruction ::= "MAP" AnnotationList Block
-  syntax Instruction ::= "ITER" AnnotationList Block
-  syntax Instruction ::= "MEM" AnnotationList
-  syntax Instruction ::= "GET" AnnotationList
-  syntax Instruction ::= "UPDATE" AnnotationList
-  syntax Instruction ::= "IF" AnnotationList Block Block
-  syntax Instruction ::= "LOOP" AnnotationList Block
-  syntax Instruction ::= "LOOP_LEFT" AnnotationList Block
-  syntax Instruction ::= "LAMBDA" AnnotationList Type Type Block
-  syntax Instruction ::= "EXEC" AnnotationList
-  syntax Instruction ::= "APPLY" AnnotationList
-  syntax Instruction ::= "DIP" AnnotationList Block
-  syntax Instruction ::= "DIP" AnnotationList Int Block
-  syntax Instruction ::= "FAILWITH" AnnotationList
-  syntax Instruction ::= "CAST" AnnotationList
-  syntax Instruction ::= "RENAME" AnnotationList
-  syntax Instruction ::= "CONCAT" AnnotationList
-  syntax Instruction ::= "SLICE" AnnotationList
-  syntax Instruction ::= "PACK" AnnotationList
-  syntax Instruction ::= "UNPACK" AnnotationList Type
-  syntax Instruction ::= "ADD" AnnotationList
-  syntax Instruction ::= "SUB" AnnotationList
-  syntax Instruction ::= "MUL" AnnotationList
-  syntax Instruction ::= "EDIV" AnnotationList
-  syntax Instruction ::= "ABS" AnnotationList
-  syntax Instruction ::= "ISNAT" AnnotationList
-  syntax Instruction ::= "INT" AnnotationList
-  syntax Instruction ::= "NEG" AnnotationList
-  syntax Instruction ::= "LSL" AnnotationList
-  syntax Instruction ::= "LSR" AnnotationList
-  syntax Instruction ::= "OR" AnnotationList
-  syntax Instruction ::= "AND" AnnotationList
-  syntax Instruction ::= "XOR" AnnotationList
-  syntax Instruction ::= "NOT" AnnotationList
-  syntax Instruction ::= "COMPARE" AnnotationList
-  syntax Instruction ::= "EQ" AnnotationList
-  syntax Instruction ::= "NEQ" AnnotationList
-  syntax Instruction ::= "LT" AnnotationList
-  syntax Instruction ::= "GT" AnnotationList
-  syntax Instruction ::= "LE" AnnotationList
-  syntax Instruction ::= "GE" AnnotationList
-  syntax Instruction ::= "SELF" AnnotationList
-  syntax Instruction ::= "CONTRACT" AnnotationList Type
-  syntax Instruction ::= "TRANSFER_TOKENS" AnnotationList
-  syntax Instruction ::= "SET_DELEGATE" AnnotationList
-  syntax Instruction ::= "CREATE_ACCOUNT" AnnotationList
-  syntax Instruction ::= "IMPLICIT_ACCOUNT" AnnotationList
-  syntax Instruction ::= "NOW" AnnotationList
-  syntax Instruction ::= "CHAIN_ID" AnnotationList
-  syntax Instruction ::= "AMOUNT" AnnotationList
-  syntax Instruction ::= "BALANCE" AnnotationList
-  syntax Instruction ::= "CHECK_SIGNATURE" AnnotationList
-  syntax Instruction ::= "BLAKE2B" AnnotationList
-  syntax Instruction ::= "SHA256" AnnotationList
-  syntax Instruction ::= "SHA512" AnnotationList
-  syntax Instruction ::= "HASH_KEY" AnnotationList
-  syntax Instruction ::= "STEPS_TO_QUOTA" AnnotationList
-  syntax Instruction ::= "SOURCE" AnnotationList
-  syntax Instruction ::= "SENDER" AnnotationList
-  syntax Instruction ::= "ADDRESS" AnnotationList
-  syntax Instruction ::= "CREATE_CONTRACT" AnnotationList "{" Contract "}"
+  syntax NullaryInstName ::= "DROP"
+  syntax NullaryInstName ::= "DUP"
+  syntax NullaryInstName ::= "SWAP"
+  syntax NullaryInstName ::= "SOME"
+  syntax NullaryInstName ::= "UNIT"
+  syntax NullaryInstName ::= "PAIR"
+  syntax NullaryInstName ::= "UNPAIR"
+  syntax NullaryInstName ::= "CAR"
+  syntax NullaryInstName ::= "CDR"
+  syntax NullaryInstName ::= "CONS"
+  syntax NullaryInstName ::= "SIZE"
+  syntax NullaryInstName ::= "MEM"
+  syntax NullaryInstName ::= "GET"
+  syntax NullaryInstName ::= "UPDATE"
+  syntax NullaryInstName ::= "EXEC"
+  syntax NullaryInstName ::= "APPLY"
+  syntax NullaryInstName ::= "FAILWITH"
+  syntax NullaryInstName ::= "CAST"
+  syntax NullaryInstName ::= "RENAME"
+  syntax NullaryInstName ::= "CONCAT"
+  syntax NullaryInstName ::= "SLICE"
+  syntax NullaryInstName ::= "PACK"
+  syntax NullaryInstName ::= "ADD"
+  syntax NullaryInstName ::= "SUB"
+  syntax NullaryInstName ::= "MUL"
+  syntax NullaryInstName ::= "EDIV"
+  syntax NullaryInstName ::= "ABS"
+  syntax NullaryInstName ::= "ISNAT"
+  syntax NullaryInstName ::= "INT"
+  syntax NullaryInstName ::= "NEG"
+  syntax NullaryInstName ::= "LSL"
+  syntax NullaryInstName ::= "LSR"
+  syntax NullaryInstName ::= "OR"
+  syntax NullaryInstName ::= "AND"
+  syntax NullaryInstName ::= "XOR"
+  syntax NullaryInstName ::= "NOT"
+  syntax NullaryInstName ::= "COMPARE"
+  syntax NullaryInstName ::= "EQ"
+  syntax NullaryInstName ::= "NEQ"
+  syntax NullaryInstName ::= "LT"
+  syntax NullaryInstName ::= "GT"
+  syntax NullaryInstName ::= "LE"
+  syntax NullaryInstName ::= "GE"
+  syntax NullaryInstName ::= "SELF"
+  syntax NullaryInstName ::= "TRANSFER_TOKENS"
+  syntax NullaryInstName ::= "SET_DELEGATE"
+  syntax NullaryInstName ::= "CREATE_ACCOUNT"
+  syntax NullaryInstName ::= "IMPLICIT_ACCOUNT"
+  syntax NullaryInstName ::= "NOW"
+  syntax NullaryInstName ::= "CHAIN_ID"
+  syntax NullaryInstName ::= "AMOUNT"
+  syntax NullaryInstName ::= "BALANCE"
+  syntax NullaryInstName ::= "CHECK_SIGNATURE"
+  syntax NullaryInstName ::= "BLAKE2B"
+  syntax NullaryInstName ::= "SHA256"
+  syntax NullaryInstName ::= "SHA512"
+  syntax NullaryInstName ::= "HASH_KEY"
+  syntax NullaryInstName ::= "STEPS_TO_QUOTA"
+  syntax NullaryInstName ::= "SOURCE"
+  syntax NullaryInstName ::= "SENDER"
+  syntax NullaryInstName ::= "ADDRESS"
 ```
+
+#### Unary Instructions
+
+```k
+  syntax UnaryIntInstName ::= "DROP"
+  syntax UnaryIntInstName ::= "DIG"
+  syntax UnaryIntInstName ::= "DUG"
+
+  syntax UnaryTypeInstName ::= "NONE"
+  syntax UnaryTypeInstName ::= "LEFT"
+  syntax UnaryTypeInstName ::= "RIGHT"
+  syntax UnaryTypeInstName ::= "NIL"
+  syntax UnaryTypeInstName ::= "EMPTY_SET"
+  syntax UnaryTypeInstName ::= "UNPACK"
+  syntax UnaryTypeInstName ::= "CONTRACT"
+
+  syntax UnaryBlockInstName ::= "MAP"
+  syntax UnaryBlockInstName ::= "ITER"
+  syntax UnaryBlockInstName ::= "LOOP"
+  syntax UnaryBlockInstName ::= "LOOP_LEFT"
+  syntax UnaryBlockInstName ::= "DIP"
+```
+
+#### Binary Instructions
+
+```k
+  syntax BinaryTypeInstName ::= "EMPTY_MAP"
+  syntax BinaryTypeInstName ::= "EMPTY_BIG_MAP"
+
+  syntax BinaryBlockInstName ::= "IF_NONE"
+  syntax BinaryBlockInstName ::= "IF_LEFT"
+  syntax BinaryBlockInstName ::= "IF_CONS"
+  syntax BinaryBlockInstName ::= "IF"
+```
+
+#### Special Instructions
+
+```k
+  syntax SpecialInstruction ::= "PUSH" AnnotationList Type Data
+  syntax SpecialInstruction ::= "LAMBDA" AnnotationList Type Type Block
+  syntax SpecialInstruction ::= "CREATE_CONTRACT" AnnotationList "{" Contract "}"
+  syntax SpecialInstruction ::= "DIP" AnnotationList Int Block
+```
+
+#### Debugging Instructions
 
 The following instructions are an extension of the core Michelson instruction
 set used for debugging purposes.
