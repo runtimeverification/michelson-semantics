@@ -341,7 +341,7 @@ tests/%.cross: tests/% $(input_creator_kompiled) $(extractor_kompiled) $(contrac
 
 # Prove
 
-prove_tests         := $(filter-out tests/proofs/lemmas.md, $(wildcard tests/proofs/*-spec.*))
+prove_tests         := $(filter-out tests/proofs/lemmas.md, $(wildcard tests/proofs/*.md) $(wildcard tests/proofs/*.k))
 prove_tests_failing := $(shell cat tests/failing.prove)
 prove_tests_passing := $(filter-out $(prove_tests_failing), $(prove_tests))
 
