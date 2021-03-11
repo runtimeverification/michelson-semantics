@@ -32,7 +32,7 @@ export PYTHONPATH="$k_release_dir/lib/kframework:${PYTHONPATH:-}"
 
 run_krun() {
     export K_OPTS=-Xss500m
-    krun --directory "$backend_dir" "$run_file" "$@"
+    krun --directory "$backend_dir" "$run_file" "${extra_args[@]}" "$@"
 }
 
 run_kast() {
@@ -42,7 +42,7 @@ run_kast() {
     output_mode="$1" ; shift
 
     ! $debug || set -x
-    kast --directory "$backend_dir" "$run_file" --output "$output_mode" "$@"
+    kast --directory "$backend_dir" "$run_file" --output "$output_mode" "${extra_args[@]}" "$@"
 }
 
 run_prove() {
@@ -58,23 +58,11 @@ run_prove() {
     export K_OPTS=-Xmx8G
 
     ! $debug || set -x
-    kprove --directory "$backend_dir" "$run_file" --def-module "$def_module" "${additional_proof_args[@]}" "$@"
+    kprove --directory "$backend_dir" "$run_file" --def-module "$def_module" "${additional_proof_args[@]}" "${extra_args[@]}" "$@"
 }
 
 run_interpret() {
-    local in_kore out_kore
-
-    in_kore=$(mktemp $kompiled_dir/in_kore.XXXXXX)
-    out_kore=$(mktemp $kompiled_dir/out_kore.XXXXXX)
-    if $debug; then
-        notif "Input Kore: $in_kore"
-        notif "Output Kore: $out_kore"
-    else
-        trap "rm -rf $in_kore $out_kore" INT TERM EXIT
-    fi
-
-    cat "$run_file" | $kompiled_dir/parser_PGM > $in_kore
-    llvm-krun --directory "$kompiled_dir" -c PGM $in_kore Pgm korefile --pretty-print "${llvm_krun_args[@]}" "$@"
+    krun --directory "$backend_dir" "$run_file" "${extra_args[@]}" "$@"
 }
 
 run_symbtest() {
@@ -82,10 +70,11 @@ run_symbtest() {
     ! $debug || { set -x; output=""; }
 
     export K_OPTS=-Xss500m
-    krun --directory "$backend_dir"   \
-       -cInputFilename="\"$run_file\""      \
-       -cDefnDir="\"$defn_dir\""    \
-       $output                      \
+    krun --directory "$backend_dir"    \
+       -cInputFilename="\"$run_file\"" \
+       -cDefnDir="\"$defn_dir\""       \
+       $output                         \
+       "${extra_args[@]}"              \
        "$@"
 }
 
@@ -170,13 +159,11 @@ if [[ "$run_file" == '-' ]]; then
 fi
 [[ -f "$run_file" ]] || fatal "File does not exist: $run_file"
 
-llvm_krun_args=()
+extra_args=()
 ! $debug \
-    || llvm_krun_args+=(--debug)
-! echo "$backend_dir" | grep -e contract-expander -e extractor -e input-creator -e output-compare &> /dev/null \
-    || llvm_krun_args+=(-c IO '\dv{SortString{}}("on")' String kore)
+    || extra_args+=(--debug)
 [[ ! "$backend" == "llvm" ]] \
-    || llvm_krun_args+=(-c PATH "\"$(dirname $run_file)\"" String pretty)
+    || extra_args+=(-cPATH="\"$(dirname $run_file)\"")
 
 export PATH="$kompiled_dir:$PATH"
 
