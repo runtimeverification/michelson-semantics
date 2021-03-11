@@ -32,7 +32,7 @@ export PYTHONPATH="$k_release_dir/lib/kframework:${PYTHONPATH:-}"
 
 run_krun() {
     export K_OPTS=-Xss500m
-    krun --directory "$backend_dir" "$run_file" "$@"
+    krun --directory "$backend_dir" "$run_file" "${extra_args[@]}" "$@"
 }
 
 run_kast() {
@@ -42,7 +42,7 @@ run_kast() {
     output_mode="$1" ; shift
 
     ! $debug || set -x
-    kast --directory "$backend_dir" "$run_file" --output "$output_mode" "$@"
+    kast --directory "$backend_dir" "$run_file" --output "$output_mode" "${extra_args[@]}" "$@"
 }
 
 run_prove() {
@@ -58,11 +58,11 @@ run_prove() {
     export K_OPTS=-Xmx8G
 
     ! $debug || set -x
-    kprove --directory "$backend_dir" "$run_file" --def-module "$def_module" "${additional_proof_args[@]}" "$@"
+    kprove --directory "$backend_dir" "$run_file" --def-module "$def_module" "${additional_proof_args[@]}" "${extra_args[@]}" "$@"
 }
 
 run_interpret() {
-    krun --directory "$backend_dir" "$run_file" "${llvm_krun_args[@]}" "$@"
+    krun --directory "$backend_dir" "$run_file" "${extra_args[@]}" "$@"
 }
 
 run_symbtest() {
@@ -74,6 +74,7 @@ run_symbtest() {
        -cInputFilename="\"$run_file\"" \
        -cDefnDir="\"$defn_dir\""       \
        $output                         \
+       "${extra_args[@]}"              \
        "$@"
 }
 
@@ -158,11 +159,11 @@ if [[ "$run_file" == '-' ]]; then
 fi
 [[ -f "$run_file" ]] || fatal "File does not exist: $run_file"
 
-llvm_krun_args=()
+extra_args=()
 ! $debug \
-    || llvm_krun_args+=(--debug)
+    || extra_args+=(--debug)
 [[ ! "$backend" == "llvm" ]] \
-    || llvm_krun_args+=(-cPATH="\"$(dirname $run_file)\"")
+    || extra_args+=(-cPATH="\"$(dirname $run_file)\"")
 
 export PATH="$kompiled_dir:$PATH"
 
