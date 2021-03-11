@@ -1,6 +1,0 @@
-input  { Stack_elt address $VAL } ;
-code   { DUP } ;
-output { Stack_elt address $VAL1 ; Stack_elt address $VAL2 } ;
-postcondition {
-  { PUSH address $VAL ; DUP ; PUSH address $VAL1 ; COMPARE ; EQ ; SWAP ; PUSH address $VAL2 ; COMPARE ; EQ ; AND }
-}
