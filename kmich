@@ -162,7 +162,7 @@ llvm_krun_args=()
 ! $debug \
     || llvm_krun_args+=(--debug)
 [[ ! "$backend" == "llvm" ]] \
-    || llvm_krun_args+=(-c PATH "\"$(dirname $run_file)\"" String pretty)
+    || llvm_krun_args+=(-cPATH="\"$(dirname $run_file)\"")
 
 export PATH="$kompiled_dir:$PATH"
 
