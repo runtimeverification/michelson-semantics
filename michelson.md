@@ -2449,9 +2449,13 @@ module MATCHER
 
   syntax Data ::= FailedStack
 
-  rule #Matches(Create_contract { C } O1 M1 D1 I1,
-                Create_contract { C } O2 M2 D2 I2)
-    => #Matches(I1, I2) andBool
+  rule #Matches(#Lambda(AT, RT, C1), #Lambda(AT, RT, C2))
+    => #Matches(#Clean(C1), #Clean(C2))
+
+  rule #Matches(Create_contract { code C1 ; storage TS ; parameter TP ; } O1 M1 D1 I1,
+                Create_contract { code C2 ; storage TS ; parameter TP ; } O2 M2 D2 I2)
+    => #Matches(#Clean(C1), #Clean(C2)) andBool
+       #Matches(I1, I2) andBool
        #Matches(O1, O2) andBool
        #Matches(M1, M2) andBool
        #Matches(D1, D2)
@@ -2474,5 +2478,10 @@ module MATCHER
 
   rule #Matches(Left D1, Left D2) => #Matches(D1, D2)
   rule #Matches(Right D1, Right D2) => #Matches(D1, D2)
+
+  // this function enable data cleanup when necessary before matching
+  syntax Data ::= #Clean(Data) [function]
+  // ------------------------------------
+  rule #Clean(D) => D [owise]
 endmodule
 ```
