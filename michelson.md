@@ -1849,7 +1849,7 @@ These operations are used internally for implementation purposes.
 ```
 
 ```symbolic
-  rule <k> #Assume(false) => #Bottom ... </k>
+  rule <k> (#Assume(false) ~> _:K) => #Bottom </k>
 ```
 
 TODO: We let this rule run in both symbolic and concrete cases, to avoid a
