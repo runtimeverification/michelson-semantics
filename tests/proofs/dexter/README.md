@@ -1,19 +1,13 @@
 # Dexter Verification
 
-Our verification subject is the Michelson code corresponding to the LIGO
-[Dexter 2 contract](https://gitlab.com/dexter2tz/dexter2tz).
+Our verification subject is the Michelson code corresponding to the LIGO [Dexter 2 contract](https://gitlab.com/dexter2tz/dexter2tz) at [commit id 8a5792a5](https://gitlab.com/dexter2tz/dexter2tz/-/tree/8a5792a56e0143042926c3ca8bff7d7068a541c3).
 
 The goal of this project is to produce:
 
--   a series of proofs which specify that the intended behavior of each
-    individual LIGO function is correct (which implies that the
-    LIGO-to-Michelson compilation process is also correct)
--   a series of proofs which demonstate high-level invariants over sequences
-    of contract calls hold (e.g. it is not possible to produce a profit by
-    exploiting rounding errors)
+-   a series of proofs which specify that the intended behavior of each individual LIGO function is correct (which implies that the LIGO-to-Michelson compilation process is also correct)
+-   a series of proofs which demonstate high-level invariants over sequences of contract calls hold (e.g. it is not possible to produce a profit by exploiting rounding errors)
 
-In this project, we will model the following functions in the following
-files to extract their high-level properties:
+In this project, we will model the following functions in the following files to extract their high-level properties:
 
 1.  [dexter.mligo.tz](https://gitlab.com/dexter2tz/dexter2tz/-/blob/master/dexter.mligo.tz)
     1.  `add_liquidity`
@@ -30,10 +24,8 @@ files to extract their high-level properties:
 
 2.  [lqt_fa12.mligo.tz](https://gitlab.com/dexter2tz/dexter2tz/-/blob/master/dexter.fa2.mligo.tz)
 
-    Note that, in this case, we do not need to verify this implementation in
-    particular; it is sufficient that we can model the behavior of an arbitrary
-    contract which conforms to the FA1.2 standard. Such a contract will have
-    the following entry points:
+    Note that, in this case, we do not need to verify this implementation in particular; it is sufficient that we can model the behavior of an arbitrary contract which conforms to the FA1.2 standard.
+    Such a contract will have the following entry points:
 
     1.  `transfer`
     2.  `approve`
