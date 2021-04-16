@@ -29,6 +29,7 @@ files to extract their high-level properties:
     11. `update_token_pool`
 
 2.  [lqt_fa12.mligo.tz](https://gitlab.com/dexter2tz/dexter2tz/-/blob/master/dexter.fa2.mligo.tz)
+
     Note that, in this case, we do not need to verify this implementation in
     particular; it is sufficient that we can model the behavior of an arbitrary
     contract which conforms to the FA1.2 standard. Such a contract will have
