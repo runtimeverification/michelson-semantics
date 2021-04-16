@@ -4,7 +4,7 @@ Our verification subject is the Michelson code corresponding to the LIGO [Dexter
 
 The goal of this project is to produce:
 
--   a series of proofs which specify that the intended behavior of each individual LIGO function is correct (which implies that the LIGO-to-Michelson compilation process is also correct)
+-   a series of proofs which specify that the intended behavior of each individual LIGO function is correct (which implies that the LIGO-to-Michelson compilation process is also correct in this case)
 -   a series of proofs which demonstate high-level invariants over sequences of contract calls hold (e.g. it is not possible to produce a profit by exploiting rounding errors)
 
 In this project, we will model the following functions in the following files to extract their high-level properties:
