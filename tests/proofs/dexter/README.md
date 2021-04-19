@@ -20,7 +20,6 @@ In this project, we will model the following functions in the following files to
     8.  `xtz_to_token`
     9.  `token_to_xtz`
     10. `token_to_token`
-    11. `update_token_pool`
 
 2.  [lqt_fa12.mligo.tz](https://gitlab.com/dexter2tz/dexter2tz/-/blob/8a5792a56e0143042926c3ca8bff7d7068a541c3/lqt_fa12.mligo.tz)
 
