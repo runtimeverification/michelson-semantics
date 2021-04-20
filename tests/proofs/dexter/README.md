@@ -72,6 +72,29 @@ where `$lqtTotal`, `$manager`, and `$tokenAddress` are all variables which must 
     1.  `add_liquidity`
     2.  `remove_liquidity`
     3.  `set_baker`
+
+        -   Input:
+
+            ```
+            type set_baker =
+              { baker : key_hash option ;
+                freezeBaker : bool ;
+              }
+            ```
+
+        -   Output:
+
+            ```
+            ( [ set_delegate(baker) ], { storage with freezeBaker = freezeBaker } )
+            ```
+
+        -   Summary: The contract sets its delegate to the value of `baker` (and optionally freezes the baker to that particular value) if the following conditions are satisfied:
+
+            1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
+            2.  exactly 0 tez was transferred to this contract when it was invoked
+            3.  the txn sender is the `storage.manager`
+            4.  the baker is _not_ already frozen
+
     4.  `set_manager`
     5.  `set_lqt_address`
     6.  `default_`
