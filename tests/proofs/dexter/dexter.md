@@ -1,5 +1,7 @@
 # Dexter Verification
 
+## Prologue
+
 Our verification subject is the Michelson code corresponding to the LIGO [Dexter 2 contract](https://gitlab.com/dexter2tz/dexter2tz) at [commit id 8a5792a5](https://gitlab.com/dexter2tz/dexter2tz/-/tree/8a5792a56e0143042926c3ca8bff7d7068a541c3).
 
 The goal of this project is to produce:
@@ -9,6 +11,14 @@ The goal of this project is to produce:
 
 In this project, we will model the entrypoints in Dexter contract code and extract their high-level properties.
 Note that we will base our high-level descriptions of each function of the LIGO contract code, while our verification will be performed at the the level of the compiled Michelson versions.
+
+We begin start our verification project by opening a new module context in which our verification will be performed.
+
+```k
+requires "../lemmas.md"
+module DEXTER-VERIFICATION
+  imports LEMMAS
+```
 
 ## Terminology Prerequisites
 
@@ -32,39 +42,22 @@ We may abbreviate `entrypoint_input_type` to just `input` when it is clear from 
 
 ### Storage Type
 
-To simplify the pending discussion, we observe that the storage type of the Dexter contract is as follows (we may simplify any code examples for readability):
+In our proofs, we will use the following abstract representation of the Dexter contract storage state.
+For simplicity, we assume the that the `tokenId` field is always present, though the verification of the FA12 version of the contract will not touch this field.
 
+```k
+configuration <storage>
+                <tokenPool>               0                                                </tokenPool>
+                <xtzPool>                 #Mutez(0)                                        </xtzPool>
+                <selfIsUpdatingTokenPool> false                                            </selfIsUpdatingTokenPool>
+                <freezeBaker>             false                                            </freezeBaker>
+                <manager>                 #Address("tz1Ke2h7sDdakHJQh8WX4Z372du1KChsksyU") </manager>
+                <lqtTotal>                0                                                </lqtTotal>
+                <tokenAddress>            #Address("")                                     </tokenAddress>
+                <lqtAddress>              #Address("")                                     </lqtAddress>
+                <tokenId>                 0                                                </tokenId>
+              </storage>
 ```
-type storage =
-  { tokenPool : nat ;
-    xtzPool : tez ;
-    lqtTotal : nat ;
-    selfIsUpdatingTokenPool : bool ;
-    freezeBaker : bool ;
-    manager : address ;
-    tokenAddress : address ;
-#if FA2
-    tokenId : nat ;
-#endif
-    lqtAddress : address ;
-  }
-```
-
-The initial storage value is as follows:
-
-```
-{ tokenPool = 0n ;
-    xtzPool = 0tz ;
-    lqtTotal = $lqtTotal ;
-    selfIsUpdatingTokenPool = false ;
-    freezeBaker = false ;
-    manager = $manager ;
-    tokenAddress = $tokenAddress ;
-    lqtAddress = ("tz1Ke2h7sDdakHJQh8WX4Z372du1KChsksyU" : address) ;
-  }
-```
-
-where `$lqtTotal`, `$manager`, and `$tokenAddress` are all variables which must be instantiated with correctly typed values.
 
 ## Entrypoint Summaries
 
@@ -197,3 +190,11 @@ As reference materials for understanding the contract intent, we will consult:
 3.  The [Michelson documentation](http://tezos.gitlab.io/008/michelson.html)
 4.  The [FA 1.2 standard](https://gitlab.com/tzip/tzip/blob/master/proposals/tzip-7/tzip-7.md)
 5.  The [FA 2 standard](https://gitlab.com/tzip/tzip/-/blob/master/proposals/tzip-12/tzip-12.md)
+
+## Epilogue
+
+We close out our module context now, which contains all of the information necessary to complete our proof.
+
+```k
+endmodule
+```
