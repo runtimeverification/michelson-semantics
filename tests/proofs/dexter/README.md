@@ -7,7 +7,66 @@ The goal of this project is to produce:
 -   a series of proofs which specify that the intended behavior of each individual LIGO function is correct (which implies that the LIGO-to-Michelson compilation process is also correct in this case)
 -   a series of proofs which demonstate high-level invariants over sequences of contract calls hold (e.g. it is not possible to produce a profit by exploiting rounding errors)
 
-In this project, we will model the following functions in the following files to extract their high-level properties:
+In this project, we will model the entrypoints in Dexter contract code and extract their high-level properties.
+Note that we will base our high-level descriptions of each function of the LIGO contract code, while our verification will be performed at the the level of the compiled Michelson versions.
+
+## Terminology Prerequisites
+
+### Entrypoints
+
+Note that we are slightly abusing language in the preceding sentence because Michelson has no native notion of separate contract function entrypoints.
+Instead, different entrypoints are modelled by making the global contract input parameter a disjoint union of the parameter types for each possible entrypoint, and then dispatching to different code blocks based on which entry of the disjoint union was selected.
+Due to Michelon's design, this means that each entrypoint can be understood to have the following typing:
+
+```
+entrypoint_input_type * storage_type -> (operation list) * storage_type
+```
+
+where:
+
+1.  each `entrypoint_input_type` is a member of the disjoint union which is the global contract parameter type;
+2.  each `operation` is a callback to be placed in a FIFO queue of callbacks that are executed once the current contract execution terminates.
+
+By abuse of notation, we identify an entrypoint's typing rule with its corresponding `entrypoint_input_type`, since the other parts of the typing rule are constant.
+We may abbreviate `entrypoint_input_type` to just `input` when it is clear from context.
+
+### Storage Type
+
+To simplify the pending discussion, we observe that the storage type of the Dexter contract is as follows (we may simplify any code examples for readability):
+
+```
+type storage =
+  { tokenPool : nat ;
+    xtzPool : tez ;
+    lqtTotal : nat ;
+    selfIsUpdatingTokenPool : bool ;
+    freezeBaker : bool ;
+    manager : address ;
+    tokenAddress : address ;
+#if FA2
+    tokenId : nat ;
+#endif
+    lqtAddress : address ;
+  }
+```
+
+The initial storage value is as follows:
+
+```
+{ tokenPool = 0n ;
+    xtzPool = 0tz ;
+    lqtTotal = $lqtTotal ;
+    selfIsUpdatingTokenPool = false ;
+    freezeBaker = false ;
+    manager = $manager ;
+    tokenAddress = $tokenAddress ;
+    lqtAddress = ("tz1Ke2h7sDdakHJQh8WX4Z372du1KChsksyU" : address) ;
+  }
+```
+
+where `$lqtTotal`, `$manager`, and `$tokenAddress` are all variables which must be instantiated with correctly typed values.
+
+## Entrypoint Summaries
 
 1.  [dexter.mligo.tz](https://gitlab.com/dexter2tz/dexter2tz/-/blob/8a5792a56e0143042926c3ca8bff7d7068a541c3/dexter.mligo.tz)
     1.  `add_liquidity`
