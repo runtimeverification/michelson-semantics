@@ -116,6 +116,26 @@ where `$lqtTotal`, `$manager`, and `$tokenAddress` are all variables which must 
             3.  the txn sender is the `storage.manager`
 
     5.  `set_lqt_address`
+
+        -   Input:
+
+            ```
+            type set_lqt_address = address // named lqtAddress
+            ```
+
+        -   Output:
+
+            ```
+            ( [], { storage with lqtAddress = lqtAddress } )
+            ```
+
+        -   Summary: The contract sets its liquidity pool adddress to the provided address if the following conditions are satisifed:
+
+            1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
+            2.  exactly 0 tez was transferred to this contract when it was invoked
+            3.  the txn sender is the `storage.manager`
+            4.  the liquidity pool address has already been set (i.e. `storage.lqtAddress1 != tz1Ke2h7sDdakHJQh8WX4Z372du1KChsksyU`)
+
     6.  `default_`
     7.  `update_token_pool`
     8.  `xtz_to_token`
