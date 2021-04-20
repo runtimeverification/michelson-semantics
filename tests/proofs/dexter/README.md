@@ -69,8 +69,44 @@ where `$lqtTotal`, `$manager`, and `$tokenAddress` are all variables which must 
 ## Entrypoint Summaries
 
 1.  [dexter.mligo.tz](https://gitlab.com/dexter2tz/dexter2tz/-/blob/8a5792a56e0143042926c3ca8bff7d7068a541c3/dexter.mligo.tz)
-    1.  `add_liquidity`
+
+    1.  `add_liquidity`: Allows callers to "mint" liquidity in excahnge for tez.
+        Caller gains liquidity equal to `tez * storage.lqtTotal / storage.xtzPool`.
+
+        -   Input:
+
+            ```
+            type add_liquidity =
+            { owner : address ;
+              minLqtMinted : nat ;
+              maxTokensDeposited : nat ;
+              deadline : timestamp ;
+            }
+            ```
+
+        -   Storage updates:
+
+            ```
+            Storage( lqtTotal:  LqtTotal  => LqtTotal  + lqt_minted ;
+                     tokenPool: TokenPool => TokenPool + tokens_deposited ;
+                     xtzPool:   XtzPool   => XtzPool   + Tezos.amount
+                   )
+            ```
+
+        -   Operations:
+
+            1. self call to `transfer` entrypoint: Send tokens from sender to self.
+            2. self call to `mintOrBurn` entrypoint: Adds liquidity for the sender.
+
+        -   Preconditions
+
+            1.  the token pool _is_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
+            2.  the deadline has not passed (i.e. the `Tezos.now >= input.deadline`)
+            3.  the tez transferred is less than `input.maxTokensDeposited`
+            4.  the liquidity minted is more than `input.minLqtMinted`
+
     2.  `remove_liquidity`
+
     3.  `set_baker`
 
         -   Input:
