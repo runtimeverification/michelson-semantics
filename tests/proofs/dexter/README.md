@@ -96,6 +96,25 @@ where `$lqtTotal`, `$manager`, and `$tokenAddress` are all variables which must 
             4.  the baker is _not_ already frozen
 
     4.  `set_manager`
+
+        -   Input:
+
+            ```
+            type set_manager = address // named new_manager
+            ```
+
+        -   Output:
+
+            ```
+            ( [], { storage with manager = new_manager } )
+            ```
+
+        -   Summary: The contract sets its manager to the provided manager address if the following conditions are satisfied:
+
+            1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
+            2.  exactly 0 tez was transferred to this contract when it was invoked
+            3.  the txn sender is the `storage.manager`
+
     5.  `set_lqt_address`
     6.  `default_`
     7.  `update_token_pool`
