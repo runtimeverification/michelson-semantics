@@ -23,6 +23,7 @@ endmodule
 
 ```k
 module DEXTER-VERIFICATION
+  imports DEXTER-VERIFICATION-SYNTAX
   imports LEMMAS
 ```
 
