@@ -207,3 +207,13 @@ We close out our module context now, which contains all of the information neces
 ```k
 endmodule
 ```
+
+```k
+module DEXTER-SPEC
+  imports DEXTER-VERIFICATION
+
+  claim <k> now 0 => . ... </k>
+        <mynow> #Timestamp(0) </mynow>
+
+endmodule
+```
