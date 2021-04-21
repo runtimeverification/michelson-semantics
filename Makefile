@@ -44,7 +44,7 @@ export PYTHONPATH
         defn-llvm defn-prove defn-symbolic                                                          \
         defn-contract-expander defn-extractor defn-input-creator defn-output-compare                \
         build build-k build-compat                                                                  \
-        build-llvm build-prove build-symbolic                                                       \
+        build-llvm build-prove build-symbolic build-dexter                                          \
         build-contract-expander build-extractor build-input-creator build-output-compare            \
         test test-unit test-unit-failing test-cross test-cross-faling                               \
         test-prove test-prove-failing test-symbolic test-symbolic-failing                           \
@@ -137,7 +137,7 @@ defn-k:      defn-llvm defn-prove defn-symbolic
 defn-compat: defn-contract-expander defn-extractor defn-input-creator defn-output-compare
 
 build:        build-k build-compat
-build-k:      build-llvm build-prove build-symbolic
+build-k:      build-llvm build-prove build-symbolic build-dexter
 build-compat: build-contract-expander build-extractor build-input-creator build-output-compare
 
 # LLVM
@@ -175,6 +175,24 @@ $(prove_kompiled): $(prove_files)
 	                   --directory $(prove_dir) -I $(CURDIR)  \
 	                   --main-module $(prove_main_module)     \
 	                   --syntax-module $(prove_syntax_module)
+
+### Dexter
+dexter_dir           := $(DEFN_DIR)/dexter
+dexter_main_file     := dexter
+dexter_main_file_loc := tests/proofs/dexter/$(dexter_main_file)
+dexter_files         := $(ALL_FILES) $(dexter_main_file_loc).md
+dexter_main_module   := DEXTER-VERIFICATION
+dexter_syntax_module := DEXTER-VERIFICATION-SYNTAX
+dexter_kompiled      := $(dexter_dir)/$(notdir $(dexter_main_file))-kompiled/definition.kore
+
+defn-dexter:  $(dexter_files)
+build-dexter: $(dexter_kompiled)
+
+$(dexter_kompiled): $(dexter_files)
+	$(KOMPILE_HASKELL) $(dexter_main_file_loc).md              \
+	                   --directory $(dexter_dir) -I $(CURDIR)  \
+	                   --main-module $(dexter_main_module)     \
+	                   --syntax-module $(dexter_syntax_module)
 
 ### Symbolic Driver
 
@@ -359,4 +377,7 @@ tests/%.prove: tests/% $(prove_kompiled)
 
 dexter-prove: KPROVE_MODULE  = DEXTER-VERIFICATION
 dexter-prove: KPROVE_OPTIONS = --spec-module DEXTER-SPEC
-dexter-prove: tests/proofs/dexter/dexter.md.prove
+dexter-prove: $(dexter_main_file_loc).md.dexter_prove
+
+tests/%.dexter_prove: tests/% $(dexter_kompiled)
+	$(TEST) prove --backend prove --backend-dir $(dexter_dir) $< $(KPROVE_MODULE) $(KPROVE_OPTIONS)
