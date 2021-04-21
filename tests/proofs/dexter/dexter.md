@@ -16,7 +16,14 @@ We begin start our verification project by opening a new module context in which
 
 ```k
 requires "../lemmas.md"
+module DEXTER-VERIFICATION-SYNTAX
+  imports MICHELSON-COMMON-SYNTAX
+endmodule
+```
+
+```k
 module DEXTER-VERIFICATION
+  imports DEXTER-VERIFICATION-SYNTAX
   imports LEMMAS
 ```
 
@@ -46,17 +53,20 @@ In our proofs, we will use the following abstract representation of the Dexter c
 For simplicity, we assume the that the `tokenId` field is always present, though the verification of the FA12 version of the contract will not touch this field.
 
 ```k
-configuration <storage>
-                <tokenPool>               0                                                </tokenPool>
-                <xtzPool>                 #Mutez(0)                                        </xtzPool>
-                <selfIsUpdatingTokenPool> false                                            </selfIsUpdatingTokenPool>
-                <freezeBaker>             false                                            </freezeBaker>
-                <manager>                 #Address("tz1Ke2h7sDdakHJQh8WX4Z372du1KChsksyU") </manager>
-                <lqtTotal>                0                                                </lqtTotal>
-                <tokenAddress>            #Address("")                                     </tokenAddress>
-                <lqtAddress>              #Address("")                                     </lqtAddress>
-                <tokenId>                 0                                                </tokenId>
-              </storage>
+configuration <dexterTop>
+                <michelsonTop/>
+                <storage>
+                  <tokenPool>               0                                                </tokenPool>
+                  <xtzPool>                 #Mutez(0)                                        </xtzPool>
+                  <selfIsUpdatingTokenPool> false                                            </selfIsUpdatingTokenPool>
+                  <freezeBaker>             false                                            </freezeBaker>
+                  <manager>                 #Address("tz1Ke2h7sDdakHJQh8WX4Z372du1KChsksyU") </manager>
+                  <lqtTotal>                0                                                </lqtTotal>
+                  <tokenAddress>            #Address("")                                     </tokenAddress>
+                  <lqtAddress>              #Address("")                                     </lqtAddress>
+                  <tokenId>                 0                                                </tokenId>
+                </storage>
+              </dexterTop>
 ```
 
 ## Entrypoint Summaries
