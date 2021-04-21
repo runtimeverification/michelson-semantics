@@ -47,7 +47,9 @@ export PYTHONPATH
         build-llvm build-prove build-symbolic                                                       \
         build-contract-expander build-extractor build-input-creator build-output-compare            \
         test test-unit test-unit-failing test-cross test-cross-faling                               \
-        test-prove test-prove-failing test-symbolic test-symbolic-failing
+        test-prove test-prove-failing test-symbolic test-symbolic-failing                           \
+        dexter-prove
+
 .SECONDARY:
 
 all: build
@@ -352,3 +354,9 @@ test-prove-failing: $(prove_tests_failing:=.prove)
 
 tests/%.prove: tests/% $(prove_kompiled)
 	$(TEST) prove --backend prove $< $(KPROVE_MODULE) $(KPROVE_OPTIONS)
+
+# Dexter proofs
+
+dexter-prove: KPROVE_MODULE  = DEXTER-VERIFICATION
+dexter-prove: KPROVE_OPTIONS = --spec-module DEXTER-SPEC
+dexter-prove: tests/proofs/dexter/dexter.md.prove
