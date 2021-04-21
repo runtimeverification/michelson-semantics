@@ -137,7 +137,7 @@ defn-k:      defn-llvm defn-prove defn-symbolic
 defn-compat: defn-contract-expander defn-extractor defn-input-creator defn-output-compare
 
 build:        build-k build-compat
-build-k:      build-llvm build-prove build-symbolic build-dexter
+build-k:      build-llvm build-prove build-symbolic
 build-compat: build-contract-expander build-extractor build-input-creator build-output-compare
 
 # LLVM
