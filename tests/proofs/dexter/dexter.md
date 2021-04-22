@@ -117,6 +117,43 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
 
     2.  `remove_liquidity`
 
+        -   Input:
+
+            ```
+            type remove_liquidity =
+              { to_ : address ;            // recipient of the liquidity redemption
+                lqtBurned : nat ;          // amount of lqt owned by sender to burn
+                minXtzWithdrawn : tez ;    // minimum amount of tez to withdraw
+                minTokensWithdrawn : nat ; // minimum amount of tokens to withdraw
+                deadline : timestamp ;     // the time before which the request must be completed
+              }
+            ```
+
+        -   Output:
+
+            ```
+            ( [ Transfer_tokens ( lqtBurned, txn.sender )                0mutez         storage.lqtAddress   %mintOrBurn
+                Transfer_tokens ( self.address, to_, $tokens_withdrawn ) 0mutez         storage.tokenAddress %transfer
+                Transfer_tokens ()                                       $xtz_withdrawn _to
+              ], { storage with tokenPool -= $tokens_withdrawn,
+                                xtzPool   -= $xtz_withdrawn,
+                                lqtTotal  -= lqtBurned} )
+            ```
+
+            where `$xtz_withdrawn = (lqtBurned * storage.xtzPool) / storage.lqtTotal`
+              and `$tokens_withdrawn = (lqtBurned * storage.tokenPool) /  storage.lqtTotal`
+
+        -   Summary: The sender can burn liquidity tokens in exchange for tez and tokens sent to some address if the following conditions are satisfied:
+
+            1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
+            2.  exactly 0 tez was transferred to this contract when it was invoked
+            3.  the current block time must be less than the deadline
+            4.  the amount of liquidity to be redeemed, when converted to xtz, is greater than `minXtzWithdrawn` and less than the amount of tez owned by the Dexter contract
+            5.  the amount of liquidity to be redeemed, when converted to tokens, is greater than `minTokensWithdrawn` and less than the amount of tokens owned by the Dexter contract
+            6.  the amount of liquidity to be redeemed is less than the total amount of liquidity and less than the amount of liquidity tokens owned by the sender
+            7.  the contract at address `storage.lqtAddress` has a well-formed `mintOrBurn` entrypoint
+            8.  the contract at address `storage.tokenAddress` has a well-formed `transfer` entrypoint
+
     3.  `set_baker`
 
         -   Input:
