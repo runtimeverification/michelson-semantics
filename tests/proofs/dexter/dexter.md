@@ -225,6 +225,35 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
             3.  If using version FA2, the input parameter list is non-empty.
 
     9.  `xtz_to_token`
+
+        -   Input:
+
+        ```
+        type xtz_to_token =
+          { to_ : address ;
+            minTokensBought : nat ;
+            deadline : timestamp ;
+          }
+        ```
+
+        -   Output:
+
+            ```
+            ( [ Transfer_tokens ( self.address, to_, $bought ) 0xtz storage.tokenAddress %transfer ],
+              { storage with xtzPool += txn.amount ; tokenPool -= $bought } )
+            ```
+
+            where `$bought` is the current total of tokens exchanged from `txn.amount` by the formula:
+
+            `(txn.amount * 997n * storage.tokenPool) / (xtzPool * 1000n + (txn.amount * 997n))`
+
+        -   Summary: A buyer sends xtz to the Dexter contract and receives a corresponding amount of tokens, if the following conditions are satisfied:
+
+            1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
+            2.  the current block time must be less than the deadline
+            3.  when the `txn.amount` (in mutez) is converted into tokens using the current exchange rate, the purchased amount is greater than `minTokensBought`
+            4.  when the `txn.amount` (in mutez) is converted into tokens using the current exchange rate, it is less than or equal to the tokens owned by the Dexter contract
+
     10. `token_to_xtz`
     11. `token_to_token`
 
