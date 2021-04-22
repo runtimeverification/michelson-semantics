@@ -255,6 +255,38 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
             4.  when the `txn.amount` (in mutez) is converted into tokens using the current exchange rate, it is less than or equal to the tokens owned by the Dexter contract
 
     10. `token_to_xtz`
+
+        -   Input:
+
+        ```
+        type token_to_xtz =
+          { to_ : address ;
+            tokensSold : nat ;
+            minXtzBought : tez ;
+            deadline : timestamp ;
+          }
+        ```
+
+        -   Output:
+
+            ```
+            ( [ Transfer_tokens ( txn.sender, self.address, tokensSold ) 0xtz self.tokenAddress %transfer ]
+              [ Transfer_tokens () $bought _to ],
+              { storage with xtzPool -= $bought ; tokenPool += tokensSold } )
+            ```
+
+            where `$bought` is the current total of xtz exchanged from `tokensSold` by the formula:
+
+            `(tokensSold * 997n * storage.xtzPool) / (storage.tokenPool * 1000n + (tokensSold * 997n))`
+
+        -   Summary: A buyer sends tokens to the Dexter contract and receives a corresponding amount of xtz, if the following conditions are satisfied:
+
+            1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
+            2.  the current block time must be less than the deadline
+            3.  exactly 0 tez was transferred to this contract when it was invoked
+            4.  the amount of tokens sold, when converted into xtz using the current exchange rate, is greater than `minXtzBought`
+            5.  the amount of tokens sold, when converted into xtz using the current exchange rate, it is less than or equal to the xtz owned by the Dexter contract
+
     11. `token_to_token`
 
 2.  [lqt_fa12.mligo.tz](https://gitlab.com/dexter2tz/dexter2tz/-/blob/8a5792a56e0143042926c3ca8bff7d7068a541c3/lqt_fa12.mligo.tz)
