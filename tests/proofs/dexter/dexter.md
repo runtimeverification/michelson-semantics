@@ -218,33 +218,33 @@ We first define functions which build our parameter and our storage types.
                     | #DexterVersionSpecificParamType(Bool) [function, functional]
   // -----------------------------------------------------------------------------
   rule #DexterParamType(IsFA2)
-    => or
-         or
-           or
-             or pair address                         // addLiquidity
-                  pair nat
-                    pair nat timestamp
-                unit                                 // default
-             or pair address                         // removeLiquidity
-                  pair nat
-                    pair mutez
-                      pair nat timestamp
-                pair option key_hash bool            // setBaker
-           or
-             or address                              // setLqtAddress
-                address                              // setManager
-             or pair address                         // tokenToToken
-                  pair nat
-                    pair address
-                      pair nat timestamp
-                pair address                         // tokenToXtz
-                  pair nat
-                    pair mutez timestamp
-         or
-           or unit                                   // updateTokenPool
-              #DexterVersionSpecificParamType(IsFA2) // updateTokenPoolInternal
-           pair address                              // xtzToToken
-             pair nat timestamp
+    => (or
+          (or
+             (or
+                (or (pair address                        // addLiquidity
+                       pair nat
+                         pair nat timestamp)
+                    unit)                                // default
+                (or (pair address                        // removeLiquidity
+                       pair nat
+                         pair mutez
+                           pair nat timestamp)
+                    (pair option key_hash bool)))        // setBaker
+             (or
+                (or address                              // setLqtAddress
+                    address)                             // setManager
+                (or (pair address                        // tokenToToken
+                       pair nat
+                         pair address
+                           pair nat timestamp)
+                    (pair address                        // tokenToXtz
+                       pair nat
+                         pair mutez timestamp))))
+          (or
+             (or unit                                    // updateTokenPool
+                 #DexterVersionSpecificParamType(IsFA2)) // updateTokenPoolInternal
+             (pair address                               // xtzToToken
+                pair nat timestamp)))
 
   rule #DexterVersionSpecificParamType(true)  => list pair pair address nat nat
   rule #DexterVersionSpecificParamType(false) => nat
