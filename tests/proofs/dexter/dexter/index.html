@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="A Michelson semantics for Tezos built using the K Framework."
+/>
+<meta name="keywords" content="runtime, verification, rv, k" />
+<meta name="author" content="Michelson Semantics | Runtime Verification Inc" />
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../../../assets/img/favicon.ico" /> -->
+
+<title>Michelson Semantics | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../../../index.html"> Michelson Semantics </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/michelson-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../../../">Homepage</a>
+      <a class="bd-toc-link" href="../../../../INSTALL">Install</a>
+      <a class="bd-toc-link" href="../../../../USER_GUIDE">User Guide</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-9 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="dexter-verification">Dexter Verification</h1>
+<h2 id="prologue">Prologue</h2>
+<p>Our verification subject is the Michelson code corresponding to the LIGO <a href="https://gitlab.com/dexter2tz/dexter2tz" target="_blank" rel="noopener">Dexter 2 contract</a> at <a href="https://gitlab.com/dexter2tz/dexter2tz/-/tree/8a5792a56e0143042926c3ca8bff7d7068a541c3" target="_blank" rel="noopener">commit id 8a5792a5</a>.</p>
+<p>The goal of this project is to produce:</p>
+<ul>
+<li>a series of proofs which specify that the intended behavior of each individual LIGO function is correct (which implies that the LIGO-to-Michelson compilation process is also correct in this case)</li>
+<li>a series of proofs which demonstate high-level invariants over sequences of contract calls hold (e.g. it is not possible to produce a profit by exploiting rounding errors)</li>
+</ul>
+<p>In this project, we will model the entrypoints in Dexter contract code and extract their high-level properties.
+Note that we will base our high-level descriptions of each function of the LIGO contract code, while our verification will be performed at the the level of the compiled Michelson versions.</p>
+<p>We begin start our verification project by opening a new module context in which our verification will be performed.</p>
+<pre class="language-k"><code><span class="token keyword">requires</span> <span class="token string">&quot;../lemmas.md&quot;</span>
+<span class="token keyword">module</span> DEXTER<span class="token operator">-</span>VERIFICATION<span class="token operator">-</span>SYNTAX
+  <span class="token keyword">imports</span> MICHELSON<span class="token operator">-</span>COMMON<span class="token operator">-</span>SYNTAX
+<span class="token keyword">endmodule</span>
+</code></pre>
+<pre class="language-k"><code><span class="token keyword">module</span> DEXTER<span class="token operator">-</span>VERIFICATION
+  <span class="token keyword">imports</span> DEXTER<span class="token operator">-</span>VERIFICATION<span class="token operator">-</span>SYNTAX
+  <span class="token keyword">imports</span> LEMMAS
+</code></pre>
+<h2 id="terminology-prerequisites">Terminology Prerequisites</h2>
+<h3 id="entrypoints">Entrypoints</h3>
+<p>Note that we are slightly abusing language in the preceding sentence because Michelson has no native notion of separate contract function entrypoints.
+Instead, different entrypoints are modelled by making the global contract input parameter a disjoint union of the parameter types for each possible entrypoint, and then dispatching to different code blocks based on which entry of the disjoint union was selected.
+Due to Michelon&apos;s design, this means that each entrypoint can be understood to have the following typing:</p>
+<pre class="language-text"><code>entrypoint_input_type * storage_type -&gt; (operation list) * storage_type
+</code></pre>
+<p>where:</p>
+<ol>
+<li>each <code>entrypoint_input_type</code> is a member of the disjoint union which is the global contract parameter type;</li>
+<li>each <code>operation</code> is a callback to be placed in a FIFO queue of callbacks that are executed once the current contract execution terminates.</li>
+</ol>
+<p>By abuse of notation, we identify an entrypoint&apos;s typing rule with its corresponding <code>entrypoint_input_type</code>, since the other parts of the typing rule are constant.
+We may abbreviate <code>entrypoint_input_type</code> to just <code>input</code> when it is clear from context.</p>
+<h3 id="storage-type">Storage Type</h3>
+<p>In our proofs, we will use the following abstract representation of the Dexter contract storage state.
+For simplicity, we assume the that the <code>tokenId</code> field is always present, though the verification of the FA12 version of the contract will not touch this field.</p>
+<pre class="language-k"><code><span class="token keyword">configuration</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dexterTop</span><span class="token punctuation">&gt;</span></span>
+                <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>michelsonTop</span><span class="token punctuation">/&gt;</span></span>
+                <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>storage</span><span class="token punctuation">&gt;</span></span>
+                  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>tokenPool</span><span class="token punctuation">&gt;</span></span>               <span class="token number">0</span>                                                <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>tokenPool</span><span class="token punctuation">&gt;</span></span>
+                  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>xtzPool</span><span class="token punctuation">&gt;</span></span>                 #Mutez<span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span>                                        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>xtzPool</span><span class="token punctuation">&gt;</span></span>
+                  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>selfIsUpdatingTokenPool</span><span class="token punctuation">&gt;</span></span> <span class="token boolean">false</span>                                            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>selfIsUpdatingTokenPool</span><span class="token punctuation">&gt;</span></span>
+                  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>freezeBaker</span><span class="token punctuation">&gt;</span></span>             <span class="token boolean">false</span>                                            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>freezeBaker</span><span class="token punctuation">&gt;</span></span>
+                  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>manager</span><span class="token punctuation">&gt;</span></span>                 #Address<span class="token punctuation">(</span><span class="token string">&quot;tz1Ke2h7sDdakHJQh8WX4Z372du1KChsksyU&quot;</span><span class="token punctuation">)</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>manager</span><span class="token punctuation">&gt;</span></span>
+                  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>lqtTotal</span><span class="token punctuation">&gt;</span></span>                <span class="token number">0</span>                                                <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>lqtTotal</span><span class="token punctuation">&gt;</span></span>
+                  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>tokenAddress</span><span class="token punctuation">&gt;</span></span>            #Address<span class="token punctuation">(</span><span class="token string">&quot;&quot;</span><span class="token punctuation">)</span>                                     <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>tokenAddress</span><span class="token punctuation">&gt;</span></span>
+                  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>lqtAddress</span><span class="token punctuation">&gt;</span></span>              #Address<span class="token punctuation">(</span><span class="token string">&quot;&quot;</span><span class="token punctuation">)</span>                                     <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>lqtAddress</span><span class="token punctuation">&gt;</span></span>
+                  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>tokenId</span><span class="token punctuation">&gt;</span></span>                 <span class="token number">0</span>                                                <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>tokenId</span><span class="token punctuation">&gt;</span></span>
+                <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>storage</span><span class="token punctuation">&gt;</span></span>
+              <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dexterTop</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h2 id="entrypoint-summaries">Entrypoint Summaries</h2>
+<ol>
+<li>
+<p><a href="https://gitlab.com/dexter2tz/dexter2tz/-/blob/8a5792a56e0143042926c3ca8bff7d7068a541c3/dexter.mligo.tz" target="_blank" rel="noopener">dexter.mligo.tz</a></p>
+<ol>
+<li>
+<p><code>add_liquidity</code>: Allows callers to &quot;mint&quot; liquidity in excahnge for tez.
+Caller gains liquidity equal to <code>tez * storage.lqtTotal / storage.xtzPool</code>.</p>
+<ul>
+<li>
+<p>Input:</p>
+<pre class="language-text"><code>type add_liquidity =
+{ owner : address ;
+  minLqtMinted : nat ;
+  maxTokensDeposited : nat ;
+  deadline : timestamp ;
+}
+</code></pre>
+</li>
+<li>
+<p>Storage updates:</p>
+<pre class="language-text"><code>Storage( lqtTotal:  LqtTotal  =&gt; LqtTotal  + lqt_minted ;
+         tokenPool: TokenPool =&gt; TokenPool + tokens_deposited ;
+         xtzPool:   XtzPool   =&gt; XtzPool   + Tezos.amount
+       )
+</code></pre>
+</li>
+<li>
+<p>Operations:</p>
+<ol>
+<li>self call to <code>transfer</code> entrypoint: Send tokens from sender to self.</li>
+<li>self call to <code>mintOrBurn</code> entrypoint: Adds liquidity for the sender.</li>
+</ol>
+</li>
+<li>
+<p>Preconditions</p>
+<ol>
+<li>the token pool <em>is</em> currently updating (i.e. <code>storage.selfIsUpdatingTokenPool = false</code>)</li>
+<li>the deadline has not passed (i.e. the <code>Tezos.now &gt;= input.deadline</code>)</li>
+<li>the tez transferred is less than <code>input.maxTokensDeposited</code></li>
+<li>the liquidity minted is more than <code>input.minLqtMinted</code></li>
+</ol>
+</li>
+</ul>
+</li>
+<li>
+<p><code>remove_liquidity</code></p>
+</li>
+<li>
+<p><code>set_baker</code></p>
+<ul>
+<li>
+<p>Input:</p>
+<pre class="language-text"><code>type set_baker =
+  { baker : key_hash option ;
+    freezeBaker : bool ;
+  }
+</code></pre>
+</li>
+<li>
+<p>Output:</p>
+<pre class="language-text"><code>( [ set_delegate(baker) ], { storage with freezeBaker = freezeBaker } )
+</code></pre>
+</li>
+<li>
+<p>Summary: The contract sets its delegate to the value of <code>baker</code> (and optionally freezes the baker to that particular value) if the following conditions are satisfied:</p>
+<ol>
+<li>the token pool is <em>not</em> currently updating (i.e. <code>storage.selfIsUpdatingTokenPool = false</code>)</li>
+<li>exactly 0 tez was transferred to this contract when it was invoked</li>
+<li>the txn sender is the <code>storage.manager</code></li>
+<li>the baker is <em>not</em> already frozen</li>
+</ol>
+</li>
+</ul>
+</li>
+<li>
+<p><code>set_manager</code></p>
+<ul>
+<li>
+<p>Input:</p>
+<pre class="language-text"><code>type set_manager = address // named new_manager
+</code></pre>
+</li>
+<li>
+<p>Output:</p>
+<pre class="language-text"><code>( [], { storage with manager = new_manager } )
+</code></pre>
+</li>
+<li>
+<p>Summary: The contract sets its manager to the provided manager address if the following conditions are satisfied:</p>
+<ol>
+<li>the token pool is <em>not</em> currently updating (i.e. <code>storage.selfIsUpdatingTokenPool = false</code>)</li>
+<li>exactly 0 tez was transferred to this contract when it was invoked</li>
+<li>the txn sender is the <code>storage.manager</code></li>
+</ol>
+</li>
+</ul>
+</li>
+<li>
+<p><code>set_lqt_address</code></p>
+<ul>
+<li>
+<p>Input:</p>
+<pre class="language-text"><code>type set_lqt_address = address // named lqtAddress
+</code></pre>
+</li>
+<li>
+<p>Output:</p>
+<pre class="language-text"><code>( [], { storage with lqtAddress = lqtAddress } )
+</code></pre>
+</li>
+<li>
+<p>Summary: The contract sets its liquidity pool adddress to the provided address if the following conditions are satisifed:</p>
+<ol>
+<li>the token pool is <em>not</em> currently updating (i.e. <code>storage.selfIsUpdatingTokenPool = false</code>)</li>
+<li>exactly 0 tez was transferred to this contract when it was invoked</li>
+<li>the txn sender is the <code>storage.manager</code></li>
+<li>the liquidity pool address has already been set (i.e. <code>storage.lqtAddress1 != tz1Ke2h7sDdakHJQh8WX4Z372du1KChsksyU</code>)</li>
+</ol>
+</li>
+</ul>
+</li>
+<li>
+<p><code>default_</code></p>
+</li>
+<li>
+<p><code>update_token_pool</code></p>
+</li>
+<li>
+<p><code>xtz_to_token</code></p>
+</li>
+<li>
+<p><code>token_to_xtz</code></p>
+</li>
+<li>
+<p><code>token_to_token</code></p>
+</li>
+</ol>
+</li>
+<li>
+<p><a href="https://gitlab.com/dexter2tz/dexter2tz/-/blob/8a5792a56e0143042926c3ca8bff7d7068a541c3/lqt_fa12.mligo.tz" target="_blank" rel="noopener">lqt_fa12.mligo.tz</a></p>
+<p>Note that, in this case, we do not need to verify this implementation in particular; it is sufficient that we can model the behavior of an arbitrary contract which conforms to the FA1.2 standard.
+Such a contract will have the following entry points:</p>
+<ol>
+<li><code>transfer</code></li>
+<li><code>approve</code></li>
+<li><code>mintOrBurn</code></li>
+<li><code>getAllowance</code></li>
+<li><code>getBalance</code></li>
+<li><code>getTotalSupply</code></li>
+</ol>
+</li>
+</ol>
+<p>As reference materials for understanding the contract intent, we will consult:</p>
+<ol>
+<li>The <a href="https://gitlab.com/dexter2tz/dexter2tz/-/blob/master/origination.sh" target="_blank" rel="noopener">Dexter 2 origination script</a></li>
+<li>The <a href="https://ligolang.org/docs/intro/introduction" target="_blank" rel="noopener">LIGO documentation</a></li>
+<li>The <a href="http://tezos.gitlab.io/008/michelson.html" target="_blank" rel="noopener">Michelson documentation</a></li>
+<li>The <a href="https://gitlab.com/tzip/tzip/blob/master/proposals/tzip-7/tzip-7.md" target="_blank" rel="noopener">FA 1.2 standard</a></li>
+<li>The <a href="https://gitlab.com/tzip/tzip/-/blob/master/proposals/tzip-12/tzip-12.md" target="_blank" rel="noopener">FA 2 standard</a></li>
+</ol>
+<h2 id="epilogue">Epilogue</h2>
+<p>We close out our module context now, which contains all of the information necessary to complete our proof.</p>
+<pre class="language-k"><code><span class="token keyword">endmodule</span>
+</code></pre>
+</body></html></div>
+        </main>
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Typist/1.2/typist.min.js"></script>
+    <script src="../../../../assets/js/index.js"></script>
+  </body>
+</html>

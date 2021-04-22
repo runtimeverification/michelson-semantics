@@ -1,3 +1,0 @@
-code { DUP 2 } ;
-input { Stack_elt int 3 ; Stack_elt int 4 ; Stack_elt int 5 } ;
-output { Stack_elt int 4 ; Stack_elt int 3 ; Stack_elt int 4 ; Stack_elt int 5 }
