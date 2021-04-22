@@ -203,9 +203,30 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
             4.  if we are running the FA2 version of Dexter, then check that the contract at address `storage.tokenAddress` has a well-typed FA2 `balance_of` entrypoint;
                 otherwise, check that the contract at address `storage.tokenAddress` has a well-typed FA12 `get_balance` entrypoint.
 
-    8.  `xtz_to_token`
-    9.  `token_to_xtz`
-    10. `token_to_token`
+    8.  `update_token_pool_internal`
+
+        -   Input:
+            -   version FA12: `type update_token_pool_internal = nat`
+            -   version FA2:  `type update_token_pool_internal = ((address * nat) * nat) list`
+
+        -   Output:
+
+            ```
+            ( [], { storage with tokenPool = $tokenPool selfIsUpdatingTokenPool = false } )
+            ```
+
+            where, in version FA2, `$tokenPool` is the second projection of the tuple at the head of the input list;
+            in version FA12, `$tokenPool` is equal to the input.
+
+        -   Summary: The underlying token contract updates the Dexter contract's view of its own token balance if the following conditions are satisifed:
+
+            1.  the token pool _is_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = true`)
+            2.  exactly 0 tez was transferred to this contract when it was invoked
+            3.  If using version FA2, the input parameter list is non-empty.
+
+    9.  `xtz_to_token`
+    10. `token_to_xtz`
+    11. `token_to_token`
 
 2.  [lqt_fa12.mligo.tz](https://gitlab.com/dexter2tz/dexter2tz/-/blob/8a5792a56e0143042926c3ca8bff7d7068a541c3/lqt_fa12.mligo.tz)
 
