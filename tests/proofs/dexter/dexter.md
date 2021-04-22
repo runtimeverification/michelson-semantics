@@ -17,7 +17,7 @@ We begin start our verification project by opening a new module context in which
 ```k
 requires "../lemmas.md"
 module DEXTER-VERIFICATION-SYNTAX
-  imports MICHELSON-COMMON-SYNTAX
+  imports MICHELSON-INTERNAL-SYNTAX
 endmodule
 ```
 
@@ -70,6 +70,13 @@ configuration <dexterTop>
 ```
 
 ## Entrypoint Summaries
+
+We define our list of entrypoints below.
+Each entrypoint is given a unique abstract parameter type that we use to simplify our proof structure.
+
+```k
+  syntax EntryPointParams
+```
 
 1.  [dexter.mligo.tz](https://gitlab.com/dexter2tz/dexter2tz/-/blob/8a5792a56e0143042926c3ca8bff7d7068a541c3/dexter.mligo.tz)
 
@@ -200,6 +207,108 @@ As reference materials for understanding the contract intent, we will consult:
 3.  The [Michelson documentation](http://tezos.gitlab.io/008/michelson.html)
 4.  The [FA 1.2 standard](https://gitlab.com/tzip/tzip/blob/master/proposals/tzip-7/tzip-7.md)
 5.  The [FA 2 standard](https://gitlab.com/tzip/tzip/-/blob/master/proposals/tzip-12/tzip-12.md)
+
+## State Abstraction
+
+We use a few helper routines to convert between our abstract and concrete proof state.
+We first define functions which build our parameter and our storage types.
+
+```k
+  syntax TypeName ::= #DexterParamType(EntryPointParams) [function, functional]
+  // --------------------------------------------------------------------------
+  // FIXME
+
+  syntax TypeName ::= #DexterStorageType(Bool)                [function, functional]
+                    | #DexterVersionSpecificStorageType(Bool) [function, functional]
+  // -------------------------------------------------------------------------------
+  rule #DexterStorageType(IsFA2)
+    => pair nat
+         pair mutez
+           pair nat
+             pair bool
+               pair bool
+                 pair address
+                   pair address
+                     #DexterVersionSpecificStorageType(IsFA2)
+
+  rule #DexterVersionSpecificStorageType(true)  => pair nat address
+  rule #DexterVersionSpecificStorageType(false) => address
+```
+
+We also define a functions that serialize and deserialize our abstract parameters and state.
+
+```k
+  syntax Data ::= #LoadDexterParams(EntryPointParams) [function, functional]
+  // -----------------------------------------------------------------------
+  // FIXME
+
+  syntax KItem ::= #loadDexterState(Bool, EntryPointParams)
+  // ------------------------------------------------------
+  rule <k> #loadDexterState(IsFA2, Params)
+        => .K
+           ...
+       </k>
+       <stack> .Stack
+            => [ pair #DexterParamType(Params) #DexterStorageType(IsFA2)
+                 Pair #LoadDexterParams(Params)
+                   Pair TokenPool
+                     Pair XTZPool
+                       Pair LQTTotal
+                         Pair IsUpdatingTokenPool
+                           Pair IsBakerFrozen
+                             Pair Manager
+                               Pair TokenAddress
+                                 #if IsFA2
+                                   #then Pair TokenId LQTAddress
+                                   #else LQTAddress
+                                 #fi ]
+       </stack>
+       <tokenPool>               TokenPool           </tokenPool>
+       <xtzPool>                 XTZPool             </xtzPool>
+       <lqtTotal>                LQTTotal            </lqtTotal>
+       <selfIsUpdatingTokenPool> IsUpdatingTokenPool </selfIsUpdatingTokenPool>
+       <freezeBaker>             IsBakerFrozen       </freezeBaker>
+       <manager>                 Manager             </manager>
+       <tokenAddress>            TokenAddress        </tokenAddress>
+       <tokenId>                 TokenId             </tokenId>
+       <lqtAddress>              LQTAddress          </lqtAddress>
+
+  syntax KItem ::= #storeDexterState(Bool)
+                 | #storeDexterState(Bool, Data)
+  // -------------------------------------------
+  rule <k> #storeDexterState(IsFA2)
+        => #storeDexterState(IsFA2, VersionSpecificData)
+           ...
+       </k>
+       <stack> [ pair list operation StorageType:TypeName
+                 Pair _OpList
+                   Pair TokenPool
+                     Pair XTZPool
+                       Pair LQTTotal
+                         Pair IsUpdatingTokenPool
+                           Pair IsBakerFrozen
+                             Pair Manager
+                               Pair TokenContract
+                                 VersionSpecificData ]
+       </stack>
+       <tokenPool>               _ => TokenPool           </tokenPool>
+       <xtzPool>                 _ => XTZPool             </xtzPool>
+       <lqtTotal>                _ => LQTTotal            </lqtTotal>
+       <selfIsUpdatingTokenPool> _ => IsUpdatingTokenPool </selfIsUpdatingTokenPool>
+       <freezeBaker>             _ => IsBakerFrozen       </freezeBaker>
+       <manager>                 _ => Manager             </manager>
+       <tokenAddress>            _ => TokenContract       </tokenAddress>
+    requires StorageType ==K #DexterStorageType(IsFA2)
+
+  rule <k> #storeDexterState(IsFA2, Pair TokenId LQTContract) => .K ... </k>
+       <tokenId>    _ => TokenId     </tokenId>
+       <lqtAddress> _ => LQTContract </lqtAddress>
+    requires IsFA2
+
+  rule <k> #storeDexterState(IsFA2, LQTContract) => .K ... </k>
+       <lqtAddress> _ => LQTContract </lqtAddress>
+    requires notBool IsFA2
+```
 
 ## Epilogue
 
