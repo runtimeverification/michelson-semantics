@@ -110,7 +110,7 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
 
         -   Preconditions
 
-            1.  the token pool _is_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
+            1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
             2.  the deadline has not passed (i.e. the `Tezos.now >= input.deadline`)
             3.  the tez transferred is less than `input.maxTokensDeposited`
             4.  the liquidity minted is more than `input.minLqtMinted`
