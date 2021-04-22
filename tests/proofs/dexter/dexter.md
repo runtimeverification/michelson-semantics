@@ -289,6 +289,39 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
 
     11. `token_to_token`
 
+        -   Input:
+
+        ```
+        type token_to_token =
+          { outputDexterContract : address ;
+            minTokensBought : nat ;
+            to_ : address ;
+            tokensSold : nat ;
+            deadline : timestamp ;
+          }
+        ```
+
+        -   Output:
+
+            ```
+            ( [ Transfer_tokens ( txn.sender, self.address, tokensSold ) 0xtz self.tokenAddress %transfer     ]
+              [ Transfer_tokens { to_, minTokensBought, deadline } $bought outputDexterContract %xtz_to_token ],
+              { storage with xtzPool -= $bought ; tokenPool += tokensSold } )
+            ```
+
+            where `$bought` is the current total of xtz exchanged from `tokensSold` by the formula:
+
+            `(tokensSold * 997n * storage.xtzPool) / (storage.tokenPool * 1000n + (tokensSold * 997n))`
+
+        -   Summary: A buyer sends tokens to the Dexter contract, converts its to xtz, and then immediately purchases a corresponding amount of tokens from a different Dexter contract (such that all transactions succeed or fail atomically), if the following conditions are satisfied:
+
+            1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
+            2.  the current block time must be less than the deadline
+            3.  exactly 0 tez was transferred to this contract when it was invoked
+            4.  the contract at address `outputDexterContract` has a well-formed `xtz_to_token` entrypoint
+            5.  the amount of tokens sold, when converted into xtz using the current exchange rate, it is less than or equal to the xtz owned by the current Dexter contract
+            6.  the contract at address `storage.tokenAddress` must have a well-formed `transfer` entry point
+
 2.  [lqt_fa12.mligo.tz](https://gitlab.com/dexter2tz/dexter2tz/-/blob/8a5792a56e0143042926c3ca8bff7d7068a541c3/lqt_fa12.mligo.tz)
 
     Note that, in this case, we do not need to verify this implementation in particular; it is sufficient that we can model the behavior of an arbitrary contract which conforms to the FA1.2 standard.
