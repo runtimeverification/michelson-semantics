@@ -222,7 +222,7 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
 
             1.  the token pool _is_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = true`)
             2.  exactly 0 tez was transferred to this contract when it was invoked
-            3.  If using version FA2, the input parameter list is non-empty.
+            3.  if using version FA2, the input parameter list is non-empty.
 
     9.  `xtz_to_token`
 
