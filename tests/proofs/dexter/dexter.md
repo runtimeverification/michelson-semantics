@@ -269,16 +269,13 @@ We first define functions which build our parameter and our storage types.
 We also define a functions that serialize and deserialize our abstract parameters and state.
 
 ```k
-  syntax Data ::= #LoadDexterParams(EntryPointParams) [function, functional]
-  // -----------------------------------------------------------------------
+  syntax Data ::= #LoadDexterParams(EntryPointParams) [function, functional, no-evaluators]
+  // --------------------------------------------------------------------------------------
   // FIXME
 
   syntax KItem ::= #loadDexterState(Bool, EntryPointParams)
   // ------------------------------------------------------
-  rule <k> #loadDexterState(IsFA2, Params)
-        => .K
-           ...
-       </k>
+  rule <k> #loadDexterState(IsFA2, Params) => . ... </k>
        <stack> .Stack
             => [ pair #DexterParamType(IsFA2) #DexterStorageType(IsFA2)
                  Pair #LoadDexterParams(Params)
@@ -307,10 +304,7 @@ We also define a functions that serialize and deserialize our abstract parameter
   syntax KItem ::= #storeDexterState(Bool)
                  | #storeDexterState(Bool, Data)
   // -------------------------------------------
-  rule <k> #storeDexterState(IsFA2)
-        => #storeDexterState(IsFA2, VersionSpecificData)
-           ...
-       </k>
+  rule <k> #storeDexterState(IsFA2) => #storeDexterState(IsFA2, VersionSpecificData) ... </k>
        <stack> [ pair list operation StorageType:TypeName
                  Pair _OpList
                    Pair TokenPool
