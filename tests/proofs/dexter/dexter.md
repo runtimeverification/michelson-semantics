@@ -220,6 +220,19 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
             4.  the liquidity pool address has already been set (i.e. `storage.lqtAddress1 != tz1Ke2h7sDdakHJQh8WX4Z372du1KChsksyU`)
 
     6.  `default_`
+
+        -   Input: N/A
+
+        -   Output:
+
+            ```
+            ( [], { storage with xtzPool += txn.amount } )
+            ```
+
+        -   Summary: Adds more money to the xtz reserves if the following conditions are satisifed:
+
+            1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
+
     7.  `update_token_pool`
 
         -   Input: N/A
