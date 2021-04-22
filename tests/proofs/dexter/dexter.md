@@ -184,6 +184,25 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
 
     6.  `default_`
     7.  `update_token_pool`
+
+        -   Input: N/A
+
+        -   Output:
+
+            ```
+            ( [ Transfer_tokens Params 0xtz storage.tokenAddress ], { storage with selfIsUpdatingTokenPool = true } )
+            ```
+
+            where, in version FA2, `Params = Pair (self.address, storage.tokenId)` and in version FA12, `Params = self.address`
+
+        -   Summary: The contract queries its underlying token contract for its own token balance if the following conditions are satisfied:
+
+            1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
+            2.  exactly 0 tez was transferred to this contract when it was invoked
+            3.  the txn sender must be equal to the txn source
+            4.  if we are running the FA2 version of Dexter, then check that the contract at address `storage.tokenAddress` has a well-typed FA2 `balance_of` entrypoint;
+                otherwise, check that the contract at address `storage.tokenAddress` has a well-typed FA12 `get_balance` entrypoint.
+
     8.  `xtz_to_token`
     9.  `token_to_xtz`
     10. `token_to_token`
