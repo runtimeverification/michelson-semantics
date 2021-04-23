@@ -17,6 +17,7 @@ pipeline {
         stage('Tezos')  { steps { sh 'make deps-tezos'                    } }
         stage('K')      { steps { sh 'make build-k      -j8 RELEASE=true' } }
         stage('Compat') { steps { sh 'make build-compat -j8 RELEASE=true' } }
+        stage('Dexter') { steps { sh 'make build-dexter -j8 RELEASE=true' } }
       }
     }
     stage('Test') {
@@ -26,6 +27,7 @@ pipeline {
         stage('Symbolic')         { steps { sh 'make test-symbolic -j2' } }
         stage('Prove')            { steps { sh 'make test-prove    -j2' } }
         stage('Cross-Validation') { steps { sh 'make test-cross    -j8' } }
+        stage('Dexter Proofs')    { steps { sh 'make dexter-prove  -j8' } }
       }
     }
     stage('Deploy') {
