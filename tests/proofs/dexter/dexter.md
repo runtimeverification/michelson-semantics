@@ -16,7 +16,6 @@ We begin start our verification project by opening a new module context in which
 
 ```k
 requires "../lemmas.md"
-requires "dexter-compiled.md"
 module DEXTER-VERIFICATION-SYNTAX
   imports MICHELSON-INTERNAL-SYNTAX
 ```
@@ -27,7 +26,6 @@ endmodule
 
 ```k
 module DEXTER-VERIFICATION
-  imports DEXTER-COMPILED
   imports DEXTER-VERIFICATION-SYNTAX
   imports LEMMAS
 ```
