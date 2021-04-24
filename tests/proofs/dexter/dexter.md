@@ -76,6 +76,7 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
 
 ```k
   syntax EntryPointParams
+  syntax Bool ::= validParams(Bool, EntryPointParams) [function]
 ```
 
 1.  [dexter.mligo.tz](https://gitlab.com/dexter2tz/dexter2tz/-/blob/8a5792a56e0143042926c3ca8bff7d7068a541c3/dexter.mligo.tz)
@@ -85,13 +86,18 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
 
         -   Input:
 
-            ```
-            type add_liquidity =
-            { owner : address ;
-              minLqtMinted : nat ;
-              maxTokensDeposited : nat ;
-              deadline : timestamp ;
-            }
+            ```k
+            syntax EntryPointParams   ::= AddLiquidityParams
+            syntax AddLiquidityParams ::= AddLiquidity(owner              : Address,
+                                                       minLqtMinted       : Int,
+                                                       maxTokensDeposited : Int,
+                                                       deadline           : Timestamp)
+            rule validParams(_IsFA2, AddLiquidity(_Owner,
+                                                   MinLqtMinted,
+                                                   MaxTokensDeposited,
+                                                  _Deadline))
+                 => MinLqtMinted       >=Int 0
+            andBool MaxTokensDeposited >=Int 0
             ```
 
         -   Storage updates:
@@ -119,14 +125,21 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
 
         -   Input:
 
-            ```
-            type remove_liquidity =
-              { to_ : address ;            // recipient of the liquidity redemption
-                lqtBurned : nat ;          // amount of lqt owned by sender to burn
-                minXtzWithdrawn : tez ;    // minimum amount of tez to withdraw
-                minTokensWithdrawn : nat ; // minimum amount of tokens to withdraw
-                deadline : timestamp ;     // the time before which the request must be completed
-              }
+            ```k
+            syntax EntryPointParams      ::= RemoveLiquidityParams
+            syntax RemoveLiquidityParams ::= RemoveLiquidity(to                 : Address,
+                                                             lqtBurned          : Int,
+                                                             minXtzWithdrawn    : Mutez,
+                                                             minTokensWithdrawn : Int,
+                                                             deadline           : Timestamp)
+            rule validParams(_IsFA2, RemoveLiquidity(_To,
+                                                      LqtBurned,
+                                                      MinXtzWithdrawn,
+                                                      MinTokensWithdrawn,
+                                                     _Deadline))
+                 => LqtBurned >=Int 0
+            andBool #IsLegalMutezValue(MinXtzWithdrawn)
+            andBool MinTokensWithdrawn >=Int 0
             ```
 
         -   Output:
@@ -158,11 +171,12 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
 
         -   Input:
 
-            ```
-            type set_baker =
-              { baker : key_hash option ;
-                freezeBaker : bool ;
-              }
+            ```k
+            syntax EntryPointParams ::= SetBakerParams
+            syntax SetBakerParams   ::= SetBaker(baker       : OptionData,
+                                                 freezeBaker : Bool)
+            rule validParams(_IsFA2, SetBaker(None,        _)) => true
+            rule validParams(_IsFA2, SetBaker(Some D:Data, _)) => isKeyHash(D)
             ```
 
         -   Output:
@@ -182,8 +196,10 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
 
         -   Input:
 
-            ```
-            type set_manager = address // named new_manager
+            ```k
+            syntax EntryPointParams ::= SetManagerParams
+            syntax SetManagerParams ::= SetManager(newManager : Address)
+            rule validParams(_IsFA2, _:SetManagerParams) => true
             ```
 
         -   Output:
@@ -202,8 +218,10 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
 
         -   Input:
 
-            ```
-            type set_lqt_address = address // named lqtAddress
+            ```k
+            syntax EntryPointParams    ::= SetLQTAddressParams
+            syntax SetLQTAddressParams ::= SetLQTAddress(lqtAddress : Address)
+            rule validParams(_IsFA2, _:SetLQTAddressParams) => true
             ```
 
         -   Output:
@@ -221,7 +239,13 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
 
     6.  `default_`
 
-        -   Input: N/A
+        -   Input:
+
+            ```k
+            syntax EntryPointParams ::= DefaultParams
+            syntax DefaultParams    ::= "Default"
+            rule validParams(_IsFA2, Default) => true
+            ```
 
         -   Output:
 
@@ -235,7 +259,13 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
 
     7.  `update_token_pool`
 
-        -   Input: N/A
+        -   Input:
+
+            ```k
+            syntax EntryPointParams      ::= UpdateTokenPoolParams
+            syntax UpdateTokenPoolParams ::= "UpdateTokenPool"
+            rule validParams(_IsFA2, UpdateTokenPool) => true
+            ```
 
         -   Output:
 
@@ -256,8 +286,28 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
     8.  `update_token_pool_internal`
 
         -   Input:
-            -   version FA12: `type update_token_pool_internal = nat`
-            -   version FA2:  `type update_token_pool_internal = ((address * nat) * nat) list`
+
+            ```k
+            syntax EntryPointParams                  ::= UpdateTokenPoolInternalParams
+            syntax UpdateTokenPoolInternalParams     ::= UpdateTokenPoolInternalFA12Params
+                                                       | UpdateTokenPoolInternalFA2Params
+            syntax UpdateTokenPoolInternalFA12Params ::= UpdateTokenPoolInternalFA12(balance         : Int)
+            syntax UpdateTokenPoolInternalFA2Params  ::= UpdateTokenPoolInternalFA2 (balanceOfResult : InternalList)
+
+            rule validParams(IsFA2, UpdateTokenPoolInternalFA12(Balance))         => (notBool IsFA2) andBool Balance >=Int 0
+            rule validParams(IsFA2, UpdateTokenPoolInternalFA2 (BalanceOfResult)) =>          IsFA2  andBool validBalanceOfParams(BalanceOfResult)
+
+            syntax Bool ::= validBalanceOfParams(InternalList) [function]
+                          | validBalanceOfEntry(Data)          [function]
+            // ----------------------------------------------------------
+            rule validBalanceOfParams(.InternalList) => true
+            rule validBalanceOfParams([ D:Data ] ;; IL:InternalList)
+              => validBalanceOfEntry(D) andBool validBalanceOfParams(IL)
+
+            rule validBalanceOfEntry(Pair (Pair _:Address N1:Int) N2:Int)
+              => N1 >=Int 0 andBool N2 >=Int 0
+            rule validBalanceOfEntry(_:Data) => false [owise]
+            ```
 
         -   Output:
 
@@ -278,12 +328,15 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
 
         -   Input:
 
-        ```
-        type xtz_to_token =
-          { to_ : address ;
-            minTokensBought : nat ;
-            deadline : timestamp ;
-          }
+        ```k
+        syntax EntryPointParams ::= XtzToTokenParams
+        syntax XtzToTokenParams ::= XtzToToken(to              : Address,
+                                               minTokensBought : Int,
+                                               deadline        : Timestamp)
+        rule validParams(_IsFA2, XtzToToken(_To,
+                                             MinTokensBought,
+                                            _Deadline))
+          => MinTokensBought >=Int 0
         ```
 
         -   Output:
@@ -308,13 +361,18 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
 
         -   Input:
 
-        ```
-        type token_to_xtz =
-          { to_ : address ;
-            tokensSold : nat ;
-            minXtzBought : tez ;
-            deadline : timestamp ;
-          }
+        ```k
+        syntax EntryPointParams ::= TokenToXtzParams
+        syntax TokenToXtzParams ::= TokenToXtz(to           : Address,
+                                               tokensSold   : Int,
+                                               minXtzBought : Mutez,
+                                               deadline     : Timestamp)
+        rule validParams(_IsFA2, TokenToXtz(_To,
+                                             TokensSold,
+                                             MinXtzBought,
+                                            _Deadline))
+             => TokensSold >=Int 0
+        andBool #IsLegalMutezValue(MinXtzBought)
         ```
 
         -   Output:
@@ -341,14 +399,20 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
 
         -   Input:
 
-        ```
-        type token_to_token =
-          { outputDexterContract : address ;
-            minTokensBought : nat ;
-            to_ : address ;
-            tokensSold : nat ;
-            deadline : timestamp ;
-          }
+        ```k
+        syntax EntryPointParams   ::= TokenToTokenParams
+        syntax TokenToTokenParams ::= TokenToToken(outputDexterContract : Address,
+                                                   minTokensBought      : Int,
+                                                   to                   : Address,
+                                                   tokensSold           : Int,
+                                                   deadline             : Timestamp)
+        rule validParams(_IsFA2, TokenToToken(_OutputDexterContract,
+                                               MinTokensBought,
+                                              _To,
+                                               TokensSold,
+                                              _Deadline))
+             => MinTokensBought >=Int 0
+        andBool TokensSold >=Int 0
         ```
 
         -   Output:
