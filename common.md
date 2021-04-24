@@ -98,9 +98,11 @@ The internal representation of mutez is bounded.
   // --------------------------------------------
   rule #MutezOverflowLimit => 2 ^Int 63 // Signed 64 bit integers.
 
-  syntax Bool ::= #IsLegalMutezValue(Int) [function]
-  // -----------------------------------------------
-  rule #IsLegalMutezValue(I) => I >=Int 0 andBool I <Int #MutezOverflowLimit
+  syntax Bool ::= #IsLegalMutezValue(Int)   [function]
+                | #IsLegalMutezValue(Mutez) [function]
+  // -------------------------------------------------
+  rule #IsLegalMutezValue(I)         => I >=Int 0 andBool I <Int #MutezOverflowLimit
+  rule #IsLegalMutezValue(#Mutez(I)) => #IsLegalMutezValue(I)
 ```
 
 The following representation is used by our legacy type checker.
