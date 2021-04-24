@@ -519,7 +519,41 @@ We also define a functions that serialize and deserialize our abstract parameter
 ```k
   syntax Data ::= #LoadDexterParams(EntryPointParams) [function, functional, no-evaluators]
   // --------------------------------------------------------------------------------------
-  // FIXME
+  rule #LoadDexterParams(AddLiquidity(Owner, MinLqtMinted, MaxTokensDeposited, Deadline))
+    => Left Left Left Left Pair Owner Pair MinLqtMinted Pair MaxTokensDeposited Deadline
+
+  rule #LoadDexterParams(Default)
+    => Left Left Left Right Unit
+
+  rule #LoadDexterParams(RemoveLiquidity(To, LqtBurned, MinXtzWithdrawn, MinTokensWithdrawn, Deadline))
+    => Left Left Right Left Pair To Pair LqtBurned Pair MinXtzWithdrawn Pair MinTokensWithdrawn Deadline
+
+  rule #LoadDexterParams(SetBaker(Baker, FreezeBaker))
+    => Left Left Right Right Pair Baker FreezeBaker
+
+  rule #LoadDexterParams(SetLQTAddress(LqtAddress))
+    => Left Right Left Left LqtAddress
+
+  rule #LoadDexterParams(SetManager(NewManager))
+    => Left Right Left Right NewManager
+
+  rule #LoadDexterParams(TokenToToken(OutputDexterContract, MinTokensBought, To, TokensSold, Deadline))
+    => Left Right Right Left Pair OutputDexterContract Pair MinTokensBought Pair To Pair TokensSold Deadline
+
+  rule #LoadDexterParams(TokenToXtz(To, TokensSold, MinXtzBought, Deadline))
+    => Left Right Right Right Pair To Pair TokensSold Pair MinXtzBought Deadline
+
+  rule #LoadDexterParams(UpdateTokenPool)
+    => Right Left Left Unit
+
+  rule #LoadDexterParams(UpdateTokenPoolInternalFA12(Balance))
+    => Right Left Right Balance
+
+  rule #LoadDexterParams(UpdateTokenPoolInternalFA2(BalanceOfResult))
+    => Right Left Right BalanceOfResult
+
+  rule #LoadDexterParams(XtzToToken(To, MinTokensBought, Deadline))
+    => Right Right Pair To Pair MinTokensBought Deadline
 
   syntax KItem ::= #loadDexterState(Bool, EntryPointParams)
   // ------------------------------------------------------
