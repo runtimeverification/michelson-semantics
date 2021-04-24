@@ -7,7 +7,7 @@ module DEXTER-SPEC
   claim <k> now 0 => . ... </k>
         <mynow> #Timestamp(0) </mynow>
 
-  claim <k> #dexterCode => _ ... </k>
+  claim <k> #dexterCode => ?_ ... </k>
 
 endmodule
 ```
