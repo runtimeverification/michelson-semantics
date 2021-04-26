@@ -13,7 +13,7 @@ The macro processor has problems inferring the type of nullary instructions.
 We get around this problem by explicitly declaring every `NullaryInstName` an `Instruction`, and giving each a separate macro.
 
 ```k
-require "syntax.md"
+requires "syntax.md"
 
 module MICHELSON-PRETTY
   imports MICHELSON-INTERNAL-SYNTAX
