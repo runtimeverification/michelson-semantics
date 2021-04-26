@@ -161,7 +161,7 @@ $(llvm_kompiled): $(llvm_files)
 ### Prove
 
 prove_dir           := $(DEFN_DIR)/prove
-prove_files         := $(ALL_FILES)
+prove_files         := $(ALL_FILES) pretty-syntax.md
 prove_main_file     := michelson
 prove_main_module   := MICHELSON
 prove_syntax_module := UNIT-TEST-SYNTAX
@@ -180,7 +180,7 @@ $(prove_kompiled): $(prove_files)
 dexter_dir           := $(DEFN_DIR)/dexter
 dexter_main_file     := dexter
 dexter_main_file_loc := tests/proofs/dexter/$(dexter_main_file)
-dexter_files         := $(ALL_FILES) $(dexter_main_file_loc).md
+dexter_files         := $(prove_files) $(dexter_main_file_loc).md
 dexter_main_module   := DEXTER-VERIFICATION
 dexter_syntax_module := DEXTER-VERIFICATION-SYNTAX
 dexter_kompiled      := $(dexter_dir)/$(notdir $(dexter_main_file))-kompiled/definition.kore

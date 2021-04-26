@@ -5,5 +5,11 @@ module DEXTER-SPEC
   claim <k> now 0 => . ... </k>
         <mynow> #Timestamp(0) </mynow>
 
+  claim <k> (now 0 => .) ~> #dexterCode ... </k>
+        <mynow> #Timestamp(0) </mynow>
+
+  claim <k> (now 0 => .) ~> #dexterCodeFA2 ... </k>
+        <mynow> #Timestamp(0) </mynow>
+
 endmodule
 ```
