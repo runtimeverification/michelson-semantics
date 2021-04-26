@@ -1,7 +1,7 @@
 ```k
 requires "../../../pretty-instructions.md"
 module DEXTER-COMPILED
-  imports MICHELSON-INTERNAL-SYNTAX
+  imports MICHELSON-PRETTY
 ```
 
 # Purpose

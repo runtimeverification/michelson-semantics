@@ -16,6 +16,7 @@ We get around this problem by explicitly declaring every `NullaryInstName` an `I
 require "syntax.md"
 
 module MICHELSON-PRETTY
+  imports MICHELSON-INTERNAL-SYNTAX
   
   syntax Instruction ::= "DROP"
                        | "DUP"
