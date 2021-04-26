@@ -1,5 +1,5 @@
 ```k
-requires "../../../pretty-instructions.md"
+requires "../../../pretty-syntax.md"
 module DEXTER-COMPILED
   imports MICHELSON-PRETTY
 ```
