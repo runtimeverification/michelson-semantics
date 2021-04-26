@@ -17,6 +17,7 @@ requires "syntax.md"
 
 module MICHELSON-PRETTY-SYNTAX
   imports MICHELSON-INTERNAL-SYNTAX
+  imports BOOL-SYNTAX
   
   syntax Instruction ::= "DROP"
                        | "DUP"
@@ -225,9 +226,11 @@ We get around this problem by explicitly declaring every `NullaryTypeName` a `Ty
 The boolean literals from Michelson needs to be wrapped in `#token`, since they are not part of the usual internal syntax.
 
 ```k
+  syntax MichelsonBool ::= Bool
   syntax MichelsonBool ::= "True" | "False"
-  rule True  => #token("True" , "MichelsonBoolToken") [macro]
-  rule False => #token("False", "MichelsonBoolToken") [macro]
+
+  rule True  => true  [macro]
+  rule False => false [macro]
 ```
 
 ```k
