@@ -2700,6 +2700,9 @@ All the rules are macros, and they insert the `.AnnotationList` and `#token(...)
 
 ## Pretty Nullary Instructions
 
+The macro processor has problems inferring the type of nullary instructions.
+We get around this problem by explicitly declaring every `NullaryInstName` an `Instruction`, and giving each a separate macro.
+
 ```k
   syntax Instruction ::= "DROP"
                        | "DUP"
@@ -2852,7 +2855,16 @@ All the rules are macros, and they insert the `.AnnotationList` and `#token(...)
   rule LAMBDA T1:Type T2:Type B:Block => LAMBDA .AnnotationList T1 T2 B [macro]
   rule CREATE_CONTRACT { C } => CREATE_CONTRACT .AnnotationList { C } [macro]
   rule DIP I:Int B:Block => DIP .AnnotationList I B [macro]
+```
 
+# Types
+
+## Pretty Nullary Types
+
+The macro processor has problems inferring the type of nullary types.
+We get around this problem by explicitly declaring every `NullaryTypeName` a `Type`, and giving each a separate macro.
+
+```k
   syntax Type ::= "int"
                 | "nat"
                 | "string"
@@ -2867,8 +2879,6 @@ All the rules are macros, and they insert the `.AnnotationList` and `#token(...)
                 | "signature"
                 | "operation"
                 | "chain_id"
-                | UnaryTypeName   Type
-                | BinaryTypeName  Type Type
 
   rule int          => int        .AnnotationList [macro]
   rule nat          => nat        .AnnotationList [macro]
@@ -2884,17 +2894,23 @@ All the rules are macros, and they insert the `.AnnotationList` and `#token(...)
   rule signature    => signature  .AnnotationList [macro]
   rule operation    => operation  .AnnotationList [macro]
   rule chain_id     => chain_id   .AnnotationList [macro]
+```
+
+## Other Pretty Types
+
+```k
+  syntax Type ::= UnaryTypeName   Type
+                | BinaryTypeName  Type Type
 
   rule N:UnaryTypeName  T     => N .AnnotationList T     [macro]
   rule N:BinaryTypeName T1 T2 => N .AnnotationList T1 T2 [macro]
-
-  syntax MichelsonBool ::= "True" | "False"
-
-  rule True  => #token("True" , "MichelsonBoolToken") [macro]
-  rule False => #token("False", "MichelsonBoolToken") [macro]
 ```
 
-## Annotations
+# Annotations
+
+Annotations are arbitrary tokens.
+The set of permissible annotations is infinite.
+Since we work with specific code that contains a finite number of annotations, we can represent each and give it a macro for wrapping it in the `#token(...)` production.
 
 ```k
   syntax Annotation ::= "%balance_of"
@@ -2922,6 +2938,15 @@ All the rules are macros, and they insert the `.AnnotationList` and `#token(...)
   rule %xtzToToken              => #token("%xtzToToken"             , "FieldAnnotation") [macro]
 ```
 
+# Literals
+
+The boolean literals from Michelson needs to be wrapped in `#token`, since they are not part of the usual internal syntax.
+
+```k
+  syntax MichelsonBool ::= "True" | "False"
+  rule True  => #token("True" , "MichelsonBoolToken") [macro]
+  rule False => #token("False", "MichelsonBoolToken") [macro]
+```
 
 ```k
 endmodule
