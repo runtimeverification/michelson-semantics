@@ -1,6 +1,0 @@
-tests/unit/sub_timestamp-int_04.tzt
-
-tests/macros/pair_00.tzt
-tests/macros/unpair_00.tzt
-
-tests/multi/simple_03.fail.tzt
