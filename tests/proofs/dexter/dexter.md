@@ -96,9 +96,10 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
             rule welltypedParams(_IsFA2, AddLiquidity(_Owner,
                                                        MinLqtMinted,
                                                        MaxTokensDeposited,
-                                                      _Deadline))
+                                                       Deadline))
                  => MinLqtMinted       >=Int 0
             andBool MaxTokensDeposited >=Int 0
+            andBool #IsLegalTimestamp(Deadline)
             ```
 
         -   Storage updates:
@@ -137,10 +138,11 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
                                                           LqtBurned,
                                                           MinXtzWithdrawn,
                                                           MinTokensWithdrawn,
-                                                         _Deadline))
+                                                          Deadline))
                  => LqtBurned >=Int 0
             andBool #IsLegalMutezValue(MinXtzWithdrawn)
             andBool MinTokensWithdrawn >=Int 0
+            andBool #IsLegalTimestamp(Deadline)
             ```
 
         -   Output:
@@ -336,8 +338,9 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
                                                deadline        : Timestamp)
         rule welltypedParams(_IsFA2, XtzToToken(_To,
                                                  MinTokensBought,
-                                                _Deadline))
-          => MinTokensBought >=Int 0
+                                                 Deadline))
+             => MinTokensBought >=Int 0
+        andBool #IsLegalTimestamp(Deadline)
         ```
 
         -   Output:
@@ -371,9 +374,10 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
         rule welltypedParams(_IsFA2, TokenToXtz(_To,
                                                  TokensSold,
                                                  MinXtzBought,
-                                                _Deadline))
+                                                 Deadline))
              => TokensSold >=Int 0
         andBool #IsLegalMutezValue(MinXtzBought)
+        andBool #IsLegalTimestamp(Deadline)
         ```
 
         -   Output:
@@ -411,9 +415,10 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
                                                    MinTokensBought,
                                                   _To,
                                                    TokensSold,
-                                                  _Deadline))
+                                                   Deadline))
              => MinTokensBought >=Int 0
         andBool TokensSold >=Int 0
+        andBool #IsLegalTimestamp(Deadline)
         ```
 
         -   Output:
