@@ -529,8 +529,8 @@ We first define functions which build our parameter and our storage types.
 We also define a functions that serialize and deserialize our abstract parameters and state.
 
 ```k
-  syntax Data ::= #LoadDexterParams(EntryPointParams) [function, functional, no-evaluators]
-  // --------------------------------------------------------------------------------------
+  syntax Data ::= #LoadDexterParams(Bool, EntryPointParams) [function, functional]
+  // -----------------------------------------------------------------------------
   rule #LoadDexterParams(AddLiquidity(Owner, MinLqtMinted, MaxTokensDeposited, Deadline))
     => Left Left Left Left Pair Owner Pair MinLqtMinted Pair MaxTokensDeposited Deadline
 
