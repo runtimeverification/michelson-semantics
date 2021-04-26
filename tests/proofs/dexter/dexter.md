@@ -76,7 +76,9 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
 
 ```k
   syntax EntryPointParams
-  syntax Bool ::= validParams(Bool, EntryPointParams) [function]
+  syntax Bool ::= validParams(Bool, EntryPointParams) [function, functional]
+  // -----------------------------------------------------------------------
+  rule validParams(_, _) => false [owise]
 ```
 
 1.  [dexter.mligo.tz](https://gitlab.com/dexter2tz/dexter2tz/-/blob/8a5792a56e0143042926c3ca8bff7d7068a541c3/dexter.mligo.tz)
@@ -153,8 +155,8 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
                                 lqtTotal  -= lqtBurned} )
             ```
 
-            where `$xtz_withdrawn = (lqtBurned * storage.xtzPool) / storage.lqtTotal`
-              and `$tokens_withdrawn = (lqtBurned * storage.tokenPool) /  storage.lqtTotal`
+            where `$xtz_withdrawn    = storage.xtzPool *    (lqtBurned / storage.lqtTotal)`
+              and `$tokens_withdrawn = storage.tokenPool *  (lqtBurned / storage.lqtTotal)`
 
         -   Summary: The sender can burn liquidity tokens in exchange for tez and tokens sent to some address if the following conditions are satisfied:
 
@@ -297,8 +299,8 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
             rule validParams(IsFA2, UpdateTokenPoolInternalFA12(Balance))         => (notBool IsFA2) andBool Balance >=Int 0
             rule validParams(IsFA2, UpdateTokenPoolInternalFA2 (BalanceOfResult)) =>          IsFA2  andBool validBalanceOfParams(BalanceOfResult)
 
-            syntax Bool ::= validBalanceOfParams(InternalList) [function]
-                          | validBalanceOfEntry(Data)          [function]
+            syntax Bool ::= validBalanceOfParams(InternalList) [function, functional]
+                          | validBalanceOfEntry(Data)          [function, functional]
             // ----------------------------------------------------------
             rule validBalanceOfParams(.InternalList) => true
             rule validBalanceOfParams([ D:Data ] ;; IL:InternalList)
