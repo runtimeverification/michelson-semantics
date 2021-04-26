@@ -15,7 +15,7 @@ We get around this problem by explicitly declaring every `NullaryInstName` an `I
 ```k
 requires "syntax.md"
 
-module MICHELSON-PRETTY
+module MICHELSON-PRETTY-SYNTAX
   imports MICHELSON-INTERNAL-SYNTAX
   
   syntax Instruction ::= "DROP"
