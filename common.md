@@ -276,11 +276,17 @@ The semantics accept timestamps in one of two formats:
 1. An ISO-8601 string.
 2. A unix timestamp
 
+We also include a (partial) internal timestamp validation check.
+
 ```k
   syntax Int ::= #ISO2Epoch(String) [function, hook(TIME.ISO2Epoch)]
   syntax Timestamp ::= #ParseTimestamp(String) [function]
   rule #ParseTimestamp(S) => #Timestamp(#ISO2Epoch(S)) requires findString(S, "Z", 0) >=Int 0
   rule #ParseTimestamp(S) => #Timestamp(String2Int(S)) requires findString(S, "Z", 0) <Int 0
+
+  syntax Bool ::= #IsLegalTimestamp(Timestamp) [function, functional]
+  // ----------------------------------------------------------------
+  rule #IsLegalTimestamp(#Timestamp(I:Int)) => I >=Int 0
 ```
 
 The other string based datatypes have stubs for their validation functions.
