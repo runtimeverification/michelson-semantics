@@ -17,7 +17,8 @@ https://gitlab.com/dexter2tz/dexter2tz/-/blob/8a5792a56e0143042926c3ca8bff7d7068
 
 ```k
   syntax Data ::= "#dexterCodeFA12" | "#dexterCodeFA2"
-  syntax Data ::= #dexterCode ( Bool ) [function, functional]
+                | #dexterCode ( Bool ) [function, functional]
+  // --------------------------------------------------------
 
   rule #dexterCode(IsFA2) => #dexterCodeFA2  requires         IsFA2
   rule #dexterCode(IsFA2) => #dexterCodeFA12 requires notBool IsFA2
