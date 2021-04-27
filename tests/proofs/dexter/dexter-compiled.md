@@ -2,12 +2,13 @@
 requires "../../../pretty-syntax.md"
 module DEXTER-COMPILED
   imports MICHELSON-PRETTY-SYNTAX
+  imports BOOL
 ```
 
 # Purpose
 
 This module contains the compiled Dexter code for version FA1.2 and FA2.
-The macros `#dexterCode` and `#dexterCodeFA2` translate to the respective Michelson code.
+The macros `#dexterCodeFA12` and `#dexterCodeFA2` translate to the respective Michelson code.
 We have pasted the code verbatim:
 https://gitlab.com/dexter2tz/dexter2tz/-/blob/8a5792a56e0143042926c3ca8bff7d7068a541c3/dexter.mligo.tz
 https://gitlab.com/dexter2tz/dexter2tz/-/blob/8a5792a56e0143042926c3ca8bff7d7068a541c3/dexter.fa2.mligo.tz
@@ -15,7 +16,11 @@ https://gitlab.com/dexter2tz/dexter2tz/-/blob/8a5792a56e0143042926c3ca8bff7d7068
 # The Dexter Smart Contract Code
 
 ```k
-  syntax Data ::= "#dexterCode" | "#dexterCodeFA2"
+  syntax Data ::= "#dexterCodeFA12" | "#dexterCodeFA2"
+  syntax Data ::= #dexterCode ( Bool ) [function, functional]
+
+  rule #dexterCode(IsFA2) => #dexterCodeFA2  requires         IsFA2
+  rule #dexterCode(IsFA2) => #dexterCodeFA12 requires notBool IsFA2
 ```
 
 ## Annotations
@@ -53,7 +58,7 @@ Since we work with specific code that contains a finite number of annotations, w
 ## FA1.2
 
 ```k
-  rule #dexterCode
+  rule #dexterCodeFA12
     => { DUP ;
          CDR ;
          SWAP ;
