@@ -1845,11 +1845,15 @@ These operations are used internally for implementation purposes.
 
 ```k
   syntax KItem ::= #Assume(BoolExp) [strict, result(Bool)]
-  rule <k> #Assume(true)  => . ... </k>
+```
+
+```concrete
+  rule <k> #Assume(true) => . ... </k>
 ```
 
 ```symbolic
-  rule <k> #Assume(false) => #Bottom ... </k>
+  rule <k> #Assume(BExp:Bool) => . ... </k>
+    ensures BExp
 ```
 
 TODO: We let this rule run in both symbolic and concrete cases, to avoid a
