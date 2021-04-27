@@ -219,12 +219,6 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
             ( [], { storage with manager = new_manager } )
             ```
 
-        -   Summary: The contract sets its manager to the provided manager address if the following conditions are satisfied:
-
-            1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
-            2.  exactly 0 tez was transferred to this contract when it was invoked
-            3.  the txn sender is the `storage.manager`
-
     5.  `set_lqt_address`
 
         -   Input:
