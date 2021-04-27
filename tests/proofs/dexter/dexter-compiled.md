@@ -64,9 +64,13 @@ Since we work with specific code that contains a finite number of annotations, w
          SWAP ;
          CAR ;
          IF_LEFT
+           // Left
            { IF_LEFT
+               // Left Left
                { IF_LEFT
+                   // Left Left Left
                    { IF_LEFT
+                       // Left Left Left Left
                        { DUP ;
                          CDR ;
                          SWAP ;
@@ -277,6 +281,7 @@ Since we work with specific code that contains a finite number of annotations, w
                                              DIG 2 ;
                                              CONS ;
                                              PAIR } } } } }
+                       // Left Left Left Right
                        { DROP ;
                          DUP ;
                          CDR ;
@@ -300,7 +305,9 @@ Since we work with specific code that contains a finite number of annotations, w
                               PAIR ;
                               NIL operation ;
                               PAIR } } }
+                   // Left Left Right
                    { IF_LEFT
+                       // Left Left Right Left
                        { DUP ;
                          CDR ;
                          SWAP ;
@@ -533,6 +540,7 @@ Since we work with specific code that contains a finite number of annotations, w
                                                   DIG 2 ;
                                                   CONS ;
                                                   PAIR } } } } } }
+                       // Left Left Right Right
                        { DUP ;
                          CDR ;
                          SWAP ;
@@ -611,8 +619,11 @@ Since we work with specific code that contains a finite number of annotations, w
                                              SET_DELEGATE ;
                                              CONS ;
                                              PAIR } } } } } } }
+               // Left Right
                { IF_LEFT
+                   // Left Right Left
                    { IF_LEFT
+                       // Left Right Left Left
                        { SWAP ;
                          DUP ;
                          DUG 2 ;
@@ -709,6 +720,7 @@ Since we work with specific code that contains a finite number of annotations, w
                                              PAIR ;
                                              NIL operation ;
                                              PAIR } } } } }
+                       // Left Right Left Right
                        { SWAP ;
                          DUP ;
                          DUG 2 ;
@@ -781,7 +793,9 @@ Since we work with specific code that contains a finite number of annotations, w
                                         PAIR ;
                                         NIL operation ;
                                         PAIR } } } } }
+                   // Left Right Right
                    { IF_LEFT
+                       // Left Right Right Left
                        { DUP ;
                          CDR ;
                          SWAP ;
@@ -936,6 +950,7 @@ Since we work with specific code that contains a finite number of annotations, w
                                         DIG 2 ;
                                         CONS ;
                                         PAIR } } } }
+                       // Left Right Right Right
                        { DUP ;
                          CDR ;
                          SWAP ;
@@ -1082,8 +1097,11 @@ Since we work with specific code that contains a finite number of annotations, w
                                         DIG 2 ;
                                         CONS ;
                                         PAIR } } } } } } }
+           // Right
            { IF_LEFT
+               // Right Left
                { IF_LEFT
+                   // Right Left Left
                    { DROP ;
                      SOURCE ;
                      SENDER ;
@@ -1149,6 +1167,7 @@ Since we work with specific code that contains a finite number of annotations, w
                                     DIG 2 ;
                                     CONS ;
                                     PAIR } } } }
+                   // Right Left Right
                    { SWAP ;
                      DUP ;
                      DUG 2 ;
@@ -1206,6 +1225,7 @@ Since we work with specific code that contains a finite number of annotations, w
                                PAIR ;
                                NIL operation ;
                                PAIR } } } }
+               // Right Right
                { DUP ;
                  CDR ;
                  SWAP ;
