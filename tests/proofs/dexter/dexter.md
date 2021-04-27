@@ -634,6 +634,15 @@ We also define a functions that serialize and deserialize our abstract parameter
     requires notBool IsFA2
 ```
 
+## Helpers
+
+```k
+  syntax Int ::= Mutez2Int(Mutez) [function, functional]
+ // ----------------------------------------------------
+  rule Mutez2Int(#Mutez(I)) => I
+  rule Mutez2Int(I:Int)     => I
+```
+
 ## Epilogue
 
 We close out our module context now, which contains all of the information necessary to complete our proof.
