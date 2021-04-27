@@ -81,6 +81,9 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
 
 ```k
   syntax EntryPointParams
+  syntax Bool ::= welltypedParams(Bool, EntryPointParams) [function, functional]
+  // ---------------------------------------------------------------------------
+  rule welltypedParams(_, _) => false [owise]
 ```
 
 1.  [dexter.mligo.tz](https://gitlab.com/dexter2tz/dexter2tz/-/blob/8a5792a56e0143042926c3ca8bff7d7068a541c3/dexter.mligo.tz)
@@ -90,13 +93,20 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
 
         -   Input:
 
-            ```
-            type add_liquidity =
-            { owner : address ;
-              minLqtMinted : nat ;
-              maxTokensDeposited : nat ;
-              deadline : timestamp ;
-            }
+            ```k
+            syntax EntryPointParams   ::= AddLiquidityParams
+            syntax AddLiquidityParams ::= AddLiquidity(owner              : Address,
+                                                       minLqtMinted       : Int,
+                                                       maxTokensDeposited : Int,
+                                                       deadline           : Timestamp)
+            rule welltypedParams(_IsFA2, AddLiquidity(_Owner,
+                                                       MinLqtMinted,
+                                                       MaxTokensDeposited,
+                                                       Deadline))
+                  => true
+            requires MinLqtMinted       >=Int 0
+             andBool MaxTokensDeposited >=Int 0
+             andBool #IsLegalTimestamp(Deadline)
             ```
 
         -   Storage updates:
@@ -115,22 +125,69 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
 
         -   Preconditions
 
-            1.  the token pool _is_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
+            1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
             2.  the deadline has not passed (i.e. the `Tezos.now >= input.deadline`)
             3.  the tez transferred is less than `input.maxTokensDeposited`
             4.  the liquidity minted is more than `input.minLqtMinted`
 
     2.  `remove_liquidity`
 
+        -   Input:
+
+            ```k
+            syntax EntryPointParams      ::= RemoveLiquidityParams
+            syntax RemoveLiquidityParams ::= RemoveLiquidity(to                 : Address,
+                                                             lqtBurned          : Int,
+                                                             minXtzWithdrawn    : Mutez,
+                                                             minTokensWithdrawn : Int,
+                                                             deadline           : Timestamp)
+            rule welltypedParams(_IsFA2, RemoveLiquidity(_To,
+                                                          LqtBurned,
+                                                          MinXtzWithdrawn,
+                                                          MinTokensWithdrawn,
+                                                          Deadline))
+                  => true
+            requires LqtBurned >=Int 0
+             andBool #IsLegalMutezValue(MinXtzWithdrawn)
+             andBool MinTokensWithdrawn >=Int 0
+             andBool #IsLegalTimestamp(Deadline)
+            ```
+
+        -   Output:
+
+            ```
+            ( [ Transfer_tokens ( lqtBurned, txn.sender )                0mutez         storage.lqtAddress   %mintOrBurn
+                Transfer_tokens ( self.address, to_, $tokens_withdrawn ) 0mutez         storage.tokenAddress %transfer
+                Transfer_tokens ()                                       $xtz_withdrawn _to
+              ], { storage with tokenPool -= $tokens_withdrawn,
+                                xtzPool   -= $xtz_withdrawn,
+                                lqtTotal  -= lqtBurned} )
+            ```
+
+            where `$xtz_withdrawn    = storage.xtzPool *    (lqtBurned / storage.lqtTotal)`
+              and `$tokens_withdrawn = storage.tokenPool *  (lqtBurned / storage.lqtTotal)`
+
+        -   Summary: The sender can burn liquidity tokens in exchange for tez and tokens sent to some address if the following conditions are satisfied:
+
+            1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
+            2.  exactly 0 tez was transferred to this contract when it was invoked
+            3.  the current block time must be less than the deadline
+            4.  the amount of liquidity to be redeemed, when converted to xtz, is greater than `minXtzWithdrawn` and less than the amount of tez owned by the Dexter contract
+            5.  the amount of liquidity to be redeemed, when converted to tokens, is greater than `minTokensWithdrawn` and less than the amount of tokens owned by the Dexter contract
+            6.  the amount of liquidity to be redeemed is less than the total amount of liquidity and less than the amount of liquidity tokens owned by the sender
+            7.  the contract at address `storage.lqtAddress` has a well-formed `mintOrBurn` entrypoint
+            8.  the contract at address `storage.tokenAddress` has a well-formed `transfer` entrypoint
+
     3.  `set_baker`
 
         -   Input:
 
-            ```
-            type set_baker =
-              { baker : key_hash option ;
-                freezeBaker : bool ;
-              }
+            ```k
+            syntax EntryPointParams ::= SetBakerParams
+            syntax SetBakerParams   ::= SetBaker(baker       : OptionData,
+                                                 freezeBaker : Bool)
+            rule welltypedParams(_IsFA2, SetBaker(None,        _)) => true
+            rule welltypedParams(_IsFA2, SetBaker(Some D:Data, _)) => true requires isKeyHash(D)
             ```
 
         -   Output:
@@ -150,8 +207,10 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
 
         -   Input:
 
-            ```
-            type set_manager = address // named new_manager
+            ```k
+            syntax EntryPointParams ::= SetManagerParams
+            syntax SetManagerParams ::= SetManager(newManager : Address)
+            rule welltypedParams(_IsFA2, _:SetManagerParams) => true
             ```
 
         -   Output:
@@ -170,8 +229,10 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
 
         -   Input:
 
-            ```
-            type set_lqt_address = address // named lqtAddress
+            ```k
+            syntax EntryPointParams    ::= SetLQTAddressParams
+            syntax SetLQTAddressParams ::= SetLQTAddress(lqtAddress : Address)
+            rule welltypedParams(_IsFA2, _:SetLQTAddressParams) => true
             ```
 
         -   Output:
@@ -188,10 +249,209 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
             4.  the liquidity pool address has already been set (i.e. `storage.lqtAddress1 != tz1Ke2h7sDdakHJQh8WX4Z372du1KChsksyU`)
 
     6.  `default_`
+
+        -   Input:
+
+            ```k
+            syntax EntryPointParams ::= DefaultParams
+            syntax DefaultParams    ::= "Default"
+            rule welltypedParams(_IsFA2, Default) => true
+            ```
+
+        -   Output:
+
+            ```
+            ( [], { storage with xtzPool += txn.amount } )
+            ```
+
+        -   Summary: Adds more money to the xtz reserves if the following conditions are satisifed:
+
+            1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
+
     7.  `update_token_pool`
-    8.  `xtz_to_token`
-    9.  `token_to_xtz`
-    10. `token_to_token`
+
+        -   Input:
+
+            ```k
+            syntax EntryPointParams      ::= UpdateTokenPoolParams
+            syntax UpdateTokenPoolParams ::= "UpdateTokenPool"
+            rule welltypedParams(_IsFA2, UpdateTokenPool) => true
+            ```
+
+        -   Output:
+
+            ```
+            ( [ Transfer_tokens Params 0xtz storage.tokenAddress ], { storage with selfIsUpdatingTokenPool = true } )
+            ```
+
+            where, in version FA2, `Params = Pair (self.address, storage.tokenId)` and in version FA12, `Params = self.address`
+
+        -   Summary: The contract queries its underlying token contract for its own token balance if the following conditions are satisfied:
+
+            1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
+            2.  exactly 0 tez was transferred to this contract when it was invoked
+            3.  the txn sender must be equal to the txn source
+            4.  if we are running the FA2 version of Dexter, then check that the contract at address `storage.tokenAddress` has a well-typed FA2 `balance_of` entrypoint;
+                otherwise, check that the contract at address `storage.tokenAddress` has a well-typed FA12 `get_balance` entrypoint.
+
+    8.  `update_token_pool_internal`
+
+        -   Input:
+
+            ```k
+            syntax EntryPointParams                  ::= UpdateTokenPoolInternalParams
+            syntax UpdateTokenPoolInternalParams     ::= UpdateTokenPoolInternalFA12Params
+                                                       | UpdateTokenPoolInternalFA2Params
+            syntax UpdateTokenPoolInternalFA12Params ::= UpdateTokenPoolInternalFA12(balance         : Int)
+            syntax UpdateTokenPoolInternalFA2Params  ::= UpdateTokenPoolInternalFA2 (balanceOfResult : InternalList)
+
+            rule welltypedParams(IsFA2, UpdateTokenPoolInternalFA12(Balance))         => true requires (notBool IsFA2) andBool Balance >=Int 0
+            rule welltypedParams(IsFA2, UpdateTokenPoolInternalFA2 (BalanceOfResult)) => true requires          IsFA2  andBool validBalanceOfParams(BalanceOfResult)
+
+            syntax Bool ::= validBalanceOfParams(InternalList) [function, functional]
+                          | validBalanceOfEntry(Data)          [function, functional]
+            // ----------------------------------------------------------
+            rule validBalanceOfParams(.InternalList) => true
+            rule validBalanceOfParams([ D:Data ] ;; IL:InternalList)
+              => validBalanceOfEntry(D) andBool validBalanceOfParams(IL)
+
+            rule validBalanceOfEntry(Pair (Pair _:Address N1:Int) N2:Int)
+              => N1 >=Int 0 andBool N2 >=Int 0
+            rule validBalanceOfEntry(_:Data) => false [owise]
+            ```
+
+        -   Output:
+
+            ```
+            ( [], { storage with tokenPool = $tokenPool selfIsUpdatingTokenPool = false } )
+            ```
+
+            where, in version FA2, `$tokenPool` is the second projection of the tuple at the head of the input list;
+            in version FA12, `$tokenPool` is equal to the input.
+
+        -   Summary: The underlying token contract updates the Dexter contract's view of its own token balance if the following conditions are satisifed:
+
+            1.  the token pool _is_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = true`)
+            2.  exactly 0 tez was transferred to this contract when it was invoked
+            3.  if using version FA2, the input parameter list is non-empty.
+
+    9.  `xtz_to_token`
+
+        -   Input:
+
+        ```k
+        syntax EntryPointParams ::= XtzToTokenParams
+        syntax XtzToTokenParams ::= XtzToToken(to              : Address,
+                                               minTokensBought : Int,
+                                               deadline        : Timestamp)
+        rule welltypedParams(_IsFA2, XtzToToken(_To,
+                                                 MinTokensBought,
+                                                 Deadline))
+              => true
+        requires MinTokensBought >=Int 0
+         andBool #IsLegalTimestamp(Deadline)
+        ```
+
+        -   Output:
+
+            ```
+            ( [ Transfer_tokens ( self.address, to_, $bought ) 0xtz storage.tokenAddress %transfer ],
+              { storage with xtzPool += txn.amount ; tokenPool -= $bought } )
+            ```
+
+            where `$bought` is the current total of tokens exchanged from `txn.amount` by the formula:
+
+            `(txn.amount * 997n * storage.tokenPool) / (xtzPool * 1000n + (txn.amount * 997n))`
+
+        -   Summary: A buyer sends xtz to the Dexter contract and receives a corresponding amount of tokens, if the following conditions are satisfied:
+
+            1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
+            2.  the current block time must be less than the deadline
+            3.  when the `txn.amount` (in mutez) is converted into tokens using the current exchange rate, the purchased amount is greater than `minTokensBought`
+            4.  when the `txn.amount` (in mutez) is converted into tokens using the current exchange rate, it is less than or equal to the tokens owned by the Dexter contract
+
+    10. `token_to_xtz`
+
+        -   Input:
+
+        ```k
+        syntax EntryPointParams ::= TokenToXtzParams
+        syntax TokenToXtzParams ::= TokenToXtz(to           : Address,
+                                               tokensSold   : Int,
+                                               minXtzBought : Mutez,
+                                               deadline     : Timestamp)
+        rule welltypedParams(_IsFA2, TokenToXtz(_To,
+                                                 TokensSold,
+                                                 MinXtzBought,
+                                                 Deadline))
+             => true
+        requires TokensSold >=Int 0
+         andBool #IsLegalMutezValue(MinXtzBought)
+         andBool #IsLegalTimestamp(Deadline)
+        ```
+
+        -   Output:
+
+            ```
+            ( [ Transfer_tokens ( txn.sender, self.address, tokensSold ) 0xtz self.tokenAddress %transfer ]
+              [ Transfer_tokens () $bought _to ],
+              { storage with xtzPool -= $bought ; tokenPool += tokensSold } )
+            ```
+
+            where `$bought` is the current total of xtz exchanged from `tokensSold` by the formula:
+
+            `(tokensSold * 997n * storage.xtzPool) / (storage.tokenPool * 1000n + (tokensSold * 997n))`
+
+        -   Summary: A buyer sends tokens to the Dexter contract and receives a corresponding amount of xtz, if the following conditions are satisfied:
+
+            1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
+            2.  the current block time must be less than the deadline
+            3.  exactly 0 tez was transferred to this contract when it was invoked
+            4.  the amount of tokens sold, when converted into xtz using the current exchange rate, is greater than `minXtzBought`
+            5.  the amount of tokens sold, when converted into xtz using the current exchange rate, it is less than or equal to the xtz owned by the Dexter contract
+
+    11. `token_to_token`
+
+        -   Input:
+
+        ```k
+        syntax EntryPointParams   ::= TokenToTokenParams
+        syntax TokenToTokenParams ::= TokenToToken(outputDexterContract : Address,
+                                                   minTokensBought      : Int,
+                                                   to                   : Address,
+                                                   tokensSold           : Int,
+                                                   deadline             : Timestamp)
+        rule welltypedParams(_IsFA2, TokenToToken(_OutputDexterContract,
+                                                   MinTokensBought,
+                                                  _To,
+                                                   TokensSold,
+                                                   Deadline))
+             => true
+        requires MinTokensBought >=Int 0
+         andBool TokensSold >=Int 0
+         andBool #IsLegalTimestamp(Deadline)
+        ```
+
+        -   Output:
+
+            ```
+            ( [ Transfer_tokens ( txn.sender, self.address, tokensSold ) 0xtz self.tokenAddress %transfer     ]
+              [ Transfer_tokens { to_, minTokensBought, deadline } $bought outputDexterContract %xtz_to_token ],
+              { storage with xtzPool -= $bought ; tokenPool += tokensSold } )
+            ```
+
+            where `$bought` is the current total of xtz exchanged from `tokensSold` by the formula:
+
+            `(tokensSold * 997n * storage.xtzPool) / (storage.tokenPool * 1000n + (tokensSold * 997n))`
+
+        -   Summary: A buyer sends tokens to the Dexter contract, converts its to xtz, and then immediately purchases a corresponding amount of tokens from a different Dexter contract (such that all transactions succeed or fail atomically), if the following conditions are satisfied:
+
+            1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
+            2.  the current block time must be less than the deadline
+            3.  exactly 0 tez was transferred to this contract when it was invoked
+            4.  the contract at address `outputDexterContract` has a well-formed `xtz_to_token` entrypoint
+            5.  the amount of tokens sold, when converted into xtz using the current exchange rate, it is less than or equal to the xtz owned by the current Dexter contract
+            6.  the contract at address `storage.tokenAddress` must have a well-formed `transfer` entry point
 
 2.  [lqt_fa12.mligo.tz](https://gitlab.com/dexter2tz/dexter2tz/-/blob/8a5792a56e0143042926c3ca8bff7d7068a541c3/lqt_fa12.mligo.tz)
 
@@ -274,16 +534,50 @@ We first define functions which build our parameter and our storage types.
 We also define a functions that serialize and deserialize our abstract parameters and state.
 
 ```k
-  syntax Data ::= #LoadDexterParams(EntryPointParams) [function, functional, no-evaluators]
-  // --------------------------------------------------------------------------------------
-  // FIXME
+  syntax Data ::= #LoadDexterParams(Bool, EntryPointParams) [function, functional]
+  // -----------------------------------------------------------------------------
+  rule #LoadDexterParams(_IsFA2, AddLiquidity(Owner, MinLqtMinted, MaxTokensDeposited, Deadline))
+    => Left Left Left Left Pair Owner Pair MinLqtMinted Pair MaxTokensDeposited Deadline
+
+  rule #LoadDexterParams(_IsFA2, Default)
+    => Left Left Left Right Unit
+
+  rule #LoadDexterParams(_IsFA2, RemoveLiquidity(To, LqtBurned, MinXtzWithdrawn, MinTokensWithdrawn, Deadline))
+    => Left Left Right Left Pair To Pair LqtBurned Pair MinXtzWithdrawn Pair MinTokensWithdrawn Deadline
+
+  rule #LoadDexterParams(_IsFA2, SetBaker(Baker, FreezeBaker))
+    => Left Left Right Right Pair Baker FreezeBaker
+
+  rule #LoadDexterParams(_IsFA2, SetLQTAddress(LqtAddress))
+    => Left Right Left Left LqtAddress
+
+  rule #LoadDexterParams(_IsFA2, SetManager(NewManager))
+    => Left Right Left Right NewManager
+
+  rule #LoadDexterParams(_IsFA2, TokenToToken(OutputDexterContract, MinTokensBought, To, TokensSold, Deadline))
+    => Left Right Right Left Pair OutputDexterContract Pair MinTokensBought Pair To Pair TokensSold Deadline
+
+  rule #LoadDexterParams(_IsFA2, TokenToXtz(To, TokensSold, MinXtzBought, Deadline))
+    => Left Right Right Right Pair To Pair TokensSold Pair MinXtzBought Deadline
+
+  rule #LoadDexterParams(_IsFA2, UpdateTokenPool)
+    => Right Left Left Unit
+
+  rule #LoadDexterParams(false,  UpdateTokenPoolInternalFA12(Balance))
+    => Right Left Right Balance
+
+  rule #LoadDexterParams(true,   UpdateTokenPoolInternalFA2(BalanceOfResult))
+    => Right Left Right BalanceOfResult
+
+  rule #LoadDexterParams(_IsFA2, XtzToToken(To, MinTokensBought, Deadline))
+    => Right Right Pair To Pair MinTokensBought Deadline
 
   syntax KItem ::= #loadDexterState(Bool, EntryPointParams)
   // ------------------------------------------------------
   rule <k> #loadDexterState(IsFA2, Params) => . ... </k>
        <stack> .Stack
             => [ pair #DexterParamType(IsFA2) #DexterStorageType(IsFA2)
-                 Pair #LoadDexterParams(Params)
+                 Pair #LoadDexterParams(IsFA2, Params)
                    Pair TokenPool
                      Pair XTZPool
                        Pair LQTTotal
