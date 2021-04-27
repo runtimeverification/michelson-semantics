@@ -628,6 +628,36 @@ We also define a functions that serialize and deserialize our abstract parameter
     requires notBool IsFA2
 ```
 
+## Putting It All Together
+
+All contract call specifications have common steps:
+
+1. Push the current runtime state to save it.
+2. Load parameters and storage onto the stack.
+3. Execute the Dexter contract code.
+4. Save the resulting storage.
+5. Reset the runtime state
+
+If all steps are completed, only the Dexter-specific storage is updated.
+
+```k
+  syntax KItem ::= "#pushState" | "#popState"
+ // -----------------------------------------
+ // TODO
+
+  syntax KItem ::= #runProof(Bool, EntryPointParams)
+ // ------------------------------------------------
+  rule <k> #runProof(IsFA2, Params)
+        => #pushState
+        ~> #loadDexterState(IsFA2, Params)
+        ~> #dexterCode(IsFA2)
+        ~> #storeDexterState(IsFA2)
+        ~> #popState
+        ...
+       </k>
+    ensures wellTypedParams(Params)
+```
+
 ## Helpers
 
 ```k
