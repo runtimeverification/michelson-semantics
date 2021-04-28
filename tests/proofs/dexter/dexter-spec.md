@@ -32,7 +32,7 @@ The contract sets its manager to the provided manager address if the following c
 If any of the conditions are not satisfied, the call fails.
 
 ```
-  claim <k> #runProof(IsFA2, SetManagerParams(NewManager)) => #ExecutePostConditions ... </k>
+  claim <k> #runProof(IsFA2, SetManagerParams(NewManager)) => Aborted(_, _, _, _) ... </k>
         <manager> CurrentManager </manager>
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <myamount> Amount </myamount>
