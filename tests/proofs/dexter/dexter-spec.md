@@ -38,7 +38,7 @@ If any of the conditions are not satisfied, the call fails.
         <myamount> Amount </myamount>
         <senderaddr> Sender </senderaddr>
     ensures Mutez2Int(Amount) =/=Int 0
-     orBool Sender ==K CurrentManager
+     orBool Sender =/=K CurrentManager
      orBool IsUpdating)
 ```
 
