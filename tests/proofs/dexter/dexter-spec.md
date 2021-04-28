@@ -38,7 +38,7 @@ The contract sets its manager to the provided manager address if the following c
 If any of the conditions are not satisfied, the call fails.
 
 ```k
-  claim <k> #runProof(_IsFA2, SetManager(NewManager)) => Aborted(?_, ?_, ?_, ?_) </k>
+  claim <k> #runProof(_IsFA2, SetManager(_NewManager)) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ( Failed ?_ ) </stack>
         <manager> CurrentManager </manager>
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
