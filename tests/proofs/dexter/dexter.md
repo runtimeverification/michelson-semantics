@@ -655,7 +655,7 @@ If all steps are completed, only the Dexter-specific storage is updated.
         ~> #popState
         ...
        </k>
-    ensures wellTypedParams(Params)
+    ensures wellTypedParams(IsFA2, Params)
 ```
 
 ## Helpers
