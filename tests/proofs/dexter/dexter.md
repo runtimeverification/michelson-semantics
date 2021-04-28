@@ -196,13 +196,6 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
             ( [ set_delegate(baker) ], { storage with freezeBaker = freezeBaker } )
             ```
 
-        -   Summary: The contract sets its delegate to the value of `baker` (and optionally freezes the baker to that particular value) if the following conditions are satisfied:
-
-            1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
-            2.  exactly 0 tez was transferred to this contract when it was invoked
-            3.  the txn sender is the `storage.manager`
-            4.  the baker is _not_ already frozen
-
     4.  `set_manager`
 
         -   Input:
