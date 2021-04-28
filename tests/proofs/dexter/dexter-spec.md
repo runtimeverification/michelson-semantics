@@ -1,7 +1,9 @@
 ```k
 module DEXTER-SPEC
   imports DEXTER-VERIFICATION
+```
 
+```k
   claim <k> now 0 => . ... </k>
         <mynow> #Timestamp(0) </mynow>
 
