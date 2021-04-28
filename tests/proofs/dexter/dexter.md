@@ -81,9 +81,9 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
 
 ```k
   syntax EntryPointParams
-  syntax Bool ::= welltypedParams(Bool, EntryPointParams) [function, functional]
+  syntax Bool ::= wellTypedParams(Bool, EntryPointParams) [function, functional]
   // ---------------------------------------------------------------------------
-  rule welltypedParams(_, _) => false [owise]
+  rule wellTypedParams(_, _) => false [owise]
 ```
 
 1.  [dexter.mligo.tz](https://gitlab.com/dexter2tz/dexter2tz/-/blob/8a5792a56e0143042926c3ca8bff7d7068a541c3/dexter.mligo.tz)
@@ -99,7 +99,7 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
                                                        minLqtMinted       : Int,
                                                        maxTokensDeposited : Int,
                                                        deadline           : Timestamp)
-            rule welltypedParams(_IsFA2, AddLiquidity(_Owner,
+            rule wellTypedParams(_IsFA2, AddLiquidity(_Owner,
                                                        MinLqtMinted,
                                                        MaxTokensDeposited,
                                                        Deadline))
@@ -141,7 +141,7 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
                                                              minXtzWithdrawn    : Mutez,
                                                              minTokensWithdrawn : Int,
                                                              deadline           : Timestamp)
-            rule welltypedParams(_IsFA2, RemoveLiquidity(_To,
+            rule wellTypedParams(_IsFA2, RemoveLiquidity(_To,
                                                           LqtBurned,
                                                           MinXtzWithdrawn,
                                                           MinTokensWithdrawn,
@@ -186,8 +186,8 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
             syntax EntryPointParams ::= SetBakerParams
             syntax SetBakerParams   ::= SetBaker(baker       : OptionData,
                                                  freezeBaker : Bool)
-            rule welltypedParams(_IsFA2, SetBaker(None,        _)) => true
-            rule welltypedParams(_IsFA2, SetBaker(Some D:Data, _)) => true requires isKeyHash(D)
+            rule wellTypedParams(_IsFA2, SetBaker(None,        _)) => true
+            rule wellTypedParams(_IsFA2, SetBaker(Some D:Data, _)) => true requires isKeyHash(D)
             ```
 
         -   Output:
@@ -210,7 +210,7 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
             ```k
             syntax EntryPointParams ::= SetManagerParams
             syntax SetManagerParams ::= SetManager(newManager : Address)
-            rule welltypedParams(_IsFA2, _:SetManagerParams) => true
+            rule wellTypedParams(_IsFA2, _:SetManagerParams) => true
             ```
 
         -   Output:
@@ -219,12 +219,6 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
             ( [], { storage with manager = new_manager } )
             ```
 
-        -   Summary: The contract sets its manager to the provided manager address if the following conditions are satisfied:
-
-            1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
-            2.  exactly 0 tez was transferred to this contract when it was invoked
-            3.  the txn sender is the `storage.manager`
-
     5.  `set_lqt_address`
 
         -   Input:
@@ -232,7 +226,7 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
             ```k
             syntax EntryPointParams    ::= SetLQTAddressParams
             syntax SetLQTAddressParams ::= SetLQTAddress(lqtAddress : Address)
-            rule welltypedParams(_IsFA2, _:SetLQTAddressParams) => true
+            rule wellTypedParams(_IsFA2, _:SetLQTAddressParams) => true
             ```
 
         -   Output:
@@ -255,7 +249,7 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
             ```k
             syntax EntryPointParams ::= DefaultParams
             syntax DefaultParams    ::= "Default"
-            rule welltypedParams(_IsFA2, Default) => true
+            rule wellTypedParams(_IsFA2, Default) => true
             ```
 
         -   Output:
@@ -275,7 +269,7 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
             ```k
             syntax EntryPointParams      ::= UpdateTokenPoolParams
             syntax UpdateTokenPoolParams ::= "UpdateTokenPool"
-            rule welltypedParams(_IsFA2, UpdateTokenPool) => true
+            rule wellTypedParams(_IsFA2, UpdateTokenPool) => true
             ```
 
         -   Output:
@@ -305,8 +299,8 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
             syntax UpdateTokenPoolInternalFA12Params ::= UpdateTokenPoolInternalFA12(balance         : Int)
             syntax UpdateTokenPoolInternalFA2Params  ::= UpdateTokenPoolInternalFA2 (balanceOfResult : InternalList)
 
-            rule welltypedParams(IsFA2, UpdateTokenPoolInternalFA12(Balance))         => true requires (notBool IsFA2) andBool Balance >=Int 0
-            rule welltypedParams(IsFA2, UpdateTokenPoolInternalFA2 (BalanceOfResult)) => true requires          IsFA2  andBool validBalanceOfParams(BalanceOfResult)
+            rule wellTypedParams(IsFA2, UpdateTokenPoolInternalFA12(Balance))         => true requires (notBool IsFA2) andBool Balance >=Int 0
+            rule wellTypedParams(IsFA2, UpdateTokenPoolInternalFA2 (BalanceOfResult)) => true requires          IsFA2  andBool validBalanceOfParams(BalanceOfResult)
 
             syntax Bool ::= validBalanceOfParams(InternalList) [function, functional]
                           | validBalanceOfEntry(Data)          [function, functional]
@@ -344,7 +338,7 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
         syntax XtzToTokenParams ::= XtzToToken(to              : Address,
                                                minTokensBought : Int,
                                                deadline        : Timestamp)
-        rule welltypedParams(_IsFA2, XtzToToken(_To,
+        rule wellTypedParams(_IsFA2, XtzToToken(_To,
                                                  MinTokensBought,
                                                  Deadline))
               => true
@@ -380,7 +374,7 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
                                                tokensSold   : Int,
                                                minXtzBought : Mutez,
                                                deadline     : Timestamp)
-        rule welltypedParams(_IsFA2, TokenToXtz(_To,
+        rule wellTypedParams(_IsFA2, TokenToXtz(_To,
                                                  TokensSold,
                                                  MinXtzBought,
                                                  Deadline))
@@ -421,7 +415,7 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
                                                    to                   : Address,
                                                    tokensSold           : Int,
                                                    deadline             : Timestamp)
-        rule welltypedParams(_IsFA2, TokenToToken(_OutputDexterContract,
+        rule wellTypedParams(_IsFA2, TokenToToken(_OutputDexterContract,
                                                    MinTokensBought,
                                                   _To,
                                                    TokensSold,
@@ -614,6 +608,7 @@ We also define a functions that serialize and deserialize our abstract parameter
                              Pair Manager
                                Pair TokenContract
                                  VersionSpecificData ]
+            => .Stack
        </stack>
        <tokenPool>               _ => TokenPool           </tokenPool>
        <xtzPool>                 _ => XTZPool             </xtzPool>
@@ -632,6 +627,34 @@ We also define a functions that serialize and deserialize our abstract parameter
   rule <k> #storeDexterState(IsFA2, LQTContract) => .K ... </k>
        <lqtAddress> _ => LQTContract </lqtAddress>
     requires notBool IsFA2
+```
+
+If the contract execution fails, storage is not updated.
+
+```k
+  rule <k> Aborted(_, _, _, _) ~> (#storeDexterState(_) => .) ... </k>
+```
+
+## Putting It All Together
+
+All contract call specifications have common steps:
+
+1. Load parameters and storage onto the stack.
+2. Execute the Dexter contract code.
+3. Save the resulting storage.
+
+If all steps are completed, only the Dexter-specific storage is updated.
+
+```k
+  syntax KItem ::= #runProof(Bool, EntryPointParams)
+ // ------------------------------------------------
+  rule <k> #runProof(IsFA2, Params)
+        => #loadDexterState(IsFA2, Params)
+        ~> #dexterCode(IsFA2)
+        ~> #storeDexterState(IsFA2)
+        ...
+       </k>
+    ensures wellTypedParams(IsFA2, Params)
 ```
 
 ## Epilogue
