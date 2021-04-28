@@ -24,7 +24,7 @@ The contract sets its manager to the provided manager address if the following c
 3.  the txn sender is the `storage.manager`
 
 ```
-  claim <k> #runProof(IsFA2, SetManagerParams(NewManager)) => . ... </k>
+  claim <k> #runProof(IsFA2, SetManager(NewManager)) => . </k>
         <manager> Sender => NewManager </manager>
         <selfIsUpdatingTokenPool> true </selfIsUpdatingTokenPool>
         <myamount> Amount </myamount>
@@ -35,14 +35,14 @@ The contract sets its manager to the provided manager address if the following c
 If any of the conditions are not satisfied, the call fails.
 
 ```
-  claim <k> #runProof(IsFA2, SetManagerParams(NewManager)) => Aborted(_, _, _, _) ... </k>
+  claim <k> #runProof(IsFA2, SetManager(NewManager)) => Aborted(_, _, _, _) ... </k>
         <manager> CurrentManager </manager>
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <myamount> Amount </myamount>
         <senderaddr> Sender </senderaddr>
     ensures Mutez2Int(Amount) =/=Int 0
      orBool Sender =/=K CurrentManager
-     orBool IsUpdating)
+     orBool IsUpdating
 ```
 
 ```k
