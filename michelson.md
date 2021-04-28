@@ -1028,11 +1028,9 @@ We define `COMPARE` in terms of a `#DoCompare` function.
        #else                        -1
        #fi #fi
 
-  rule #DoCompare(I1:Int, I2:Int)
-    =>       #if I1  <Int I2 #then -1
-       #else #if I1 ==Int I2 #then  0
-       #else                        1
-       #fi #fi
+  rule #DoCompare(I1:Int, I2:Int) => -1 requires I1  <Int I2
+  rule #DoCompare(I1:Int, I2:Int) =>  0 requires I1 ==Int I2
+  rule #DoCompare(I1:Int, I2:Int) =>  1 requires I1 >Int I2
 
   rule #DoCompare(S1:String, S2:String)
     =>       #if S1  <String S2 #then -1
