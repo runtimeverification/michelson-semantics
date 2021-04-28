@@ -629,6 +629,12 @@ We also define a functions that serialize and deserialize our abstract parameter
     requires notBool IsFA2
 ```
 
+If the contract execution fails, storage is not updated.
+
+```k
+  rule <k> Aborted(_, _, _, _) ~> (#storeDexterState(_) => .) ... </k>
+```
+
 ## Putting It All Together
 
 All contract call specifications have common steps:
