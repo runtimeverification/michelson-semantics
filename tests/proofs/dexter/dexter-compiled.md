@@ -2,7 +2,7 @@
 requires "../../../pretty-syntax.md"
 module DEXTER-COMPILED
   imports MICHELSON-PRETTY-SYNTAX
-  imports BOOL
+  imports MICHELSON
 ```
 
 # Purpose
@@ -17,11 +17,12 @@ https://gitlab.com/dexter2tz/dexter2tz/-/blob/8a5792a56e0143042926c3ca8bff7d7068
 
 ```k
   syntax Data ::= "#dexterCodeFA12" | "#dexterCodeFA2"
-                | #dexterCode ( Bool ) [function, functional]
   // --------------------------------------------------------
 
-  rule #dexterCode(IsFA2) => #dexterCodeFA2  requires         IsFA2
-  rule #dexterCode(IsFA2) => #dexterCodeFA12 requires notBool IsFA2
+  syntax KItem ::= #dexterCode ( Bool )
+  // ----------------------------------
+  rule <k> #dexterCode(IsFA2) => #dexterCodeFA2  ... </k> requires         IsFA2
+  rule <k> #dexterCode(IsFA2) => #dexterCodeFA12 ... </k> requires notBool IsFA2
 ```
 
 ## Annotations

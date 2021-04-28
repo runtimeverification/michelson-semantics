@@ -23,26 +23,27 @@ The contract sets its manager to the provided manager address if the following c
 2.  exactly 0 tez was transferred to this contract when it was invoked
 3.  the txn sender is the `storage.manager`
 
-```
-  claim <k> #runProof(IsFA2, SetManager(NewManager)) => . </k>
+```k
+  claim <k> #runProof(_IsFA2, SetManager(NewManager)) => . </k>
+        <stack> .Stack </stack>
         <manager> Sender => NewManager </manager>
-        <selfIsUpdatingTokenPool> true </selfIsUpdatingTokenPool>
-        <myamount> Amount </myamount>
+        <selfIsUpdatingTokenPool> false </selfIsUpdatingTokenPool>
+        <myamount> #Mutez(Amount) </myamount>
         <senderaddr> Sender </senderaddr>
-    ensures Mutez2Int(Amount) ==Int 0
+    requires Amount ==Int 0
 ```
 
 If any of the conditions are not satisfied, the call fails.
 
-```
-  claim <k> #runProof(IsFA2, SetManager(NewManager)) => Aborted(_, _, _, _) ... </k>
+```disabled
+  claim <k> #runProof(IsFA2, SetManager(NewManager)) => Aborted(_, _, _, _) </k>
         <manager> CurrentManager </manager>
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
-        <myamount> Amount </myamount>
+        <myamount> #Mutez(Amount) </myamount>
         <senderaddr> Sender </senderaddr>
-    ensures Mutez2Int(Amount) =/=Int 0
-     orBool Sender =/=K CurrentManager
-     orBool IsUpdating
+    requires Amount =/=Int 0
+      orBool Sender =/=K CurrentManager
+      orBool IsUpdating
 ```
 
 ```k

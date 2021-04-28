@@ -633,19 +633,13 @@ We also define a functions that serialize and deserialize our abstract parameter
 
 All contract call specifications have common steps:
 
-1. Push the current runtime state to save it.
-2. Load parameters and storage onto the stack.
-3. Execute the Dexter contract code.
-4. Save the resulting storage.
-5. Reset the runtime state
+1. Load parameters and storage onto the stack.
+2. Execute the Dexter contract code.
+3. Save the resulting storage.
 
 If all steps are completed, only the Dexter-specific storage is updated.
 
 ```k
-  syntax KItem ::= "#pushState" | "#popState"
- // -----------------------------------------
- // TODO
-
   syntax KItem ::= #runProof(Bool, EntryPointParams)
  // ------------------------------------------------
   rule <k> #runProof(IsFA2, Params)
@@ -655,15 +649,6 @@ If all steps are completed, only the Dexter-specific storage is updated.
         ...
        </k>
     ensures wellTypedParams(IsFA2, Params)
-```
-
-## Helpers
-
-```k
-  syntax Int ::= Mutez2Int(Mutez) [function, functional]
- // ----------------------------------------------------
-  rule Mutez2Int(#Mutez(I)) => I
-  rule Mutez2Int(I:Int)     => I
 ```
 
 ## Epilogue
