@@ -608,6 +608,7 @@ We also define a functions that serialize and deserialize our abstract parameter
                              Pair Manager
                                Pair TokenContract
                                  VersionSpecificData ]
+            => .Stack
        </stack>
        <tokenPool>               _ => TokenPool           </tokenPool>
        <xtzPool>                 _ => XTZPool             </xtzPool>
@@ -648,11 +649,9 @@ If all steps are completed, only the Dexter-specific storage is updated.
   syntax KItem ::= #runProof(Bool, EntryPointParams)
  // ------------------------------------------------
   rule <k> #runProof(IsFA2, Params)
-        => #pushState
-        ~> #loadDexterState(IsFA2, Params)
+        => #loadDexterState(IsFA2, Params)
         ~> #dexterCode(IsFA2)
         ~> #storeDexterState(IsFA2)
-        ~> #popState
         ...
        </k>
     ensures wellTypedParams(IsFA2, Params)
