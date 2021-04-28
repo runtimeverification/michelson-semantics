@@ -5,10 +5,13 @@ module DEXTER-SPEC
   claim <k> now 0 => . ... </k>
         <mynow> #Timestamp(0) </mynow>
 
-  claim <k> (now 0 => .) ~> #dexterCode ... </k>
+  claim <k> (now 0 => .) ~> #dexterCode(true) ... </k>
         <mynow> #Timestamp(0) </mynow>
 
-  claim <k> (now 0 => .) ~> #dexterCodeFA2 ... </k>
+  claim <k> (now 0 => .) ~> #dexterCode(false) ... </k>
+        <mynow> #Timestamp(0) </mynow>
+
+  claim <k> (now 0 => .) ~> #dexterCode(_) ... </k>
         <mynow> #Timestamp(0) </mynow>
 ```
 
