@@ -75,7 +75,19 @@ The contract sets its delegate to the value of `baker` (and optionally freezes t
 If any of the conditions are not satisfied, the call fails.
 
 ```k
-  claim <k> #runProof(_IsFA2, SetBaker(_Baker, _NewFreezeBaker)) => Aborted(?_, ?_, ?_, ?_) </k>
+  claim <k> #runProof(true, SetBaker(_Baker, _NewFreezeBaker)) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ( Failed ?_ ) </stack>
+        <manager> CurrentManager </manager>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <myamount> #Mutez(Amount) </myamount>
+        <senderaddr> Sender </senderaddr>
+        <freezeBaker> FreezeBaker </freezeBaker>
+    requires Amount >Int 0
+      orBool IsUpdating
+      orBool FreezeBaker
+      orBool Sender =/=K CurrentManager
+
+  claim <k> #runProof(false, SetBaker(_Baker, _NewFreezeBaker)) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ( Failed ?_ ) </stack>
         <manager> CurrentManager </manager>
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
