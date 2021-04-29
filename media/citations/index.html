@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="A Michelson semantics for Tezos built using the K Framework."
+/>
+<meta name="keywords" content="runtime, verification, rv, k" />
+<meta name="author" content="Michelson Semantics | Runtime Verification Inc" />
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../assets/img/favicon.ico" /> -->
+
+<title>Michelson Semantics | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../index.html"> Michelson Semantics </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/michelson-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../">Homepage</a>
+      <a class="bd-toc-link" href="../../INSTALL">Install</a>
+      <a class="bd-toc-link" href="../../USER_GUIDE">User Guide</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-9 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><hr>
+<p>csl: media/ieee.csl
+references:</p>
+<ul>
+<li>
+<p>id: bogdanas-rosu-k-java
+type: paper-conference
+author:</p>
+<ul>
+<li>family: Bogd&#x103;na&#x15F;
+given: Denis</li>
+<li>family: Ro&#x15F;u
+given: Grigore
+issued:</li>
+<li>year: 2015
+title: &apos;<span class="nocase">K-Java: A Complete Semantics of Java</span>&apos;
+container-title: Proceedings of the 42nd symposium on principles of programming
+languages (popl&#x2019;15)
+publisher: ACM
+page: 445-456
+DOI: <a href="http://dx.doi.org/10.1145/2676726.2676982" target="_blank" rel="noopener">http://dx.doi.org/10.1145/2676726.2676982</a></li>
+</ul>
+</li>
+<li>
+<p>id: hathhorn-ellison-rosu-k-c
+type: paper-conference
+author:</p>
+<ul>
+<li>family: Hathhorn
+given: Chris</li>
+<li>family: Ellison
+given: Chucky</li>
+<li>family: Ro&#x15F;u
+given: Grigore
+issued:</li>
+<li>year: 2015
+title: Defining the undefinedness of c
+container-title: Proceedings of the 36th acm sigplan conference on programming language
+design and implementation (pldi&#x2019;15)
+publisher: ACM
+page: 336-345
+DOI: <a href="http://dx.doi.org/10.1145/2813885.2737979" target="_blank" rel="noopener">http://dx.doi.org/10.1145/2813885.2737979</a></li>
+</ul>
+</li>
+<li>
+<p>id: park-stefanescu-rosu-k-js
+type: paper-conference
+author:</p>
+<ul>
+<li>family: Park
+given: Daejun</li>
+<li>family: &#x15E;tef&#x103;nescu
+given: Andrei</li>
+<li>family: Ro&#x15F;u
+given: Grigore
+issued:</li>
+<li>year: 2015
+title: &apos;KJS: A complete formal semantics of JavaScript&apos;
+title-short: KJS
+container-title: Proceedings of the 36th acm sigplan conference on programming language
+design and implementation (pldi&#x2019;15)
+publisher: ACM
+page: 346-356
+DOI: <a href="http://dx.doi.org/10.1145/2737924.2737991" target="_blank" rel="noopener">http://dx.doi.org/10.1145/2737924.2737991</a></li>
+</ul>
+</li>
+<li>
+<p>id: hildenbrandt-saxena-zhu-rosu-k-evm
+type: paper-conference
+author:</p>
+<ul>
+<li>family: Hildenbrandt
+given: Everett</li>
+<li>family: Saxena
+given: Manasvi</li>
+<li>family: Zhu
+given: Xiaoran</li>
+<li>family: Rodrigues
+given: Nishant</li>
+<li>family: Daian
+given: Philip</li>
+<li>family: Guth
+given: Dwight</li>
+<li>family: Moore
+given: Brandon</li>
+<li>family: Zhang
+given: Yi</li>
+<li>family: Park
+given: Daejun</li>
+<li>family: &#x15E;tef&#x103;nescu
+given: Andrei</li>
+<li>family: Ro&#x15F;u
+given: Grigore
+issued:</li>
+<li>year: 2018
+title: &apos;KEVM: A complete semantics of the ethereum virtual machine&apos;
+title-short: KEVM
+container-title: 2018 ieee 31st computer security foundations symposium
+publisher: IEEE
+page: 204-217</li>
+</ul>
+</li>
+<li>
+<p>id: kheradmand-rosu-k-p4
+type: report
+author:</p>
+<ul>
+<li>family: Kheradmand
+given: Ali</li>
+<li>family: Ro&#x15F;u
+given: Grigore
+issued:</li>
+<li>year: 2018
+title: &apos;P4K: A formal semantics of p4 and applications&apos;
+title-short: P4K
+publisher: University of Illinois at Urbana-Champaign
+number: <a href="https://arxiv.org/abs/1804.01468" target="_blank" rel="noopener">https://arxiv.org/abs/1804.01468</a></li>
+</ul>
+</li>
+<li>
+<p>id: kasampalis-guth-moore-rosu-johnson-k-iele
+type: report
+author:</p>
+<ul>
+<li>family: Kasampalis
+given: Theodoros</li>
+<li>family: Guth
+given: Dwight</li>
+<li>family: Moore
+given: Brandon</li>
+<li>family: Serbanuta
+given: Traian</li>
+<li>family: Serbanuta
+given: Virgil</li>
+<li>family: Filaretti
+given: Daniele</li>
+<li>family: Rosu
+given: Grigore</li>
+<li>family: Johnson
+given: Ralph
+issued:</li>
+<li>year: 2018
+title: &apos;IELE: An intermediate-level blockchain language designed and implemented
+using formal semantics&apos;
+title-short: IELE
+publisher: University of Illinois
+number: <a href="http://hdl.handle.net/2142/100320" target="_blank" rel="noopener">http://hdl.handle.net/2142/100320</a></li>
+</ul>
+</li>
+<li>
+<p>id: stefanescu-park-yuwen-li-rosu-reachability-prover
+type: paper-conference
+author:</p>
+<ul>
+<li>family: &#x15E;tef&#x103;nescu
+given: Andrei</li>
+<li>family: Park
+given: Daejun</li>
+<li>family: Yuwen
+given: Shijiao</li>
+<li>family: Li
+given: Yilong</li>
+<li>family: Ro&#x15F;u
+given: Grigore
+issued:</li>
+<li>year: 2016
+month: 11
+title: Semantics-based program verifiers for all languages
+container-title: Proceedings of the 31th conference on object-oriented programming,
+systems, languages, and applications (oopsla&#x2019;16)
+publisher: ACM
+page: 74-91
+DOI: <a href="http://dx.doi.org/10.1145/2983990.2984027" target="_blank" rel="noopener">http://dx.doi.org/10.1145/2983990.2984027</a></li>
+</ul>
+</li>
+<li>
+<p>id: alpuente-cuenca-ortega-escobar-meseguer
+type: article-journal
+author:</p>
+<ul>
+<li>family: Alpuente
+given: Mar&#xED;a</li>
+<li>family: Cuenca-Ortega
+given: Angel</li>
+<li>family: Escobar
+given: Santiago</li>
+<li>family: Meseguer
+given: Jos&#xE9;
+issued:</li>
+<li>year: 2016
+title: Partial evaluation of order-sorted equational programs modulo axioms
+container-title: CoRR
+volume: abs/1608.03424
+URL: <a href="http://arxiv.org/abs/1608.03424" target="_blank" rel="noopener">http://arxiv.org/abs/1608.03424</a></li>
+</ul>
+</li>
+<li>
+<p>id: meseguer-rusu-generalized-rewrite-coherence-completion
+type: paper-conference
+author:</p>
+<ul>
+<li>family: Meseguer
+given: Jos&#xE9;
+editor:</li>
+<li>family: Rusu
+given: Vlad
+issued:</li>
+<li>year: &apos;2018&apos;
+title: Generalized rewrite theories and coherence completion
+container-title: Rewriting logic and its applications - 12th international workshop,
+wrla 2018, held as a satellite event of etaps, 2018, proceedings
+collection-title: Lecture notes in computer science (including subseries lecture
+notes in artificial intelligence and lecture notes in bioinformatics)
+publisher: Springer-Verlag
+page: &apos;164-183&apos;
+keyword: Coherence, Rewriting, Symbolic execution, Variants
+DOI: 10.1007/978-3-319-99840-4_10
+ISBN: &apos;9783319998398&apos;</li>
+</ul>
+</li>
+<li>
+<p>id: rossberg-web-up-to-speed
+type: article-journal
+author:</p>
+<ul>
+<li>family: Rossberg
+given: Andreas</li>
+<li>family: Titzer
+given: Ben L.</li>
+<li>family: Haas
+given: Andreas</li>
+<li>family: Schuff
+given: Derek L.</li>
+<li>family: Gohman
+given: Dan</li>
+<li>family: Wagner
+given: Luke</li>
+<li>family: Zakai
+given: Alon</li>
+<li>family: Bastien
+given: J. F.</li>
+<li>family: Holman
+given: Michael
+issued:</li>
+<li>year: 2018
+title: Bringing the web up to speed with webassembly.
+container-title: Communications of the ACM
+page: 107 - 115
+volume: &apos;61&apos;
+issue: &apos;12&apos;
+abstract: This article discusses the implementation of the low-level computer programming
+language for software known as WebAssembly. The authors comment on the use of
+WebAssembly in advanced web applications, including three-dimensional visualization,
+audio and video software, and gaming. The benefits of WebAssembly include its
+ability to function independent of the computer hardware and operating system
+on which it runs.
+keyword: PROGRAMMING languages, ASSEMBLY languages (Electronic computers), COMPUTER
+operating systems, COMPUTER software, THREE-dimensional imaging, WEB-based user
+interfaces
+ISSN: &apos;00010782&apos;</li>
+</ul>
+</li>
+</ul>
+<p>...</p>
+</body></html></div>
+        </main>
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Typist/1.2/typist.min.js"></script>
+    <script src="../../assets/js/index.js"></script>
+  </body>
+</html>
