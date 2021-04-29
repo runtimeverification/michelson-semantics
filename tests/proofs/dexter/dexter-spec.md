@@ -61,7 +61,7 @@ The contract sets its delegate to the value of `baker` (and optionally freezes t
 FIXME: This claim is incomplete because it depends on the `operations` cell which we do not have yet.
 
 ```k
-  claim <k> #runProof(_IsFA2, SetBaker(_Baker, FreezeBaker)) => . </k>
+  claim <k> #runProof(_IsFA2, SetBaker(Baker, FreezeBaker)) => . </k>
         <stack> .Stack </stack>
         <manager> Sender </manager>
         <selfIsUpdatingTokenPool> false </selfIsUpdatingTokenPool>
@@ -69,6 +69,7 @@ FIXME: This claim is incomplete because it depends on the `operations` cell whic
         <senderaddr> Sender </senderaddr>
         <freezeBaker> false => FreezeBaker </freezeBaker>
         <nonce> #Nonce(N => N +Int 1) </nonce>
+        <operations> _ => [ Set_delegate Baker N:Int ] ;; .InternalList </operations>
     requires Amount ==Int 0
 ```
 
