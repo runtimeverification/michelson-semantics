@@ -88,7 +88,6 @@ If any of the conditions are not satisfied, the call fails.
       orBool Sender =/=K CurrentManager
 ```
 
-
 ```k
 endmodule
 ```
