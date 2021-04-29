@@ -59,8 +59,6 @@ The contract sets its delegate to the value of `baker` (and optionally freezes t
 3.  the txn sender is the `storage.manager`
 4.  the baker is _not_ already frozen
 
-FIXME: This claim is incomplete because it depends on the `operations` cell which we do not have yet.
-
 ```k
   claim <k> #runProof(_IsFA2, SetBaker(Baker, FreezeBaker)) => . </k>
         <stack> .Stack </stack>
