@@ -652,7 +652,6 @@ If all steps are completed, only the Dexter-specific storage is updated.
         ~> #storeDexterState(IsFA2)
         ...
        </k>
-       <operations> _ => .InternalList </operations>
     ensures wellTypedParams(IsFA2, Params)
 ```
 
