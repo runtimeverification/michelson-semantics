@@ -60,7 +60,7 @@ The contract sets its delegate to the value of `baker` (and optionally freezes t
 
 FIXME: This claim is incomplete because it depends on the `operations` cell which we do not have yet.
 
-```
+```k
   claim <k> #runProof(_IsFA2, SetBaker(_Baker, FreezeBaker)) => . </k>
         <stack> .Stack </stack>
         <manager> Sender </manager>
