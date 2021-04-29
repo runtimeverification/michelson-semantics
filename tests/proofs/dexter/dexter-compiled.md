@@ -2,12 +2,13 @@
 requires "../../../pretty-syntax.md"
 module DEXTER-COMPILED
   imports MICHELSON-PRETTY-SYNTAX
+  imports MICHELSON
 ```
 
 # Purpose
 
 This module contains the compiled Dexter code for version FA1.2 and FA2.
-The macros `#dexterCode` and `#dexterCodeFA2` translate to the respective Michelson code.
+The macros `#dexterCodeFA12` and `#dexterCodeFA2` translate to the respective Michelson code.
 We have pasted the code verbatim:
 https://gitlab.com/dexter2tz/dexter2tz/-/blob/8a5792a56e0143042926c3ca8bff7d7068a541c3/dexter.mligo.tz
 https://gitlab.com/dexter2tz/dexter2tz/-/blob/8a5792a56e0143042926c3ca8bff7d7068a541c3/dexter.fa2.mligo.tz
@@ -15,7 +16,13 @@ https://gitlab.com/dexter2tz/dexter2tz/-/blob/8a5792a56e0143042926c3ca8bff7d7068
 # The Dexter Smart Contract Code
 
 ```k
-  syntax Data ::= "#dexterCode" | "#dexterCodeFA2"
+  syntax Data ::= "#dexterCodeFA12" | "#dexterCodeFA2"
+  // --------------------------------------------------------
+
+  syntax KItem ::= #dexterCode ( Bool )
+  // ----------------------------------
+  rule <k> #dexterCode(IsFA2) => #dexterCodeFA2  ... </k> requires         IsFA2
+  rule <k> #dexterCode(IsFA2) => #dexterCodeFA12 ... </k> requires notBool IsFA2
 ```
 
 ## Annotations
@@ -53,15 +60,19 @@ Since we work with specific code that contains a finite number of annotations, w
 ## FA1.2
 
 ```k
-  rule #dexterCode
+  rule #dexterCodeFA12
     => { DUP ;
          CDR ;
          SWAP ;
          CAR ;
          IF_LEFT
+           // Left
            { IF_LEFT
+               // Left Left
                { IF_LEFT
+                   // Left Left Left
                    { IF_LEFT
+                       // Left Left Left Left
                        { DUP ;
                          CDR ;
                          SWAP ;
@@ -272,6 +283,7 @@ Since we work with specific code that contains a finite number of annotations, w
                                              DIG 2 ;
                                              CONS ;
                                              PAIR } } } } }
+                       // Left Left Left Right
                        { DROP ;
                          DUP ;
                          CDR ;
@@ -295,7 +307,9 @@ Since we work with specific code that contains a finite number of annotations, w
                               PAIR ;
                               NIL operation ;
                               PAIR } } }
+                   // Left Left Right
                    { IF_LEFT
+                       // Left Left Right Left
                        { DUP ;
                          CDR ;
                          SWAP ;
@@ -528,6 +542,7 @@ Since we work with specific code that contains a finite number of annotations, w
                                                   DIG 2 ;
                                                   CONS ;
                                                   PAIR } } } } } }
+                       // Left Left Right Right
                        { DUP ;
                          CDR ;
                          SWAP ;
@@ -606,8 +621,11 @@ Since we work with specific code that contains a finite number of annotations, w
                                              SET_DELEGATE ;
                                              CONS ;
                                              PAIR } } } } } } }
+               // Left Right
                { IF_LEFT
+                   // Left Right Left
                    { IF_LEFT
+                       // Left Right Left Left
                        { SWAP ;
                          DUP ;
                          DUG 2 ;
@@ -704,6 +722,7 @@ Since we work with specific code that contains a finite number of annotations, w
                                              PAIR ;
                                              NIL operation ;
                                              PAIR } } } } }
+                       // Left Right Left Right
                        { SWAP ;
                          DUP ;
                          DUG 2 ;
@@ -776,7 +795,9 @@ Since we work with specific code that contains a finite number of annotations, w
                                         PAIR ;
                                         NIL operation ;
                                         PAIR } } } } }
+                   // Left Right Right
                    { IF_LEFT
+                       // Left Right Right Left
                        { DUP ;
                          CDR ;
                          SWAP ;
@@ -931,6 +952,7 @@ Since we work with specific code that contains a finite number of annotations, w
                                         DIG 2 ;
                                         CONS ;
                                         PAIR } } } }
+                       // Left Right Right Right
                        { DUP ;
                          CDR ;
                          SWAP ;
@@ -1077,8 +1099,11 @@ Since we work with specific code that contains a finite number of annotations, w
                                         DIG 2 ;
                                         CONS ;
                                         PAIR } } } } } } }
+           // Right
            { IF_LEFT
+               // Right Left
                { IF_LEFT
+                   // Right Left Left
                    { DROP ;
                      SOURCE ;
                      SENDER ;
@@ -1144,6 +1169,7 @@ Since we work with specific code that contains a finite number of annotations, w
                                     DIG 2 ;
                                     CONS ;
                                     PAIR } } } }
+                   // Right Left Right
                    { SWAP ;
                      DUP ;
                      DUG 2 ;
@@ -1201,6 +1227,7 @@ Since we work with specific code that contains a finite number of annotations, w
                                PAIR ;
                                NIL operation ;
                                PAIR } } } }
+               // Right Right
                { DUP ;
                  CDR ;
                  SWAP ;
