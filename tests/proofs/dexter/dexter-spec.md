@@ -75,7 +75,7 @@ FIXME: This claim is incomplete because it depends on the `operations` cell whic
 If any of the conditions are not satisfied, the call fails.
 
 ```k
-  claim <k> #runProof(true, SetBaker(_Baker, _NewFreezeBaker)) => Aborted(?_, ?_, ?_, ?_) </k>
+  claim <k> #runProof(_IsFA2, SetBaker(_Baker, _NewFreezeBaker)) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ( Failed ?_ ) </stack>
         <manager> CurrentManager </manager>
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
