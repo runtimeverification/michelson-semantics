@@ -88,6 +88,43 @@ If any of the conditions are not satisfied, the call fails.
       orBool Sender =/=K CurrentManager
 ```
 
+## Set LQT Address
+
+The contract sets its liquidity pool adddress to the provided address if the following conditions are satisifed:
+
+1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
+2.  exactly 0 tez was transferred to this contract when it was invoked
+3.  the txn sender is the `storage.manager`
+4.  the liquidity pool address has _not_ already been set (i.e. `storage.lqtAddress == tz1Ke2h7sDdakHJQh8WX4Z372du1KChsksyU`)
+
+```k
+  claim <k> #runProof(_IsFA2, SetLQTAddress(NewLQTAddress)) => . </k>
+        <stack> .Stack </stack>
+        <manager> Sender </manager>
+        <selfIsUpdatingTokenPool> false </selfIsUpdatingTokenPool>
+        <myamount> #Mutez(Amount) </myamount>
+        <senderaddr> Sender </senderaddr>
+        <lqtAddress> LQTAddress => NewLQTAddress </lqtAddress>
+    requires Amount ==Int 0
+     andBool LQTAddress ==K #Address("tz1Ke2h7sDdakHJQh8WX4Z372du1KChsksyU")
+```
+
+If any of the conditions are not satisfied, the call fails.
+
+```k
+  claim <k> #runProof(_IsFA2, SetLQTAddress(_NewLQTAddress)) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ( Failed ?_ ) </stack>
+        <manager> CurrentManager </manager>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <myamount> #Mutez(Amount) </myamount>
+        <senderaddr> Sender </senderaddr>
+        <lqtAddress> LQTAddress </lqtAddress>
+    requires Amount >Int 0
+      orBool IsUpdating
+      orBool Sender =/=K CurrentManager
+      orBool LQTAddress =/=K #Address("tz1Ke2h7sDdakHJQh8WX4Z372du1KChsksyU")
+```
+
 ```k
 endmodule
 ```
