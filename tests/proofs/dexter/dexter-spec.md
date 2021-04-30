@@ -32,7 +32,6 @@ The contract sets its manager to the provided manager address if the following c
         <selfIsUpdatingTokenPool> false </selfIsUpdatingTokenPool>
         <myamount> #Mutez(Amount) </myamount>
         <senderaddr> Sender </senderaddr>
-        <operations> _ => .InternalList </operations>
     requires Amount ==Int 0
 ```
 
