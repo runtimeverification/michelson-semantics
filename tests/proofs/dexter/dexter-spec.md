@@ -32,6 +32,7 @@ The contract sets its manager to the provided manager address if the following c
         <selfIsUpdatingTokenPool> false </selfIsUpdatingTokenPool>
         <myamount> #Mutez(Amount) </myamount>
         <senderaddr> Sender </senderaddr>
+        <operations> _ => .InternalList </operations>
     requires Amount ==Int 0
 ```
 
@@ -58,10 +59,8 @@ The contract sets its delegate to the value of `baker` (and optionally freezes t
 3.  the txn sender is the `storage.manager`
 4.  the baker is _not_ already frozen
 
-FIXME: This claim is incomplete because it depends on the `operations` cell which we do not have yet.
-
 ```k
-  claim <k> #runProof(_IsFA2, SetBaker(_Baker, FreezeBaker)) => . </k>
+  claim <k> #runProof(_IsFA2, SetBaker(Baker, FreezeBaker)) => . </k>
         <stack> .Stack </stack>
         <manager> Sender </manager>
         <selfIsUpdatingTokenPool> false </selfIsUpdatingTokenPool>
@@ -69,6 +68,7 @@ FIXME: This claim is incomplete because it depends on the `operations` cell whic
         <senderaddr> Sender </senderaddr>
         <freezeBaker> false => FreezeBaker </freezeBaker>
         <nonce> #Nonce(N => N +Int 1) </nonce>
+        <operations> _ => [ Set_delegate Baker N:Int ] ;; .InternalList </operations>
     requires Amount ==Int 0
 ```
 
@@ -87,7 +87,6 @@ If any of the conditions are not satisfied, the call fails.
       orBool FreezeBaker
       orBool Sender =/=K CurrentManager
 ```
-
 
 ```k
 endmodule

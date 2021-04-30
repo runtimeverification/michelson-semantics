@@ -57,6 +57,9 @@ We may abbreviate `entrypoint_input_type` to just `input` when it is clear from 
 In our proofs, we will use the following abstract representation of the Dexter contract storage state.
 For simplicity, we assume the that the `tokenId` field is always present, though the verification of the FA12 version of the contract will not touch this field.
 
+Calling functions produces not only storage changes but also a list of callbacks.
+We serialize these to the `<operations>` cell for ease of writing specifications.
+
 ```k
 configuration <dexterTop>
                 <michelsonTop/>
@@ -71,6 +74,7 @@ configuration <dexterTop>
                   <lqtAddress>              #Address("")                                     </lqtAddress>
                   <tokenId>                 0                                                </tokenId>
                 </storage>
+                <operations> .InternalList </operations>
               </dexterTop>
 ```
 
@@ -592,7 +596,7 @@ We also define a functions that serialize and deserialize our abstract parameter
   // -------------------------------------------
   rule <k> #storeDexterState(IsFA2) => #storeDexterState(IsFA2, VersionSpecificData) ... </k>
        <stack> [ pair list operation StorageType:TypeName
-                 Pair _OpList
+                 Pair OpList
                    Pair TokenPool
                      Pair XTZPool
                        Pair LQTTotal
@@ -610,6 +614,7 @@ We also define a functions that serialize and deserialize our abstract parameter
        <freezeBaker>             _ => IsBakerFrozen       </freezeBaker>
        <manager>                 _ => Manager             </manager>
        <tokenAddress>            _ => TokenContract       </tokenAddress>
+       <operations>              _ => OpList              </operations>
     requires StorageType ==K #DexterStorageType(IsFA2)
 
   rule <k> #storeDexterState(IsFA2, Pair TokenId LQTContract) => .K ... </k>
