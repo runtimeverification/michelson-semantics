@@ -124,6 +124,33 @@ If any of the conditions are not satisfied, the call fails.
       orBool LQTAddress =/=K #Address("tz1Ke2h7sDdakHJQh8WX4Z372du1KChsksyU")
 ```
 
+## Update Token Pool
+
+The contract queries its underlying token contract for its own token balance if the following conditions are satisfied:
+
+1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
+2.  exactly 0 tez was transferred to this contract when it was invoked
+3.  the txn sender must be equal to the txn source
+4.  if we are running the FA2 version of Dexter, then check that the contract at address `storage.tokenAddress` has a well-typed FA2 `balance_of` entrypoint;
+    otherwise, check that the contract at address `storage.tokenAddress` has a well-typed FA12 `get_balance` entrypoint.
+
+```k
+  claim <k> #runProof(IsFA2, UpdateTokenPool) => . </k>
+        <stack> .Stack </stack>
+        <selfIsUpdatingTokenPool> false </selfIsUpdatingTokenPool>
+        <tokenAddress> TokenAddress </tokenAddress>
+
+        <myamount> #Mutez(Amount) </myamount>
+        <senderaddr> Sender </senderaddr>
+        <sourceaddr> Sender </sourceaddr>
+        <paramtype> #Type(#DexterParamType(IsFA2)) </paramtype>
+        <knownaddrs> KnownAddresses </knownaddrs>
+    requires Amount ==Int 0
+     andBool notBool IsFA2
+     andBool TokenAddress in_keys(KnownAddresses)
+     andBool KnownAddresses[TokenAddress] ==K #Contract(?_, #Type(pair address (contract nat)))
+```
+
 ```k
 endmodule
 ```
