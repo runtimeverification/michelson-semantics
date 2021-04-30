@@ -38,6 +38,12 @@ export CPLUS_INCLUDE_PATH
 export PATH
 export PYTHONPATH
 
+# if K_OPTS is undefined, up the default heap size for kompile
+ifeq "$(origin K_OPTS)" "undefined"
+K_OPTS := -Xmx8G
+endif
+export K_OPTS
+
 .PHONY: all clean distclean clean-tests                                                             \
         deps deps-k deps-tezos                                                                      \
         defn defn-k defn-compat                                                                     \
