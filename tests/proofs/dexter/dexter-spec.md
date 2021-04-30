@@ -167,20 +167,23 @@ The contract queries its underlying token contract for its own token balance if 
 ```k
   claim <k> #runProof(IsFA2, UpdateTokenPool) => . </k>
         <stack> .Stack </stack>
-        <selfIsUpdatingTokenPool> false </selfIsUpdatingTokenPool>
+        <selfIsUpdatingTokenPool> false => true </selfIsUpdatingTokenPool>
         <tokenAddress> TokenAddress:Address </tokenAddress>
 
+        <myaddr> SelfAddress </myaddr>
         <myamount> #Mutez(Amount) </myamount>
         <senderaddr> Sender </senderaddr>
         <sourceaddr> Sender </sourceaddr>
-        <paramtype> #Type(#DexterParamType(IsFA2)) </paramtype>
+        <paramtype> #Type(nat) </paramtype>  // Why does this work????? Why would this be the type???
         <knownaddrs> KnownAddresses </knownaddrs>
+        <returncode> 111 => ?_ </returncode> //  This is necessary if we hit an #Assume(false), I think that means we're on an "impossible" branch? So it's correct to include it?
+        <operations> _ => [ Transfer_tokens Pair SelfAddress #Contract ( SelfAddress , nat ) #Mutez (0) TokenAddress ?_ ] ;; .InternalList </operations>
+        <nonce> #Nonce(O) => #Nonce(O +Int 1) </nonce>
     requires Amount ==Int 0
      andBool notBool IsFA2
      andBool TokenAddress in_keys(KnownAddresses)
-     // andBool KnownAddresses[TokenAddress] ==K #Contract(TokenAddress, _TYPE)
      andBool KnownAddresses[TokenAddress] ==K #Contract(TokenAddress, #Type(pair address (contract nat)))
-     // andBool KnownAddresses[TokenAddress] ==K #Contract(TokenAddress, #Type(pair address contract or ( or ( or ( or ( pair address pair nat pair nat timestamp ) unit ) or ( pair address pair nat pair mutez pair nat timestamp ) pair ( option key_hash ) bool ) or ( or address address ) or ( pair address pair nat pair address pair nat timestamp ) pair address pair nat pair mutez timestamp ) or ( or unit nat ) pair address pair nat timestamp))
+     andBool KnownAddresses[SelfAddress] ==K #Contract(SelfAddress, SelfType)
 ```
 
 ```k
