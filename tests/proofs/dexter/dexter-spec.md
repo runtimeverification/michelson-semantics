@@ -4,6 +4,7 @@ module DEXTER-SPEC
 ```
 
 ```k
+/*
   claim <k> now 0 => . ... </k>
         <mynow> #Timestamp(0) </mynow>
 
@@ -122,6 +123,7 @@ If any of the conditions are not satisfied, the call fails.
       orBool IsUpdating
       orBool Sender =/=K CurrentManager
       orBool LQTAddress =/=K #Address("tz1Ke2h7sDdakHJQh8WX4Z372du1KChsksyU")
+      */
 ```
 
 ## Default
@@ -166,7 +168,7 @@ The contract queries its underlying token contract for its own token balance if 
   claim <k> #runProof(IsFA2, UpdateTokenPool) => . </k>
         <stack> .Stack </stack>
         <selfIsUpdatingTokenPool> false </selfIsUpdatingTokenPool>
-        <tokenAddress> TokenAddress </tokenAddress>
+        <tokenAddress> TokenAddress:Address </tokenAddress>
 
         <myamount> #Mutez(Amount) </myamount>
         <senderaddr> Sender </senderaddr>
@@ -176,7 +178,9 @@ The contract queries its underlying token contract for its own token balance if 
     requires Amount ==Int 0
      andBool notBool IsFA2
      andBool TokenAddress in_keys(KnownAddresses)
-     andBool KnownAddresses[TokenAddress] ==K #Contract(?_, #Type(pair address (contract nat)))
+     // andBool KnownAddresses[TokenAddress] ==K #Contract(TokenAddress, _TYPE)
+     andBool KnownAddresses[TokenAddress] ==K #Contract(TokenAddress, #Type(pair address (contract nat)))
+     // andBool KnownAddresses[TokenAddress] ==K #Contract(TokenAddress, #Type(pair address contract or ( or ( or ( or ( pair address pair nat pair nat timestamp ) unit ) or ( pair address pair nat pair mutez pair nat timestamp ) pair ( option key_hash ) bool ) or ( or address address ) or ( pair address pair nat pair address pair nat timestamp ) pair address pair nat pair mutez timestamp ) or ( or unit nat ) pair address pair nat timestamp))
 ```
 
 ```k

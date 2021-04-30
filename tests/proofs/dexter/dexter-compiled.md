@@ -1104,6 +1104,7 @@ Since we work with specific code that contains a finite number of annotations, w
                // Right Left
                { IF_LEFT
                    // Right Left Left
+                   // %update_token_pool
                    { DROP ;
                      SOURCE ;
                      SENDER ;
