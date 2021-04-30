@@ -232,13 +232,6 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
             ( [], { storage with lqtAddress = lqtAddress } )
             ```
 
-        -   Summary: The contract sets its liquidity pool adddress to the provided address if the following conditions are satisifed:
-
-            1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
-            2.  exactly 0 tez was transferred to this contract when it was invoked
-            3.  the txn sender is the `storage.manager`
-            4.  the liquidity pool address has already been set (i.e. `storage.lqtAddress1 != tz1Ke2h7sDdakHJQh8WX4Z372du1KChsksyU`)
-
     6.  `default_`
 
         -   Input:
@@ -652,7 +645,9 @@ If all steps are completed, only the Dexter-specific storage is updated.
         ~> #storeDexterState(IsFA2)
         ...
        </k>
+       <operations> OpList </operations>
     ensures wellTypedParams(IsFA2, Params)
+    andBool OpList ==K .InternalList
 ```
 
 ## Epilogue
