@@ -1574,7 +1574,7 @@ however forces us to use two rules for each operation.
        <nonce> #Nonce(O) => #NextNonce(#Nonce(O)) </nonce>
 
   rule <k> TRANSFER_TOKENS _A => . ... </k>
-       <stack> [T D] ; [mutez M:Mutez] ; [contract T #Contract(A:Address, T)] ; SS
+       <stack> [T D] ; [mutez #Mutez(M)] ; [contract T #Contract(A, T)] ; SS
             => [operation Transfer_tokens D M A O] ; SS
        </stack>
        <nonce> #Nonce(O) => #NextNonce(#Nonce(O)) </nonce>
