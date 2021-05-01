@@ -309,12 +309,6 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
             where, in version FA2, `$tokenPool` is the second projection of the tuple at the head of the input list;
             in version FA12, `$tokenPool` is equal to the input.
 
-        -   Summary: The underlying token contract updates the Dexter contract's view of its own token balance if the following conditions are satisifed:
-
-            1.  the token pool _is_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = true`)
-            2.  exactly 0 tez was transferred to this contract when it was invoked
-            3.  if using version FA2, the input parameter list is non-empty.
-
     9.  `xtz_to_token`
 
         -   Input:
