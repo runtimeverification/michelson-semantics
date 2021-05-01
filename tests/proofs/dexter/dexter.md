@@ -579,6 +579,12 @@ We also define a functions that serialize and deserialize our abstract parameter
        <tokenAddress>            TokenAddress        </tokenAddress>
        <tokenId>                 TokenId             </tokenId>
        <lqtAddress>              LQTAddress          </lqtAddress>
+       <myamount>                TxnAmount           </myamount>
+    ensures TokenPool >=Int 0
+    andBool #Mutez(_:Int) :=K XTZPool andBool #IsLegalMutezValue(XTZPool)
+    andBool LQTTotal >=Int 0
+    andBool TokenId >=Int 0
+    andBool #Mutez(_:Int) :=K TxnAmount andBool #IsLegalMutezValue(TxnAmount)
 
   syntax KItem ::= #storeDexterState(Bool)
                  | #storeDexterState(Bool, Data)
@@ -605,6 +611,7 @@ We also define a functions that serialize and deserialize our abstract parameter
        <tokenAddress>            _ => TokenContract       </tokenAddress>
        <operations>              _ => OpList              </operations>
     requires StorageType ==K #DexterStorageType(IsFA2)
+     andBool #IsLegalMutezValue(XTZPool)
 
   rule <k> #storeDexterState(IsFA2, Pair TokenId LQTContract) => .K ... </k>
        <tokenId>    _ => TokenId     </tokenId>
