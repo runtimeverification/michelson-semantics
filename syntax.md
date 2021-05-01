@@ -107,6 +107,9 @@ Simple data literals have efficiently detectable normal forms at runtime.
   syntax SimpleData ::= Mutez
   syntax SimpleData ::= Address
   syntax Data ::= SimpleData
+
+  syntax Address
+  syntax Mutez
 ```
 
 This declaration instructs the compiler to consider SimpleData literals to be
@@ -119,8 +122,8 @@ in normal form.
 At parse time, `mutez` and `address` literals are read in as ints and strings.
 
 ```k
-  syntax Mutez ::= Int
-  syntax Address ::= String
+  syntax MutezLiteral   ::= Int
+  syntax AddressLiteral ::= String
 ```
 
 `bytes` and `bool` literals must be converted from Michelson to K syntax.
@@ -511,7 +514,7 @@ instructions.
 
     ```k
     syntax BlockchainOperation ::=
-      "Create_contract" "{" Contract "}" OptionData Mutez Data Data
+      "Create_contract" "{" Contract "}" OptionData MutezLiteral Data Data
     ```
 
     - Contract (`contract`) The source code of the contract to originate; the
@@ -525,7 +528,7 @@ instructions.
 2.  Values produced by the `TRANSFER_TOKENS` instruction:
 
     ```k
-    syntax BlockchainOperation ::= "Transfer_tokens" Data Mutez Address Data
+    syntax BlockchainOperation ::= "Transfer_tokens" Data MutezLiteral AddressLiteral Data
     ```
 
     - Parameter (`T`) The parameter passed to the contract being invoked
