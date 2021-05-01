@@ -226,7 +226,8 @@ The internal representation of mutez is bounded.
   // --------------------------------------------
   rule #MutezOverflowLimit => 2 ^Int 63 // Signed 64 bit integers.
 
-  syntax Bool ::= #IsLegalMutezValue(Mutez) [function, functional]
+  syntax Bool ::= #IsLegalMutezValue(Int)   [function, functional]
+                | #IsLegalMutezValue(Mutez) [function, functional]
  // --------------------------------------------------------------
   rule #IsLegalMutezValue(I)         => I >=Int 0 andBool I <Int #MutezOverflowLimit
   rule #IsLegalMutezValue(#Mutez(I)) => #IsLegalMutezValue(I)
@@ -595,10 +596,11 @@ elements.
        Create_contract
            { C }
            {#MichelineToNative(O, (option .AnnotationList  key_hash .AnnotationList), KnownAddrs, BigMaps)}:>OptionData
-           {#MichelineToNative(M, mutez .AnnotationList, KnownAddrs, BigMaps)}:>Mutez
+           M
            #MichelineToNative(S, #StorageTypeFromContract(C), KnownAddrs, BigMaps)
            N
     requires (isWildcard(N) orBool isInt(N))
+     andBool #IsLegalMutezValue(M)
 
   rule #MichelineToNative(Set_delegate K N, operation _, KnownAddrs, BigMaps) =>
        Set_delegate {#MichelineToNative(K, (option .AnnotationList key_hash .AnnotationList), KnownAddrs, BigMaps)}:>OptionData N
@@ -624,11 +626,12 @@ a contract lookup.
                   KnownAddrs,
                   BigMaps
               )
-              {#MichelineToNative(M, mutez .AnnotationList, KnownAddrs, BigMaps)}:>Mutez
+              M
               #ParseEntrypoint(A)
               N
        requires (isWildcard(N) orBool isInt(N))
         andBool #ParseEntrypoint(A) in_keys(KnownAddrs)
+        andBool #IsLegalMutezValue(M)
 ```
 
 We extract a `big_map` by index from the bigmaps map. Note that these have
