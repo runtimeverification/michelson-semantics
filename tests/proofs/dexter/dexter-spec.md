@@ -521,6 +521,62 @@ If any of the conditions are not satisfied, the call fails.
       orBool notBool #IsLegalMutezValue(XtzPool +Int Amount)
 ```
 
+## Update Token Pool Internal
+
+Summary: The underlying token contract updates the Dexter contract's view of its own token balance if the following conditions are satisifed:
+
+1.  the token pool _is_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = true`)
+2.  exactly 0 tez was transferred to this contract when it was invoked
+3.  if using version FA2, the input parameter list is non-empty.
+4.  the sender address is equal to `storage.tokenAddress`
+
+```k
+  claim <k> #runProof(false, UpdateTokenPoolInternalFA12(Balance)) => . </k>
+        <stack> .Stack </stack>
+        <selfIsUpdatingTokenPool> true => false </selfIsUpdatingTokenPool>
+        <myamount> #Mutez(0) </myamount>
+        <tokenPool> _ => Balance </tokenPool>
+        <tokenAddress> TokenAddress </tokenAddress>
+        <senderaddr> TokenAddress </senderaddr>
+```
+
+```k
+  claim <k> #runProof(true, UpdateTokenPoolInternalFA2([ Pair Pair _ _ Balance ] ;; _BalanceOfResultRest)) => . </k>
+        <stack> .Stack </stack>
+        <selfIsUpdatingTokenPool> true => false </selfIsUpdatingTokenPool>
+        <myamount> #Mutez(0) </myamount>
+        <tokenPool> _ => Balance </tokenPool>
+        <tokenAddress> TokenAddress </tokenAddress>
+        <senderaddr> TokenAddress </senderaddr>
+```
+
+If any of the conditions are not satisfied, the call fails.
+
+```k
+  claim <k> #runProof(false, UpdateTokenPoolInternalFA12(_)) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ( Failed ?_ ) </stack>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <myamount> #Mutez(Amount) </myamount>
+        <tokenAddress> TokenAddress </tokenAddress>
+        <senderaddr> Sender </senderaddr>
+     requires Amount >Int 0
+       orBool (notBool IsUpdating)
+       orBool TokenAddress =/=K Sender
+```
+
+```k
+  claim <k> #runProof(true, UpdateTokenPoolInternalFA2(BalanceOfResult)) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ( Failed ?_ ) </stack>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <myamount> #Mutez(Amount) </myamount>
+        <tokenAddress> #Address(TokenAddress) </tokenAddress>
+        <senderaddr> #Address(Sender) </senderaddr>
+     requires Amount >Int 0
+       orBool (notBool IsUpdating)
+       orBool TokenAddress =/=K Sender
+       orBool BalanceOfResult ==K .InternalList
+```
+
 ```k
 endmodule
 ```
