@@ -1021,27 +1021,43 @@ The `COMPARE` instruction is defined over all comparable datatypes.
 We define `COMPARE` in terms of a `#DoCompare` function.
 
 ```k
-  syntax Int ::= #DoCompare(Data, Data) [function]
+  syntax Int ::= #DoCompare(Data, Data)                    [function]
+               | #DoCompareBool(Bool, Bool)                [function, functional]
+               | #DoCompareInt(Int,Int)                    [function, functional]
+               | #DoCompareStr(String, String)             [function, functional]
+               | #DoCompareAddr(Address, Address)          [function, functional]
+               | #DoCompareBytes(Bytes, Bytes)             [function, functional]
+               | #DoCompareKeyHash(KeyHash, KeyHash)       [function, functional]
+               | #DoCompareTimestamp(Timestamp, Timestamp) [function, functional]
+               | #DoCompareMutez(Mutez,Mutez)              [function, functional]
 
-  rule #DoCompare(V, V) => 0
+  rule #DoCompare(V1:Bool, V2:Bool)           => #DoCompareBool(V1,V2)
+  rule #DoCompare(V1:Int, V2:Int)             => #DoCompareInt(V1,V2)
+  rule #DoCompare(V1:String, V2:String)       => #DoCompareStr(V1,V2)
+  rule #DoCompare(V1:Address, V2:Address)     => #DoCompareAddr(V1,V2)
+  rule #DoCompare(V1:Bytes, V2:Bytes)         => #DoCompareBytes(V1,V2)
+  rule #DoCompare(V1:KeyHash, V2:KeyHash)     => #DoCompareKeyHash(V1,V2)
+  rule #DoCompare(V1:Timestamp, V2:Timestamp) => #DoCompareTimestamp(V1,V2)
+  rule #DoCompare(V1:Mutez, V2:Mutez)         => #DoCompareMutez(V1,V2)
 
-  rule #DoCompare(B1:Bool, B2:Bool)
-    =>       #if B1 ==Bool B2 #then  0
-       #else #if B1           #then  1
-       #else                        -1
-       #fi #fi
+  rule #DoCompareBool(B:Bool,  B:Bool ) =>  0
+  rule #DoCompareBool(false,   true   ) => -1
+  rule #DoCompareBool(true,    false  ) =>  1
 
-  rule #DoCompare(I1:Int, I2:Int)
-    =>       #if I1  <Int I2 #then -1
-       #else #if I1 ==Int I2 #then  0
-       #else                        1
-       #fi #fi
+  rule #DoCompareInt(I:Int,  I:Int)  =>  0
+  rule #DoCompareInt(I1:Int, I2:Int) => -1 requires I1 <Int I2
+  rule #DoCompareInt(I1:Int, I2:Int) =>  1 requires I1 >Int I2
 
-  rule #DoCompare(S1:String, S2:String)
-    =>       #if S1  <String S2 #then -1
-       #else #if S1 ==String S2 #then  0
-       #else                           1
-       #fi #fi
+  rule #DoCompareStr(S:String,  S:String ) =>  0
+  rule #DoCompareStr(S1:String, S2:String) => -1 requires S1 <String S2
+  rule #DoCompareStr(S1:String, S2:String) =>  1 requires S1 >String S2
+
+  rule #DoCompareAddr(#Address(S1), #Address(S2))    => #DoCompareStr(S1, S2)
+  rule #DoCompareBytes(B1:Bytes, B2:Bytes)           => #DoCompareStr(Bytes2String(B1), Bytes2String(B2))
+  rule #DoCompareKeyHash(#KeyHash(S1), #KeyHash(S2)) => #DoCompareStr(S1, S2)
+
+  rule #DoCompareTimestamp(#Timestamp(I1), #Timestamp(I2)) => #DoCompareInt(I1, I2)
+  rule #DoCompareMutez(#Mutez(I1), #Mutez(I2))             => #DoCompareInt(I1, I2)
 
   rule #DoCompare(None,    Some _ ) => -1
   rule #DoCompare(Some _,  None   ) =>  1
@@ -1050,36 +1066,38 @@ We define `COMPARE` in terms of a `#DoCompare` function.
   rule #DoCompare((Pair A1 _ ), (Pair B1 _ )) => -1                 requires #DoCompare(A1, B1) ==Int -1
   rule #DoCompare((Pair A1 A2), (Pair B1 B2)) => #DoCompare(A2, B2) requires #DoCompare(A1, B1) ==Int 0
   rule #DoCompare((Pair A1 _ ), (Pair B1 _ )) => 1                  requires #DoCompare(A1, B1) ==Int 1
-
-  rule #DoCompare(B1:Bytes, B2:Bytes) => #DoCompare(Bytes2Int(B1, BE, Unsigned), Bytes2Int(B2, BE, Unsigned))
-  rule #DoCompare(#KeyHash(S1), #KeyHash(S2)) => #DoCompare(S1, S2)
-  rule #DoCompare(#Mutez(I1), #Mutez(I2)) => #DoCompare(I1, I2)
-  rule #DoCompare(#Timestamp(I1), #Timestamp(I2)) => #DoCompare(I1, I2)
-  rule #DoCompare(#Address(S1), #Address(S2)) => #DoCompare(S1, S2)
 ```
 
 The `#DoCompare` function requires additional lemmas for symbolic execution.
 
 ```symbolic
+  rule #DoCompare(V, V) => 0 [simplification]
+
   rule 0 ==Int  #DoCompare(V1, V2) => V1  ==K V2  [simplification]
   rule 0 =/=Int #DoCompare(V1, V2) => V1 =/=K V2  [simplification]
   rule #DoCompare(V1, V2)  ==Int 0 => V1  ==K V2  [simplification]
   rule #DoCompare(V1, V2) =/=Int 0 => V1 =/=K V2  [simplification]
 
-  rule 0  >Int #DoCompare(I1:Bool, I2:Bool) => (notBool I1) andBool I2 [simplification]
-  rule 0 >=Int #DoCompare(I1:Bool, I2:Bool) => I1 impliesBool I2       [simplification]
-  rule #DoCompare(I1:Bool, I2:Bool) >=Int 0 => I2 impliesBool I1       [simplification]
-  rule #DoCompare(I1:Bool, I2:Bool)  >Int 0 => I1 andBool (notBool I2) [simplification]
+  rule 0 ==Int #DoCompareBool(I1, I2) => I1 ==K I2               [simplification]
+  rule 0  >Int #DoCompareBool(I1, I2) => (notBool I1) andBool I2 [simplification]
+  rule 0 >=Int #DoCompareBool(I1, I2) => I1 impliesBool I2       [simplification]
+  rule #DoCompareBool(I1, I2) ==Int 0 => I1 ==K I2               [simplification]
+  rule #DoCompareBool(I1, I2) >=Int 0 => I2 impliesBool I1       [simplification]
+  rule #DoCompareBool(I1, I2)  >Int 0 => I1 andBool (notBool I2) [simplification]
 
-  rule 0  >Int #DoCompare(I1:Int, I2:Int) => I2 >Int I1  [simplification]
-  rule 0 >=Int #DoCompare(I1:Int, I2:Int) => I2 >=Int I1 [simplification]
-  rule #DoCompare(I1:Int, I2:Int) >=Int 0 => I1 >=Int I2 [simplification]
-  rule #DoCompare(I1:Int, I2:Int) >Int 0  => I1 >Int I2  [simplification]
+  rule 0 ==Int #DoCompareInt(I1, I2) => I1 ==K I2   [simplification]
+  rule 0  >Int #DoCompareInt(I1, I2) => I2 >Int I1  [simplification]
+  rule 0 >=Int #DoCompareInt(I1, I2) => I2 >=Int I1 [simplification]
+  rule #DoCompareInt(I1, I2) ==Int 0 => I1 ==Int I2 [simplification]
+  rule #DoCompareInt(I1, I2) >=Int 0 => I1 >=Int I2 [simplification]
+  rule #DoCompareInt(I1, I2) >Int 0  => I1 >Int I2  [simplification]
 
-  rule 0  >Int #DoCompare(I1:String, I2:String) => I1 <String I2  [simplification]
-  rule 0 >=Int #DoCompare(I1:String, I2:String) => I1 <=String I2 [simplification]
-  rule #DoCompare(I1:String, I2:String) >=Int 0 => I1 >=String I2 [simplification]
-  rule #DoCompare(I1:String, I2:String)  >Int 0 => I1 >String I2  [simplification]
+  rule 0 ==Int #DoCompareStr(I1, I2) => I1 ==K I2      [simplification]
+  rule 0  >Int #DoCompareStr(I1, I2) => I1 <String I2  [simplification]
+  rule 0 >=Int #DoCompareStr(I1, I2) => I1 <=String I2 [simplification]
+  rule #DoCompareStr(I1, I2) ==Int 0 => I1 ==String I2 [simplification]
+  rule #DoCompareStr(I1, I2) >=Int 0 => I1 >=String I2 [simplification]
+  rule #DoCompareStr(I1, I2)  >Int 0 => I1 >String I2  [simplification]
 
   // TODO: at some point this rule should be builtin
   rule X ==String X => true  [simplification]
