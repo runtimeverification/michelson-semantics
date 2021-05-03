@@ -165,7 +165,7 @@ The contract queries its underlying token contract for its own token balance if 
     otherwise, check that the contract at address `storage.tokenAddress` has a well-typed FA12 `get_balance` entrypoint.
 
 ```k
-  claim <k> #runProof(IsFA2, UpdateTokenPool) => . </k>
+  claim <k> #runProof(false, UpdateTokenPool) => . </k>
         <stack> .Stack </stack>
         <selfIsUpdatingTokenPool> false => true </selfIsUpdatingTokenPool>
         <tokenAddress> TokenAddress:Address </tokenAddress>
@@ -178,9 +178,26 @@ The contract queries its underlying token contract for its own token balance if 
         <operations> _ => [ Transfer_tokens Pair SelfAddress #Contract ( SelfAddress , nat ) #Mutez(0) TokenAddress O ] ;; .InternalList </operations>
         <nonce> #Nonce(O) => #Nonce(O +Int 1) </nonce>
     requires Amount ==Int 0
-     andBool notBool IsFA2
      andBool TokenAddress in_keys(KnownAddresses)
      andBool KnownAddresses[TokenAddress] ==K #Contract(TokenAddress, #Type(pair address (contract nat)))
+*/
+
+  claim <k> #runProof(true, UpdateTokenPool) => . </k>
+        <stack> .Stack </stack>
+        <selfIsUpdatingTokenPool> false => true </selfIsUpdatingTokenPool>
+        <tokenAddress> TokenAddress:Address </tokenAddress>
+        <tokenId> TokenId </tokenId>
+        <myaddr> SelfAddress </myaddr>
+        <myamount> #Mutez(Amount) </myamount>
+        <senderaddr> Sender </senderaddr>
+        <sourceaddr> Sender </sourceaddr>
+        <paramtype> #Type(list pair ( pair address nat ) nat) </paramtype>  // NOTE: return type of `update_token_pool_internal` entrypoint
+        <knownaddrs> KnownAddresses </knownaddrs>
+        <operations> _ => [ Transfer_tokens Pair [ Pair SelfAddress:Address TokenId ] ;; .InternalList #Contract ( SelfAddress , list pair ( pair address nat ) nat ) #Mutez ( 0 ) TokenAddress O:Int ] ;; .InternalList  </operations>
+        <nonce> #Nonce(O) => #Nonce(O +Int 1) </nonce>
+    requires Amount ==Int 0
+     andBool TokenAddress in_keys(KnownAddresses)
+     andBool KnownAddresses[TokenAddress] ==K #Contract(TokenAddress, #Type(pair (list (pair address nat)) (contract (list (pair (pair address nat) nat)))))
 ```
 
 ```k
