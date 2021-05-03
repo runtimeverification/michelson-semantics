@@ -162,7 +162,11 @@ The contract queries its underlying token contract for its own token balance if 
 4.  if we are running the FA2 version of Dexter, then check that the contract at address `storage.tokenAddress` has a well-typed FA2 `balance_of` entrypoint;
     otherwise, check that the contract at address `storage.tokenAddress` has a well-typed FA12 `get_balance` entrypoint.
 
-TODO: Combine these positive cases into one spec.
+- TODO: Combine these positive cases into one spec.
+- TODO: Negative case
+- TODO: Generalize the Michelson `SELF` and `CONTRACT` instructions to properly use annotations.
+        That way, we can use the actual, full #DexterParamType in the `paramtype` cell, and in the `KnownAddresses` map.
+        Right now, we need to pretend to have a more specialized type.
 
 ```k
   claim <k> #runProof(false, UpdateTokenPool) => . </k>
@@ -173,14 +177,12 @@ TODO: Combine these positive cases into one spec.
         <myamount> #Mutez(Amount) </myamount>
         <senderaddr> Sender </senderaddr>
         <sourceaddr> Sender </sourceaddr>
-        <paramtype> #Type(#DexterVersionSpecificParamType(false)) </paramtype>  // TODO: Should be the full #DexterParamType(IsFA2), but not yet supported.
+        <paramtype> #Type(#DexterVersionSpecificParamType(false)) </paramtype>
         <knownaddrs> KnownAddresses </knownaddrs>
         <operations> _ => [ Transfer_tokens Pair SelfAddress #Contract ( SelfAddress , nat ) #Mutez(0) TokenAddress O ] ;; .InternalList </operations>
         <nonce> #Nonce(O) => #Nonce(O +Int 1) </nonce>
     requires Amount ==Int 0
      andBool TokenAddress in_keys(KnownAddresses)
-     // TODO The contract type should be able to be more general.
-     // Instead of having this exact type, we would expect it to be a larger sum type, with one leaft annotated %getBalance that is of the type (pair address (contract nat))
      andBool KnownAddresses[TokenAddress] ==K #Contract(TokenAddress, #Type(pair address (contract nat)))
 
   claim <k> #runProof(true, UpdateTokenPool) => . </k>
