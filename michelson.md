@@ -1256,6 +1256,9 @@ Internally, we represent `map`s and `big_map`s identically using K maps.
 For this reason, many map operations share an identical representation upto
 typing (shared operations use a generic `MapTypeName`).
 
+Note that the first value is a `KItem` and not heated/cooled. This is to work
+around the need for sort coersion in the map `GET` operation.
+
 ```k
   rule <k> GET _A => . ...  </k>
        <stack> [KT K] ; [_:MapTypeName KT VT M:Map] ; SS => [option VT #lookup(M, K, VT)] ; SS </stack>
@@ -1855,18 +1858,6 @@ These operations are used internally for implementation purposes.
   rule <k> #Assume(BExp:Bool) => . ... </k>
     ensures BExp
 ```
-
-TODO: We let this rule run in both symbolic and concrete cases, to avoid a
-possible bug in the haskell backend that prevents the `=> #Bottom` rule from
-executing when using `krun`.
-
-```k
-  rule <k> #Assume(false) ... </k>
-       <returncode> 111 => 0 </returncode>
-```
-
-Note that the first value is a `KItem` and not heated/cooled. This is to work
-around the need for sort coersion in the map `GET` operation.
 
 ```k
   syntax BoolExp ::= Bool
