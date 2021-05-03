@@ -164,6 +164,8 @@ The contract queries its underlying token contract for its own token balance if 
 4.  if we are running the FA2 version of Dexter, then check that the contract at address `storage.tokenAddress` has a well-typed FA2 `balance_of` entrypoint;
     otherwise, check that the contract at address `storage.tokenAddress` has a well-typed FA12 `get_balance` entrypoint.
 
+TODO: Combine these positive cases into one spec.
+
 ```k
   claim <k> #runProof(false, UpdateTokenPool) => . </k>
         <stack> .Stack </stack>
@@ -179,6 +181,8 @@ The contract queries its underlying token contract for its own token balance if 
         <nonce> #Nonce(O) => #Nonce(O +Int 1) </nonce>
     requires Amount ==Int 0
      andBool TokenAddress in_keys(KnownAddresses)
+     // TODO The contract type should be able to be more general.
+     // Instead of having this exact type, we would expect it to be a larger sum type, with one leaft annotated %getBalance that is of the type (pair address (contract nat))
      andBool KnownAddresses[TokenAddress] ==K #Contract(TokenAddress, #Type(pair address (contract nat)))
 */
 
