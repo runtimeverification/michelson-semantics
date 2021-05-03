@@ -193,7 +193,7 @@ The contract queries its underlying token contract for its own token balance if 
         <sourceaddr> Sender </sourceaddr>
         <paramtype> #Type(#DexterVersionSpecificParamType(true)) </paramtype>  // TODO: Should be the full #DexterParamType(IsFA2), but not yet supported.
         <knownaddrs> KnownAddresses </knownaddrs>
-        <operations> _ => [ Transfer_tokens Pair [ Pair SelfAddress:Address TokenId ] ;; .InternalList #Contract ( SelfAddress , list pair ( pair address nat ) nat ) #Mutez ( 0 ) TokenAddress O:Int ] ;; .InternalList  </operations>
+        <operations> _ => [ Transfer_tokens Pair [ Pair SelfAddress TokenId ] ;; .InternalList #Contract ( SelfAddress , list pair ( pair address nat ) nat ) #Mutez ( 0 ) TokenAddress O ] ;; .InternalList  </operations>
         <nonce> #Nonce(O) => #Nonce(O +Int 1) </nonce>
     requires Amount ==Int 0
      andBool TokenAddress in_keys(KnownAddresses)
