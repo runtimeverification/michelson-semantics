@@ -179,11 +179,11 @@ The contract queries its underlying token contract for its own token balance if 
         <sourceaddr> Sender </sourceaddr>
         <paramtype> #Type(#DexterVersionSpecificParamType(false)) </paramtype>
         <knownaddrs> KnownAddresses </knownaddrs>
-        <operations> _ => [ Transfer_tokens Pair SelfAddress #Contract ( SelfAddress , nat ) #Mutez(0) TokenAddress O ] ;; .InternalList </operations>
+        <operations> _ => [ Transfer_tokens Pair SelfAddress #Contract(SelfAddress, #Type(#DexterVersionSpecificParamType(false))) #Mutez(0) TokenAddress O ] ;; .InternalList </operations>
         <nonce> #Nonce(O) => #Nonce(O +Int 1) </nonce>
     requires Amount ==Int 0
      andBool TokenAddress in_keys(KnownAddresses)
-     andBool KnownAddresses[TokenAddress] ==K #Contract(TokenAddress, #Type(pair address (contract nat)))
+     andBool KnownAddresses[TokenAddress] ==K #Contract(TokenAddress, #Type(pair address (contract #DexterVersionSpecificParamType(false))))
 
   claim <k> #runProof(true, UpdateTokenPool) => . </k>
         <stack> .Stack </stack>
@@ -196,11 +196,11 @@ The contract queries its underlying token contract for its own token balance if 
         <sourceaddr> Sender </sourceaddr>
         <paramtype> #Type(#DexterVersionSpecificParamType(true)) </paramtype>  // TODO: Should be the full #DexterParamType(IsFA2), but not yet supported.
         <knownaddrs> KnownAddresses </knownaddrs>
-        <operations> _ => [ Transfer_tokens Pair [ Pair SelfAddress TokenId ] ;; .InternalList #Contract ( SelfAddress , list pair ( pair address nat ) nat ) #Mutez ( 0 ) TokenAddress O ] ;; .InternalList  </operations>
+        <operations> _ => [ Transfer_tokens Pair [ Pair SelfAddress TokenId ] ;; .InternalList #Contract(SelfAddress, #Type(#DexterVersionSpecificParamType(true))) #Mutez ( 0 ) TokenAddress O ] ;; .InternalList  </operations>
         <nonce> #Nonce(O) => #Nonce(O +Int 1) </nonce>
     requires Amount ==Int 0
      andBool TokenAddress in_keys(KnownAddresses)
-     andBool KnownAddresses[TokenAddress] ==K #Contract(TokenAddress, #Type(pair (list (pair address nat)) (contract (list (pair (pair address nat) nat)))))
+     andBool KnownAddresses[TokenAddress] ==K #Contract(TokenAddress, #Type(pair (list (pair address nat)) (contract #DexterVersionSpecificParamType(true))))
 ```
 
 ```k
