@@ -555,7 +555,7 @@ We also define a functions that serialize and deserialize our abstract parameter
   syntax KItem ::= #loadDexterState(Bool, EntryPointParams)
   // ------------------------------------------------------
   rule <k> #loadDexterState(IsFA2, Params) => . ... </k>
-       <stack> .Stack
+       <stack> SS:InternalStack
             => [ pair #DexterParamType(IsFA2) #DexterStorageType(IsFA2)
                  Pair #LoadDexterParams(IsFA2, Params)
                    Pair TokenPool
@@ -569,6 +569,7 @@ We also define a functions that serialize and deserialize our abstract parameter
                                    #then Pair TokenId LQTAddress
                                    #else LQTAddress
                                  #fi ]
+             ; .Stack
        </stack>
        <tokenPool>               TokenPool           </tokenPool>
        <xtzPool>                 XTZPool             </xtzPool>
@@ -580,7 +581,8 @@ We also define a functions that serialize and deserialize our abstract parameter
        <tokenId>                 TokenId             </tokenId>
        <lqtAddress>              LQTAddress          </lqtAddress>
        <myamount>                TxnAmount           </myamount>
-    ensures TokenPool >=Int 0
+    ensures SS ==K .Stack
+    andBool TokenPool >=Int 0
     andBool #Mutez(_:Int) :=K XTZPool andBool #IsLegalMutezValue(XTZPool)
     andBool LQTTotal >=Int 0
     andBool TokenId >=Int 0

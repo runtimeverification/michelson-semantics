@@ -27,7 +27,6 @@ The contract sets its manager to the provided manager address if the following c
 
 ```k
   claim <k> #runProof(_IsFA2, SetManager(NewManager)) => . </k>
-        <stack> .Stack </stack>
         <manager> Sender => NewManager </manager>
         <selfIsUpdatingTokenPool> false </selfIsUpdatingTokenPool>
         <myamount> #Mutez(Amount) </myamount>
@@ -60,7 +59,6 @@ The contract sets its delegate to the value of `baker` (and optionally freezes t
 
 ```k
   claim <k> #runProof(_IsFA2, SetBaker(Baker, FreezeBaker)) => . </k>
-        <stack> .Stack </stack>
         <manager> Sender </manager>
         <selfIsUpdatingTokenPool> false </selfIsUpdatingTokenPool>
         <myamount> #Mutez(Amount) </myamount>
@@ -98,7 +96,6 @@ The contract sets its liquidity pool adddress to the provided address if the fol
 
 ```k
   claim <k> #runProof(_IsFA2, SetLQTAddress(NewLQTAddress)) => . </k>
-        <stack> .Stack </stack>
         <manager> Sender </manager>
         <selfIsUpdatingTokenPool> false </selfIsUpdatingTokenPool>
         <myamount> #Mutez(Amount) </myamount>
@@ -112,7 +109,6 @@ If any of the conditions are not satisfied, the call fails.
 
 ```k
   claim <k> #runProof(_IsFA2, SetLQTAddress(_NewLQTAddress)) => Aborted(?_, ?_, ?_, ?_) </k>
-        <stack> .Stack => ( Failed ?_ ) </stack>
         <manager> CurrentManager </manager>
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <myamount> #Mutez(Amount) </myamount>
@@ -133,7 +129,6 @@ Adds more money to the xtz reserves if the following conditions are satisifed:
 
 ```k
   claim <k> #runProof(_IsFA2, Default) => . </k>
-        <stack> .Stack </stack>
         <selfIsUpdatingTokenPool> false </selfIsUpdatingTokenPool>
         <myamount> #Mutez(Amount) </myamount>
         <xtzPool> #Mutez(XtzPool => XtzPool +Int Amount) </xtzPool>
