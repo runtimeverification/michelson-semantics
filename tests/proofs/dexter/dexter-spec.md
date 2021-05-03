@@ -141,14 +141,13 @@ The contract queries its underlying token contract for its own token balance if 
         <stack> .Stack </stack>
         <selfIsUpdatingTokenPool> false => true </selfIsUpdatingTokenPool>
         <tokenAddress> TokenAddress:Address </tokenAddress>
-
         <myaddr> SelfAddress </myaddr>
         <myamount> #Mutez(Amount) </myamount>
         <senderaddr> Sender </senderaddr>
         <sourceaddr> Sender </sourceaddr>
         <paramtype> #Type(nat) </paramtype>  // NOTE: return type of `update_token_pool_internal` entrypoint
         <knownaddrs> KnownAddresses </knownaddrs>
-        <operations> _ => [ Transfer_tokens Pair SelfAddress #Contract ( SelfAddress , nat ) #Mutez(0) TokenAddress ?_ ] ;; .InternalList </operations>
+        <operations> _ => [ Transfer_tokens Pair SelfAddress #Contract ( SelfAddress , nat ) #Mutez(0) TokenAddress O ] ;; .InternalList </operations>
         <nonce> #Nonce(O) => #Nonce(O +Int 1) </nonce>
     requires Amount ==Int 0
      andBool notBool IsFA2
