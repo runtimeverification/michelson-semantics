@@ -4,7 +4,6 @@ module DEXTER-SPEC
 ```
 
 ```k
-/*
   claim <k> now 0 => . ... </k>
         <mynow> #Timestamp(0) </mynow>
 
@@ -123,7 +122,6 @@ If any of the conditions are not satisfied, the call fails.
       orBool IsUpdating
       orBool Sender =/=K CurrentManager
       orBool LQTAddress =/=K #Address("tz1Ke2h7sDdakHJQh8WX4Z372du1KChsksyU")
-      */
 ```
 
 ## Update Token Pool
@@ -156,7 +154,6 @@ TODO: Combine these positive cases into one spec.
      // TODO The contract type should be able to be more general.
      // Instead of having this exact type, we would expect it to be a larger sum type, with one leaft annotated %getBalance that is of the type (pair address (contract nat))
      andBool KnownAddresses[TokenAddress] ==K #Contract(TokenAddress, #Type(pair address (contract nat)))
-*/
 
   claim <k> #runProof(true, UpdateTokenPool) => . </k>
         <stack> .Stack </stack>
