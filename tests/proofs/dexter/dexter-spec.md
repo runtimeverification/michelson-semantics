@@ -145,7 +145,7 @@ The contract queries its underlying token contract for its own token balance if 
         <myamount> #Mutez(Amount) </myamount>
         <senderaddr> Sender </senderaddr>
         <sourceaddr> Sender </sourceaddr>
-        <paramtype> #Type(nat) </paramtype>  // NOTE: return type of `update_token_pool_internal` entrypoint
+        <paramtype> #Type(#DexterVersionSpecificParamType(false)) </paramtype>  // TODO: Should be the full #DexterParamType(IsFA2), but not yet supported.
         <knownaddrs> KnownAddresses </knownaddrs>
         <operations> _ => [ Transfer_tokens Pair SelfAddress #Contract ( SelfAddress , nat ) #Mutez(0) TokenAddress O ] ;; .InternalList </operations>
         <nonce> #Nonce(O) => #Nonce(O +Int 1) </nonce>
@@ -163,7 +163,7 @@ The contract queries its underlying token contract for its own token balance if 
         <myamount> #Mutez(Amount) </myamount>
         <senderaddr> Sender </senderaddr>
         <sourceaddr> Sender </sourceaddr>
-        <paramtype> #Type(list pair ( pair address nat ) nat) </paramtype>  // NOTE: return type of `update_token_pool_internal` entrypoint
+        <paramtype> #Type(#DexterVersionSpecificParamType(true)) </paramtype>  // TODO: Should be the full #DexterParamType(IsFA2), but not yet supported.
         <knownaddrs> KnownAddresses </knownaddrs>
         <operations> _ => [ Transfer_tokens Pair [ Pair SelfAddress:Address TokenId ] ;; .InternalList #Contract ( SelfAddress , list pair ( pair address nat ) nat ) #Mutez ( 0 ) TokenAddress O:Int ] ;; .InternalList  </operations>
         <nonce> #Nonce(O) => #Nonce(O +Int 1) </nonce>
