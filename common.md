@@ -42,6 +42,132 @@ to contracts with entrypoints. We may fix this issue in a later release.
   rule #Type(T:BinaryTypeName ArgT1 ArgT2) => T .AnnotationList #Type(ArgT1) #Type(ArgT2)
 ```
 
+Entrypoint Representation
+-------------------------
+
+We represent entrypoints as the concatenation of an address and a field
+annotation.
+
+```k
+  syntax Entrypoint ::= String "." FieldAnnotation
+
+  syntax Entrypoint ::= #ParseEntrypoint(String)      [function]
+                      | #ParseEntrypoint(String, Int) [function]
+  // -----------------------------------------------------------
+  rule #ParseEntrypoint(AddrLit:String) => #ParseEntrypoint(AddrLit, findChar(AddrLit, "%", 0))
+  rule #ParseEntrypoint(AddrLit:String, -1) => AddrLit . %default
+
+  rule #ParseEntrypoint(AddrLit, N:Int) => substrString(AddrLit, 0, N) . ToFieldAnnot(substrString(AddrLit, N, lengthString(AddrLit)))
+    requires N >=Int 0
+     andBool N +Int 1 <Int lengthString(AddrLit)
+     andBool rfindChar(AddrLit, "%", lengthString(AddrLit)) ==Int N
+
+  syntax FieldAnnotation ::= ToFieldAnnot(String)                [function, functional, hook(STRING.string2token)]
+  syntax String          ::= FieldAnnotToString(FieldAnnotation) [function, functional, hook(STRING.token2string)]
+
+  syntax String ::= #ToString(Entrypoint) [function, functional]
+  // -----------------------------------------------------------
+  rule #ToString(Addr . %default  ) => Addr
+  rule #ToString(Addr . FieldAnnot) => Addr +String FieldAnnotToString(FieldAnnot) [owise]
+```
+
+We map parameter types with annotations to a map of types.
+
+```k
+  syntax MaybeFieldAnnotation ::= ".FieldAnnotation"
+                                | FieldAnnotation
+
+  syntax TypeList ::= List{Type, "||"}
+
+  syntax Map ::= #BuildAnnotationMap(MaybeFieldAnnotation, Type) [function]
+               | #BuildAnnotationMap(TypeList, Map)              [function]
+  // ----------------------------------------------------------------------
+  rule #BuildAnnotationMap(MA, T)
+    => #AddDefaultEntry(#BuildAnnotationMap(T || .TypeList, #AddAnnotationEntry(MA, T, .Map)), T)
+
+  rule #BuildAnnotationMap(or Annots T1 T2 || TL, AnnotMap)
+    => #BuildAnnotationMap(T1 || T2 || TL, #AddAnnotationEntry(#GetMaybeFieldAnnot(Annots), or Annots T1 T2, AnnotMap))
+
+  rule #BuildAnnotationMap(T || TL, AnnotMap)
+    => #BuildAnnotationMap(TL, #AddAnnotationEntry(#GetMaybeFieldAnnot(T), T, AnnotMap))
+    [owise]
+
+  rule #BuildAnnotationMap(.TypeList, AnnotMap) => AnnotMap
+
+  syntax Map ::= #AddAnnotationEntry(MaybeFieldAnnotation, Type, Map) [function]
+  // ---------------------------------------------------------------------------
+  rule #AddAnnotationEntry(.FieldAnnotation,   _, AnnotMap) => AnnotMap
+  rule #AddAnnotationEntry(FA:FieldAnnotation, T, AnnotMap) => FA |-> T AnnotMap
+    requires notBool FA in_keys(AnnotMap)
+```
+
+We add functions for adding default entrypoints to a map or producing the default annotation.
+
+```k
+  syntax Map ::= #AddDefaultEntry(Map, Type) [function]
+  // --------------------------------------------------
+  rule #AddDefaultEntry(AnnotMap, _Type) => AnnotMap
+    requires %default in_keys(AnnotMap)
+  rule #AddDefaultEntry(AnnotMap,  Type) => %default |-> Type AnnotMap
+    [owise]
+
+  syntax FieldAnnotation ::= "%default"
+  // ----------------------------------
+  rule %default => #token("%default", "FieldAnnotation") [macro]
+```
+
+We have a function which extracts a unique field annotation from a type.
+
+```k
+  syntax MaybeFieldAnnotation ::= #GetMaybeFieldAnnot(Type) [function]
+  // -----------------------------------------------------------------
+  rule #GetMaybeFieldAnnot(_:NullaryTypeName A:AnnotationList              ) => #GetMaybeFieldAnnot(A)
+  rule #GetMaybeFieldAnnot(_:UnaryTypeName   A:AnnotationList _:Type       ) => #GetMaybeFieldAnnot(A)
+  rule #GetMaybeFieldAnnot(_:BinaryTypeName  A:AnnotationList _:Type _:Type) => #GetMaybeFieldAnnot(A)
+
+  syntax MaybeFieldAnnotation ::= #GetMaybeFieldAnnot(AnnotationList) [function]
+  // ---------------------------------------------------------------------------
+  rule #GetMaybeFieldAnnot(FA:FieldAnnotation Annots:AnnotationList) => FA
+  rule #GetMaybeFieldAnnot(A:Annotation       Annots:AnnotationList) => #GetMaybeFieldAnnot(Annots) [owise]
+  rule #GetMaybeFieldAnnot(.AnnotationList)                          => .FieldAnnotation
+
+  syntax FieldAnnotation ::= #GetDefault(MaybeFieldAnnotation) [function]
+  // --------------------------------------------------------------------
+  rule #GetDefault(.FieldAnnotation)   => %default
+  rule #GetDefault(FA:FieldAnnotation) => FA
+
+  syntax FieldAnnotation ::= #GetFieldAnnot(Type)           [function]
+                           | #GetFieldAnnot(AnnotationList) [function]
+  // -----------------------------------------------------------------
+  rule #GetFieldAnnot(T:Type)                => #GetDefault(#GetMaybeFieldAnnot(T))
+  rule #GetFieldAnnot(Annots:AnnotationList) => #GetDefault(#GetMaybeFieldAnnot(Annots))
+```
+
+We want to check if a local or remote entrypoint exists with the given name.
+
+```k
+  syntax TypeName ::= #LocalEntrypoint(Map, AnnotationList)  [function]
+                    | #LocalEntrypoint(Map, FieldAnnotation) [function]
+  // ------------------------------------------------------------------
+  rule #LocalEntrypoint(EntrypointMap, Annots:AnnotationList) => #LocalEntrypoint(EntrypointMap, #GetFieldAnnot(Annots))
+  rule #LocalEntrypoint(EntrypointMap, FA:FieldAnnotation)    => #Name({ EntrypointMap [ FA ] }:>Type)
+
+  syntax MaybeTypeName ::= #RemoteEntrypointFromAnnots(Map, Address, AnnotationList) [function]
+                         | #RemoteEntrypoint(Map, Address, FieldAnnotation)          [function]
+                         | #RemoteEntrypoint(Map, Entrypoint)                        [function]
+  // ------------------------------------------------------------------------------------------
+  rule #RemoteEntrypointFromAnnots(ContractMap, Addr, Annots) => #RemoteEntrypoint(ContractMap, Addr, #GetFieldAnnot(Annots))
+
+  rule #RemoteEntrypoint(ContractMap, Addr, FA:FieldAnnotation) => #RemoteEntrypoint(ContractMap, Addr . FA)
+
+  rule #RemoteEntrypoint(ContractMap, EP) => #Name({ContractMap [ EP ] }:>Type)
+    requires EP in_keys( ContractMap )
+     ensures isType(ContractMap [ EP ])
+
+  rule #RemoteEntrypoint(ContractMap, EP) => .TypeName
+    requires notBool EP in_keys( ContractMap )
+```
+
 Value Representation
 --------------------
 
@@ -49,7 +175,7 @@ We represent Michelson values by constructors which wrap K primitive types.
 
 ```k
   syntax Address ::= #Address(String)
-  syntax ContractData ::= #Contract(Address, Type)
+  syntax ContractData ::= #Contract(Entrypoint, TypeName)
   syntax Mutez ::= #Mutez(Int)
   syntax KeyHash ::= #KeyHash(String)
   syntax ChainId ::= #ChainId(MichelsonBytes)
@@ -66,6 +192,8 @@ We represent Michelson values by constructors which wrap K primitive types.
                       | ContractData
                       | Key
                       | Signature
+
+  syntax BlockchainOperation ::= "Transfer_tokens" Data Mutez Entrypoint Data
 ```
 
 We represent the values of byte operations as special constructors.
@@ -193,8 +321,9 @@ Miscellaneous Internal Representations
 The internal representation of unset type and data values.
 
 ```k
-  syntax PreType ::= "#NotSet" | Type
-  syntax PreData ::= "#NoData" | Data
+  syntax MaybeTypeName ::= ".TypeName" | TypeName
+  syntax MaybeType     ::= ".Type"     | Type
+  syntax MaybeData     ::= ".Data"     | Data
 ```
 
 We specify that both `parameter T` and `storage T` productions are also groups
@@ -233,11 +362,22 @@ This function converts the `other_contracts` field into its internal
 represetation.
 
 ```k
-  syntax Map ::= #OtherContractsMapEntryListToKMap(OtherContractsMapEntryList) [function]
-  // ------------------------------------------------------------------------------------
-  rule #OtherContractsMapEntryListToKMap( .OtherContractsMapEntryList ) => .Map
-  rule #OtherContractsMapEntryListToKMap( Contract A T ; Rs )
-    => #Address(A) |-> #Contract(#Address(A), T) #OtherContractsMapEntryListToKMap(Rs)
+  syntax Map ::= #OtherContractsMapToKMap(OtherContractsMapEntryList)              [function]
+               | #OtherContractsMapToKMap(String, Map, OtherContractsMapEntryList) [function]
+  // ----------------------------------------------------------------------------------------
+  rule #OtherContractsMapToKMap( .OtherContractsMapEntryList ) => .Map
+  rule #OtherContractsMapToKMap( Contract A T ; Rs )
+    => #OtherContractsMapToKMap(A, #BuildAnnotationMap(.FieldAnnotation, T), Rs)
+
+  rule #OtherContractsMapToKMap(A, TypeMap, Rs) =>
+       #BuildOtherContractsMap(A, TypeMap) #OtherContractsMapToKMap(Rs)
+
+  syntax Map ::= #BuildOtherContractsMap(String, Map) [function]
+  // -----------------------------------------------------------
+  rule #BuildOtherContractsMap(A, FA:FieldAnnotation |-> T:Type TypeMap:Map)
+    => A . FA |-> T #BuildOtherContractsMap(A, TypeMap)
+
+  rule #BuildOtherContractsMap(A, .Map) => .Map
 ```
 
 This function converts all other datatypes into their internal represenations.
@@ -441,7 +581,7 @@ for convenience, we do not enforce that this address exists in the
 `other_contracts` map!
 
 ```k
-  rule #MichelineToNative(S:String, contract _ T, _KnownAddrs, _BigMaps) => #Contract(#ParseAddress(S), T)
+  rule #MichelineToNative(S:String, contract _ T, _KnownAddrs, _BigMaps) => #Contract(#ParseEntrypoint(S), #Name(T))
 
   rule #MichelineToNative(#Typed(D, T), T, KnownAddrs, BigMaps) => #MichelineToNative(D, T, KnownAddrs, BigMaps)
 ```
@@ -476,22 +616,19 @@ address specified in the `Transfer_tokens` production, and thus need to perform
 a contract lookup.
 
 ```k
-  syntax Type ::= #TypeFromOtherContract(ContractData) [function]
-  rule #TypeFromOtherContract(#Contract(_, T)) => T
-
   rule #MichelineToNative(Transfer_tokens P M A N, operation _, KnownAddrs, BigMaps)
           => Transfer_tokens
               #MichelineToNative(
                   P,
-                  #TypeFromOtherContract({KnownAddrs[#MichelineToNative(A, address .AnnotationList, KnownAddrs, BigMaps)]}:>ContractData),
+                  {KnownAddrs [ #ParseEntrypoint(A) ]}:>Type,
                   KnownAddrs,
                   BigMaps
               )
               {#MichelineToNative(M, mutez .AnnotationList, KnownAddrs, BigMaps)}:>Mutez
-              {#MichelineToNative(A, address .AnnotationList, KnownAddrs, BigMaps)}:>Address
+              #ParseEntrypoint(A)
               N
        requires (isWildcard(N) orBool isInt(N))
-        andBool #MichelineToNative(A, address .AnnotationList, KnownAddrs, BigMaps) in_keys(KnownAddrs)
+        andBool #ParseEntrypoint(A) in_keys(KnownAddrs)
 ```
 
 We extract a `big_map` by index from the bigmaps map. Note that these have
