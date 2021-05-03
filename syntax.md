@@ -173,6 +173,7 @@ limitations.
   syntax CodeDecl ::= "code" Block
   syntax StorageDecl ::= "storage" Type
   syntax ParameterDecl ::= "parameter" Type
+                         | "parameter" FieldAnnotation Type
 
   syntax Contract ::= CodeDecl ";" StorageDecl ";" ParameterDecl ";"
                     | CodeDecl ";" ParameterDecl ";" StorageDecl ";"
