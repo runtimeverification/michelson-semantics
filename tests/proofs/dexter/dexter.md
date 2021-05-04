@@ -621,8 +621,12 @@ If the contract execution fails, storage is not updated.
  // -------------------------------------------------------------------------------------
   rule #UpdateTokenPoolTransferFrom(IsFA2, SelfAddress, _TokenId) =>        SelfAddress                            requires notBool IsFA2
   rule #UpdateTokenPoolTransferFrom(IsFA2, SelfAddress,  TokenId) => [ Pair SelfAddress TokenId ] ;; .InternalList requires         IsFA2
-```
 
+  syntax Type ::= #TokenContractType(Bool) [function, functional]
+ // -------------------------------------------------------------
+  rule #TokenContractType(false) => #Type(pair address                   (contract #DexterVersionSpecificParamType(false)))
+  rule #TokenContractType(true)  => #Type(pair (list (pair address nat)) (contract #DexterVersionSpecificParamType(true)) )
+```
 
 ## Putting It All Together
 
