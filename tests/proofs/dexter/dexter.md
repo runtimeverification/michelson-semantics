@@ -266,6 +266,15 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
 
             where, in version FA2, `Params = Pair (self.address, storage.tokenId)` and in version FA12, `Params = self.address`
 
+        -   Helpers:
+
+```k
+  syntax Data ::= #UpdateTokenPoolTransferFrom(Bool, Address, Int) [function, functional]
+ // -------------------------------------------------------------------------------------
+  rule #UpdateTokenPoolTransferFrom(IsFA2, SelfAddress, _TokenId) =>        SelfAddress                            requires notBool IsFA2
+  rule #UpdateTokenPoolTransferFrom(IsFA2, SelfAddress,  TokenId) => [ Pair SelfAddress TokenId ] ;; .InternalList requires         IsFA2
+```
+
     8.  `update_token_pool_internal`
 
         -   Input:
