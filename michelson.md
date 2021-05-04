@@ -1575,7 +1575,7 @@ however forces us to use two rules for each operation.
 
   rule <k> TRANSFER_TOKENS _A => . ... </k>
        <stack> [T D] ; [mutez #Mutez(M)] ; [contract T #Contract(A, T)] ; SS
-            => [operation Transfer_tokens D M A O] ; SS
+            => [operation Transfer_tokens D #Mutez(M) A O] ; SS
        </stack>
        <nonce> #Nonce(O) => #NextNonce(#Nonce(O)) </nonce>
 
@@ -1597,8 +1597,8 @@ These instructions push fresh `contract` literals on the stack corresponding
 to the given addresses/key hashes.
 
 ```k
-  rule <k> CONTRACT AL T => . ... </k>
-       <stack> [address #Address(A:String)]
+  rule <k> CONTRACT AL:AnnotationList T => . ... </k>
+       <stack> [address A:Address]
              ; SS
             => [option contract #Name(T)
                 Some #Contract(A . #GetFieldAnnot(AL), { #RemoteEntrypointFromAnnots(ContractMap, A, AL) }:>TypeName)]
@@ -1613,7 +1613,7 @@ to the given addresses/key hashes.
 
   rule <k> IMPLICIT_ACCOUNT _AL => . ... </k>
        <stack> [key_hash #KeyHash(A)] ; SS
-            => [contract unit #Contract(A . %default, unit)] ; SS
+            => [contract unit #Contract(#Address(A) . %default, unit)] ; SS
        </stack>
 ```
 
@@ -1625,7 +1625,7 @@ These instructions push blockchain state on the stack.
        <mybalance> B </mybalance>
 
   rule <k> ADDRESS _AL => . ... </k>
-       <stack> [contract T #Contract(A . _, T)] ; SS => [address #Address(A)] ; SS </stack>
+       <stack> [contract T #Contract(A . _, T)] ; SS => [address A] ; SS </stack>
 
   rule <k> SOURCE _AL => . ... </k>
        <stack> SS => [address A] ; SS </stack>
@@ -1638,16 +1638,11 @@ These instructions push blockchain state on the stack.
   rule <k> SELF AL:AnnotationList => . ... </k>
        <stack> SS
             => [contract #LocalEntrypoint(AnnotMap, AL)
-                #Contract(#AddressToString(A) . #GetFieldAnnot(AL), #LocalEntrypoint(AnnotMap, AL))]
+                #Contract(A . #GetFieldAnnot(AL), #LocalEntrypoint(AnnotMap, AL))]
              ; SS
        </stack>
        <paramtype> AnnotMap:Map </paramtype>
        <myaddr> A </myaddr>
-
-  syntax String ::= #AddressToString(Address) [function, functional]
-  // ---------------------------------------------------------------
-  rule #AddressToString(#Address(S:String)) => S
-  rule #AddressToString(S:String)           => S
 
   rule <k> AMOUNT _A => . ... </k>
        <stack> SS => [mutez M] ; SS </stack>
@@ -2396,7 +2391,7 @@ It has an untyped and typed variant.
   rule <k> #MakeFresh(set       _:AnnotationList _:Type)        => ?_:Set                                              ... </k>
   rule <k> #MakeFresh(map       _:AnnotationList _:Type _:Type) => ?_:Map                                              ... </k>
   rule <k> #MakeFresh(big_map   _:AnnotationList _:Type _:Type) => ?_:Map                                              ... </k>
-  rule <k> #MakeFresh(contract  _:AnnotationList T)             => #Contract(?_:String . ?_:FieldAnnotation, #Name(T)) ... </k>
+  rule <k> #MakeFresh(contract  _:AnnotationList T)             => #Contract(#Address(?_:String ) . ?_:FieldAnnotation, #Name(T)) ... </k>
 
   rule <k> #MakeFresh(pair _:AnnotationList T1 T2)
         => (Pair #MakeFresh(T1) #MakeFresh(T2))
