@@ -19,6 +19,7 @@ requires "../lemmas.md"
 requires "dexter-compiled.md"
 module DEXTER-VERIFICATION-SYNTAX
   imports MICHELSON-INTERNAL-SYNTAX
+  imports DEXTER-ANNOTATIONS
 ```
 
 ```k

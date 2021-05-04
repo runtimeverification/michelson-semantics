@@ -1,8 +1,47 @@
 ```k
 requires "../../../pretty-syntax.md"
+
+module DEXTER-ANNOTATIONS
+  imports MICHELSON-COMMON-SYNTAX
+```
+
+Annotations are arbitrary tokens.
+The set of permissible annotations is infinite.
+Since we work with specific code that contains a finite number of annotations, we can represent each and give it a macro for wrapping it in the `#token(...)` production.
+
+```k
+  syntax FieldAnnotation ::= "%balance_of"
+                           | "%deadline"
+                           | "%getBalance"
+                           | "%minTokensBought"
+                           | "%mintOrBurn"
+                           | "%quantity"
+                           | "%target"
+                           | "%to"
+                           | "%transfer"
+                           | "%updateTokenPoolInternal"
+                           | "%xtzToToken"
+
+  rule %balance_of              => #token("%balance_of"             , "FieldAnnotation") [macro]
+  rule %deadline                => #token("%deadline"               , "FieldAnnotation") [macro]
+  rule %getBalance              => #token("%getBalance"             , "FieldAnnotation") [macro]
+  rule %minTokensBought         => #token("%minTokensBought"        , "FieldAnnotation") [macro]
+  rule %mintOrBurn              => #token("%mintOrBurn"             , "FieldAnnotation") [macro]
+  rule %quantity                => #token("%quantity"               , "FieldAnnotation") [macro]
+  rule %target                  => #token("%target"                 , "FieldAnnotation") [macro]
+  rule %to                      => #token("%to"                     , "FieldAnnotation") [macro]
+  rule %transfer                => #token("%transfer"               , "FieldAnnotation") [macro]
+  rule %updateTokenPoolInternal => #token("%updateTokenPoolInternal", "FieldAnnotation") [macro]
+  rule %xtzToToken              => #token("%xtzToToken"             , "FieldAnnotation") [macro]
+
+endmodule
+```
+
+```k
 module DEXTER-COMPILED
   imports MICHELSON-PRETTY-SYNTAX
   imports MICHELSON
+  imports DEXTER-ANNOTATIONS
 ```
 
 # Purpose
@@ -23,38 +62,6 @@ https://gitlab.com/dexter2tz/dexter2tz/-/blob/8a5792a56e0143042926c3ca8bff7d7068
   // ----------------------------------
   rule <k> #dexterCode(IsFA2) => #dexterCodeFA2  ... </k> requires         IsFA2
   rule <k> #dexterCode(IsFA2) => #dexterCodeFA12 ... </k> requires notBool IsFA2
-```
-
-## Annotations
-
-Annotations are arbitrary tokens.
-The set of permissible annotations is infinite.
-Since we work with specific code that contains a finite number of annotations, we can represent each and give it a macro for wrapping it in the `#token(...)` production.
-
-```k
-  syntax Annotation ::= "%balance_of"
-                      | "%deadline"
-                      | "%getBalance"
-                      | "%minTokensBought"
-                      | "%mintOrBurn"
-                      | "%quantity"
-                      | "%target"
-                      | "%to"
-                      | "%transfer"
-                      | "%updateTokenPoolInternal"
-                      | "%xtzToToken"
-
-  rule %balance_of              => #token("%balance_of"             , "FieldAnnotation") [macro]
-  rule %deadline                => #token("%deadline"               , "FieldAnnotation") [macro]
-  rule %getBalance              => #token("%getBalance"             , "FieldAnnotation") [macro]
-  rule %minTokensBought         => #token("%minTokensBought"        , "FieldAnnotation") [macro]
-  rule %mintOrBurn              => #token("%mintOrBurn"             , "FieldAnnotation") [macro]
-  rule %quantity                => #token("%quantity"               , "FieldAnnotation") [macro]
-  rule %target                  => #token("%target"                 , "FieldAnnotation") [macro]
-  rule %to                      => #token("%to"                     , "FieldAnnotation") [macro]
-  rule %transfer                => #token("%transfer"               , "FieldAnnotation") [macro]
-  rule %updateTokenPoolInternal => #token("%updateTokenPoolInternal", "FieldAnnotation") [macro]
-  rule %xtzToToken              => #token("%xtzToToken"             , "FieldAnnotation") [macro]
 ```
 
 ## FA1.2
