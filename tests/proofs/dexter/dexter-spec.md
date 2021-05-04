@@ -1,4 +1,4 @@
-```k
+``k
 module DEXTER-SPEC
   imports DEXTER-VERIFICATION
 ```
@@ -191,6 +191,34 @@ NOTE: The failure conditions are split into two claims with identical configurat
     requires (TokenAddress in_keys(KnownAddresses)
       andBool KnownAddresses[TokenAddress] ==K #Contract(A, T)
       andBool T =/=K #TokenContractType(IsFA2))
+```
+
+## Default
+
+Adds more money to the xtz reserves if the following conditions are satisifed:
+
+1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
+2.  the updated token pool size is a legal mutez value
+
+```k
+  claim <k> #runProof(_IsFA2, Default) => . </k>
+        <stack> .Stack </stack>
+        <selfIsUpdatingTokenPool> false </selfIsUpdatingTokenPool>
+        <myamount> #Mutez(Amount) </myamount>
+        <xtzPool> #Mutez(XtzPool => XtzPool +Int Amount) </xtzPool>
+     requires #IsLegalMutezValue(XtzPool +Int Amount)
+```
+
+If any of the conditions are not satisfied, the call fails.
+
+```k
+  claim <k> #runProof(_IsFA2, Default) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ?_:FailedStack </stack>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <myamount> #Mutez(Amount) </myamount>
+        <xtzPool> #Mutez(XtzPool) </xtzPool>
+    requires IsUpdating
+      orBool notBool #IsLegalMutezValue(XtzPool +Int Amount)
 ```
 
 ```k
