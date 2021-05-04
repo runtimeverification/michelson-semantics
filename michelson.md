@@ -1638,11 +1638,16 @@ These instructions push blockchain state on the stack.
   rule <k> SELF AL:AnnotationList => . ... </k>
        <stack> SS
             => [contract #LocalEntrypoint(AnnotMap, AL)
-                #Contract(A . #GetFieldAnnot(AL), #LocalEntrypoint(AnnotMap, AL))]
+                #Contract(#AddressToString(A) . #GetFieldAnnot(AL), #LocalEntrypoint(AnnotMap, AL))]
              ; SS
        </stack>
-       <paramtype> AnnotMap </paramtype>
-       <myaddr> #Address(A) </myaddr>
+       <paramtype> AnnotMap:Map </paramtype>
+       <myaddr> A </myaddr>
+
+  syntax String ::= #AddressToString(Address) [function, functional]
+  // ---------------------------------------------------------------
+  rule #AddressToString(#Address(S:String)) => S
+  rule #AddressToString(S:String)           => S
 
   rule <k> AMOUNT _A => . ... </k>
        <stack> SS => [mutez M] ; SS </stack>
