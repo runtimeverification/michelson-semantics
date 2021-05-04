@@ -145,13 +145,14 @@ The contract queries its underlying token contract for its own token balance if 
         <stack> .Stack </stack>
         <selfIsUpdatingTokenPool> false => true </selfIsUpdatingTokenPool>
         <tokenAddress> TokenAddress:Address </tokenAddress>
+        <tokenId> TokenId </tokenId>
         <myaddr> SelfAddress </myaddr>
         <myamount> #Mutez(Amount) </myamount>
         <senderaddr> Sender </senderaddr>
         <sourceaddr> Sender </sourceaddr>
         <paramtype> #Type(#DexterVersionSpecificParamType(false)) </paramtype>
         <knownaddrs> KnownAddresses </knownaddrs>
-        <operations> _ => [ Transfer_tokens Pair SelfAddress #Contract(SelfAddress, #Type(#DexterVersionSpecificParamType(false))) #Mutez(0) TokenAddress O ] ;; .InternalList </operations>
+        <operations> _ => [ Transfer_tokens Pair #UpdateTokenPoolTransferFrom(false, SelfAddress, TokenId) #Contract(SelfAddress, #Type(#DexterVersionSpecificParamType(false))) #Mutez(0) TokenAddress O ] ;; .InternalList </operations>
         <nonce> #Nonce(O) => #Nonce(O +Int 1) </nonce>
     requires Amount ==Int 0
      andBool TokenAddress in_keys(KnownAddresses)
@@ -168,7 +169,7 @@ The contract queries its underlying token contract for its own token balance if 
         <sourceaddr> Sender </sourceaddr>
         <paramtype> #Type(#DexterVersionSpecificParamType(true)) </paramtype>  // TODO: Should be the full #DexterParamType(IsFA2), but not yet supported.
         <knownaddrs> KnownAddresses </knownaddrs>
-        <operations> _ => [ Transfer_tokens Pair [ Pair SelfAddress TokenId ] ;; .InternalList #Contract(SelfAddress, #Type(#DexterVersionSpecificParamType(true))) #Mutez ( 0 ) TokenAddress O ] ;; .InternalList  </operations>
+        <operations> _ => [ Transfer_tokens Pair #UpdateTokenPoolTransferFrom(true, SelfAddress, TokenId) #Contract(SelfAddress, #Type(#DexterVersionSpecificParamType(true))) #Mutez ( 0 ) TokenAddress O ] ;; .InternalList  </operations>
         <nonce> #Nonce(O) => #Nonce(O +Int 1) </nonce>
     requires Amount ==Int 0
      andBool TokenAddress in_keys(KnownAddresses)
