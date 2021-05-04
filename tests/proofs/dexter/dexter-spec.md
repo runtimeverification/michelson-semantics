@@ -156,7 +156,7 @@ The contract queries its underlying token contract for its own token balance if 
         <nonce> #Nonce(O) => #Nonce(O +Int 1) </nonce>
     requires Amount ==Int 0
      andBool TokenAddress in_keys(KnownAddresses)
-     andBool KnownAddresses[TokenAddress] ==K #Contract(TokenAddress, #Type(pair address (contract #DexterVersionSpecificParamType(false))))
+     andBool KnownAddresses[TokenAddress] ==K #Contract(TokenAddress, #TokenContractType(false))
 
   claim <k> #runProof(true, UpdateTokenPool) => . </k>
         <stack> .Stack </stack>
@@ -173,7 +173,7 @@ The contract queries its underlying token contract for its own token balance if 
         <nonce> #Nonce(O) => #Nonce(O +Int 1) </nonce>
     requires Amount ==Int 0
      andBool TokenAddress in_keys(KnownAddresses)
-     andBool KnownAddresses[TokenAddress] ==K #Contract(TokenAddress, #Type(pair (list (pair address nat)) (contract #DexterVersionSpecificParamType(true))))
+     andBool KnownAddresses[TokenAddress] ==K #Contract(TokenAddress, #TokenContractType(true))
 ```
 
 ```k
