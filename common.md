@@ -49,15 +49,15 @@ We represent entrypoints as the concatenation of an address and a field
 annotation.
 
 ```k
-  syntax Entrypoint ::= String "." FieldAnnotation
+  syntax Entrypoint ::= Address "." FieldAnnotation
 
   syntax Entrypoint ::= #ParseEntrypoint(String)      [function]
                       | #ParseEntrypoint(String, Int) [function]
   // -----------------------------------------------------------
   rule #ParseEntrypoint(AddrLit:String) => #ParseEntrypoint(AddrLit, findChar(AddrLit, "%", 0))
-  rule #ParseEntrypoint(AddrLit:String, -1) => AddrLit . %default
+  rule #ParseEntrypoint(AddrLit:String, -1) => #Address(AddrLit) . %default
 
-  rule #ParseEntrypoint(AddrLit, N:Int) => substrString(AddrLit, 0, N) . ToFieldAnnot(substrString(AddrLit, N, lengthString(AddrLit)))
+  rule #ParseEntrypoint(AddrLit, N:Int) => #Address(substrString(AddrLit, 0, N)) . ToFieldAnnot(substrString(AddrLit, N, lengthString(AddrLit)))
     requires N >=Int 0
      andBool N +Int 1 <Int lengthString(AddrLit)
      andBool rfindChar(AddrLit, "%", lengthString(AddrLit)) ==Int N
@@ -67,8 +67,8 @@ annotation.
 
   syntax String ::= #ToString(Entrypoint) [function, functional]
   // -----------------------------------------------------------
-  rule #ToString(Addr . %default  ) => Addr
-  rule #ToString(Addr . FieldAnnot) => Addr +String FieldAnnotToString(FieldAnnot) [owise]
+  rule #ToString(#Address(Addr) . %default  ) => Addr
+  rule #ToString(#Address(Addr) . FieldAnnot) => Addr +String FieldAnnotToString(FieldAnnot) [owise]
 ```
 
 We map parameter types with annotations to a map of types.
@@ -127,8 +127,8 @@ We have a function which extracts a unique field annotation from a type.
 
   syntax MaybeFieldAnnotation ::= #GetMaybeFieldAnnot(AnnotationList) [function]
   // ---------------------------------------------------------------------------
-  rule #GetMaybeFieldAnnot(FA:FieldAnnotation Annots:AnnotationList) => FA
-  rule #GetMaybeFieldAnnot(A:Annotation       Annots:AnnotationList) => #GetMaybeFieldAnnot(Annots) [owise]
+  rule #GetMaybeFieldAnnot(FA:FieldAnnotation      _:AnnotationList) => FA
+  rule #GetMaybeFieldAnnot(_:Annotation       Annots:AnnotationList) => #GetMaybeFieldAnnot(Annots) [owise]
   rule #GetMaybeFieldAnnot(.AnnotationList)                          => .FieldAnnotation
 
   syntax FieldAnnotation ::= #GetDefault(MaybeFieldAnnotation) [function]
@@ -371,14 +371,14 @@ represetation.
     => #OtherContractsMapToKMap(A, #BuildAnnotationMap(.FieldAnnotation, T), Rs)
 
   rule #OtherContractsMapToKMap(A, TypeMap, Rs) =>
-       #BuildOtherContractsMap(A, TypeMap) #OtherContractsMapToKMap(Rs)
+       #BuildOtherContractsMap(#Address(A), TypeMap) #OtherContractsMapToKMap(Rs)
 
-  syntax Map ::= #BuildOtherContractsMap(String, Map) [function]
-  // -----------------------------------------------------------
+  syntax Map ::= #BuildOtherContractsMap(Address, Map) [function]
+  // ------------------------------------------------------------
   rule #BuildOtherContractsMap(A, FA:FieldAnnotation |-> T:Type TypeMap:Map)
     => A . FA |-> T #BuildOtherContractsMap(A, TypeMap)
 
-  rule #BuildOtherContractsMap(A, .Map) => .Map
+  rule #BuildOtherContractsMap(_, .Map) => .Map
 ```
 
 This function converts all other datatypes into their internal represenations.
@@ -626,7 +626,7 @@ a contract lookup.
                   KnownAddrs,
                   BigMaps
               )
-              M
+              #Mutez(M)
               #ParseEntrypoint(A)
               N
        requires (isWildcard(N) orBool isInt(N))
