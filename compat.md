@@ -381,7 +381,7 @@ The following macros are currently disabled.
     "Contract " +String
     #doUnparse(S, false) +String
     " " +String
-    #doUnparse(T, false)
+    #doUnparse(T, true)
 
   rule #doUnparse(O:OtherContractsMapEntry ; O':OtherContractsMapEntry ; Os:OtherContractsMapEntryList, _) =>
     #doUnparse(O, false) +String
