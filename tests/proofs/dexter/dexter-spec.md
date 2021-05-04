@@ -160,6 +160,7 @@ The contract queries its underlying token contract for its own token balance if 
 ```
 
 If any of the conditions are not satisfied, the call fails.
+NOTE: The failure conditions are split into two claims with identical configuration and rewrites, but different side conditions.
 
 ```k
   claim <k> #runProof(IsFA2, UpdateTokenPool) => Aborted(?_, ?_, ?_, ?_) </k>
