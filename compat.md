@@ -478,6 +478,16 @@ The following macros are currently disabled.
     " " +String
     #doUnparse(I, true)
 
+  rule #doUnparse(Transfer_tokens O M A:String I, _) =>
+    "Transfer_tokens " +String
+    #doUnparse(O, true) +String
+    " " +String
+    #doUnparse(M, true) +String
+    " " +String
+    #doUnparse(A, true) +String
+    " " +String
+    #doUnparse(I, true)
+
   rule #doUnparse(Set_delegate O I, _) =>
     "Set_delegate " +String
     #doUnparse(O, true) +String
