@@ -107,7 +107,7 @@ The claims that we make have the following structure:
 ```
 claim <k> InitialSourceFragment => FinalSourceFragment </k>
       <stack> InitialStack => FinalStack </stack>
-      <paramtype> ContractParameterType </paramtype>
+      <paramtype> %default |-> ContractParameterType </paramtype>
       <myamount> AmountPassedToContract </myamount>
       requires Preconditions
       ensures Postconditions
@@ -124,7 +124,7 @@ that satisfies the preconditions, i.e., an instance of the following:
 ```
 <k> InitialSourceFragment </k>
 <stack> InitialStack  </stack>
-<paramtype> ContractParameterType </paramtype>
+<paramtype> %default |-> ContractParameterType </paramtype>
 <myamount> AmountPassedToContract </myamount>
 ```
 
@@ -134,7 +134,7 @@ which is an instance of:
 ```
 <k> FinalSourceFragment </k>
 <stack> FinalStack </stack>
-<paramtype> ContractParameterType </paramtype>
+<paramtype> %default |-> ContractParameterType </paramtype>
 <myamount> AmountPassedToContract </myamount>
 ```
 
@@ -288,7 +288,7 @@ The side conditions are defined as follows (and marked in the claim below):
          => [ pair ( list operation ) pair nat pair nat list key Pair uninterpreted ( Id , Unit ) Pair Count +Int 1 Pair Threshold KeyList:InternalList ] ; .Stack
     </stack>
     <myamount> #Mutez(Amount:Int) </myamount>
-    <paramtype> (or .AnnotationList unit .AnnotationList
+    <paramtype> %default |-> (or .AnnotationList unit .AnnotationList
                    pair .AnnotationList (pair .AnnotationList nat .AnnotationList
                               (or .AnnotationList (lambda .AnnotationList unit .AnnotationList (list .AnnotationList operation .AnnotationList ))
                                   pair .AnnotationList nat .AnnotationList
