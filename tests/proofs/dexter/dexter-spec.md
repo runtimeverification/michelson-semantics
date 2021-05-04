@@ -1,4 +1,4 @@
-``k
+```k
 module DEXTER-SPEC
   imports DEXTER-VERIFICATION
 ```
