@@ -159,6 +159,28 @@ The contract queries its underlying token contract for its own token balance if 
      andBool KnownAddresses[TokenAddress] ==K #Contract(TokenAddress, #TokenContractType(IsFA2))
 ```
 
+If any of the conditions are not satisfied, the call fails.
+
+```k
+  claim <k> #runProof(IsFA2, UpdateTokenPool) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ( Failed ?_ ) </stack>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <tokenAddress> TokenAddress:Address </tokenAddress>
+        <myamount> #Mutez(Amount) </myamount>
+        <senderaddr> Sender </senderaddr>
+        <sourceaddr> Source </sourceaddr>
+        <paramtype> ParamType:Type </paramtype>
+        <knownaddrs> KnownAddresses </knownaddrs>
+    requires Amount >Int 0
+     orBool (notBool TokenAddress in_keys(KnownAddresses))
+  // orBool (TokenAddress in_keys(KnownAddresses)
+  //  andBool KnownAddresses[TokenAddress] =/=K #Contract(A, T)
+  //  andBool (A =/=K TokenAddress orBool T =/=K #TokenContractType(IsFA2)))
+     orBool IsUpdating
+     orBool Sender =/=K Source
+  // orBool ParamType =/=K #Type(#DexterVersionSpecificParamType(IsFA2))
+```
+
 ```k
 endmodule
 ```
