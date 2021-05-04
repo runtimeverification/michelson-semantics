@@ -141,7 +141,7 @@ The contract queries its underlying token contract for its own token balance if 
         Right now, we need to pretend to have a more specialized type.
 
 ```k
-  claim <k> #runProof(false, UpdateTokenPool) => . </k>
+  claim <k> #runProof(IsFA2, UpdateTokenPool) => . </k>
         <stack> .Stack </stack>
         <selfIsUpdatingTokenPool> false => true </selfIsUpdatingTokenPool>
         <tokenAddress> TokenAddress:Address </tokenAddress>
@@ -150,30 +150,13 @@ The contract queries its underlying token contract for its own token balance if 
         <myamount> #Mutez(Amount) </myamount>
         <senderaddr> Sender </senderaddr>
         <sourceaddr> Sender </sourceaddr>
-        <paramtype> #Type(#DexterVersionSpecificParamType(false)) </paramtype>
+        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
         <knownaddrs> KnownAddresses </knownaddrs>
-        <operations> _ => [ Transfer_tokens Pair #UpdateTokenPoolTransferFrom(false, SelfAddress, TokenId) #Contract(SelfAddress, #Type(#DexterVersionSpecificParamType(false))) #Mutez(0) TokenAddress O ] ;; .InternalList </operations>
+        <operations> _ => [ Transfer_tokens Pair #UpdateTokenPoolTransferFrom(IsFA2, SelfAddress, TokenId) #Contract(SelfAddress, #Type(#DexterVersionSpecificParamType(IsFA2))) #Mutez(0) TokenAddress O ] ;; .InternalList </operations>
         <nonce> #Nonce(O) => #Nonce(O +Int 1) </nonce>
     requires Amount ==Int 0
      andBool TokenAddress in_keys(KnownAddresses)
-     andBool KnownAddresses[TokenAddress] ==K #Contract(TokenAddress, #TokenContractType(false))
-
-  claim <k> #runProof(true, UpdateTokenPool) => . </k>
-        <stack> .Stack </stack>
-        <selfIsUpdatingTokenPool> false => true </selfIsUpdatingTokenPool>
-        <tokenAddress> TokenAddress:Address </tokenAddress>
-        <tokenId> TokenId </tokenId>
-        <myaddr> SelfAddress </myaddr>
-        <myamount> #Mutez(Amount) </myamount>
-        <senderaddr> Sender </senderaddr>
-        <sourceaddr> Sender </sourceaddr>
-        <paramtype> #Type(#DexterVersionSpecificParamType(true)) </paramtype>  // TODO: Should be the full #DexterParamType(IsFA2), but not yet supported.
-        <knownaddrs> KnownAddresses </knownaddrs>
-        <operations> _ => [ Transfer_tokens Pair #UpdateTokenPoolTransferFrom(true, SelfAddress, TokenId) #Contract(SelfAddress, #Type(#DexterVersionSpecificParamType(true))) #Mutez ( 0 ) TokenAddress O ] ;; .InternalList  </operations>
-        <nonce> #Nonce(O) => #Nonce(O +Int 1) </nonce>
-    requires Amount ==Int 0
-     andBool TokenAddress in_keys(KnownAddresses)
-     andBool KnownAddresses[TokenAddress] ==K #Contract(TokenAddress, #TokenContractType(true))
+     andBool KnownAddresses[TokenAddress] ==K #Contract(TokenAddress, #TokenContractType(IsFA2))
 ```
 
 ```k
