@@ -4,6 +4,7 @@ module DEXTER-SPEC
 ```
 
 ```k
+  /*
   claim <k> now 0 => . ... </k>
         <mynow> #Timestamp(0) </mynow>
 
@@ -179,6 +180,7 @@ Summary: The underlying token contract updates the Dexter contract's view of its
         <tokenPool> _ => Balance </tokenPool>
         <tokenAddress> TokenAddress </tokenAddress>
         <senderaddr> TokenAddress </senderaddr>
+  */
 ```
 
 If any of the conditions are not satisfied, the call fails.
