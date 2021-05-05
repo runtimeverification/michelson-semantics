@@ -168,7 +168,7 @@ The sender can burn liquidity tokens in exchange for tez and tokens sent to some
 
 ```k
   */
-  claim <k> #runProof(_IsFA2, RemoveLiquidity(To, LQTBurned, #Mutez(MinXtzWithdrawn), MinTokensWithdrawn, #Timestamp(Deadline))) => . </k>
+  claim <k> #runProof(true, RemoveLiquidity(To, LQTBurned, #Mutez(MinXtzWithdrawn), MinTokensWithdrawn, #Timestamp(Deadline))) => . </k>
         <stack> .Stack </stack>
         <selfIsUpdatingTokenPool> false </selfIsUpdatingTokenPool>
         <lqtAddress> LQTAddress </lqtAddress>
@@ -177,7 +177,11 @@ The sender can burn liquidity tokens in exchange for tez and tokens sent to some
                      TokenAddress . %transfer   |-> (pair address pair address nat):TypeName
         </knownaddrs>
         <mynow> #Timestamp(CurrentTime) </mynow>
+        <myamount> #Mutez(Amount) </myamount>
+        <lqtTotal> LQTTotal </lqtTotal>
     requires CurrentTime <Int Deadline
+     andBool Amount ==Int 0
+     andBool LQTTotal >Int 0
 ```
 
 ```k
