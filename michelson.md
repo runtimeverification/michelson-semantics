@@ -1022,31 +1022,22 @@ We define `COMPARE` in terms of a `#DoCompare` function.
 
   rule #DoCompare(V, V) => 0
 
-  rule #DoCompare(B1:Bool, B2:Bool)
-    =>       #if B1 ==Bool B2 #then  0
-       #else #if B1           #then  1
-       #else                        -1
-       #fi #fi
+  rule #DoCompare(false, true) => -1
+  rule #DoCompare(true, false) =>  1
 
-  rule #DoCompare(I1:Int, I2:Int)
-    =>       #if I1  <Int I2 #then -1
-       #else #if I1 ==Int I2 #then  0
-       #else                        1
-       #fi #fi
+  rule #DoCompare(I1:Int, I2:Int) => -1 requires I1 <Int I2
+  rule #DoCompare(I1:Int, I2:Int) =>  1 requires I1 >Int I2
 
-  rule #DoCompare(S1:String, S2:String)
-    =>       #if S1  <String S2 #then -1
-       #else #if S1 ==String S2 #then  0
-       #else                           1
-       #fi #fi
+  rule #DoCompare(I1:String, I2:String) => -1 requires I1 <String I2
+  rule #DoCompare(I1:String, I2:String) =>  1 requires I1 >String I2
 
   rule #DoCompare(None,    Some _ ) => -1
   rule #DoCompare(Some _,  None   ) =>  1
   rule #DoCompare(Some V1, Some V2) => #DoCompare(V1, V2)
 
   rule #DoCompare((Pair A1 _ ), (Pair B1 _ )) => -1                 requires #DoCompare(A1, B1) ==Int -1
-  rule #DoCompare((Pair A1 A2), (Pair B1 B2)) => #DoCompare(A2, B2) requires #DoCompare(A1, B1) ==Int 0
-  rule #DoCompare((Pair A1 _ ), (Pair B1 _ )) => 1                  requires #DoCompare(A1, B1) ==Int 1
+  rule #DoCompare((Pair A1 A2), (Pair B1 B2)) => #DoCompare(A2, B2) requires #DoCompare(A1, B1) ==Int  0
+  rule #DoCompare((Pair A1 _ ), (Pair B1 _ )) => 1                  requires #DoCompare(A1, B1) ==Int  1
 
   rule #DoCompare(B1:Bytes, B2:Bytes) => #DoCompare(Bytes2Int(B1, BE, Unsigned), Bytes2Int(B2, BE, Unsigned))
   rule #DoCompare(#KeyHash(S1), #KeyHash(S2)) => #DoCompare(S1, S2)
@@ -1081,6 +1072,16 @@ The `#DoCompare` function requires additional lemmas for symbolic execution.
   // TODO: at some point this rule should be builtin
   rule X ==String X => true  [simplification]
   rule X  <String X => false [simplification]
+
+  rule #Ceil(#DoCompare(V1, V2)) => #Top
+    requires (isBool(V1)      andBool isBool(V2))
+      orBool (isInt(V1)       andBool isInt(V2))
+      orBool (isString(V1)    andBool isString(V2))
+      orBool (isBytes(V1)     andBool isBytes(V2))
+      orBool (isKeyHash(V1)   andBool isKeyHash(V2))
+      orBool (isMutez(V1)     andBool isMutez(V2))
+      orBool (isTimestamp(V1) andBool isTimestamp(V2))
+      orBool (isAddress(V1)   andBool isAddress(V2)) [simplification]
 ```
 
 ### String Operations
