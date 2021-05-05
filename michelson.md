@@ -1071,12 +1071,7 @@ We define `COMPARE` in terms of a `#DoCompare` function.
 The `#DoCompare` function requires additional lemmas for symbolic execution.
 
 ```symbolic
-  rule #DoCompare         (V, V) => 0 [simplification]
-  rule #DoCompareAddr     (V, V) => 0 [simplification]
-  rule #DoCompareBytes    (V, V) => 0 [simplification]
-  rule #DoCompareKeyHash  (V, V) => 0 [simplification]
-  rule #DoCompareTimestamp(V, V) => 0 [simplification]
-  rule #DoCompareMutez    (V, V) => 0 [simplification]
+  rule #DoCompare(V, V) => 0 [simplification]
 
   rule 0 ==Int  #DoCompare(V1, V2) => V1  ==K V2  [simplification]
   rule 0 =/=Int #DoCompare(V1, V2) => V1 =/=K V2  [simplification]
