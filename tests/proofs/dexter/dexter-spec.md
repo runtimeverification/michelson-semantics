@@ -158,6 +158,7 @@ The contract queries its underlying token contract for its own token balance if 
 ```
 
 If any of the conditions are not satisfied, the call fails.
+NOTE: The failure conditions are split into two claims with identical configuration and rewrites, but different side conditions.
 
 ```k
   claim <k> #runProof(IsFA2, UpdateTokenPool) => Aborted(?_, ?_, ?_, ?_) </k>
@@ -170,12 +171,24 @@ If any of the conditions are not satisfied, the call fails.
         <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
         <knownaddrs> KnownAddresses </knownaddrs>
     requires Amount >Int 0
-      orBool (notBool TokenAddress in_keys(KnownAddresses))
-      orBool IsUpdating
-      orBool Sender =/=K Source
-      orBool (TokenAddress in_keys(KnownAddresses)
-       andBool KnownAddresses[TokenAddress] ==K #Contract(A, T)
-       andBool T =/=K #TokenContractType(IsFA2))
+     orBool (notBool TokenAddress in_keys(KnownAddresses))
+     orBool IsUpdating
+     orBool Sender =/=K Source
+```
+
+```k
+  claim <k> #runProof(IsFA2, UpdateTokenPool) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ( Failed ?_ ) </stack>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <tokenAddress> TokenAddress:Address </tokenAddress>
+        <myamount> #Mutez(Amount) </myamount>
+        <senderaddr> Sender </senderaddr>
+        <sourceaddr> Source </sourceaddr>
+        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+        <knownaddrs> KnownAddresses </knownaddrs>
+    requires (TokenAddress in_keys(KnownAddresses)
+      andBool KnownAddresses[TokenAddress] ==K #Contract(A, T)
+      andBool T =/=K #TokenContractType(IsFA2))
 ```
 
 ## Default
