@@ -174,7 +174,7 @@ If any of the conditions are not satisfied, the call fails.
       orBool IsUpdating
       orBool Sender =/=K Source
       orBool (TokenAddress in_keys(KnownAddresses)
-       andBool KnownAddresses[TokenAddress] ==K #Contract(A, T)
+       andBool KnownAddresses[TokenAddress] ==K #Contract(_A, T)
        andBool T =/=K #TokenContractType(IsFA2))
 ```
 
