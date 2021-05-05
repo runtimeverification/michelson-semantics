@@ -57,6 +57,9 @@ We may abbreviate `entrypoint_input_type` to just `input` when it is clear from 
 In our proofs, we will use the following abstract representation of the Dexter contract storage state.
 For simplicity, we assume the that the `tokenId` field is always present, though the verification of the FA12 version of the contract will not touch this field.
 
+Calling functions produces not only storage changes but also a list of callbacks.
+We serialize these to the `<operations>` cell for ease of writing specifications.
+
 ```k
 configuration <dexterTop>
                 <michelsonTop/>
@@ -71,6 +74,7 @@ configuration <dexterTop>
                   <lqtAddress>              #Address("")                                     </lqtAddress>
                   <tokenId>                 0                                                </tokenId>
                 </storage>
+                <operations> .InternalList </operations>
               </dexterTop>
 ```
 
@@ -228,13 +232,6 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
             ( [], { storage with lqtAddress = lqtAddress } )
             ```
 
-        -   Summary: The contract sets its liquidity pool adddress to the provided address if the following conditions are satisifed:
-
-            1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
-            2.  exactly 0 tez was transferred to this contract when it was invoked
-            3.  the txn sender is the `storage.manager`
-            4.  the liquidity pool address has already been set (i.e. `storage.lqtAddress1 != tz1Ke2h7sDdakHJQh8WX4Z372du1KChsksyU`)
-
     6.  `default_`
 
         -   Input:
@@ -250,10 +247,6 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
             ```
             ( [], { storage with xtzPool += txn.amount } )
             ```
-
-        -   Summary: Adds more money to the xtz reserves if the following conditions are satisifed:
-
-            1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
 
     7.  `update_token_pool`
 
@@ -272,14 +265,6 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
             ```
 
             where, in version FA2, `Params = Pair (self.address, storage.tokenId)` and in version FA12, `Params = self.address`
-
-        -   Summary: The contract queries its underlying token contract for its own token balance if the following conditions are satisfied:
-
-            1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
-            2.  exactly 0 tez was transferred to this contract when it was invoked
-            3.  the txn sender must be equal to the txn source
-            4.  if we are running the FA2 version of Dexter, then check that the contract at address `storage.tokenAddress` has a well-typed FA2 `balance_of` entrypoint;
-                otherwise, check that the contract at address `storage.tokenAddress` has a well-typed FA12 `get_balance` entrypoint.
 
     8.  `update_token_pool_internal`
 
@@ -592,7 +577,7 @@ We also define a functions that serialize and deserialize our abstract parameter
   // -------------------------------------------
   rule <k> #storeDexterState(IsFA2) => #storeDexterState(IsFA2, VersionSpecificData) ... </k>
        <stack> [ pair list operation StorageType:TypeName
-                 Pair _OpList
+                 Pair OpList
                    Pair TokenPool
                      Pair XTZPool
                        Pair LQTTotal
@@ -610,6 +595,7 @@ We also define a functions that serialize and deserialize our abstract parameter
        <freezeBaker>             _ => IsBakerFrozen       </freezeBaker>
        <manager>                 _ => Manager             </manager>
        <tokenAddress>            _ => TokenContract       </tokenAddress>
+       <operations>              _ => OpList              </operations>
     requires StorageType ==K #DexterStorageType(IsFA2)
 
   rule <k> #storeDexterState(IsFA2, Pair TokenId LQTContract) => .K ... </k>
@@ -626,6 +612,20 @@ If the contract execution fails, storage is not updated.
 
 ```k
   rule <k> Aborted(_, _, _, _) ~> (#storeDexterState(_) => .) ... </k>
+```
+
+## Resulting Operations Abstractions
+
+```k
+  syntax Data ::= #UpdateTokenPoolTransferFrom(Bool, Address, Int) [function, functional]
+ // -------------------------------------------------------------------------------------
+  rule #UpdateTokenPoolTransferFrom(IsFA2, SelfAddress, _TokenId) =>        SelfAddress                            requires notBool IsFA2
+  rule #UpdateTokenPoolTransferFrom(IsFA2, SelfAddress,  TokenId) => [ Pair SelfAddress TokenId ] ;; .InternalList requires         IsFA2
+
+  syntax Type ::= #TokenContractType(Bool) [function, functional]
+ // -------------------------------------------------------------
+  rule #TokenContractType(false) => #Type(pair address                   (contract #DexterVersionSpecificParamType(false)))
+  rule #TokenContractType(true)  => #Type(pair (list (pair address nat)) (contract #DexterVersionSpecificParamType(true)) )
 ```
 
 ## Putting It All Together
@@ -647,7 +647,9 @@ If all steps are completed, only the Dexter-specific storage is updated.
         ~> #storeDexterState(IsFA2)
         ...
        </k>
+       <operations> OpList </operations>
     ensures wellTypedParams(IsFA2, Params)
+    andBool OpList ==K .InternalList
 ```
 
 ## Epilogue
