@@ -187,7 +187,7 @@ NOTE: The failure conditions are split into two claims with identical configurat
         <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
         <knownaddrs> KnownAddresses </knownaddrs>
     requires (TokenAddress in_keys(KnownAddresses)
-      andBool KnownAddresses[TokenAddress] ==K #Contract(A, T)
+      andBool KnownAddresses[TokenAddress] ==K #Contract(_, T)
       andBool T =/=K #TokenContractType(IsFA2))
 ```
 
