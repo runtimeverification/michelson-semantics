@@ -266,14 +266,6 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
 
             where, in version FA2, `Params = Pair (self.address, storage.tokenId)` and in version FA12, `Params = self.address`
 
-        -   Summary: The contract queries its underlying token contract for its own token balance if the following conditions are satisfied:
-
-            1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
-            2.  exactly 0 tez was transferred to this contract when it was invoked
-            3.  the txn sender must be equal to the txn source
-            4.  if we are running the FA2 version of Dexter, then check that the contract at address `storage.tokenAddress` has a well-typed FA2 `balance_of` entrypoint;
-                otherwise, check that the contract at address `storage.tokenAddress` has a well-typed FA12 `get_balance` entrypoint.
-
     8.  `update_token_pool_internal`
 
         -   Input:
@@ -620,6 +612,20 @@ If the contract execution fails, storage is not updated.
 
 ```k
   rule <k> Aborted(_, _, _, _) ~> (#storeDexterState(_) => .) ... </k>
+```
+
+## Resulting Operations Abstractions
+
+```k
+  syntax Data ::= #UpdateTokenPoolTransferFrom(Bool, Address, Int) [function, functional]
+ // -------------------------------------------------------------------------------------
+  rule #UpdateTokenPoolTransferFrom(IsFA2, SelfAddress, _TokenId) =>        SelfAddress                            requires notBool IsFA2
+  rule #UpdateTokenPoolTransferFrom(IsFA2, SelfAddress,  TokenId) => [ Pair SelfAddress TokenId ] ;; .InternalList requires         IsFA2
+
+  syntax Type ::= #TokenContractType(Bool) [function, functional]
+ // -------------------------------------------------------------
+  rule #TokenContractType(false) => #Type(pair address                   (contract #DexterVersionSpecificParamType(false)))
+  rule #TokenContractType(true)  => #Type(pair (list (pair address nat)) (contract #DexterVersionSpecificParamType(true)) )
 ```
 
 ## Putting It All Together

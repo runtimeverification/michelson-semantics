@@ -124,6 +124,73 @@ If any of the conditions are not satisfied, the call fails.
       orBool LQTAddress =/=K #Address("tz1Ke2h7sDdakHJQh8WX4Z372du1KChsksyU")
 ```
 
+## Update Token Pool
+
+The contract queries its underlying token contract for its own token balance if the following conditions are satisfied:
+
+1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
+2.  exactly 0 tez was transferred to this contract when it was invoked
+3.  the txn sender must be equal to the txn source
+4.  if we are running the FA2 version of Dexter, then check that the contract at address `storage.tokenAddress` has a well-typed FA2 `balance_of` entrypoint;
+    otherwise, check that the contract at address `storage.tokenAddress` has a well-typed FA12 `get_balance` entrypoint.
+
+- TODO: Generalize the Michelson `SELF` and `CONTRACT` instructions to properly use annotations.
+        That way, we can use the actual, full #DexterParamType in the `paramtype` cell, and in the `KnownAddresses` map.
+        Right now, we need to pretend to have a more specialized type.
+
+```k
+  claim <k> #runProof(IsFA2, UpdateTokenPool) => . </k>
+        <stack> .Stack </stack>
+        <selfIsUpdatingTokenPool> false => true </selfIsUpdatingTokenPool>
+        <tokenAddress> TokenAddress:Address </tokenAddress>
+        <tokenId> TokenId </tokenId>
+        <myaddr> SelfAddress </myaddr>
+        <myamount> #Mutez(Amount) </myamount>
+        <senderaddr> Sender </senderaddr>
+        <sourceaddr> Sender </sourceaddr>
+        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+        <knownaddrs> KnownAddresses </knownaddrs>
+        <operations> _ => [ Transfer_tokens Pair #UpdateTokenPoolTransferFrom(IsFA2, SelfAddress, TokenId) #Contract(SelfAddress, #Type(#DexterVersionSpecificParamType(IsFA2))) #Mutez(0) TokenAddress O ] ;; .InternalList </operations>
+        <nonce> #Nonce(O) => #Nonce(O +Int 1) </nonce>
+    requires Amount ==Int 0
+     andBool TokenAddress in_keys(KnownAddresses)
+     andBool KnownAddresses[TokenAddress] ==K #Contract(TokenAddress, #TokenContractType(IsFA2))
+```
+
+If any of the conditions are not satisfied, the call fails.
+NOTE: The failure conditions are split into two claims with identical configuration and rewrites, but different side conditions.
+
+```k
+  claim <k> #runProof(IsFA2, UpdateTokenPool) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ( Failed ?_ ) </stack>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <tokenAddress> TokenAddress:Address </tokenAddress>
+        <myamount> #Mutez(Amount) </myamount>
+        <senderaddr> Sender </senderaddr>
+        <sourceaddr> Source </sourceaddr>
+        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+        <knownaddrs> KnownAddresses </knownaddrs>
+    requires Amount >Int 0
+     orBool (notBool TokenAddress in_keys(KnownAddresses))
+     orBool IsUpdating
+     orBool Sender =/=K Source
+```
+
+```k
+  claim <k> #runProof(IsFA2, UpdateTokenPool) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ( Failed ?_ ) </stack>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <tokenAddress> TokenAddress:Address </tokenAddress>
+        <myamount> #Mutez(Amount) </myamount>
+        <senderaddr> Sender </senderaddr>
+        <sourceaddr> Source </sourceaddr>
+        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+        <knownaddrs> KnownAddresses </knownaddrs>
+    requires (TokenAddress in_keys(KnownAddresses)
+      andBool KnownAddresses[TokenAddress] ==K #Contract(_, T)
+      andBool T =/=K #TokenContractType(IsFA2))
+```
+
 ## Default
 
 Adds more money to the xtz reserves if the following conditions are satisifed:
