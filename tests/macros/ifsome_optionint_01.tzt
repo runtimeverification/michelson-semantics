@@ -1,3 +1,0 @@
-code { IF_SOME { } { PUSH int 10 } } ; 
-input { Stack_elt (option int) None } ;
-output { Stack_elt int 10 }
