@@ -134,8 +134,6 @@ The contract queries its underlying token contract for its own token balance if 
 4.  if we are running the FA2 version of Dexter, then check that the contract at address `storage.tokenAddress` has a well-typed FA2 `balance_of` entrypoint;
     otherwise, check that the contract at address `storage.tokenAddress` has a well-typed FA12 `get_balance` entrypoint.
 
-- TODO: Combine these positive cases into one spec.
-- TODO: Negative case
 - TODO: Generalize the Michelson `SELF` and `CONTRACT` instructions to properly use annotations.
         That way, we can use the actual, full #DexterParamType in the `paramtype` cell, and in the `KnownAddresses` map.
         Right now, we need to pretend to have a more specialized type.
