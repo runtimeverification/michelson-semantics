@@ -1643,6 +1643,7 @@ These instructions push blockchain state on the stack.
        </stack>
        <paramtype> AnnotMap:Map </paramtype>
        <myaddr> A </myaddr>
+    ensures #GetFieldAnnot(AL) in_keys( AnnotMap )
 
   rule <k> AMOUNT _A => . ... </k>
        <stack> SS => [mutez M] ; SS </stack>
