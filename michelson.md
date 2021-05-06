@@ -1022,7 +1022,6 @@ We define `COMPARE` in terms of a `#DoCompare` function.
                | #DoCompareBool(Bool, Bool)                [function, functional]
                | #DoCompareInt(Int,Int)                    [function, functional]
                | #DoCompareStr(String, String)             [function, functional]
-               | #DoCompareAddr(Address, Address)          [function, functional]
                | #DoCompareBytes(Bytes, Bytes)             [function, functional]
                | #DoCompareKeyHash(KeyHash, KeyHash)       [function, functional]
                | #DoCompareTimestamp(Timestamp, Timestamp) [function, functional]
@@ -1031,11 +1030,12 @@ We define `COMPARE` in terms of a `#DoCompare` function.
   rule #DoCompare(V1:Bool, V2:Bool)           => #DoCompareBool(V1,V2)
   rule #DoCompare(V1:Int, V2:Int)             => #DoCompareInt(V1,V2)
   rule #DoCompare(V1:String, V2:String)       => #DoCompareStr(V1,V2)
-  rule #DoCompare(V1:Address, V2:Address)     => #DoCompareAddr(V1,V2)
   rule #DoCompare(V1:Bytes, V2:Bytes)         => #DoCompareBytes(V1,V2)
   rule #DoCompare(V1:KeyHash, V2:KeyHash)     => #DoCompareKeyHash(V1,V2)
   rule #DoCompare(V1:Timestamp, V2:Timestamp) => #DoCompareTimestamp(V1,V2)
   rule #DoCompare(V1:Mutez, V2:Mutez)         => #DoCompareMutez(V1,V2)
+
+  rule #DoCompare(#Address(S1), #Address(S2))    => #DoCompareStr(S1, S2)
 
   rule #DoCompareBool(B:Bool,  B:Bool ) =>  0
   rule #DoCompareBool(false,   true   ) => -1
@@ -1049,7 +1049,6 @@ We define `COMPARE` in terms of a `#DoCompare` function.
   rule #DoCompareStr(S1:String, S2:String) => -1 requires S1 <String S2
   rule #DoCompareStr(S1:String, S2:String) =>  1 requires S1 >String S2
 
-  rule #DoCompareAddr(#Address(S1), #Address(S2))    => #DoCompareStr(S1, S2)
   rule #DoCompareBytes(B1:Bytes, B2:Bytes)           => #DoCompareStr(Bytes2String(B1), Bytes2String(B2))
   rule #DoCompareKeyHash(#KeyHash(S1), #KeyHash(S2)) => #DoCompareStr(S1, S2)
 
@@ -1068,7 +1067,14 @@ We define `COMPARE` in terms of a `#DoCompare` function.
 The `#DoCompare` function requires additional lemmas for symbolic execution.
 
 ```symbolic
-  rule #DoCompare(V, V) => 0 [simplification]
+  rule #DoCompare         (V, V) => 0 [simplification]
+  rule #DoCompareBool     (V, V) => 0 [simplification]
+  rule #DoCompareInt      (V, V) => 0 [simplification]
+  rule #DoCompareStr      (V, V) => 0 [simplification]
+  rule #DoCompareBytes    (V, V) => 0 [simplification]
+  rule #DoCompareKeyHash  (V, V) => 0 [simplification]
+  rule #DoCompareTimestamp(V, V) => 0 [simplification]
+  rule #DoCompareMutez    (V, V) => 0 [simplification]
 
   rule 0 ==Int  #DoCompare(V1, V2) => V1  ==K V2  [simplification]
   rule 0 =/=Int #DoCompare(V1, V2) => V1 =/=K V2  [simplification]

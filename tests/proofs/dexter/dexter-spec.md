@@ -4,6 +4,7 @@ module DEXTER-SPEC
 ```
 
 ```k
+/*
   claim <k> now 0 => . ... </k>
         <mynow> #Timestamp(0) </mynow>
 
@@ -167,6 +168,7 @@ The contract queries its underlying token contract for its own token balance if 
         Right now, we need to pretend to have a more specialized type.
 
 ```k
+*/
   claim <k> #runProof(IsFA2, UpdateTokenPool) => . </k>
         <stack> .Stack </stack>
         <selfIsUpdatingTokenPool> false => true </selfIsUpdatingTokenPool>
