@@ -1092,6 +1092,8 @@ The `#DoCompare` function requires additional lemmas for symbolic execution.
   rule X::String ==String Y::String => false
     requires #Not ( { X #Equals Y } )
     [anywhere, simplification]
+
+  rule #Address(X:String) ==K #Address(Y:String) => X ==String Y [simplification]
 ```
 
 ### String Operations
