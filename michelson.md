@@ -1081,7 +1081,8 @@ The `#DoCompare` function requires additional lemmas for symbolic execution.
       orBool (isKeyHash(V1)   andBool isKeyHash(V2))
       orBool (isMutez(V1)     andBool isMutez(V2))
       orBool (isTimestamp(V1) andBool isTimestamp(V2))
-      orBool (isAddress(V1)   andBool isAddress(V2)) [simplification]
+      orBool (isAddress(V1)   andBool isAddress(V2))
+    [simplification]
 ```
 
 ### String Operations
