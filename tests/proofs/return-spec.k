@@ -25,14 +25,14 @@ module RETURN-SPEC
           } ;
           PAIR .AnnotationList
         } => .K </k>
-        <stack> [ (pair unit unit) Pair Unit Unit ] ; .Stack => [ (pair (list operation) unit) Pair [ Transfer_tokens Unit #Mutez(A) "SourceAddr" . %default ?_ ] ;; .InternalList Unit ] ; .Stack </stack>
+        <stack> [ (pair unit unit) Pair Unit Unit ] ; .Stack => [ (pair (list operation) unit) Pair [ Transfer_tokens Unit #Mutez(A) #Address("SourceAddr") . %default ?_ ] ;; .InternalList Unit ] ; .Stack </stack>
         <paramtype> %default |-> unit .AnnotationList </paramtype>
         <storagetype> unit .AnnotationList </storagetype>
         <mybalance> #Mutez(0) </mybalance>
         <myamount> #Mutez(A) </myamount>
         <mynow> #Timestamp(0) </mynow>
         <myaddr> #Address("OwnAddr") </myaddr>
-        <knownaddrs> "SourceAddr" . %default |-> unit .AnnotationList </knownaddrs>
+        <knownaddrs> #Address("SourceAddr") . %default |-> unit </knownaddrs>
         <sourceaddr> #Address("SourceAddr") </sourceaddr>
         <senderaddr> #Address("SenderAddr") </senderaddr>
         <mychainid> #ChainId(_) </mychainid>
@@ -65,7 +65,7 @@ module RETURN-SPEC
         <myamount> #Mutez(0) </myamount>
         <mynow> #Timestamp(0) </mynow>
         <myaddr> #Address("OwnAddr") </myaddr>
-        <knownaddrs> "SourceAddr" . %default |-> unit .AnnotationList </knownaddrs>
+        <knownaddrs> #Address("SourceAddr") . %default |-> unit </knownaddrs>
         <sourceaddr> #Address("SourceAddr") </sourceaddr>
         <senderaddr> #Address("SenderAddr") </senderaddr>
         <mychainid> #ChainId(_) </mychainid>
