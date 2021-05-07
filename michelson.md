@@ -182,6 +182,7 @@ Semantics Initialization
 ```k
   rule <k> #Init
         => #ConvertBigMapsToNative
+        ~> #EnsureLocalEntrypointsInitialized
         ~> #ConvertParamToNative
         ~> #ConvertStorageToNative
         ~> #ExecutePreConditions
@@ -312,6 +313,12 @@ The following unit test groups are not supported by the symbolic interpreter.
 ### Micheline to Native Conversion
 
 ```k
+  syntax KItem ::= "#EnsureLocalEntrypointsInitialized"
+  rule <k> #EnsureLocalEntrypointsInitialized => .K ... </k>
+       <paramtype> LocalEntrypointMap => #AddDefaultEntry(LocalEntrypointMap, #Type(unit)) </paramtype>
+```
+
+```k
   syntax KItem ::= "#ConvertBigMapsToNative"
   rule <k> #ConvertBigMapsToNative => .K ... </k>
        <bigmaps> BigMaps => #ConvertBigMapsToNative(BigMaps) </bigmaps>
@@ -326,13 +333,12 @@ The following unit test groups are not supported by the symbolic interpreter.
 ```k
   syntax KItem ::= "#ConvertParamToNative"
   rule <k> #ConvertParamToNative => .K ... </k>
-       <paramvalue> D:Data => #MichelineToNative(D, { #AddDefaultEntry(TypeMap, #Type(unit)) [ %default ] }:>Type, .Map, BigMaps) </paramvalue>
-       <paramtype> TypeMap => #AddDefaultEntry(TypeMap, #Type(unit)) </paramtype>
+       <paramvalue> D:Data => #MichelineToNative(D, #Type({ LocalEntrypoints [ %default ] }:>TypeName), .Map, BigMaps) </paramvalue>
+       <paramtype> LocalEntrypoints </paramtype>
        <bigmaps> BigMaps </bigmaps>
 
   rule <k> #ConvertParamToNative => .K ... </k>
        <paramvalue> .Data </paramvalue>
-       <paramtype> TypeMap => #AddDefaultEntry(TypeMap, #Type(unit)) </paramtype>
 
   syntax KItem ::= "#ConvertStorageToNative"
   rule <k> #ConvertStorageToNative => .K ... </k>
@@ -1599,18 +1605,19 @@ These instructions push fresh `contract` literals on the stack corresponding
 to the given addresses/key hashes.
 
 ```k
-  rule <k> CONTRACT AL:AnnotationList T => . ... </k>
-       <stack> [address A:Address]
-             ; SS
-            => [option contract #Name(T)
-                Some #Contract(A . #GetFieldAnnot(AL), { #RemoteEntrypointFromAnnots(ContractMap, A, AL) }:>TypeName)]
-             ; SS
+  syntax Instruction ::= CONTRACT(FieldAnnotation, TypeName)
+  rule <k> CONTRACT AL:AnnotationList T:Type => CONTRACT(#GetFieldAnnot(AL), #Name(T)) ... </k>
+
+  rule <k> CONTRACT(FA, T) => . ... </k>
+       <stack> [address A:Address]                            ; SS
+            => [option contract T Some #Contract(A . FA, T) ] ; SS
        </stack>
        <knownaddrs> ContractMap </knownaddrs>
-    requires #RemoteEntrypointFromAnnots(ContractMap, A, AL) ==K #Name(T)
+    requires A . FA in_keys(ContractMap)
+     andBool ContractMap [ A . FA ] ==K T
 
-  rule <k> CONTRACT _AL T => . ... </k>
-       <stack> [address _] ; SS => [option contract #Name(T) None] ; SS </stack>
+  rule <k> CONTRACT(_FA, T) => . ... </k>
+       <stack> [address _] ; SS => [option contract T None] ; SS </stack>
        <knownaddrs> _ </knownaddrs> [owise]
 
   rule <k> IMPLICIT_ACCOUNT _AL => . ... </k>
@@ -1637,15 +1644,19 @@ These instructions push blockchain state on the stack.
        <stack> SS => [address A] ; SS </stack>
        <senderaddr> A </senderaddr>
 
-  rule <k> SELF AL:AnnotationList => . ... </k>
+  syntax Instruction ::= SELF(FieldAnnotation)
+  rule <k> SELF AL:AnnotationList => SELF(#GetFieldAnnot(AL)) ... </k>
+
+  rule <k> SELF(FA) => .K ... </k>
        <stack> SS
-            => [contract #LocalEntrypoint(AnnotMap, AL)
-                #Contract(A . #GetFieldAnnot(AL), #LocalEntrypoint(AnnotMap, AL))]
+            => [contract {LocalEntrypointMap [ FA ]}:>TypeName
+                #Contract(A . FA, {LocalEntrypointMap [ FA ]}:>TypeName)]
              ; SS
        </stack>
-       <paramtype> AnnotMap:Map </paramtype>
+       <paramtype> LocalEntrypointMap </paramtype>
        <myaddr> A </myaddr>
-    ensures #GetFieldAnnot(AL) in_keys( AnnotMap )
+    ensures FA in_keys( LocalEntrypointMap )
+    andBool isTypeName(LocalEntrypointMap [ FA ])
 
   rule <k> AMOUNT _A => . ... </k>
        <stack> SS => [mutez M] ; SS </stack>

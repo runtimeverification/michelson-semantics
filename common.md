@@ -97,7 +97,7 @@ We map parameter types with annotations to a map of types.
   syntax Map ::= #AddAnnotationEntry(MaybeFieldAnnotation, Type, Map) [function]
   // ---------------------------------------------------------------------------
   rule #AddAnnotationEntry(.FieldAnnotation,   _, AnnotMap) => AnnotMap
-  rule #AddAnnotationEntry(FA:FieldAnnotation, T, AnnotMap) => FA |-> T AnnotMap
+  rule #AddAnnotationEntry(FA:FieldAnnotation, T, AnnotMap) => FA |-> #Name(T) AnnotMap
     requires notBool FA in_keys(AnnotMap)
 ```
 
@@ -108,7 +108,7 @@ We add functions for adding default entrypoints to a map or producing the defaul
   // --------------------------------------------------
   rule #AddDefaultEntry(AnnotMap, _Type) => AnnotMap
     requires %default in_keys(AnnotMap)
-  rule #AddDefaultEntry(AnnotMap,  Type) => %default |-> Type AnnotMap
+  rule #AddDefaultEntry(AnnotMap,  Type) => %default |-> #Name(Type) AnnotMap
     [owise]
 
   syntax FieldAnnotation ::= "%default"
@@ -141,31 +141,6 @@ We have a function which extracts a unique field annotation from a type.
   // -----------------------------------------------------------------
   rule #GetFieldAnnot(T:Type)                => #GetDefault(#GetMaybeFieldAnnot(T))
   rule #GetFieldAnnot(Annots:AnnotationList) => #GetDefault(#GetMaybeFieldAnnot(Annots))
-```
-
-We want to check if a local or remote entrypoint exists with the given name.
-
-```k
-  syntax TypeName ::= #LocalEntrypoint(Map, AnnotationList)  [function]
-                    | #LocalEntrypoint(Map, FieldAnnotation) [function]
-  // ------------------------------------------------------------------
-  rule #LocalEntrypoint(EntrypointMap, Annots:AnnotationList) => #LocalEntrypoint(EntrypointMap, #GetFieldAnnot(Annots))
-  rule #LocalEntrypoint(EntrypointMap, FA:FieldAnnotation)    => #Name({ EntrypointMap [ FA ] }:>Type)
-
-  syntax MaybeTypeName ::= #RemoteEntrypointFromAnnots(Map, Address, AnnotationList) [function]
-                         | #RemoteEntrypoint(Map, Address, FieldAnnotation)          [function]
-                         | #RemoteEntrypoint(Map, Entrypoint)                        [function]
-  // ------------------------------------------------------------------------------------------
-  rule #RemoteEntrypointFromAnnots(ContractMap, Addr, Annots) => #RemoteEntrypoint(ContractMap, Addr, #GetFieldAnnot(Annots))
-
-  rule #RemoteEntrypoint(ContractMap, Addr, FA:FieldAnnotation) => #RemoteEntrypoint(ContractMap, Addr . FA)
-
-  rule #RemoteEntrypoint(ContractMap, EP) => #Name({ContractMap [ EP ] }:>Type)
-    requires EP in_keys( ContractMap )
-     ensures isType(ContractMap [ EP ])
-
-  rule #RemoteEntrypoint(ContractMap, EP) => .TypeName
-    requires notBool EP in_keys( ContractMap )
 ```
 
 Value Representation
@@ -375,7 +350,7 @@ represetation.
 
   syntax Map ::= #BuildOtherContractsMap(Address, Map) [function]
   // ------------------------------------------------------------
-  rule #BuildOtherContractsMap(A, FA:FieldAnnotation |-> T:Type TypeMap:Map)
+  rule #BuildOtherContractsMap(A, FA:FieldAnnotation |-> T:TypeName TypeMap:Map)
     => A . FA |-> T #BuildOtherContractsMap(A, TypeMap)
 
   rule #BuildOtherContractsMap(_, .Map) => .Map
@@ -622,7 +597,7 @@ a contract lookup.
           => Transfer_tokens
               #MichelineToNative(
                   P,
-                  {KnownAddrs [ #ParseEntrypoint(A) ]}:>Type,
+                  #Type({KnownAddrs [ #ParseEntrypoint(A) ]}:>TypeName),
                   KnownAddrs,
                   BigMaps
               )
