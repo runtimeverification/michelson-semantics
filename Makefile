@@ -381,12 +381,21 @@ tests/%.prove: tests/% $(prove_kompiled)
 
 # Dexter proofs
 
+dexter_spec_modules = DEXTER-SPEC                 \
+                      DEXTER-SETMANAGER-SPEC      \
+                      DEXTER-SETBAKER-SPEC        \
+                      DEXTER-SETLQTADDRESS-SPEC   \
+                      DEXTER-UPDATETOKENPOOL-SPEC \
+                      DEXTER-DEFAULT-SPEC
+
 dexter_spec_file := tests/proofs/dexter/dexter-spec.md
 
-dexter-prove: KPROVE_MODULE  = DEXTER-VERIFICATION
-dexter-prove: KPROVE_OPTIONS = --spec-module DEXTER-SPEC
-dexter-prove: $(dexter_spec_file).dexter_prove
+dexter-prove: $(dexter_spec_modules:%=dexter-prove_%)
 
+dexter-prove_%:
+	$(MAKE) $(dexter_spec_file).dexter_prove \
+  KPROVE_MODULE=DEXTER-VERIFICATION        \
+  KPROVE_OPTIONS="--spec-module $*"
 
 tests/%.dexter_prove: tests/% $(dexter_kompiled)
 	$(TEST) prove --backend prove --backend-dir $(dexter_dir) $< $(KPROVE_MODULE) $(KPROVE_OPTIONS)
