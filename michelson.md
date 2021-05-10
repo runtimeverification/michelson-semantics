@@ -1565,7 +1565,7 @@ however forces us to use two rules for each operation.
        <nonce> #Nonce(O) => #NextNonce(#Nonce(O)) </nonce>
 
   rule <k> TRANSFER_TOKENS _A => . ... </k>
-       <stack> [T D] ; [mutez #Mutez(M)] ; [contract T #Contract(A, _)] ; SS
+       <stack> [T D] ; [mutez M:Mutez] ; [contract T #Contract(A:Address, _)] ; SS
             => [operation Transfer_tokens D M A O] ; SS
        </stack>
        <nonce> #Nonce(O) => #NextNonce(#Nonce(O)) </nonce>
@@ -2462,8 +2462,8 @@ module MATCHER
        #Matches(M1, M2) andBool
        #Matches(D1, D2)
 
-  rule #Matches(Transfer_tokens D1 M1 A1 I1,
-                Transfer_tokens D2 M2 A2 I2)
+  rule #Matches(Transfer_tokens D1 M1 A1:Address I1,
+                Transfer_tokens D2 M2 A2:Address I2)
     => #Matches(I1, I2) andBool
        #Matches(D1, D2) andBool
        #Matches(M1, M2) andBool

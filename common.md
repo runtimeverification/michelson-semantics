@@ -491,8 +491,8 @@ a contract lookup.
                   KnownAddrs,
                   BigMaps
               )
-              M
-              {#MichelineToNative(A, address .AnnotationList, KnownAddrs, BigMaps)}:>Address
+              #Mutez(M)
+              {#MichelineToNative(A:String, address .AnnotationList, KnownAddrs, BigMaps)}:>Address
               N
        requires (isWildcard(N) orBool isInt(N))
         andBool #MichelineToNative(A, address .AnnotationList, KnownAddrs, BigMaps) in_keys(KnownAddrs)
