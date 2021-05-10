@@ -17,7 +17,16 @@ module DEXTER-SPEC
         <mynow> #Timestamp(0) </mynow>
 ```
 
+```k
+endmodule
+```
+
 ## Set Manager
+
+```k
+module DEXTER-SETMANAGER-SPEC
+  imports DEXTER-VERIFICATION
+```
 
 The contract sets its manager to the provided manager address if the following conditions are satisfied:
 
@@ -49,7 +58,16 @@ If any of the conditions are not satisfied, the call fails.
       orBool IsUpdating
 ```
 
+```k
+endmodule
+```
+
 ## Set Baker
+
+```k
+module DEXTER-SETBAKER-SPEC
+  imports DEXTER-VERIFICATION
+```
 
 The contract sets its delegate to the value of `baker` (and optionally freezes the baker to that particular value) if the following conditions are satisfied:
 
@@ -87,7 +105,16 @@ If any of the conditions are not satisfied, the call fails.
       orBool Sender =/=K CurrentManager
 ```
 
+```k
+endmodule
+```
+
 ## Set LQT Address
+
+```k
+module DEXTER-SETLQTADDRESS-SPEC
+  imports DEXTER-VERIFICATION
+```
 
 The contract sets its liquidity pool adddress to the provided address if the following conditions are satisifed:
 
@@ -124,7 +151,16 @@ If any of the conditions are not satisfied, the call fails.
       orBool LQTAddress =/=K #Address("tz1Ke2h7sDdakHJQh8WX4Z372du1KChsksyU")
 ```
 
+```k
+endmodule
+```
+
 ## Update Token Pool
+
+```k
+module DEXTER-UPDATETOKENPOOL-SPEC
+  imports DEXTER-VERIFICATION
+```
 
 The contract queries its underlying token contract for its own token balance if the following conditions are satisfied:
 
@@ -191,7 +227,16 @@ NOTE: The failure conditions are split into two claims with identical configurat
       andBool T =/=K #TokenContractType(IsFA2))
 ```
 
+```k
+endmodule
+```
+
 ## Default
+
+```k
+module DEXTER-DEFAULT-SPEC
+  imports DEXTER-VERIFICATION
+```
 
 Adds more money to the xtz reserves if the following conditions are satisifed:
 
