@@ -21,7 +21,8 @@ NOTE: `>` is due to the service fees, the rounding errors, and/or potential “d
 
 ## (Full) Functional Correctness
 
-Note that the "Reserve vs Liquidity" property can be driven from the below.
+These properties describe the end-to-end behavior of each entry point transaction.
+Note that the "Reserve vs Liquidity" property can be driven from these.
 
 ### add_liquidity()
 
