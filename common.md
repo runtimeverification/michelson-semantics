@@ -66,6 +66,8 @@ We represent Michelson values by constructors which wrap K primitive types.
                       | ContractData
                       | Key
                       | Signature
+
+  syntax BlockchainOperation ::= "Transfer_tokens" Data Mutez Address Data
 ```
 
 We represent the values of byte operations as special constructors.
