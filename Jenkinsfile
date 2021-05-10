@@ -21,7 +21,7 @@ pipeline {
       }
     }
     stage('Test') {
-      options { timeout(time: 60, unit: 'MINUTES') }
+      options { timeout(time: 30, unit: 'MINUTES') }
       parallel {
         stage('Unit')             { steps { sh 'make test-unit     -j8' } }
         stage('Symbolic')         { steps { sh 'make test-symbolic -j2' } }
