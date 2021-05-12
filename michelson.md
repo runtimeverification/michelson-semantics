@@ -1082,7 +1082,7 @@ The `#DoCompare` function requires additional lemmas for symbolic execution.
       orBool (isMutez(V1)     andBool isMutez(V2))
       orBool (isTimestamp(V1) andBool isTimestamp(V2))
       orBool (isAddress(V1)   andBool isAddress(V2))
-    [simplification]
+    [anywhere,simplification]
 ```
 
 ### String Operations
