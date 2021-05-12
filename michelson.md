@@ -1082,10 +1082,11 @@ The `#DoCompare` function requires additional lemmas for symbolic execution.
       orBool (isMutez(V1)     andBool isMutez(V2))
       orBool (isTimestamp(V1) andBool isTimestamp(V2))
       orBool (isAddress(V1)   andBool isAddress(V2))
-    [anywhere,simplification]
+    [anywhere, simplification]
 
   rule X::String ==String Y::String => false
-    requires #Not ( { X #Equals Y } ) [anywhere,simplification]
+    requires #Not ( { X #Equals Y } )
+    [anywhere, simplification]
 ```
 
 ### String Operations
