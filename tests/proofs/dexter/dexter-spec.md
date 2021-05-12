@@ -21,6 +21,55 @@ module DEXTER-SPEC
 endmodule
 ```
 
+## Add Liquidity
+
+Allows callers to "mint" liquidity in excahnge for tez.
+Caller gains liquidity equal to `tez * storage.lqtTotal / storage.xtzPool`.
+
+-   Storage updates:
+
+```
+Storage( lqtTotal:  LqtTotal  => LqtTotal  + lqt_minted ;
+         tokenPool: TokenPool => TokenPool + tokens_deposited ;
+         xtzPool:   XtzPool   => XtzPool   + Tezos.amount
+       )
+```
+
+-   Operations:
+
+1. call to `transfer` entrypoint of liquidity address: Send tokens from sender to self.
+2. call to `mintOrBurn` entrypoint of token address: Adds liquidity for the sender.
+
+-   Preconditions
+
+1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
+2.  the deadline has not passed (i.e. the `Tezos.now >= input.deadline`)
+3.  the tez transferred is less than `input.maxTokensDeposited`
+4.  the liquidity minted is more than `input.minLqtMinted`
+
+```k
+module DEXTER-ADDLIQUIDITY-SPEC
+  imports DEXTER-VERIFICATION
+```
+
+```k
+  claim <k> #runProof(true, AddLiquidity(Owner, MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => . </k>
+        <stack> .Stack </stack>
+        <selfIsUpdatingTokenPool> false </selfIsUpdatingTokenPool>
+        <mynow> #Timestamp(CurrentTime) </mynow>
+        <myamount> #Mutez(Amount) </myamount>
+        <myaddr> SelfAddress </myaddr>
+        <lqtTotal> OldLqt => ?NewLqt </lqtTotal>
+        <operations> _ =>  .InternalList </operations>
+    requires Deadline <=Int CurrentTime
+     andBool Amount <=Int MaxTokensDeposited
+     andBool MinLqtMinted <=Int ?NewLqt -Int OldLqt
+```
+
+```k
+endmodule
+```
+
 ## Set Manager
 
 ```k
@@ -100,9 +149,41 @@ If any of the conditions are not satisfied, the call fails.
         <senderaddr> Sender </senderaddr>
         <freezeBaker> FreezeBaker </freezeBaker>
     requires Amount >Int 0
-      orBool IsUpdating
-      orBool FreezeBaker
-      orBool Sender =/=K CurrentManager
+```
+
+```k
+  claim <k> #runProof(_IsFA2, SetBaker(_Baker, _NewFreezeBaker)) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ( Failed ?_ ) </stack>
+        <manager> CurrentManager </manager>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <myamount> #Mutez(Amount) </myamount>
+        <senderaddr> Sender </senderaddr>
+        <freezeBaker> FreezeBaker </freezeBaker>
+    requires IsUpdating
+```
+
+```k
+
+  claim <k> #runProof(_IsFA2, SetBaker(_Baker, _NewFreezeBaker)) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ( Failed ?_ ) </stack>
+        <manager> CurrentManager </manager>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <myamount> #Mutez(Amount) </myamount>
+        <senderaddr> Sender </senderaddr>
+        <freezeBaker> FreezeBaker </freezeBaker>
+    requires FreezeBaker
+```
+
+```k
+
+  claim <k> #runProof(_IsFA2, SetBaker(_Baker, _NewFreezeBaker)) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ( Failed ?_ ) </stack>
+        <manager> CurrentManager </manager>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <myamount> #Mutez(Amount) </myamount>
+        <senderaddr> Sender </senderaddr>
+        <freezeBaker> FreezeBaker </freezeBaker>
+    requires Sender =/=K CurrentManager
 ```
 
 ```k
