@@ -113,27 +113,6 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
              andBool #IsLegalTimestamp(Deadline)
             ```
 
-        -   Storage updates:
-
-            ```
-            Storage( lqtTotal:  LqtTotal  => LqtTotal  + lqt_minted ;
-                     tokenPool: TokenPool => TokenPool + tokens_deposited ;
-                     xtzPool:   XtzPool   => XtzPool   + Tezos.amount
-                   )
-            ```
-
-        -   Operations:
-
-            1. self call to `transfer` entrypoint: Send tokens from sender to self.
-            2. self call to `mintOrBurn` entrypoint: Adds liquidity for the sender.
-
-        -   Preconditions
-
-            1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
-            2.  the deadline has not passed (i.e. the `Tezos.now >= input.deadline`)
-            3.  the tez transferred is less than `input.maxTokensDeposited`
-            4.  the liquidity minted is more than `input.minLqtMinted`
-
     2.  `remove_liquidity`
 
         -   Input:
