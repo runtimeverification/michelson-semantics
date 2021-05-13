@@ -387,8 +387,9 @@ dexter_spec_modules = DEXTER-SPEC                       \
                       DEXTER-SETMANAGER-SPEC            \
                       DEXTER-SETBAKER-SPEC              \
                       DEXTER-SETLQTADDRESS-SPEC         \
+					  DEXTER-TOKENTOXTZ-SPEC            \
                       DEXTER-UPDATETOKENPOOL-SPEC       \
-                      DEXTER-DEFAULT-SPEC
+                      DEXTER-DEFAULT-SPEC               \
 
 dexter_spec_file := tests/proofs/dexter/dexter-spec.md
 
