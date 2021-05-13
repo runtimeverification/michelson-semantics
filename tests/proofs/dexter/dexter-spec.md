@@ -492,3 +492,46 @@ If any of the conditions are not satisfied, the call fails.
 ```k
 endmodule
 ```
+
+## Token To XTZ
+
+```k
+module DEXTER-TOKENTOXTZ-SPEC
+  imports DEXTER-VERIFICATION
+```
+
+A buyer sends tokens to the Dexter contract and receives a corresponding amount of xtz, if the following conditions are satisfied:
+
+1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
+2.  the current block time must be less than the deadline
+3.  exactly 0 tez was transferred to this contract when it was invoked
+4.  the amount of tokens sold, when converted into xtz using the current exchange rate, is greater than `minXtzBought`
+5.  the amount of tokens sold, when converted into xtz using the current exchange rate, it is less than or equal to the xtz owned by the Dexter contract
+
+```k
+  claim <k> #runProof(IsFA2, TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) => . </k>
+        <stack> .Stack </stack>
+        <selfIsUpdatingTokenPool> false </selfIsUpdatingTokenPool>
+        <myamount> #Mutez(Amount) </myamount>
+        <tokenAddress> TokenAddress:Address </tokenAddress>
+        <xtzPool> #Mutez(XtzPool => XtzPool -Int #XtzBought(XtzPool, TokenPool, TokensSold)) </xtzPool>
+        <tokenPool> TokenPool => TokenPool +Int TokensSold </tokenPool>
+        <mynow> #Timestamp(CurrentTime) </mynow>
+        <senderaddr> Sender </senderaddr>
+        <myaddr> SelfAddress:Address </myaddr>
+        <nonce> #Nonce(N => N +Int 2) </nonce>
+        <tokenId> TokenID </tokenId>
+        <operations> _
+                  => [ Transfer_tokens #TokenTransferData(IsFA2, Sender, SelfAddress, TokenID, TokensSold) #Mutez(0)                                          TokenAddress  N        ]
+                  ;; [ Transfer_tokens Unit                                                                #Mutez(#XtzBought(XtzPool, TokenPool, TokensSold)) To           (N +Int 1)]
+                  ;; .InternalList
+        </operations>
+     requires Amount ==Int 0
+      andBool CurrentTime <Int Deadline
+      andBool #XtzBought(XtzPool, TokenPool, TokensSold) >Int  MinXtzBought
+      andBool #XtzBought(XtzPool, TokenPool, TokensSold) <=Int XtzPool
+```
+
+```k
+endmodule
+```
