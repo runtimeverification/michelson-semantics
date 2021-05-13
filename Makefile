@@ -401,6 +401,7 @@ dexter_spec_modules = DEXTER-SPEC                          \
                       DEXTER-TOKENTOXTZ-FA2-NEG-3-SPEC     \
                       DEXTER-TOKENTOXTZ-FA2-SPEC           \
                       DEXTER-UPDATETOKENPOOL-SPEC          \
+                      DEXTER-XTZTOTOKEN-SPEC               \
 
 dexter_spec_file := tests/proofs/dexter/dexter-spec.md
 
