@@ -391,21 +391,12 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
 
             ```
             ( [ Transfer_tokens ( txn.sender, self.address, tokensSold ) 0xtz self.tokenAddress %transfer ]
-              [ Transfer_tokens () $bought _to ],
-              { storage with xtzPool -= $bought ; tokenPool += tokensSold } )
+              [ Transfer_tokens () #XtzBought _to ],
+              { storage with xtzPool -= #XtzBought ; tokenPool += tokensSold } )
             ```
 
-            where `$bought` is the current total of xtz exchanged from `tokensSold` by the formula:
-
-            `(tokensSold * 997n * storage.xtzPool) / (storage.tokenPool * 1000n + (tokensSold * 997n))`
-
-        -   Summary: A buyer sends tokens to the Dexter contract and receives a corresponding amount of xtz, if the following conditions are satisfied:
-
-            1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
-            2.  the current block time must be less than the deadline
-            3.  exactly 0 tez was transferred to this contract when it was invoked
-            4.  the amount of tokens sold, when converted into xtz using the current exchange rate, is greater than `minXtzBought`
-            5.  the amount of tokens sold, when converted into xtz using the current exchange rate, it is less than or equal to the xtz owned by the Dexter contract
+            where `#XtzBought` is the current total of xtz exchanged from `tokensSold` by the formula
+            defined by the macro below.
 
     11. `token_to_token`
 

@@ -382,15 +382,17 @@ tests/%.prove: tests/% $(prove_kompiled)
 # Dexter proofs
 
 dexter_spec_modules = DEXTER-SPEC                          \
-                      DEXTER-ADDLIQUIDITY-POSITIVE-SPEC    \
+					  DEXTER-TOKENTOXTZ-SPEC               \
                       DEXTER-ADDLIQUIDITY-NEGATIVE-SPEC    \
-                      DEXTER-REMOVELIQUIDITY-POSITIVE-SPEC \
+                      DEXTER-ADDLIQUIDITY-POSITIVE-SPEC    \
+                      DEXTER-DEFAULT-SPEC                  \
                       DEXTER-REMOVELIQUIDITY-NEGATIVE-SPEC \
-                      DEXTER-SETMANAGER-SPEC               \
+                      DEXTER-REMOVELIQUIDITY-POSITIVE-SPEC \
+                      DEXTER-REMOVELIQUIDITY-SPEC          \
                       DEXTER-SETBAKER-SPEC                 \
                       DEXTER-SETLQTADDRESS-SPEC            \
+                      DEXTER-SETMANAGER-SPEC               \
                       DEXTER-UPDATETOKENPOOL-SPEC          \
-                      DEXTER-DEFAULT-SPEC
 
 dexter_spec_file := tests/proofs/dexter/dexter-spec.md
 
