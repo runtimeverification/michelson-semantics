@@ -946,6 +946,7 @@ A buyer sends tokens to the Dexter contract, converts its to xtz, and then immed
         <myaddr> SelfAddress </myaddr>
         <nonce> #Nonce(N => N +Int 2) </nonce>
         <tokenId> TokenID </tokenId>
+        <knownaddrs> KnownAddresses </knownaddrs>
         <operations> _
                   => [ Transfer_tokens #TokenTransferData(IsFA2, Sender, SelfAddress, TokenID, TokensSold) #Mutez(0)                                          TokenAddress          N        ]
                   ;; [ Transfer_tokens Pair To Pair MinTokensBought #Timestamp(Deadline)                   #Mutez(#XtzBought(XtzPool, TokenPool, TokensSold)) OutputDexterContract (N +Int 1)]
@@ -956,6 +957,8 @@ A buyer sends tokens to the Dexter contract, converts its to xtz, and then immed
       andBool #XtzBought(XtzPool, TokenPool, TokensSold) <=Int XtzPool
       andBool XtzPool >Int 0
       andBool TokenPool >Int 0
+      andBool #EntrypointExists(KnownAddresses, TokenAddress,         %transfer,   #TokenTransferType(IsFA2))
+      andBool #EntrypointExists(KnownAddresses, OutputDexterContract, %xtzToToken, #Type(pair address pair nat timestamp))
 ```
 
 ```k
