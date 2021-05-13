@@ -29,7 +29,7 @@ endmodule
 module DEXTER-VERIFICATION
   imports DEXTER-COMPILED
   imports DEXTER-VERIFICATION-SYNTAX
-  imports LEMMAS
+  imports MICHELSON
 ```
 
 ## Terminology Prerequisites
