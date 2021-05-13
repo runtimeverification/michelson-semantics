@@ -772,3 +772,46 @@ module DEXTER-TOKENTOXTZ-FA2-NEG-3-SPEC
 ```k
 endmodule
 ```
+
+## XTZ To Token
+
+```k
+module DEXTER-XTZTOTOKEN-SPEC
+  imports DEXTER-VERIFICATION
+```
+
+A buyer sends xtz to the Dexter contract and receives a corresponding amount of tokens, if the following conditions are satisfied:
+
+1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
+2.  the current block time must be less than the deadline
+3.  when the `txn.amount` (in mutez) is converted into tokens using the current exchange rate, the purchased amount is greater than `minTokensBought`
+4.  when the `txn.amount` (in mutez) is converted into tokens using the current exchange rate, it is less than or equal to the tokens owned by the Dexter contract
+
+```k
+  claim <k> #runProof(IsFA2, XtzToToken(To, MinTokensBought, #Timestamp(Deadline))) => . </k>
+        <stack> .Stack </stack>
+        <selfIsUpdatingTokenPool> false </selfIsUpdatingTokenPool>
+        <myamount> #Mutez(Amount) </myamount>
+        <tokenAddress> TokenAddress </tokenAddress>
+        <xtzPool> #Mutez(XtzPool => XtzPool +Int Amount) </xtzPool>
+        <tokenPool> TokenPool => TokenPool -Int #TokensBought(XtzPool, TokenPool, Amount) </tokenPool>
+        <mynow> #Timestamp(CurrentTime) </mynow>
+        <senderaddr> Sender </senderaddr>
+        <myaddr> SelfAddress </myaddr>
+        <nonce> #Nonce(N => N +Int 1) </nonce>
+        <tokenId> TokenID </tokenId>
+        <operations> _
+                  => [ Transfer_tokens #TokenTransferData(IsFA2, SelfAddress, To, TokenID, #TokensBought(XtzPool, TokenPool, Amount)) #Mutez(0) TokenAddress N ]
+                  ;; .InternalList
+        </operations>
+     requires CurrentTime <Int Deadline
+      andBool Amount >Int 0
+      andBool #TokensBought(XtzPool, TokenPool, Amount) >Int  MinTokensBought
+      andBool #TokensBought(XtzPool, TokenPool, Amount) <=Int TokenPool
+      andBool XtzPool >Int 0
+      andBool TokenPool >Int 0
+```
+
+```k
+endmodule
+```
