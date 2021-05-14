@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="A Michelson semantics for Tezos built using the K Framework."
+/>
+<meta name="keywords" content="runtime, verification, rv, k" />
+<meta name="author" content="Michelson Semantics | Runtime Verification Inc" />
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../assets/img/favicon.ico" /> -->
+
+<title>Michelson Semantics | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../index.html"> Michelson Semantics </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/michelson-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../">Homepage</a>
+      <a class="bd-toc-link" href="../INSTALL">Install</a>
+      <a class="bd-toc-link" href="../USER_GUIDE">User Guide</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-9 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="translation">Translation</h1>
+<p>To support the verbatim representation, we need to add some syntactic sugar.
+The parsed internal representation of Michelson contains nodes like explicit empty lists, e.g. <code>.AnnotationList</code>, and tokens to be wrapped using the <code>#token(...)</code> production.
+Here we implement a simplified parser that introduces what is necessary to paste the contract code directly.
+All the rules are macros, and they insert the <code>.AnnotationList</code> and <code>#token(...)</code> elements where necessary.</p>
+<h2 id="instructions">Instructions</h2>
+<h3 id="pretty-nullary-instructions">Pretty Nullary Instructions</h3>
+<p>The macro processor has problems inferring the type of nullary instructions.
+We get around this problem by explicitly declaring every <code>NullaryInstName</code> an <code>Instruction</code>, and giving each a separate macro.</p>
+<pre class="language-k"><code><span class="token keyword">requires</span> <span class="token string">&quot;syntax.md&quot;</span>
+
+<span class="token keyword">module</span> MICHELSON<span class="token operator">-</span>PRETTY<span class="token operator">-</span>SYNTAX
+  <span class="token keyword">imports</span> MICHELSON<span class="token operator">-</span>INTERNAL<span class="token operator">-</span>SYNTAX
+  <span class="token keyword">imports</span> BOOL<span class="token operator">-</span>SYNTAX
+  
+  <span class="token keyword">syntax</span> Instruction <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">&quot;DROP&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;DUP&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;SWAP&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;SOME&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;UNIT&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;PAIR&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;UNPAIR&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;CAR&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;CDR&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;CONS&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;SIZE&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;MEM&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;GET&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;UPDATE&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;EXEC&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;APPLY&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;FAILWITH&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;CAST&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;RENAME&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;CONCAT&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;SLICE&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;PACK&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;ADD&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;SUB&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;MUL&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;EDIV&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;ABS&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;ISNAT&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;INT&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;NEG&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;LSL&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;LSR&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;OR&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;AND&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;XOR&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;NOT&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;COMPARE&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;EQ&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;NEQ&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;LT&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;GT&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;LE&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;GE&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;SELF&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;TRANSFER_TOKENS&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;SET_DELEGATE&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;CREATE_ACCOUNT&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;IMPLICIT_ACCOUNT&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;NOW&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;CHAIN_ID&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;AMOUNT&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;BALANCE&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;CHECK_SIGNATURE&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;BLAKE2B&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;SHA256&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;SHA512&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;HASH_KEY&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;STEPS_TO_QUOTA&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;SOURCE&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;SENDER&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;ADDRESS&quot;</span>
+                       <span class="token operator">|</span> <span class="token string">&quot;SWAP&quot;</span>
+
+  <span class="token keyword">rule</span> DROP             <span class="token operator">=&gt;</span> DROP             <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> DUP              <span class="token operator">=&gt;</span> DUP              <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> SWAP             <span class="token operator">=&gt;</span> SWAP             <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> SOME             <span class="token operator">=&gt;</span> SOME             <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> UNIT             <span class="token operator">=&gt;</span> UNIT             <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> PAIR             <span class="token operator">=&gt;</span> PAIR             <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> UNPAIR           <span class="token operator">=&gt;</span> UNPAIR           <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> CAR              <span class="token operator">=&gt;</span> CAR              <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> CDR              <span class="token operator">=&gt;</span> CDR              <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> CONS             <span class="token operator">=&gt;</span> CONS             <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> SIZE             <span class="token operator">=&gt;</span> SIZE             <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> MEM              <span class="token operator">=&gt;</span> MEM              <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> GET              <span class="token operator">=&gt;</span> GET              <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> UPDATE           <span class="token operator">=&gt;</span> UPDATE           <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> EXEC             <span class="token operator">=&gt;</span> EXEC             <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> APPLY            <span class="token operator">=&gt;</span> APPLY            <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> FAILWITH         <span class="token operator">=&gt;</span> FAILWITH         <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> CAST             <span class="token operator">=&gt;</span> CAST             <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> RENAME           <span class="token operator">=&gt;</span> RENAME           <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> CONCAT           <span class="token operator">=&gt;</span> CONCAT           <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> SLICE            <span class="token operator">=&gt;</span> SLICE            <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> PACK             <span class="token operator">=&gt;</span> PACK             <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> ADD              <span class="token operator">=&gt;</span> ADD              <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> SUB              <span class="token operator">=&gt;</span> SUB              <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> MUL              <span class="token operator">=&gt;</span> MUL              <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> EDIV             <span class="token operator">=&gt;</span> EDIV             <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> ABS              <span class="token operator">=&gt;</span> ABS              <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> ISNAT            <span class="token operator">=&gt;</span> ISNAT            <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> INT              <span class="token operator">=&gt;</span> INT              <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> NEG              <span class="token operator">=&gt;</span> NEG              <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> LSL              <span class="token operator">=&gt;</span> LSL              <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> LSR              <span class="token operator">=&gt;</span> LSR              <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> OR               <span class="token operator">=&gt;</span> OR               <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> AND              <span class="token operator">=&gt;</span> AND              <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> XOR              <span class="token operator">=&gt;</span> XOR              <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> NOT              <span class="token operator">=&gt;</span> NOT              <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> COMPARE          <span class="token operator">=&gt;</span> COMPARE          <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> EQ               <span class="token operator">=&gt;</span> EQ               <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> NEQ              <span class="token operator">=&gt;</span> NEQ              <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> LT               <span class="token operator">=&gt;</span> LT               <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> GT               <span class="token operator">=&gt;</span> GT               <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> LE               <span class="token operator">=&gt;</span> LE               <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> GE               <span class="token operator">=&gt;</span> GE               <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> SELF             <span class="token operator">=&gt;</span> SELF             <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> TRANSFER_TOKENS  <span class="token operator">=&gt;</span> TRANSFER_TOKENS  <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> SET_DELEGATE     <span class="token operator">=&gt;</span> SET_DELEGATE     <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> CREATE_ACCOUNT   <span class="token operator">=&gt;</span> CREATE_ACCOUNT   <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> IMPLICIT_ACCOUNT <span class="token operator">=&gt;</span> IMPLICIT_ACCOUNT <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> NOW              <span class="token operator">=&gt;</span> NOW              <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> CHAIN_ID         <span class="token operator">=&gt;</span> CHAIN_ID         <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> AMOUNT           <span class="token operator">=&gt;</span> AMOUNT           <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> BALANCE          <span class="token operator">=&gt;</span> BALANCE          <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> CHECK_SIGNATURE  <span class="token operator">=&gt;</span> CHECK_SIGNATURE  <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> BLAKE2B          <span class="token operator">=&gt;</span> BLAKE2B          <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> SHA256           <span class="token operator">=&gt;</span> SHA256           <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> SHA512           <span class="token operator">=&gt;</span> SHA512           <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> HASH_KEY         <span class="token operator">=&gt;</span> HASH_KEY         <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> STEPS_TO_QUOTA   <span class="token operator">=&gt;</span> STEPS_TO_QUOTA   <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> SOURCE           <span class="token operator">=&gt;</span> SOURCE           <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> SENDER           <span class="token operator">=&gt;</span> SENDER           <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> ADDRESS          <span class="token operator">=&gt;</span> ADDRESS          <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> SWAP             <span class="token operator">=&gt;</span> SWAP             <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+</code></pre>
+<h3 id="other-pretty-instructions">Other Pretty Instructions</h3>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> Instruction <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> UnaryIntInstName <span class="token keyword">Int</span>
+                       <span class="token operator">|</span> UnaryTypeInstName Type
+                       <span class="token operator">|</span> UnaryBlockInstName Block
+                       <span class="token operator">|</span> BinaryTypeInstName Type Type
+                       <span class="token operator">|</span> BinaryBlockInstName Block Block
+
+  <span class="token keyword">rule</span> I<span class="token punctuation">:</span>UnaryIntInstName    P<span class="token punctuation">:</span><span class="token keyword">Int</span>             <span class="token operator">=&gt;</span> I <span class="token punctuation">.</span>AnnotationList P     <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> I<span class="token punctuation">:</span>UnaryTypeInstName   P<span class="token punctuation">:</span>Type            <span class="token operator">=&gt;</span> I <span class="token punctuation">.</span>AnnotationList P     <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> I<span class="token punctuation">:</span>UnaryBlockInstName  P<span class="token punctuation">:</span>Block           <span class="token operator">=&gt;</span> I <span class="token punctuation">.</span>AnnotationList P     <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> I<span class="token punctuation">:</span>BinaryTypeInstName  P1<span class="token punctuation">:</span>Type  P2<span class="token punctuation">:</span>Type  <span class="token operator">=&gt;</span> I <span class="token punctuation">.</span>AnnotationList P1 P2 <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> I<span class="token punctuation">:</span>BinaryBlockInstName P1<span class="token punctuation">:</span>Block P2<span class="token punctuation">:</span>Block <span class="token operator">=&gt;</span> I <span class="token punctuation">.</span>AnnotationList P1 P2 <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+
+  <span class="token keyword">syntax</span> SpecialInstruction <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">&quot;PUSH&quot;</span> Type Data
+                              <span class="token operator">|</span> <span class="token string">&quot;LAMBDA&quot;</span> Type Type Block
+                              <span class="token operator">|</span> <span class="token string">&quot;CREATE_CONTRACT&quot;</span> <span class="token string">&quot;{&quot;</span> Contract <span class="token string">&quot;}&quot;</span>
+                              <span class="token operator">|</span> <span class="token string">&quot;DIP&quot;</span> <span class="token keyword">Int</span> Block
+
+  <span class="token keyword">rule</span> PUSH T<span class="token punctuation">:</span>Type D<span class="token punctuation">:</span>Data <span class="token operator">=&gt;</span> PUSH <span class="token punctuation">.</span>AnnotationList T D <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> LAMBDA T1<span class="token punctuation">:</span>Type T2<span class="token punctuation">:</span>Type B<span class="token punctuation">:</span>Block <span class="token operator">=&gt;</span> LAMBDA <span class="token punctuation">.</span>AnnotationList T1 T2 B <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> CREATE_CONTRACT <span class="token punctuation">{</span> C <span class="token punctuation">}</span> <span class="token operator">=&gt;</span> CREATE_CONTRACT <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">{</span> C <span class="token punctuation">}</span> <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> DIP I<span class="token punctuation">:</span><span class="token keyword">Int</span> B<span class="token punctuation">:</span>Block <span class="token operator">=&gt;</span> DIP <span class="token punctuation">.</span>AnnotationList I B <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+</code></pre>
+<h2 id="types">Types</h2>
+<h2 id="pretty-nullary-types">Pretty Nullary Types</h2>
+<p>The macro processor has problems inferring the type of nullary types.
+We get around this problem by explicitly declaring every <code>NullaryTypeName</code> a <code>Type</code>, and giving each a separate macro.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> Type <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">&quot;int&quot;</span>
+                <span class="token operator">|</span> <span class="token string">&quot;nat&quot;</span>
+                <span class="token operator">|</span> <span class="token string">&quot;string&quot;</span>
+                <span class="token operator">|</span> <span class="token string">&quot;bytes&quot;</span>
+                <span class="token operator">|</span> <span class="token string">&quot;mutez&quot;</span>
+                <span class="token operator">|</span> <span class="token string">&quot;bool&quot;</span>
+                <span class="token operator">|</span> <span class="token string">&quot;key_hash&quot;</span>
+                <span class="token operator">|</span> <span class="token string">&quot;timestamp&quot;</span>
+                <span class="token operator">|</span> <span class="token string">&quot;address&quot;</span>
+                <span class="token operator">|</span> <span class="token string">&quot;key&quot;</span>
+                <span class="token operator">|</span> <span class="token string">&quot;unit&quot;</span>
+                <span class="token operator">|</span> <span class="token string">&quot;signature&quot;</span>
+                <span class="token operator">|</span> <span class="token string">&quot;operation&quot;</span>
+                <span class="token operator">|</span> <span class="token string">&quot;chain_id&quot;</span>
+
+  <span class="token keyword">rule</span> int          <span class="token operator">=&gt;</span> int        <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> nat          <span class="token operator">=&gt;</span> nat        <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> string       <span class="token operator">=&gt;</span> string     <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> bytes        <span class="token operator">=&gt;</span> bytes      <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> mutez        <span class="token operator">=&gt;</span> mutez      <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> bool         <span class="token operator">=&gt;</span> bool       <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> key_hash     <span class="token operator">=&gt;</span> key_hash   <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> timestamp    <span class="token operator">=&gt;</span> timestamp  <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> address      <span class="token operator">=&gt;</span> address    <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> key          <span class="token operator">=&gt;</span> key        <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> unit         <span class="token operator">=&gt;</span> unit       <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> signature    <span class="token operator">=&gt;</span> signature  <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> operation    <span class="token operator">=&gt;</span> operation  <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> chain_id     <span class="token operator">=&gt;</span> chain_id   <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+</code></pre>
+<h2 id="other-pretty-types">Other Pretty Types</h2>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> Type <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> UnaryTypeName   Type
+                <span class="token operator">|</span> BinaryTypeName  Type Type
+
+  <span class="token keyword">rule</span> N<span class="token punctuation">:</span>UnaryTypeName  T     <span class="token operator">=&gt;</span> N <span class="token punctuation">.</span>AnnotationList T     <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> N<span class="token punctuation">:</span>BinaryTypeName T1 T2 <span class="token operator">=&gt;</span> N <span class="token punctuation">.</span>AnnotationList T1 T2 <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+</code></pre>
+<h2 id="literals">Literals</h2>
+<p>The boolean literals from Michelson needs to be wrapped in <code>#token</code>, since they are not part of the usual internal syntax.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> MichelsonBool <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token keyword">Bool</span>
+  <span class="token keyword">syntax</span> MichelsonBool <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">&quot;True&quot;</span> <span class="token operator">|</span> <span class="token string">&quot;False&quot;</span>
+
+  <span class="token keyword">rule</span> True  <span class="token operator">=&gt;</span> <span class="token boolean">true</span>  <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> False <span class="token operator">=&gt;</span> <span class="token boolean">false</span> <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+</code></pre>
+<pre class="language-k"><code><span class="token keyword">endmodule</span>
+</code></pre>
+</body></html></div>
+        </main>
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Typist/1.2/typist.min.js"></script>
+    <script src="../assets/js/index.js"></script>
+  </body>
+</html>
