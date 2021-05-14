@@ -32,17 +32,17 @@ The set of permissible annotations is infinite.
 Since we work with specific code that contains a finite number of annotations, we can represent each and give it a macro for wrapping it in the `#token(...)` production.
 
 ```k
-  syntax Annotation ::= "%balance_of"
-                      | "%deadline"
-                      | "%getBalance"
-                      | "%minTokensBought"
-                      | "%mintOrBurn"
-                      | "%quantity"
-                      | "%target"
-                      | "%to"
-                      | "%transfer"
-                      | "%updateTokenPoolInternal"
-                      | "%xtzToToken"
+  syntax FieldAnnotation ::= "%balance_of"
+                           | "%deadline"
+                           | "%getBalance"
+                           | "%minTokensBought"
+                           | "%mintOrBurn"
+                           | "%quantity"
+                           | "%target"
+                           | "%to"
+                           | "%transfer"
+                           | "%updateTokenPoolInternal"
+                           | "%xtzToToken"
 
   rule %balance_of              => #token("%balance_of"             , "FieldAnnotation") [macro]
   rule %deadline                => #token("%deadline"               , "FieldAnnotation") [macro]
