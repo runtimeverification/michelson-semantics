@@ -560,22 +560,43 @@ If any of the conditions are not satisfied, the call fails.
         <tokenAddress> TokenAddress </tokenAddress>
         <senderaddr> Sender </senderaddr>
      requires Amount >Int 0
-       orBool (notBool IsUpdating)
-       orBool TokenAddress =/=K Sender
+      andBool IsUpdating
+      andBool TokenAddress ==K Sender
 ```
 
 ```k
-  claim <k> #runProof(true, UpdateTokenPoolInternalFA2(BalanceOfResult)) => Aborted(?_, ?_, ?_, ?_) </k>
+  claim <k> #runProof(false, UpdateTokenPoolInternalFA12(_)) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ( Failed ?_ ) </stack>
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
-        <myamount> #Mutez(Amount) </myamount>
-        <tokenAddress> #Address(TokenAddress) </tokenAddress>
-        <senderaddr> #Address(Sender) </senderaddr>
-     requires Amount >Int 0
-       orBool (notBool IsUpdating)
-       orBool TokenAddress =/=K Sender
-       orBool BalanceOfResult ==K .InternalList
+        <myamount> #Mutez(_Amount) </myamount>
+        <tokenAddress> _TokenAddress </tokenAddress>
+        <senderaddr> _Sender </senderaddr>
+     requires (notBool IsUpdating)
 ```
+
+```k
+  claim <k> #runProof(false, UpdateTokenPoolInternalFA12(_)) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ( Failed ?_ ) </stack>
+        <selfIsUpdatingTokenPool> _IsUpdating </selfIsUpdatingTokenPool>
+        <myamount> #Mutez(_Amount) </myamount>
+        <tokenAddress> TokenAddress </tokenAddress>
+        <senderaddr> Sender </senderaddr>
+     requires TokenAddress =/=K Sender
+```
+
+
+//```k
+//  claim <k> #runProof(true, UpdateTokenPoolInternalFA2(BalanceOfResult)) => Aborted(?_, ?_, ?_, ?_) </k>
+//        <stack> .Stack => ( Failed ?_ ) </stack>
+//        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+//        <myamount> #Mutez(Amount) </myamount>
+//        <tokenAddress> #Address(TokenAddress) </tokenAddress>
+//        <senderaddr> #Address(Sender) </senderaddr>
+//     requires Amount >Int 0
+//       orBool (notBool IsUpdating)
+//       orBool TokenAddress =/=K Sender
+//       orBool BalanceOfResult ==K .InternalList
+//```
 
 ```k
 endmodule

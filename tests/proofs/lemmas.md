@@ -13,7 +13,7 @@ requires "michelson.md"
 ```k
 module LEMMAS
   imports MICHELSON
-
+  
   rule #Ceil(#DoCompare(@A:Int, @B:Int)) => #Ceil(@A) #And #Ceil(@B)
     [anywhere, simplification]
 
