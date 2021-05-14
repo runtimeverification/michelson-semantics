@@ -43,9 +43,10 @@ Storage( lqtTotal:  LqtTotal  => LqtTotal  + lqt_minted ;
 -   Preconditions
 
 1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
-2.  the deadline has not passed (i.e. the `Tezos.now >= input.deadline`)
+2.  the deadline has not passed (i.e. the `Tezos.now < input.deadline`)
 3.  the tez transferred is less than `input.maxTokensDeposited`
 4.  the liquidity minted is more than `input.minLqtMinted`
+5.  lqtTotal, xtzPool and tokenPool are all positive
 
 ```k
 module DEXTER-ADDLIQUIDITY-SPEC
@@ -53,17 +54,23 @@ module DEXTER-ADDLIQUIDITY-SPEC
 ```
 
 ```k
-  claim <k> #runProof(true, AddLiquidity(Owner, MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => . </k>
+  claim <k> #runProof(false, AddLiquidity(Owner, MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => . </k>
         <stack> .Stack </stack>
         <selfIsUpdatingTokenPool> false </selfIsUpdatingTokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <myamount> #Mutez(Amount) </myamount>
         <myaddr> SelfAddress </myaddr>
         <lqtTotal> OldLqt => ?NewLqt </lqtTotal>
+        <xtzPool> #Mutez(XtzAmount) </xtzPool>
+        <tokenPool> TokenAmount </tokenPool>
         <operations> _ =>  .InternalList </operations>
-    requires Deadline <=Int CurrentTime
+    requires CurrentTime <Int Deadline
      andBool Amount <=Int MaxTokensDeposited
-     andBool MinLqtMinted <=Int ?NewLqt -Int OldLqt
+     andBool Amount      >Int 0
+     andBool XtzAmount   >Int 0
+     andBool OldLqt      >Int 0
+     andBool TokenAmount >Int 0
+     andBool (Amount *Int TokenAmount) %Int XtzAmount ==Int 0 //TODO: Case where equal
 ```
 
 ```k
