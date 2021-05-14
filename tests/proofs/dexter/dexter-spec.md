@@ -800,6 +800,7 @@ A buyer sends xtz to the Dexter contract and receives a corresponding amount of 
         <myaddr> SelfAddress </myaddr>
         <nonce> #Nonce(N => N +Int 1) </nonce>
         <tokenId> TokenID </tokenId>
+        <knownaddrs> KnownAddresses </knownaddrs>
         <operations> _
                   => [ Transfer_tokens #TokenTransferData(IsFA2, SelfAddress, To, TokenID, #TokensBought(XtzPool, TokenPool, Amount)) #Mutez(0) TokenAddress N ]
                   ;; .InternalList
@@ -810,6 +811,7 @@ A buyer sends xtz to the Dexter contract and receives a corresponding amount of 
       andBool #TokensBought(XtzPool, TokenPool, Amount) <=Int TokenPool
       andBool XtzPool >Int 0
       andBool TokenPool >Int 0
+      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType(IsFA2))
 ```
 
 ```k
