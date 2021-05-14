@@ -25,11 +25,37 @@ module DEXTER-VERIFICATION-SYNTAX
 endmodule
 ```
 
+## Dexter Lemmas
+
+```k
+module DEXTER-LEMMAS
+  imports MICHELSON
+```
+
+```k
+  rule X /Int 1 => X [simplification]
+```
+
+### Avoiding Interpreting Functions
+
+If a function value does not play well with the prover or SMT solver, it can be rewritten to `#uninterpreted`.
+This function has no evaluation rules, so the prover can make no assumptions about it -- it will be assumed it can take on any value.
+
+```k
+  syntax Int ::= #uninterpretedInt(Int, Int, Int) [function]
+ // -----------------------------------------------------
+  rule (Z *Int Y) %Int X => #uninterpretedInt(X, Y, Z) [simplification]
+```
+
+```k
+endmodule
+```
+
 ```k
 module DEXTER-VERIFICATION
   imports DEXTER-COMPILED
   imports DEXTER-VERIFICATION-SYNTAX
-  imports MICHELSON
+  imports DEXTER-LEMMAS
 ```
 
 ## Terminology Prerequisites
