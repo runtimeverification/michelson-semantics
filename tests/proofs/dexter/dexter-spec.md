@@ -403,6 +403,7 @@ A buyer sends tokens to the Dexter contract and receives a corresponding amount 
         <senderaddr> Sender </senderaddr>
         <myaddr> SelfAddress:Address </myaddr>
         <nonce> #Nonce(N => N +Int 2) </nonce>
+        <knownaddrs> KnownAddresses </knownaddrs>
         <tokenId> TokenID </tokenId>
         <operations> _
                   => [ Transfer_tokens #TokenTransferData(IsFA2, Sender, SelfAddress, TokenID, TokensSold) #Mutez(0)                                          TokenAddress  N        ]
@@ -413,6 +414,8 @@ A buyer sends tokens to the Dexter contract and receives a corresponding amount 
       andBool CurrentTime <Int Deadline
       andBool #XtzBought(XtzPool, TokenPool, TokensSold) >Int  MinXtzBought
       andBool #XtzBought(XtzPool, TokenPool, TokensSold) <=Int XtzPool
+      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer,                             #TokenTransferType(IsFA2))
+      andBool #EntrypointExists(KnownAddresses, To,           #token("%default", "FieldAnnotation"), #Type(unit))
 ```
 
 ```k
