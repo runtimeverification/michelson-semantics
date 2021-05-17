@@ -5,11 +5,11 @@ Note that the real arithmetic is used throughout the document.
 ## Storage Invariant
 
 ### Internal vs External
-- `xtzPool <= Tezos.balance`
+- `xtzPool == Tezos.balance`
 - `tokenPool <= tokenAddress.balanceOf(Tezos.self_address)`
 - `lqtTotal == lqtAddress.totalSupply()`
 
-NOTE: `<` is possible when someone "donates" XTZ or tokens (i.e., sending funds without going through `add_liquidity()`).
+NOTE: `<` is possible when someone "donates" tokens (i.e., directly sending tokens to dexter without going through any dexter entrypoints).
 
 ### Reserve vs Liquidity
 
