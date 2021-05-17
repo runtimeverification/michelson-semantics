@@ -112,6 +112,12 @@ configuration <dexterTop>
 We define our list of entrypoints below.
 Each entrypoint is given a unique abstract parameter type that we use to simplify our proof structure.
 
+Summary: The underlying token contract updates the Dexter contract's view of its own token balance if the following conditions are satisifed:
+
+         1.  the token pool _is_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = true`)
+         2.  exactly 0 tez was transferred to this contract when it was invoked
+         3.  if using version FA2, the input parameter list is non-empty.
+
 ```k
   syntax EntryPointParams
   syntax Bool ::= wellTypedParams(Bool, EntryPointParams) [function, functional]
