@@ -186,7 +186,7 @@ $(prove_kompiled): $(prove_files)
 dexter_dir           := $(DEFN_DIR)/dexter
 dexter_main_file     := dexter
 dexter_main_file_loc := tests/proofs/dexter/$(dexter_main_file)
-dexter_files         := $(prove_files) $(dexter_main_file_loc).md
+dexter_files         := $(prove_files) $(dexter_main_file_loc).md tests/proofs/dexter/dexter-compiled.md
 dexter_main_module   := DEXTER-VERIFICATION
 dexter_syntax_module := DEXTER-VERIFICATION-SYNTAX
 dexter_kompiled      := $(dexter_dir)/$(notdir $(dexter_main_file))-kompiled/definition.kore
@@ -395,7 +395,7 @@ dexter-prove: $(dexter_spec_modules:%=dexter-prove_%)
 dexter-prove_%:
 	$(MAKE) $(dexter_spec_file).dexter_prove \
   KPROVE_MODULE=DEXTER-VERIFICATION        \
-  KPROVE_OPTIONS="--spec-module $*"
+  KPROVE_OPTIONS="$(KPROVE_OPTIONS) --spec-module $*"
 
 tests/%.dexter_prove: tests/% $(dexter_kompiled)
 	$(TEST) prove --backend prove --backend-dir $(dexter_dir) $< $(KPROVE_MODULE) $(KPROVE_OPTIONS)

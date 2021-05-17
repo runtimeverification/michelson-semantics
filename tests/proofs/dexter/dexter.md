@@ -29,7 +29,7 @@ endmodule
 module DEXTER-VERIFICATION
   imports DEXTER-COMPILED
   imports DEXTER-VERIFICATION-SYNTAX
-  imports LEMMAS
+  imports MICHELSON
 ```
 
 ## Terminology Prerequisites
@@ -614,7 +614,7 @@ If the contract execution fails, storage is not updated.
   rule <k> Aborted(_, _, _, _) ~> (#storeDexterState(_) => .) ... </k>
 ```
 
-## Resulting Operations Abstractions
+## Proof Simplification Macros
 
 ```k
   syntax Data ::= #UpdateTokenPoolTransferFrom(Bool, Address, Int) [function, functional]
@@ -626,6 +626,36 @@ If the contract execution fails, storage is not updated.
  // -------------------------------------------------------------
   rule #TokenContractType(false) => #Type(pair address                   (contract #DexterVersionSpecificParamType(false)))
   rule #TokenContractType(true)  => #Type(pair (list (pair address nat)) (contract #DexterVersionSpecificParamType(true)) )
+
+  syntax Type ::= #TokenTransferType(Bool) [function, functional]
+ // -------------------------------------------------------------
+  rule #TokenTransferType(false) => #Type(pair address pair address nat)
+  rule #TokenTransferType(true)  => #Type(pair address list pair address pair nat nat)
+
+  syntax Data ::= #TokenTransferData(Bool, Address, Address, Int, Int) [function, functional]
+ // -----------------------------------------------------------------------------------------
+  rule #TokenTransferData(false, From, To, _TokenID, TokenAmt) => Pair From   Pair To              TokenAmt
+  rule #TokenTransferData(true,  From, To,  TokenID, TokenAmt) => Pair From [ Pair To Pair TokenID TokenAmt ] ;; .InternalList
+
+  syntax Int ::= #XtzBought   (Int, Int, Int)
+               | #TokensBought(Int, Int, Int)
+ // -----------------------------------------
+  rule #XtzBought(XtzPool, TokenPool, TokensSold)
+    => (TokensSold *Int 997 *Int XtzPool) /Int (TokenPool *Int 1000 +Int (TokensSold *Int 997))
+    [macro]
+
+  syntax Int ::= #TokensBought(Int, Int, Int)
+ // ----------------------------------------
+  rule #TokensBought(XtzPool, TokenPool, XtzSold)
+    => (XtzSold *Int 997 *Int TokenPool) /Int (XtzPool *Int 1000 +Int (XtzSold *Int 997))
+    [macro]
+
+  syntax Bool ::= #EntrypointExists(Map, Address, FieldAnnotation, Type)
+ // --------------------------------------------------------------------
+  rule #EntrypointExists(KnownAddresses, Addr, _FieldAnnot, EntrypointType)
+    => Addr in_keys(KnownAddresses) andBool
+       KnownAddresses[Addr] ==K #Contract(Addr, EntrypointType)
+    [macro]
 ```
 
 ## Putting It All Together
