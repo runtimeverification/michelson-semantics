@@ -584,19 +584,49 @@ If any of the conditions are not satisfied, the call fails.
      requires TokenAddress =/=K Sender
 ```
 
+```k
+  claim <k> #runProof(true, UpdateTokenPoolInternalFA2(BalanceOfResult)) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ( Failed ?_ ) </stack>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <myamount> #Mutez(Amount) </myamount>
+        <tokenAddress> #Address(TokenAddress) </tokenAddress>
+        <senderaddr> #Address(Sender) </senderaddr>
+     requires Amount >Int 0
+      andBool IsUpdating
+      andBool TokenAddress ==K Sender
+      andBool BalanceOfResult =/=K .InternalList
+```
 
-//```k
-//  claim <k> #runProof(true, UpdateTokenPoolInternalFA2(BalanceOfResult)) => Aborted(?_, ?_, ?_, ?_) </k>
-//        <stack> .Stack => ( Failed ?_ ) </stack>
-//        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
-//        <myamount> #Mutez(Amount) </myamount>
-//        <tokenAddress> #Address(TokenAddress) </tokenAddress>
-//        <senderaddr> #Address(Sender) </senderaddr>
-//     requires Amount >Int 0
-//       orBool (notBool IsUpdating)
-//       orBool TokenAddress =/=K Sender
-//       orBool BalanceOfResult ==K .InternalList
-//```
+```k
+  claim <k> #runProof(true, UpdateTokenPoolInternalFA2(BalanceOfResult)) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ( Failed ?_ ) </stack>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <myamount> #Mutez(Amount) </myamount>
+        <tokenAddress> #Address(TokenAddress) </tokenAddress>
+        <senderaddr> #Address(Sender) </senderaddr>
+     requires (notBool IsUpdating)
+```
+
+```k
+  claim <k> #runProof(true, UpdateTokenPoolInternalFA2(BalanceOfResult)) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ( Failed ?_ ) </stack>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <myamount> #Mutez(Amount) </myamount>
+        <tokenAddress> #Address(TokenAddress) </tokenAddress>
+        <senderaddr> #Address(Sender) </senderaddr>
+     requires TokenAddress =/=K Sender
+```
+
+```k
+  claim <k> #runProof(true, UpdateTokenPoolInternalFA2(BalanceOfResult)) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ( Failed ?_ ) </stack>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <myamount> #Mutez(Amount) </myamount>
+        <tokenAddress> #Address(TokenAddress) </tokenAddress>
+        <senderaddr> #Address(Sender) </senderaddr>
+     requires TokenAddress ==K Sender
+      andBool BalanceOfResult ==K .InternalList
+```
 
 ```k
 endmodule
