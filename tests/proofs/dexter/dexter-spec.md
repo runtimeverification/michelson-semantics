@@ -88,12 +88,12 @@ module DEXTER-ADDLIQUIDITY-SPEC
      andBool OldLqt      >Int 0
      andBool TokenAmount >Int 0
      andBool #mulDiv(Amount, TokenAmount, XtzAmount) <=Int MaxTokensDeposited
-     andBool #mulMod(Amount, TokenAmount, XtzAmount) ==Int 0
+     andBool (Amount *Int TokenAmount) %Int XtzAmount ==Int 0
      /* TODO: Also handle this case:
      andBool #mulDiv(Amount, TokenAmount, XtzAmount) <Int MaxTokensDeposited
      andBool #mulMod(Amount, TokenAmount, XtzAmount) =/=Int 0
      */
-     andBool MinLqtMinted <=Int #mulDiv (Amount, OldLqt , XtzAmount)
+     andBool MinLqtMinted <=Int (Amount *Int OldLqt) /Int XtzAmount
      andBool #IsLegalMutezValue(Amount +Int XtzAmount)
 
      andBool #EntrypointExists(KnownAddresses, TokenAddress,   %transfer, #TokenTransferType(IsFA2))
