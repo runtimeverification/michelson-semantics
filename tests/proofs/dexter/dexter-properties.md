@@ -115,7 +115,7 @@ rule toMintBurn(_ ~> Ops) => toMintBurn(Ops) [owise]
 - `to` may be dexter.
 
 #### AddLiquidity(x, to)
-- B' = B
+- B' = B + x
 - X' = X + x
 - T' = T + t
 - L' = L + l
