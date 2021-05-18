@@ -60,23 +60,44 @@ module DEXTER-ADDLIQUIDITY-SPEC
 ```
 
 ```k
-  claim <k> #runProof(false, AddLiquidity(Owner, MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => . </k>
+  claim <k> #runProof(IsFA2, AddLiquidity(Owner, MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => . </k>
         <stack> .Stack </stack>
         <selfIsUpdatingTokenPool> false </selfIsUpdatingTokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <myamount> #Mutez(Amount) </myamount>
         <myaddr> SelfAddress </myaddr>
-        <lqtTotal> OldLqt => ?NewLqt </lqtTotal>
-        <xtzPool> #Mutez(XtzAmount) </xtzPool>
-        <tokenPool> TokenAmount </tokenPool>
-        <operations> _ =>  .InternalList </operations>
-    requires CurrentTime <Int Deadline
+        <lqtTotal> OldLqt => OldLqt +Int (Amount *Int OldLqt) /Int XtzAmount </lqtTotal>
+        <xtzPool> #Mutez(XtzAmount => XtzAmount +Int Amount) </xtzPool>
+        <tokenPool> TokenAmount => TokenAmount +Int (Amount *Int TokenAmount) /Int XtzAmount </tokenPool>
+        <tokenAddress> TokenAddress:Address </tokenAddress>
+        <lqtAddress> LqtAddress:Address </lqtAddress>
+        <senderaddr> Sender </senderaddr>
+        <nonce> #Nonce(Nonce => Nonce +Int 2) </nonce>
+        <knownaddrs> KnownAddresses </knownaddrs>
+        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+        <operations> _
+                  => [ Transfer_tokens Pair Sender Pair SelfAddress ((Amount *Int TokenAmount) /Int XtzAmount) #Mutez(0) TokenAddress Nonce ] ;;
+                     [ Transfer_tokens Pair ((Amount *Int OldLqt) /Int XtzAmount) Owner #Mutez(0) LqtAddress (Nonce +Int 1) ] ;;
+                     .InternalList
+        </operations>
+    requires notBool IsFA2 // TODO Handle IsFA2==true
+     andBool CurrentTime <Int Deadline
      andBool Amount <=Int MaxTokensDeposited
      andBool Amount      >Int 0
      andBool XtzAmount   >Int 0
      andBool OldLqt      >Int 0
      andBool TokenAmount >Int 0
-     andBool (Amount *Int TokenAmount) %Int XtzAmount ==Int 0 //TODO: Case where equal
+     andBool #mulDiv(Amount, TokenAmount, XtzAmount) <=Int MaxTokensDeposited
+     andBool #mulMod(Amount, TokenAmount, XtzAmount) ==Int 0
+     /* TODO: Also handle this case:
+     andBool #mulDiv(Amount, TokenAmount, XtzAmount) <Int MaxTokensDeposited
+     andBool #mulMod(Amount, TokenAmount, XtzAmount) =/=Int 0
+     */
+     andBool MinLqtMinted <=Int #mulDiv (Amount, OldLqt , XtzAmount)
+     andBool #IsLegalMutezValue(Amount +Int XtzAmount)
+
+     andBool #EntrypointExists(KnownAddresses, TokenAddress,   %transfer, #TokenTransferType(IsFA2))
+     andBool #EntrypointExists(KnownAddresses,   LqtAddress, %mintOrBurn, pair int %quantity .AnnotationList address %target .AnnotationList)
 ```
 
 ```k
