@@ -50,7 +50,7 @@ Storage( lqtTotal:  LqtTotal  => LqtTotal  + lqt_minted ;
 
 1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
 2.  the deadline has not passed (i.e. the `Tezos.now < input.deadline`)
-3.  the tez transferred is less than `input.maxTokensDeposited`
+3.  the tokens transferred is less than `input.maxTokensDeposited`
 4.  the liquidity minted is more than `input.minLqtMinted`
 5.  lqtTotal, xtzPool and tokenPool are all positive
 
