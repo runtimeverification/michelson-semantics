@@ -550,7 +550,21 @@ Summary: The underlying token contract updates the Dexter contract's view of its
         <senderaddr> TokenAddress </senderaddr>
 ```
 
+### Error conditions
+
 If any of the conditions are not satisfied, the call fails.
+Due to K failing to simplify side conditions when specified as a disjunction,
+we use one claim per failing side condition.
+
+#### FA12
+
+For FA12, we reach a failing state when any of these conditions hold:
+
+1.  `Amount >Int 0`
+2.  `notBool IsUpdating`
+3.  `TokenAddress =/=K Sender`
+
+The following claims cover these cases:
 
 ```k
   claim <k> #runProof(false, UpdateTokenPoolInternalFA12(_)) => Aborted(?_, ?_, ?_, ?_) </k>
@@ -583,6 +597,18 @@ If any of the conditions are not satisfied, the call fails.
         <senderaddr> Sender </senderaddr>
      requires TokenAddress =/=K Sender
 ```
+
+
+#### FA2
+
+For FA2, we reach a failing state when any of these conditions hold:
+
+1.  `Amount >Int 0`
+2.  `notBool IsUpdating`
+3.  `TokenAddress =/=K Sender`
+4.  `BalanceOfResult ==K .InternalList`
+
+The following claims cover these cases:
 
 ```k
   claim <k> #runProof(true, UpdateTokenPoolInternalFA2(BalanceOfResult)) => Aborted(?_, ?_, ?_, ?_) </k>
