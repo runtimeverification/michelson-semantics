@@ -45,13 +45,13 @@ This function has no evaluation rules, so the prover can make no assumptions abo
   syntax Int ::= #mulMod(Int, Int, Int) [function, functional, smtlib(mulMod), no-evaluators]
                | #mulDiv(Int, Int, Int) [function, functional, smtlib(mulDiv), no-evaluators]
  // -----------------------------------------------------------------------------------------
-  rule (X *Int Y) %Int Z => #mulMod(X, Y, Z) [simplification, anywhere]
-  rule (X *Int Y) /Int Z => #mulDiv(X, Y, Z) [simplification, anywhere]
+  rule (X *Int Y) %Int Z => #mulMod(X, Y, Z) [simplification]
+  rule (X *Int Y) /Int Z => #mulDiv(X, Y, Z) [simplification]
 
-  rule (X *Int Y) %Int Z ==Int #mulMod(X, Y, Z) => true [simplification, anywhere]
-  rule (X *Int Y) /Int Z ==Int #mulDiv(X, Y, Z) => true [simplification, anywhere]
+  rule (X *Int Y) %Int Z ==Int #mulMod(X, Y, Z) => true [simplification]
+  rule (X *Int Y) /Int Z ==Int #mulDiv(X, Y, Z) => true [simplification]
 
-  rule (X *Int Y) %Int Z  ==Int OTHER => #mulMod(X, Y, Z) ==Int OTHER [simplification, anywhere]
+  rule (X *Int Y) %Int Z  ==Int OTHER => #mulMod(X, Y, Z) ==Int OTHER [simplification]
 
   syntax Int ::= #ceildiv(Int, Int) [function]
  // ------------------------------------------
