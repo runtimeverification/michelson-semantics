@@ -34,7 +34,6 @@ module DEXTER-LEMMAS
 
 ```k
   rule X /Int 1 => X [simplification]
-  rule X ==Int X +Int 1 => false [simplification, anywhere] // TODO Remove
 ```
 
 ### Avoiding Interpreting Functions

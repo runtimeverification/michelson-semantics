@@ -82,11 +82,7 @@ module DEXTER-ADDLIQUIDITY-SPEC
         </operations>
     requires notBool IsFA2 // TODO Handle IsFA2==true
      andBool CurrentTime <Int Deadline
-     andBool Amount <=Int MaxTokensDeposited // TODO: Remove
-     andBool Amount      >Int 0
      andBool XtzAmount   >Int 0
-     andBool OldLqt      >Int 0
-     andBool TokenAmount >Int 0
      andBool #ceildiv(Amount *Int TokenAmount, XtzAmount) <=Int MaxTokensDeposited
      andBool MinLqtMinted <=Int (Amount *Int OldLqt) /Int XtzAmount
      andBool #IsLegalMutezValue(Amount +Int XtzAmount)
