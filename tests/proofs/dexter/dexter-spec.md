@@ -68,7 +68,7 @@ module DEXTER-ADDLIQUIDITY-SPEC
         <myaddr> SelfAddress </myaddr>
         <lqtTotal> OldLqt => OldLqt +Int (Amount *Int OldLqt) /Int XtzAmount </lqtTotal>
         <xtzPool> #Mutez(XtzAmount => XtzAmount +Int Amount) </xtzPool>
-        <tokenPool> TokenAmount => TokenAmount +Int (Amount *Int TokenAmount) /Int XtzAmount </tokenPool>
+        <tokenPool> TokenAmount => TokenAmount +Int #ceildiv(Amount *Int TokenAmount, XtzAmount) </tokenPool>
         <tokenAddress> TokenAddress:Address </tokenAddress>
         <lqtAddress> LqtAddress:Address </lqtAddress>
         <senderaddr> Sender </senderaddr>
@@ -76,23 +76,18 @@ module DEXTER-ADDLIQUIDITY-SPEC
         <knownaddrs> KnownAddresses </knownaddrs>
         <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
         <operations> _
-                  => [ Transfer_tokens Pair Sender Pair SelfAddress ((Amount *Int TokenAmount) /Int XtzAmount) #Mutez(0) TokenAddress Nonce ] ;;
+                  => [ Transfer_tokens Pair Sender Pair SelfAddress #ceildiv(Amount *Int TokenAmount, XtzAmount) #Mutez(0) TokenAddress Nonce ] ;;
                      [ Transfer_tokens Pair ((Amount *Int OldLqt) /Int XtzAmount) Owner #Mutez(0) LqtAddress (Nonce +Int 1) ] ;;
                      .InternalList
         </operations>
     requires notBool IsFA2 // TODO Handle IsFA2==true
      andBool CurrentTime <Int Deadline
-     andBool Amount <=Int MaxTokensDeposited
+     andBool Amount <=Int MaxTokensDeposited // TODO: Remove
      andBool Amount      >Int 0
      andBool XtzAmount   >Int 0
      andBool OldLqt      >Int 0
      andBool TokenAmount >Int 0
-     andBool #mulDiv(Amount, TokenAmount, XtzAmount) <=Int MaxTokensDeposited
-     andBool (Amount *Int TokenAmount) %Int XtzAmount ==Int 0
-     /* TODO: Also handle this case:
-     andBool #mulDiv(Amount, TokenAmount, XtzAmount) <Int MaxTokensDeposited
-     andBool #mulMod(Amount, TokenAmount, XtzAmount) =/=Int 0
-     */
+     andBool #ceildiv(Amount *Int TokenAmount, XtzAmount) <=Int MaxTokensDeposited
      andBool MinLqtMinted <=Int (Amount *Int OldLqt) /Int XtzAmount
      andBool #IsLegalMutezValue(Amount +Int XtzAmount)
 
