@@ -92,8 +92,8 @@ module DEXTER-ADDLIQUIDITY-SPEC
 ```
 
 ```k
-  claim <k> #runProof(IsFA2, AddLiquidity(Owner, MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
-        <stack> .Stack => ?FS:FailedStack </stack>
+  claim <k> #runProof(IsFA2, AddLiquidity(_Owner, MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ?_:FailedStack </stack>
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <myamount> #Mutez(Amount) </myamount>
