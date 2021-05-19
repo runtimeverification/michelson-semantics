@@ -199,41 +199,9 @@ If any of the conditions are not satisfied, the call fails.
         <senderaddr> Sender </senderaddr>
         <freezeBaker> FreezeBaker </freezeBaker>
     requires Amount >Int 0
-```
-
-```k
-  claim <k> #runProof(_IsFA2, SetBaker(_Baker, _NewFreezeBaker)) => Aborted(?_, ?_, ?_, ?_) </k>
-        <stack> .Stack => ( Failed ?_ ) </stack>
-        <manager> CurrentManager </manager>
-        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
-        <myamount> #Mutez(Amount) </myamount>
-        <senderaddr> Sender </senderaddr>
-        <freezeBaker> FreezeBaker </freezeBaker>
-    requires IsUpdating
-```
-
-```k
-
-  claim <k> #runProof(_IsFA2, SetBaker(_Baker, _NewFreezeBaker)) => Aborted(?_, ?_, ?_, ?_) </k>
-        <stack> .Stack => ( Failed ?_ ) </stack>
-        <manager> CurrentManager </manager>
-        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
-        <myamount> #Mutez(Amount) </myamount>
-        <senderaddr> Sender </senderaddr>
-        <freezeBaker> FreezeBaker </freezeBaker>
-    requires FreezeBaker
-```
-
-```k
-
-  claim <k> #runProof(_IsFA2, SetBaker(_Baker, _NewFreezeBaker)) => Aborted(?_, ?_, ?_, ?_) </k>
-        <stack> .Stack => ( Failed ?_ ) </stack>
-        <manager> CurrentManager </manager>
-        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
-        <myamount> #Mutez(Amount) </myamount>
-        <senderaddr> Sender </senderaddr>
-        <freezeBaker> FreezeBaker </freezeBaker>
-    requires Sender =/=K CurrentManager
+      orBool IsUpdating
+      orBool FreezeBaker
+      orBool Sender =/=K CurrentManager
 ```
 
 ```k
