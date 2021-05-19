@@ -107,7 +107,7 @@ module DEXTER-ADDLIQUIDITY-SPEC
     requires IsUpdating
      orBool CurrentTime >=Int Deadline
      orBool XtzAmount   ==Int 0
-     orBool #ceildiv(Amount *Int TokenAmount, XtzAmount) >=Int MaxTokensDeposited
+     orBool #ceildiv(Amount *Int TokenAmount, XtzAmount) >Int MaxTokensDeposited
      orBool MinLqtMinted >Int (Amount *Int OldLqt) /Int XtzAmount
      orBool notBool #IsLegalMutezValue(Amount +Int XtzAmount)
      orBool notBool #EntrypointExists(KnownAddresses, TokenAddress,   %transfer, #TokenTransferType(IsFA2))
