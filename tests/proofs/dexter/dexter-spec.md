@@ -81,9 +81,7 @@ module DEXTER-ADDLIQUIDITY-SPEC
                      [ Transfer_tokens Pair ((Amount *Int OldLqt) /Int XtzAmount) Owner #Mutez(0) LqtAddress (Nonce +Int 1) ] ;;
                      .InternalList
         </operations>
-    //requires notBool IsFA2 // TODO Handle IsFA2==true
-    requires IsFA2
-     andBool CurrentTime <Int Deadline
+    requires CurrentTime <Int Deadline
      andBool XtzAmount   >Int 0
      andBool #ceildiv(Amount *Int TokenAmount, XtzAmount) <=Int MaxTokensDeposited
      andBool MinLqtMinted <=Int (Amount *Int OldLqt) /Int XtzAmount
