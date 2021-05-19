@@ -98,6 +98,8 @@ module DEXTER-ADDLIQUIDITY-SPEC
         <mynow> #Timestamp(CurrentTime) </mynow>
         <myamount> #Mutez(Amount) </myamount>
         <myaddr> SelfAddress </myaddr>
+        <lqtTotal> OldLqt </lqtTotal>
+        <tokenPool> TokenAmount </tokenPool>
         <tokenAddress> TokenAddress:Address </tokenAddress>
         <tokenId> TokenId </tokenId>
         <lqtAddress> LqtAddress:Address </lqtAddress>
