@@ -70,17 +70,19 @@ module DEXTER-ADDLIQUIDITY-SPEC
         <xtzPool> #Mutez(XtzAmount => XtzAmount +Int Amount) </xtzPool>
         <tokenPool> TokenAmount => TokenAmount +Int #ceildiv(Amount *Int TokenAmount, XtzAmount) </tokenPool>
         <tokenAddress> TokenAddress:Address </tokenAddress>
+        <tokenId> TokenId </tokenId>
         <lqtAddress> LqtAddress:Address </lqtAddress>
         <senderaddr> Sender </senderaddr>
         <nonce> #Nonce(Nonce => Nonce +Int 2) </nonce>
         <knownaddrs> KnownAddresses </knownaddrs>
         <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
         <operations> _
-                  => [ Transfer_tokens Pair Sender Pair SelfAddress #ceildiv(Amount *Int TokenAmount, XtzAmount) #Mutez(0) TokenAddress Nonce ] ;;
+                  => [ Transfer_tokens #TokenTransferData(IsFA2, Sender, SelfAddress, TokenId, #ceildiv(Amount *Int TokenAmount, XtzAmount)) #Mutez(0) TokenAddress Nonce ] ;;
                      [ Transfer_tokens Pair ((Amount *Int OldLqt) /Int XtzAmount) Owner #Mutez(0) LqtAddress (Nonce +Int 1) ] ;;
                      .InternalList
         </operations>
-    requires notBool IsFA2 // TODO Handle IsFA2==true
+    //requires notBool IsFA2 // TODO Handle IsFA2==true
+    requires IsFA2
      andBool CurrentTime <Int Deadline
      andBool XtzAmount   >Int 0
      andBool #ceildiv(Amount *Int TokenAmount, XtzAmount) <=Int MaxTokensDeposited

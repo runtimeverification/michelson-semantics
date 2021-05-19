@@ -647,12 +647,12 @@ If the contract execution fails, storage is not updated.
   syntax Type ::= #TokenTransferType(Bool) [function, functional]
  // -------------------------------------------------------------
   rule #TokenTransferType(false) => #Type(pair address pair address nat)
-  rule #TokenTransferType(true)  => #Type(pair address list pair address pair nat nat)
+  rule #TokenTransferType(true)  => #Type(list pair address list pair address pair nat nat)
 
   syntax Data ::= #TokenTransferData(Bool, Address, Address, Int, Int) [function, functional]
  // -----------------------------------------------------------------------------------------
-  rule #TokenTransferData(false, From, To, _TokenID, TokenAmt) => Pair From   Pair To              TokenAmt
-  rule #TokenTransferData(true,  From, To,  TokenID, TokenAmt) => Pair From [ Pair To Pair TokenID TokenAmt ] ;; .InternalList
+  rule #TokenTransferData(false, From, To, _TokenID, TokenAmt) =>   Pair From   Pair To              TokenAmt
+  rule #TokenTransferData(true,  From, To,  TokenID, TokenAmt) => [ Pair From [ Pair To Pair TokenID TokenAmt ] ;; .InternalList ] ;; .InternalList
 
   syntax Int ::= #XtzBought   (Int, Int, Int)
                | #TokensBought(Int, Int, Int)
