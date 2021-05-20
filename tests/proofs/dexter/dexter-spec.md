@@ -154,31 +154,6 @@ module DEXTER-ADDLIQUIDITY-NEGATIVE-SPEC
 
 TODO: Deal with the case when the token contract or the liquidity token contract don't exist or have the wrong type.
 
-```
-  claim <k> #runProof(IsFA2, AddLiquidity(_Owner, MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
-        <stack> .Stack => ?_:FailedStack </stack>
-        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
-        <mynow> #Timestamp(CurrentTime) </mynow>
-        <myamount> #Mutez(Amount) </myamount>
-        <myaddr> SelfAddress </myaddr>
-        <lqtTotal> OldLqt </lqtTotal>
-        <tokenPool> TokenAmount </tokenPool>
-        <tokenAddress> TokenAddress:Address </tokenAddress>
-        <tokenId> TokenId </tokenId>
-        <lqtAddress> LqtAddress:Address </lqtAddress>
-        <senderaddr> Sender </senderaddr>
-        <knownaddrs> KnownAddresses </knownaddrs>
-        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
-    requires IsUpdating
-     orBool CurrentTime >=Int Deadline
-     orBool XtzAmount   ==Int 0
-     orBool #ceildiv(Amount *Int TokenAmount, XtzAmount) >Int MaxTokensDeposited
-     orBool MinLqtMinted >Int (Amount *Int OldLqt) /Int XtzAmount
-     orBool notBool #IsLegalMutezValue(Amount +Int XtzAmount)
-     orBool notBool #EntrypointExists(KnownAddresses, TokenAddress,   %transfer, #TokenTransferType(IsFA2))
-     orBool notBool #EntrypointExists(KnownAddresses,   LqtAddress, %mintOrBurn, pair int %quantity .AnnotationList address %target .AnnotationList)
-```
-
 ```k
 endmodule
 ```
