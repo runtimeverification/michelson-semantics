@@ -658,21 +658,20 @@ If the contract execution fails, storage is not updated.
   rule #ceildivAux(X, Y) => X /Int Y          requires Y  =/=Int 0 andBool         X %Int Y ==Int 0
   rule #ceildivAux(X, Y) => X /Int Y +Int 1   requires Y  =/=Int 0 andBool notBool X %Int Y ==Int 0
 
-  syntax Int ::= #XtzBought   (Int, Int, Int)
-               | #TokensBought(Int, Int, Int)
+  syntax Int ::= #XtzBought   (Int, Int, Int) [function, functional, smtlib(xtzbought), no-evaluators]
  // -----------------------------------------
-  rule #XtzBought(XtzPool, TokenPool, TokensSold)
-    => (TokensSold *Int 997 *Int XtzPool) /Int (TokenPool *Int 1000 +Int (TokensSold *Int 997))
-    [macro]
+  rule (TokensSold *Int 997 *Int XtzPool) /Int (TokenPool *Int 1000 +Int (TokensSold *Int 997))
+    => #XtzBought(XtzPool, TokenPool, TokensSold)
+    [simplification]
 
-  syntax Int ::= #TokensBought(Int, Int, Int)
+  syntax Int ::= #TokensBought(Int, Int, Int) [function, functional, smtlib(tokensbought), no-evaluators]
  // ----------------------------------------
-  rule #TokensBought(XtzPool, TokenPool, XtzSold)
-    => (XtzSold *Int 997 *Int TokenPool) /Int (XtzPool *Int 1000 +Int (XtzSold *Int 997))
-    [macro]
+ // rule (XtzSold *Int 997 *Int TokenPool) /Int (XtzPool *Int 1000 +Int (XtzSold *Int 997))
+ //   => #TokensBought(XtzPool, TokenPool, XtzSold)
+ //   [simplification]
 
   syntax Bool ::= #EntrypointExists(Map, Address, FieldAnnotation, Type)
- // --------------------------------------------------------------------
+// --------------------------------------------------------------------
   rule #EntrypointExists(KnownAddresses, Addr, _FieldAnnot, EntrypointType)
     => Addr in_keys(KnownAddresses) andBool
        KnownAddresses[Addr] ==K #Contract(Addr, EntrypointType)
