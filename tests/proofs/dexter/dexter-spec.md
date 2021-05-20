@@ -107,20 +107,20 @@ module DEXTER-ADDLIQUIDITY-NEGATIVE-SPEC
   imports DEXTER-VERIFICATION
 ```
 
-```
+```k
   claim <k> #runProof(_IsFA2, AddLiquidity(_Owner, _MinLqtMinted, _MaxTokensDeposited, #Timestamp(_Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ( Failed ?_ ) </stack>
         <selfIsUpdatingTokenPool> true </selfIsUpdatingTokenPool>
 ```
 
-```
+```k
   claim <k> #runProof(_IsFA2, AddLiquidity(_Owner, _MinLqtMinted, _MaxTokensDeposited, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ( Failed ?_ ) </stack>
         <mynow> #Timestamp(CurrentTime) </mynow>
     requires CurrentTime >=Int Deadline
 ```
 
-```
+```k
   claim <k> #runProof(_IsFA2, AddLiquidity(_Owner, _MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ( Failed ?_ ) </stack>
         <mynow> #Timestamp(CurrentTime) </mynow>
@@ -130,7 +130,7 @@ module DEXTER-ADDLIQUIDITY-NEGATIVE-SPEC
     requires #ceildiv(Amount *Int TokenAmount, XtzAmount) >Int MaxTokensDeposited
 ```
 
-```
+```k
   claim <k> #runProof(_IsFA2, AddLiquidity(_Owner, _MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_:FailedStack </stack>
         <myamount> #Mutez(Amount) </myamount>
@@ -151,6 +151,7 @@ module DEXTER-ADDLIQUIDITY-NEGATIVE-SPEC
         <stack> .Stack => ?_:FailedStack </stack>
         <xtzPool> #Mutez(0) </xtzPool>
 ```
+
 TODO: Deal with the case when the token contract or the liquidity token contract don't exist or have the wrong type.
 
 ```
