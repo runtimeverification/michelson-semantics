@@ -509,7 +509,7 @@ A buyer sends tokens to the Dexter contract and receives a corresponding amount 
 5.  the amount of tokens sold, when converted into xtz using the current exchange rate, it is less than or equal to the xtz owned by the Dexter contract
 
 ```k
-  claim <k> #runProof(IsFA2, TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) => . </k>
+  claim <k> #runProof(false, TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) => . </k>
         <stack> .Stack </stack>
         <selfIsUpdatingTokenPool> false </selfIsUpdatingTokenPool>
         <myamount> #Mutez(Amount) </myamount>
@@ -518,20 +518,26 @@ A buyer sends tokens to the Dexter contract and receives a corresponding amount 
         <tokenPool> TokenPool => TokenPool +Int TokensSold </tokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <senderaddr> Sender </senderaddr>
+        <paramtype> #Type(#DexterVersionSpecificParamType(false)) </paramtype>
         <myaddr> SelfAddress:Address </myaddr>
         <nonce> #Nonce(N => N +Int 2) </nonce>
         <knownaddrs> KnownAddresses </knownaddrs>
         <tokenId> TokenID </tokenId>
         <operations> _
-                  => [ Transfer_tokens #TokenTransferData(IsFA2, Sender, SelfAddress, TokenID, TokensSold) #Mutez(0)                                          TokenAddress  N        ]
+                  => [ Transfer_tokens #TokenTransferData(false, Sender, SelfAddress, TokenID, TokensSold) #Mutez(0)                                          TokenAddress  N        ]
                   ;; [ Transfer_tokens Unit                                                                #Mutez(#XtzBought(XtzPool, TokenPool, TokensSold)) To           (N +Int 1)]
                   ;; .InternalList
         </operations>
      requires Amount ==Int 0
       andBool CurrentTime <Int Deadline
+      andBool (TokenPool >Int 0 orBool TokensSold >Int 0)
+      andBool (TokenPool >=Int 0)
       andBool #XtzBought(XtzPool, TokenPool, TokensSold) >Int  MinXtzBought
       andBool #XtzBought(XtzPool, TokenPool, TokensSold) <=Int XtzPool
-      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer,                             #TokenTransferType(IsFA2))
+      andBool #IsLegalMutezValue(MinXtzBought)
+      andBool #IsLegalMutezValue(#XtzBought(XtzPool, TokenPool, TokensSold))
+      andBool #IsLegalMutezValue(XtzPool:Int -Int #XtzBought (XtzPool:Int, TokenPool:Int, TokensSold:Int))
+      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer,                             #TokenTransferType(false))
       andBool #EntrypointExists(KnownAddresses, To,           #token("%default", "FieldAnnotation"), #Type(unit))
 ```
 
