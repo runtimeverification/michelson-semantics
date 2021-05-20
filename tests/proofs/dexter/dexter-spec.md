@@ -52,10 +52,10 @@ Storage( lqtTotal:  LqtTotal  => LqtTotal  + lqt_minted ;
 2.  the deadline has not passed (i.e. the `Tezos.now < input.deadline`)
 3.  the tokens transferred is less than `input.maxTokensDeposited`
 4.  the liquidity minted is more than `input.minLqtMinted`
-5.  lqtTotal, xtzPool and tokenPool are all positive
+5.  xtzPool is positive
 
 ```k
-module DEXTER-ADDLIQUIDITY-SPEC
+module DEXTER-ADDLIQUIDITY-POSITIVE-SPEC
   imports DEXTER-VERIFICATION
 ```
 
@@ -92,6 +92,53 @@ module DEXTER-ADDLIQUIDITY-SPEC
 ```
 
 ```k
+endmodule
+```
+
+The execution fails if any of the following are true:
+1.  the token pool is currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
+2.  the deadline has passed (i.e. the `Tezos.now < input.deadline`)
+3.  the tokens transferred is more than `input.maxTokensDeposited`
+4.  the liquidity minted is less than `input.minLqtMinted`
+5.  xtzPool is 0
+
+```k
+module DEXTER-ADDLIQUIDITY-NEGATIVE-SPEC
+  imports DEXTER-VERIFICATION
+```
+
+```
+  claim <k> #runProof(_IsFA2, AddLiquidity(_Owner, _MinLqtMinted, _MaxTokensDeposited, #Timestamp(_Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ( Failed ?_ ) </stack>
+        <selfIsUpdatingTokenPool> true </selfIsUpdatingTokenPool>
+```
+
+```
+  claim <k> #runProof(_IsFA2, AddLiquidity(_Owner, _MinLqtMinted, _MaxTokensDeposited, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ( Failed ?_ ) </stack>
+        <mynow> #Timestamp(CurrentTime) </mynow>
+    requires CurrentTime >=Int Deadline
+```
+
+```
+  claim <k> #runProof(_IsFA2, AddLiquidity(_Owner, _MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ( Failed ?_ ) </stack>
+        <mynow> #Timestamp(CurrentTime) </mynow>
+        <myamount> #Mutez(Amount) </myamount>
+        <xtzPool> #Mutez(XtzAmount) </xtzPool>
+        <tokenPool> TokenAmount </tokenPool>
+    requires #ceildiv(Amount *Int TokenAmount, XtzAmount) >Int MaxTokensDeposited
+```
+
+```k
+  claim <k> #runProof(true /*TODO*/, AddLiquidity(_Owner, _MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ?_:FailedStack </stack>
+        <myamount> #Mutez(Amount) </myamount>
+        <xtzPool> #Mutez(XtzAmount) </xtzPool>
+    requires notBool #IsLegalMutezValue(Amount +Int XtzAmount)
+```
+
+```
   claim <k> #runProof(IsFA2, AddLiquidity(_Owner, MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_:FailedStack </stack>
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>

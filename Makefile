@@ -382,7 +382,8 @@ tests/%.prove: tests/% $(prove_kompiled)
 # Dexter proofs
 
 dexter_spec_modules = DEXTER-SPEC                 \
-                      DEXTER-ADDLIQUIDITY-SPEC    \
+                      DEXTER-ADDLIQUIDITY-POSITIVE-SPEC    \
+                      DEXTER-ADDLIQUIDITY-NEGATIVE-SPEC    \
                       DEXTER-SETMANAGER-SPEC      \
                       DEXTER-SETBAKER-SPEC        \
                       DEXTER-SETLQTADDRESS-SPEC   \
