@@ -36,6 +36,29 @@ module DEXTER-LEMMAS
   rule X /Int 1 => X [simplification]
 ```
 
+### Avoiding Interpreting Functions
+
+If a function value does not play well with the prover or SMT solver, it can be rewritten to `#uninterpreted`.
+This function has no evaluation rules, so the prover can make no assumptions about it -- it will be assumed it can take on any value.
+
+```k
+  syntax Int ::= #mulMod(Int, Int, Int) [function, functional, smtlib(mulMod), no-evaluators]
+               | #mulDiv(Int, Int, Int) [function, functional, smtlib(mulDiv), no-evaluators]
+ // -----------------------------------------------------------------------------------------
+  rule (X *Int Y) %Int Z => #mulMod(X, Y, Z) [simplification]
+  rule (X *Int Y) /Int Z => #mulDiv(X, Y, Z) [simplification]
+
+  rule (X *Int Y) %Int Z ==Int #mulMod(X, Y, Z) => true [simplification]
+  rule (X *Int Y) /Int Z ==Int #mulDiv(X, Y, Z) => true [simplification]
+
+  rule (X *Int Y) %Int Z  ==Int OTHER => #mulMod(X, Y, Z) ==Int OTHER [simplification]
+
+  syntax Int ::= #ceildiv(Int, Int) [function]
+ // ------------------------------------------
+  rule #ceildiv(X, Y) => X /Int Y        requires Y =/=Int 0 andBool X %Int Y  ==Int 0
+  rule #ceildiv(X, Y) => X /Int Y +Int 1 requires Y =/=Int 0 andBool X %Int Y =/=Int 0
+```
+
 ```k
 endmodule
 ```
@@ -630,11 +653,6 @@ If the contract execution fails, storage is not updated.
  // -----------------------------------------------------------------------------------------
   rule #TokenTransferData(false, From, To, _TokenID, TokenAmt) =>   Pair From   Pair To              TokenAmt
   rule #TokenTransferData(true,  From, To,  TokenID, TokenAmt) => [ Pair From [ Pair To Pair TokenID TokenAmt ] ;; .InternalList ] ;; .InternalList
-
-  syntax Int ::= #ceildiv(Int, Int) [function]
- // ------------------------------------------
-  rule #ceildiv(X, Y) => X /Int Y        requires Y =/=Int 0 andBool X %Int Y  ==Int 0
-  rule #ceildiv(X, Y) => X /Int Y +Int 1 requires Y =/=Int 0 andBool X %Int Y =/=Int 0
 
   syntax Int ::= #XtzBought   (Int, Int, Int)
                | #TokensBought(Int, Int, Int)
