@@ -46,6 +46,8 @@ Storage( lqtTotal:  LqtTotal  => LqtTotal  + lqt_minted ;
 1. call to `transfer` entrypoint of liquidity address: Send tokens from sender to self.
 2. call to `mintOrBurn` entrypoint of token address: Adds liquidity for the sender.
 
+### Positive case
+
 -   Preconditions
 
 1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
@@ -54,46 +56,9 @@ Storage( lqtTotal:  LqtTotal  => LqtTotal  + lqt_minted ;
 4.  the liquidity minted is more than `input.minLqtMinted`
 5.  xtzPool is positive
 
-```k
-module DEXTER-ADDLIQUIDITY-POSITIVE-SPEC
-  imports DEXTER-VERIFICATION
-```
+TODO
 
-```k
-  claim <k> #runProof(IsFA2, AddLiquidity(Owner, MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => . </k>
-        <stack> .Stack </stack>
-        <selfIsUpdatingTokenPool> false </selfIsUpdatingTokenPool>
-        <mynow> #Timestamp(CurrentTime) </mynow>
-        <myamount> #Mutez(Amount) </myamount>
-        <myaddr> SelfAddress </myaddr>
-        <lqtTotal> OldLqt => OldLqt +Int (Amount *Int OldLqt) /Int XtzAmount </lqtTotal>
-        <xtzPool> #Mutez(XtzAmount => XtzAmount +Int Amount) </xtzPool>
-        <tokenPool> TokenAmount => TokenAmount +Int #ceildiv(Amount *Int TokenAmount, XtzAmount) </tokenPool>
-        <tokenAddress> TokenAddress:Address </tokenAddress>
-        <tokenId> TokenId </tokenId>
-        <lqtAddress> LqtAddress:Address </lqtAddress>
-        <senderaddr> Sender </senderaddr>
-        <nonce> #Nonce(Nonce => Nonce +Int 2) </nonce>
-        <knownaddrs> KnownAddresses </knownaddrs>
-        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
-        <operations> _
-                  => [ Transfer_tokens #TokenTransferData(IsFA2, Sender, SelfAddress, TokenId, #ceildiv(Amount *Int TokenAmount, XtzAmount)) #Mutez(0) TokenAddress Nonce ] ;;
-                     [ Transfer_tokens Pair ((Amount *Int OldLqt) /Int XtzAmount) Owner #Mutez(0) LqtAddress (Nonce +Int 1) ] ;;
-                     .InternalList
-        </operations>
-    requires CurrentTime <Int Deadline
-     andBool XtzAmount   >Int 0
-     andBool #ceildiv(Amount *Int TokenAmount, XtzAmount) <=Int MaxTokensDeposited
-     andBool MinLqtMinted <=Int (Amount *Int OldLqt) /Int XtzAmount
-     andBool #IsLegalMutezValue(Amount +Int XtzAmount)
-
-     andBool #EntrypointExists(KnownAddresses, TokenAddress,   %transfer, #TokenTransferType(IsFA2))
-     andBool #EntrypointExists(KnownAddresses,   LqtAddress, %mintOrBurn, pair int %quantity .AnnotationList address %target .AnnotationList)
-```
-
-```k
-endmodule
-```
+### Negative case
 
 The execution fails if any of the following are true:
 1.  the token pool is currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
