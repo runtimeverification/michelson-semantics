@@ -954,6 +954,7 @@ Since we work with specific code that contains a finite number of annotations, w
                                         CONS ;
                                         PAIR } } } }
                        // Left Right Right Right
+                       // token_to_xtz
                        { DUP ;
                          CDR ;
                          SWAP ;
@@ -2307,7 +2308,8 @@ Since we work with specific code that contains a finite number of annotations, w
                                         DIG 2 ;
                                         CONS ;
                                         PAIR } } } }
-                       { DUP ;
+                       { // token_to_xtz
+                         DUP ;
                          CDR ;
                          SWAP ;
                          CAR ;
