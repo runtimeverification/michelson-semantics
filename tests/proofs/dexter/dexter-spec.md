@@ -67,6 +67,10 @@ module DEXTER-REMOVELIQUIDITY-SPEC
      andBool #EntrypointExists(KnownAddresses, TokenAddress,   %transfer, #TokenTransferType(IsFA2))
      andBool #EntrypointExists(KnownAddresses,   LqtAddress, %mintOrBurn, pair int %quantity .AnnotationList address %target .AnnotationList)
 
+  claim <k> #runProof(_IsFA2, RemoveLiquidity(_, _, _, _, _)) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => Failed ( ?_ ) </stack>
+        <selfIsUpdatingTokenPool> true </selfIsUpdatingTokenPool>
+
 endmodule
 ```
 
