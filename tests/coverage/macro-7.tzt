@@ -1,6 +1,0 @@
-parameter_value 300000 ;
-storage_value 0 ;
-contract { 
-  parameter nat ; 
-  storage nat ; 
-  code { CAR ; NIL operation ; PAIR } ; }
