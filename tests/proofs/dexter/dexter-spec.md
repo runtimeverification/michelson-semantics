@@ -47,6 +47,11 @@ module DEXTER-REMOVELIQUIDITY-SPEC
         <myamount> #Mutez(Amount) </myamount>
     requires Amount >Int 0
 
+  claim <k> #runProof(_IsFA2, RemoveLiquidity(_, _, _, _, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ( Failed ?_ ) </stack>
+        <mynow> #Timestamp(CurrentTime) </mynow>
+    requires CurrentTime >=Int Deadline
+
 endmodule
 ```
 
