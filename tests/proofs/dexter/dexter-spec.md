@@ -52,12 +52,6 @@ module DEXTER-REMOVELIQUIDITY-SPEC
         <mynow> #Timestamp(CurrentTime) </mynow>
     requires CurrentTime >=Int Deadline
 
-  claim <k> #runProof(_IsFA2, RemoveLiquidity(_, LqtBurned, _, _, _)) => Aborted(?_, ?_, ?_, ?_) </k>
-        <stack> .Stack => ( Failed ?_ ) </stack>
-        <lqtTotal> OldLqt </lqtTotal>
-    requires OldLqt ==Int 0
-      orBool OldLqt <Int LqtBurned
-
   claim <k> #runProof(_IsFA2, RemoveLiquidity(_, LqtBurned, #Mutez(MinXtzWithdrawn), _, _)) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ( Failed ?_ ) </stack>
         <lqtTotal> OldLqt </lqtTotal>
