@@ -42,6 +42,11 @@ module DEXTER-REMOVELIQUIDITY-SPEC
         <stack> .Stack => ( Failed ?_ ) </stack>
         <selfIsUpdatingTokenPool> true </selfIsUpdatingTokenPool>
 
+  claim <k> #runProof(_IsFA2, RemoveLiquidity(_, _, _, _, _)) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ( Failed ?_ ) </stack>
+        <myamount> #Mutez(Amount) </myamount>
+    requires Amount >Int 0
+
 endmodule
 ```
 
