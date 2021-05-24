@@ -533,7 +533,7 @@ A buyer sends tokens to the Dexter contract and receives a corresponding amount 
       andBool Amount ==Int 0
       andBool CurrentTime <Int Deadline
       andBool (TokenPool >Int 0 orBool TokensSold >Int 0)
-      andBool (TokenPool >=Int 0)
+      andBool (TokenPool >=Int 0) // Type Invariant
       andBool #XtzBought(XtzPool, TokenPool, TokensSold) >Int  MinXtzBought
       andBool #XtzBought(XtzPool, TokenPool, TokensSold) <=Int XtzPool
       andBool #IsLegalMutezValue(MinXtzBought)
@@ -541,6 +541,21 @@ A buyer sends tokens to the Dexter contract and receives a corresponding amount 
       andBool #IsLegalMutezValue(XtzPool:Int -Int #XtzBought (XtzPool:Int, TokenPool:Int, TokensSold:Int))
       andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer,                             #TokenTransferType(IsFA2))
       andBool #EntrypointExists(KnownAddresses, To,           #token("%default", "FieldAnnotation"), #Type(unit))
+```
+
+```k
+  claim <k> #runProof(IsFA2, TokenToXtz(_To, _TokensSold, #Mutez(_MinXtzBought), #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ?_ </stack>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <mynow> #Timestamp(CurrentTime) </mynow>
+        <myamount> #Mutez(Amount) </myamount>
+        <tokenAddress> TokenAddress:Address </tokenAddress>
+        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+     requires notBool IsFA2
+      andBool ( IsUpdating
+         orBool notBool Amount ==Int 0
+         orBool notBool CurrentTime <Int Deadline
+              )
 ```
 
 ```k
@@ -554,12 +569,58 @@ A buyer sends tokens to the Dexter contract and receives a corresponding amount 
         <tokenPool> TokenPool </tokenPool>
         <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
      requires notBool IsFA2
-      andBool ( IsUpdating
-         orBool notBool Amount ==Int 0
-         orBool notBool CurrentTime <Int Deadline
-              )
+      andBool notBool IsUpdating
+      andBool notBool Amount ==Int 0
+      andBool notBool CurrentTime <Int Deadline
+      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer,                             #TokenTransferType(IsFA2))
+      andBool #EntrypointExists(KnownAddresses, To,           #token("%default", "FieldAnnotation"), #Type(unit))
+      andBool notBool (TokenPool >Int 0 orBool TokensSold >Int 0)
 ```
 
+```k
+  claim <k> #runProof(IsFA2, TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ?_ </stack>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <mynow> #Timestamp(CurrentTime) </mynow>
+        <myamount> #Mutez(Amount) </myamount>
+        <tokenAddress> TokenAddress:Address </tokenAddress>
+        <xtzPool> #Mutez(XtzPool) </xtzPool>
+        <tokenPool> TokenPool </tokenPool>
+        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+     requires notBool IsFA2
+      andBool notBool IsUpdating
+      andBool notBool Amount ==Int 0
+      andBool notBool CurrentTime <Int Deadline
+      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer,                             #TokenTransferType(IsFA2))
+      andBool #EntrypointExists(KnownAddresses, To,           #token("%default", "FieldAnnotation"), #Type(unit))
+      andBool notBool( #XtzBought(XtzPool, TokenPool, TokensSold) >Int  MinXtzBought
+               andBool #IsLegalMutezValue(MinXtzBought)
+                     )
+```
+
+```k
+  claim <k> #runProof(IsFA2, TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ?_ </stack>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <mynow> #Timestamp(CurrentTime) </mynow>
+        <myamount> #Mutez(Amount) </myamount>
+        <tokenAddress> TokenAddress:Address </tokenAddress>
+        <xtzPool> #Mutez(XtzPool) </xtzPool>
+        <tokenPool> TokenPool </tokenPool>
+        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+     requires notBool IsFA2
+      andBool notBool IsUpdating
+      andBool notBool Amount ==Int 0
+      andBool notBool CurrentTime <Int Deadline
+      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer,                             #TokenTransferType(IsFA2))
+      andBool #EntrypointExists(KnownAddresses, To,           #token("%default", "FieldAnnotation"), #Type(unit))
+      andBool  #XtzBought(XtzPool, TokenPool, TokensSold) >Int  MinXtzBought
+      andBool #IsLegalMutezValue(MinXtzBought)
+      andBool notBool( #XtzBought(XtzPool, TokenPool, TokensSold) <=Int XtzPool
+               andBool #IsLegalMutezValue(#XtzBought(XtzPool, TokenPool, TokensSold))
+               andBool #IsLegalMutezValue(XtzPool:Int -Int #XtzBought (XtzPool:Int, TokenPool:Int, TokensSold:Int))
+                     )
+```
 ```k
 endmodule
 ```
