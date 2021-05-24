@@ -677,8 +677,10 @@ If all steps are completed, only the Dexter-specific storage is updated.
         ~> #storeDexterState(IsFA2)
         ...
        </k>
+       <myamount> #Mutez(Amount) </myamount>
        <operations> OpList </operations>
     ensures wellTypedParams(IsFA2, Params)
+    andBool Amount >=Int 0
     andBool OpList ==K .InternalList
 ```
 
