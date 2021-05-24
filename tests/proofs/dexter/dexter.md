@@ -608,23 +608,23 @@ If the contract execution fails, storage is not updated.
 ```k
   syntax Data ::= #UpdateTokenPoolTransferFrom(Bool, Address, Int) [function, functional]
  // -------------------------------------------------------------------------------------
-  rule #UpdateTokenPoolTransferFrom(IsFA2, SelfAddress, _TokenId) =>        SelfAddress                            requires notBool IsFA2
-  rule #UpdateTokenPoolTransferFrom(IsFA2, SelfAddress,  TokenId) => [ Pair SelfAddress TokenId ] ;; .InternalList requires         IsFA2
+  rule #UpdateTokenPoolTransferFrom(IsFA2, SelfAddress, _TokenId) =>        SelfAddress                            requires notBool IsFA2 [simplification]
+  rule #UpdateTokenPoolTransferFrom(IsFA2, SelfAddress,  TokenId) => [ Pair SelfAddress TokenId ] ;; .InternalList requires         IsFA2 [simplification]
 
   syntax Type ::= #TokenContractType(Bool) [function, functional]
  // -------------------------------------------------------------
-  rule #TokenContractType(false) => #Type(pair address                   (contract #DexterVersionSpecificParamType(false)))
-  rule #TokenContractType(true)  => #Type(pair (list (pair address nat)) (contract #DexterVersionSpecificParamType(true)) )
+  rule #TokenContractType(false) => #Type(pair address                   (contract #DexterVersionSpecificParamType(false))) [simplification]
+  rule #TokenContractType(true)  => #Type(pair (list (pair address nat)) (contract #DexterVersionSpecificParamType(true)) ) [simplification]
 
   syntax Type ::= #TokenTransferType(Bool) [function, functional]
  // -------------------------------------------------------------
-  rule #TokenTransferType(false) => #Type(pair address pair address nat)
-  rule #TokenTransferType(true)  => #Type(pair address list pair address pair nat nat)
+  rule #TokenTransferType(false) => #Type(pair address pair address nat) [simplification]
+  rule #TokenTransferType(true)  => #Type(list pair address list pair address pair nat nat) [simplification]
 
   syntax Data ::= #TokenTransferData(Bool, Address, Address, Int, Int) [function, functional]
  // -----------------------------------------------------------------------------------------
-  rule #TokenTransferData(false, From, To, _TokenID, TokenAmt) => Pair From   Pair To              TokenAmt
-  rule #TokenTransferData(true,  From, To,  TokenID, TokenAmt) => Pair From [ Pair To Pair TokenID TokenAmt ] ;; .InternalList
+  rule #TokenTransferData(false, From, To, _TokenID, TokenAmt) =>   Pair From   Pair To              TokenAmt [simplification]
+  rule #TokenTransferData(true,  From, To,  TokenID, TokenAmt) => [ Pair From [ Pair To Pair TokenID TokenAmt ] ;; .InternalList ] ;; .InternalList [simplification]
 
   syntax Int ::= #XtzBought   (Int, Int, Int)
                | #TokensBought(Int, Int, Int)
