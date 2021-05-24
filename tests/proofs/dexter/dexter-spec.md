@@ -544,6 +544,23 @@ A buyer sends tokens to the Dexter contract and receives a corresponding amount 
 ```
 
 ```k
+  claim <k> #runProof(IsFA2, TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ?_ </stack>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <mynow> #Timestamp(CurrentTime) </mynow>
+        <myamount> #Mutez(Amount) </myamount>
+        <tokenAddress> TokenAddress:Address </tokenAddress>
+        <xtzPool> #Mutez(XtzPool) </xtzPool>
+        <tokenPool> TokenPool </tokenPool>
+        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+     requires notBool IsFA2
+      andBool ( IsUpdating
+         orBool notBool Amount ==Int 0
+         orBool notBool CurrentTime <Int Deadline
+              )
+```
+
+```k
 endmodule
 ```
 
