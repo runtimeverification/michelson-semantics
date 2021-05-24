@@ -394,7 +394,7 @@ A buyer sends tokens to the Dexter contract and receives a corresponding amount 
 ```k
   claim <k> #runProof(IsFA2, TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) => . </k>
         <stack> .Stack </stack>
-        <selfIsUpdatingTokenPool> false </selfIsUpdatingTokenPool>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <myamount> #Mutez(Amount) </myamount>
         <tokenAddress> TokenAddress:Address </tokenAddress>
         <xtzPool> #Mutez(XtzPool => XtzPool -Int #XtzBought(XtzPool, TokenPool, TokensSold)) </xtzPool>
@@ -412,6 +412,7 @@ A buyer sends tokens to the Dexter contract and receives a corresponding amount 
                   ;; .InternalList
         </operations>
      requires notBool IsFA2
+      andBool notBool IsUpdating
       andBool Amount ==Int 0
       andBool CurrentTime <Int Deadline
       andBool (TokenPool >Int 0 orBool TokensSold >Int 0)
@@ -445,7 +446,7 @@ A buyer sends tokens to the Dexter contract and receives a corresponding amount 
 ```k
   claim <k> #runProof(IsFA2, TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) => . </k>
         <stack> .Stack </stack>
-        <selfIsUpdatingTokenPool> false </selfIsUpdatingTokenPool>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <myamount> #Mutez(Amount) </myamount>
         <tokenAddress> TokenAddress:Address </tokenAddress>
         <xtzPool> #Mutez(XtzPool => XtzPool -Int #XtzBought(XtzPool, TokenPool, TokensSold)) </xtzPool>
@@ -463,6 +464,7 @@ A buyer sends tokens to the Dexter contract and receives a corresponding amount 
                   ;; .InternalList
         </operations>
      requires IsFA2
+      andBool notBool IsUpdating
       andBool Amount ==Int 0
       andBool CurrentTime <Int Deadline
       andBool (TokenPool >Int 0 orBool TokensSold >Int 0)
