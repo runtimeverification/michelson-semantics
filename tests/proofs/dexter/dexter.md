@@ -662,7 +662,7 @@ If the contract execution fails, storage is not updated.
 
   syntax Data ::= #TokenTransferData(Bool, Address, Address, Int, Int) [function, functional]
  // -----------------------------------------------------------------------------------------
-  rule #TokenTransferData(false, From, To, _TokenID, TokenAmt) =>   Pair From    Pair To              TokenAmt [simplification
+  rule #TokenTransferData(false, From, To, _TokenID, TokenAmt) =>   Pair From    Pair To              TokenAmt [simplification]
   rule #TokenTransferData(true,  From, To,  TokenID, TokenAmt) => [ Pair From ([ Pair To Pair TokenID TokenAmt ] ;; .InternalList)  ] ;; .InternalList [simplification]
 
   syntax Int ::= #XtzBought   (Int, Int, Int)
