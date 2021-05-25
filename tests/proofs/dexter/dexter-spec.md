@@ -21,6 +21,40 @@ module DEXTER-SPEC
 endmodule
 ```
 
+# Remove Liquidity
+
+The sender can burn liquidity tokens in exchange for tez and tokens sent to some address if the following conditions are satisfied:
+
+1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
+2.  exactly 0 tez was transferred to this contract when it was invoked
+3.  the current block time must be less than the deadline
+4.  the amount of liquidity to be redeemed, when converted to xtz, is greater than `minXtzWithdrawn` and less than the amount of tez owned by the Dexter contract
+5.  the amount of liquidity to be redeemed, when converted to tokens, is greater than `minTokensWithdrawn` and less than the amount of tokens owned by the Dexter contract
+6.  the amount of liquidity to be redeemed is less than the total amount of liquidity and less than the amount of liquidity tokens owned by the sender
+7.  the contract at address `storage.lqtAddress` has a well-formed `mintOrBurn` entrypoint
+8.  the contract at address `storage.tokenAddress` has a well-formed `transfer` entrypoint
+
+```k
+module DEXTER-REMOVELIQUIDITY-SPEC
+  imports DEXTER-VERIFICATION
+
+  claim <k> #runProof(_IsFA2, RemoveLiquidity(_, _, _, _, _)) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ( Failed ?_ ) </stack>
+        <selfIsUpdatingTokenPool> true </selfIsUpdatingTokenPool>
+
+  claim <k> #runProof(_IsFA2, RemoveLiquidity(_, _, _, _, _)) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ( Failed ?_ ) </stack>
+        <myamount> #Mutez(Amount) </myamount>
+    requires Amount >Int 0
+
+  claim <k> #runProof(_IsFA2, RemoveLiquidity(_, _, _, _, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ( Failed ?_ ) </stack>
+        <mynow> #Timestamp(CurrentTime) </mynow>
+    requires CurrentTime >=Int Deadline
+
+endmodule
+```
+
 ## Set Manager
 
 ```k
