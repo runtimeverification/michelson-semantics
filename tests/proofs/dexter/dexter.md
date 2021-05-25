@@ -192,17 +192,6 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
             where `$xtz_withdrawn    = storage.xtzPool *    (lqtBurned / storage.lqtTotal)`
               and `$tokens_withdrawn = storage.tokenPool *  (lqtBurned / storage.lqtTotal)`
 
-        -   Summary: The sender can burn liquidity tokens in exchange for tez and tokens sent to some address if the following conditions are satisfied:
-
-            1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
-            2.  exactly 0 tez was transferred to this contract when it was invoked
-            3.  the current block time must be less than the deadline
-            4.  the amount of liquidity to be redeemed, when converted to xtz, is greater than `minXtzWithdrawn` and less than the amount of tez owned by the Dexter contract
-            5.  the amount of liquidity to be redeemed, when converted to tokens, is greater than `minTokensWithdrawn` and less than the amount of tokens owned by the Dexter contract
-            6.  the amount of liquidity to be redeemed is less than the total amount of liquidity and less than the amount of liquidity tokens owned by the sender
-            7.  the contract at address `storage.lqtAddress` has a well-formed `mintOrBurn` entrypoint
-            8.  the contract at address `storage.tokenAddress` has a well-formed `transfer` entrypoint
-
     3.  `set_baker`
 
         -   Input:
@@ -658,23 +647,23 @@ If the contract execution fails, storage is not updated.
 ```k
   syntax Data ::= #UpdateTokenPoolTransferFrom(Bool, Address, Int) [function, functional]
  // -------------------------------------------------------------------------------------
-  rule #UpdateTokenPoolTransferFrom(IsFA2, SelfAddress, _TokenId) =>        SelfAddress                            requires notBool IsFA2
-  rule #UpdateTokenPoolTransferFrom(IsFA2, SelfAddress,  TokenId) => [ Pair SelfAddress TokenId ] ;; .InternalList requires         IsFA2
+  rule #UpdateTokenPoolTransferFrom(IsFA2, SelfAddress, _TokenId) =>        SelfAddress                            requires notBool IsFA2 [simplification]
+  rule #UpdateTokenPoolTransferFrom(IsFA2, SelfAddress,  TokenId) => [ Pair SelfAddress TokenId ] ;; .InternalList requires         IsFA2 [simplification]
 
   syntax Type ::= #TokenContractType(Bool) [function, functional]
  // -------------------------------------------------------------
-  rule #TokenContractType(false) => #Type(pair address                   (contract #DexterVersionSpecificParamType(false)))
-  rule #TokenContractType(true)  => #Type(pair (list (pair address nat)) (contract #DexterVersionSpecificParamType(true)) )
+  rule #TokenContractType(false) => #Type(pair address                   (contract #DexterVersionSpecificParamType(false))) [simplification]
+  rule #TokenContractType(true)  => #Type(pair (list (pair address nat)) (contract #DexterVersionSpecificParamType(true)) ) [simplification]
 
   syntax Type ::= #TokenTransferType(Bool) [function, functional]
  // -------------------------------------------------------------
-  rule #TokenTransferType(false) => #Type(pair address pair address nat)
-  rule #TokenTransferType(true)  => #Type(list (pair address (list (pair address (pair nat nat)))))
+  rule #TokenTransferType(false) => #Type(pair address pair address nat) [simplification]
+  rule #TokenTransferType(true)  => #Type(list (pair address (list (pair address (pair nat nat))))) [simplification]
 
   syntax Data ::= #TokenTransferData(Bool, Address, Address, Int, Int) [function, functional]
  // -----------------------------------------------------------------------------------------
-  rule #TokenTransferData(false, From, To, _TokenID, TokenAmt) =>   Pair From    Pair To              TokenAmt
-  rule #TokenTransferData(true,  From, To,  TokenID, TokenAmt) => [ Pair From ([ Pair To Pair TokenID TokenAmt ] ;; .InternalList)  ] ;; .InternalList
+  rule #TokenTransferData(false, From, To, _TokenID, TokenAmt) =>   Pair From    Pair To              TokenAmt [simplification
+  rule #TokenTransferData(true,  From, To,  TokenID, TokenAmt) => [ Pair From ([ Pair To Pair TokenID TokenAmt ] ;; .InternalList)  ] ;; .InternalList [simplification]
 
   syntax Int ::= #XtzBought   (Int, Int, Int)
                | #TokensBought(Int, Int, Int)
