@@ -514,7 +514,7 @@ ensures  XtzWithdrawn    ==Int LqtBurned *Int X /Int L
 #### XtzToToken(To, MinTokensBought, Deadline)
 
 NOTE:
-- TokensBought < T if T > 0
+- `TokensBought < T` if `T > 0`
 
 ```
 rule [xtz-to-token]:
@@ -535,7 +535,7 @@ ensures  TokensBought ==Int 997 *Int XtzSold *Int T /Int (1000 *Int X +Int 997 *
 #### TokenToXtz(To, TokensSold, MinXtzBought, Deadline)
 
 NOTE:
-- XtzBought <Int X if X > 0
+- `XtzBought <Int X` if `X > 0`
 
 ```
 rule [token-to-xtz]:
@@ -558,8 +558,8 @@ ensures  XtzBought ==Int 997 *Int TokensSold *Int X /Int (1000 *Int T +Int 997 *
 
 NOTE:
 - The following two should be equivalent:
-  - [ Transaction DEXTER 0 TokenToToken(OutputDexterContract, MinTokensBought, To, TokensSold, Deadline) ]
-  - [ Transaction DEXTER 0 TokenToXtz(Sender, TokensSold, 0, Deadline) ] ;; [ Transaction OutputDexterContract XtzBought XtzToToken(To, MinTokensBought, Deadline) ]
+  - `[ Transaction DEXTER 0 TokenToToken(OutputDexterContract, MinTokensBought, To, TokensSold, Deadline) ]`
+  - `[ Transaction DEXTER 0 TokenToXtz(Sender, TokensSold, 0, Deadline) ] ;; [ Transaction OutputDexterContract XtzBought XtzToToken(To, MinTokensBought, Deadline) ]`
 
 ```
 rule [token-to-token]:
