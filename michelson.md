@@ -2423,7 +2423,7 @@ When unfolding a symbolic container, we thus need to add a constraint forcing
 the item to be of the correct type.
 
 ```k
-    syntax KItem ::= #AssumeHasType(KItem, TypeName) 
+    syntax KItem ::= #AssumeHasType(KItem, TypeName)
 ```
 
 ```concrete
