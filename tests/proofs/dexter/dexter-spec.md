@@ -730,10 +730,10 @@ module DEXTER-TOKENTOXTZ-FA2-NEG-2-SPEC
       andBool notBool ( (TokenPool >Int 0 orBool TokensSold >Int 0)
                 andBool #XtzBought(XtzPool, TokenPool, TokensSold) >Int  MinXtzBought
                 andBool #XtzBought(XtzPool, TokenPool, TokensSold) <=Int XtzPool
-                andBool #IsLegalMutezValue(MinXtzBought)
-                andBool #IsLegalMutezValue(#XtzBought(XtzPool, TokenPool, TokensSold))
-                andBool #IsLegalMutezValue(XtzPool:Int -Int #XtzBought (XtzPool:Int, TokenPool:Int, TokensSold:Int))
                       )
+      andBool #IsLegalMutezValue(MinXtzBought)
+      andBool #IsLegalMutezValue(#XtzBought(XtzPool, TokenPool, TokensSold))
+      andBool #IsLegalMutezValue(XtzPool:Int -Int #XtzBought (XtzPool:Int, TokenPool:Int, TokensSold:Int))
       andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer,                             #TokenTransferType(IsFA2))
       andBool #EntrypointExists(KnownAddresses, To,           #token("%default", "FieldAnnotation"), #Type(unit))
 endmodule
