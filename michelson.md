@@ -1073,6 +1073,8 @@ The `#DoCompare` function requires additional lemmas for symbolic execution.
   rule X ==String X => true  [simplification]
   rule X  <String X => false [simplification]
 
+  rule #Ceil(#DoCompare(_:Int, _:Int)) => #Top [anywhere, simplification]
+
   rule #Ceil(#DoCompare(V1, V2)) => #Top
     requires (isBool(V1)      andBool isBool(V2))
       orBool (isInt(V1)       andBool isInt(V2))
