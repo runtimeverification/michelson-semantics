@@ -805,7 +805,8 @@ A buyer sends xtz to the Dexter contract and receives a corresponding amount of 
                   => [ Transfer_tokens #TokenTransferData(IsFA2, SelfAddress, To, TokenID, #TokensBought(XtzPool, TokenPool, Amount)) #Mutez(0) TokenAddress N ]
                   ;; .InternalList
         </operations>
-     requires CurrentTime <Int Deadline
+     requires notBool IsFA2
+      andBool CurrentTime <Int Deadline
       andBool Amount >Int 0
       andBool #TokensBought(XtzPool, TokenPool, Amount) >Int  MinTokensBought
       andBool #TokensBought(XtzPool, TokenPool, Amount) <=Int TokenPool
