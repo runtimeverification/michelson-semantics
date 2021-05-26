@@ -182,7 +182,7 @@ The sender can burn liquidity tokens in exchange for tez and tokens sent to some
 8.  the contract at address `storage.tokenAddress` has a well-formed `transfer` entrypoint
 
 ```k
-module DEXTER-REMOVELIQUIDITY-SPEC
+module DEXTER-REMOVELIQUIDITY-POSITIVE-SPEC
   imports DEXTER-VERIFICATION
 
   claim <k> #runProof(IsFA2, RemoveLiquidity(To, LqtBurned, #Mutez(MinXtzWithdrawn), MinTokensWithdrawn, #Timestamp(Deadline))) => . </k>
@@ -213,6 +213,14 @@ module DEXTER-REMOVELIQUIDITY-SPEC
      andBool MinTokensWithdrawn <=Int (LqtBurned *Int TokenAmount) /Int OldLqt
      andBool #EntrypointExists(KnownAddresses, TokenAddress,   %transfer, #TokenTransferType(IsFA2))
      andBool #EntrypointExists(KnownAddresses,   LqtAddress, %mintOrBurn, pair int %quantity .AnnotationList address %target .AnnotationList)
+```
+```k
+endmodule
+```
+
+```k
+module DEXTER-REMOVELIQUIDITY-NEGATIVE-SPEC
+  imports DEXTER-VERIFICATION
 
   claim <k> #runProof(_IsFA2, RemoveLiquidity(_, _, _, _, _)) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ( Failed ?_ ) </stack>
