@@ -95,38 +95,37 @@ module DEXTER-ADDLIQUIDITY-POSITIVE-SPEC
 endmodule
 ```
 
-The execution fails if any of the following are true:
-1.  the token pool is currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
-2.  the deadline has passed (i.e. the `Tezos.now < input.deadline`)
-3.  the tokens transferred is more than `input.maxTokensDeposited`
-4.  the liquidity minted is less than `input.minLqtMinted`
-5.  xtzPool is 0
+# Remove Liquidity
+
+The sender can burn liquidity tokens in exchange for tez and tokens sent to some address if the following conditions are satisfied:
+
+1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
+2.  exactly 0 tez was transferred to this contract when it was invoked
+3.  the current block time must be less than the deadline
+4.  the amount of liquidity to be redeemed, when converted to xtz, is greater than `minXtzWithdrawn` and less than the amount of tez owned by the Dexter contract
+5.  the amount of liquidity to be redeemed, when converted to tokens, is greater than `minTokensWithdrawn` and less than the amount of tokens owned by the Dexter contract
+6.  the amount of liquidity to be redeemed is less than the total amount of liquidity and less than the amount of liquidity tokens owned by the sender
+7.  the contract at address `storage.lqtAddress` has a well-formed `mintOrBurn` entrypoint
+8.  the contract at address `storage.tokenAddress` has a well-formed `transfer` entrypoint
 
 ```k
-module DEXTER-ADDLIQUIDITY-NEGATIVE-SPEC
+module DEXTER-REMOVELIQUIDITY-SPEC
   imports DEXTER-VERIFICATION
-```
 
-```k
-  claim <k> #runProof(_IsFA2, AddLiquidity(_Owner, MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
-        <stack> .Stack => ?_:FailedStack </stack>
-        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
-        <mynow> #Timestamp(CurrentTime) </mynow>
+  claim <k> #runProof(_IsFA2, RemoveLiquidity(_, _, _, _, _)) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ( Failed ?_ ) </stack>
+        <selfIsUpdatingTokenPool> true </selfIsUpdatingTokenPool>
+
+  claim <k> #runProof(_IsFA2, RemoveLiquidity(_, _, _, _, _)) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ( Failed ?_ ) </stack>
         <myamount> #Mutez(Amount) </myamount>
-        <lqtTotal> OldLqt </lqtTotal>
-        <xtzPool> #Mutez(XtzAmount) </xtzPool>
-        <tokenPool> TokenAmount </tokenPool>
-    requires IsUpdating
-     orBool CurrentTime >=Int Deadline
-     orBool #ceildiv(Amount *Int TokenAmount, XtzAmount) >Int MaxTokensDeposited
-     orBool notBool #IsLegalMutezValue(Amount +Int XtzAmount)
-     orBool MinLqtMinted >Int (Amount *Int OldLqt) /Int XtzAmount
-     orBool XtzAmount ==Int 0
-```
+    requires Amount >Int 0
 
-TODO: Deal with the case when the token contract or the liquidity token contract don't exist or have the wrong type.
+  claim <k> #runProof(_IsFA2, RemoveLiquidity(_, _, _, _, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ( Failed ?_ ) </stack>
+        <mynow> #Timestamp(CurrentTime) </mynow>
+    requires CurrentTime >=Int Deadline
 
-```k
 endmodule
 ```
 
