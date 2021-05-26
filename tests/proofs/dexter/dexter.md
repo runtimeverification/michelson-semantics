@@ -48,15 +48,11 @@ This function has no evaluation rules, so the prover can make no assumptions abo
   rule (X *Int Y) %Int Z => #mulMod(X, Y, Z) [simplification]
   rule (X *Int Y) /Int Z => #mulDiv(X, Y, Z) [simplification]
 
+//TODO: Try removingthe following
   rule (X *Int Y) %Int Z ==Int #mulMod(X, Y, Z) => true [simplification]
   rule (X *Int Y) /Int Z ==Int #mulDiv(X, Y, Z) => true [simplification]
 
   rule (X *Int Y) %Int Z  ==Int OTHER => #mulMod(X, Y, Z) ==Int OTHER [simplification]
-
-  syntax Int ::= #ceildiv(Int, Int) [function]
- // ------------------------------------------
-  rule #ceildiv(X, Y) => X /Int Y        requires Y =/=Int 0 andBool X %Int Y  ==Int 0
-  rule #ceildiv(X, Y) => X /Int Y +Int 1 requires Y =/=Int 0 andBool X %Int Y =/=Int 0
 ```
 
 ```k
@@ -681,6 +677,13 @@ If the contract execution fails, storage is not updated.
  // -----------------------------------------------------------------------------------------
   rule #TokenTransferData(false, From, To, _TokenID, TokenAmt) =>   Pair From    Pair To              TokenAmt [simplification]
   rule #TokenTransferData(true,  From, To,  TokenID, TokenAmt) => [ Pair From ([ Pair To Pair TokenID TokenAmt ] ;; .InternalList)  ] ;; .InternalList [simplification]
+
+  syntax Int ::= #ceildiv   (Int, Int) [function]
+               | #ceildivAux(Int, Int) [function, functional]
+ // ---------------------------------------------------------
+  rule #ceildiv   (X, Y) => #ceildivAux(X, Y) requires Y =/=Int 0
+  rule #ceildivAux(X, Y) => X /Int Y          requires         X %Int Y ==Int 0
+  rule #ceildivAux(X, Y) => X /Int Y +Int 1   requires notBool X %Int Y ==Int 0
 
   syntax Int ::= #XtzBought   (Int, Int, Int)
                | #TokensBought(Int, Int, Int)

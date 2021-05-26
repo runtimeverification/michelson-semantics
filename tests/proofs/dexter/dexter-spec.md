@@ -84,40 +84,6 @@ module DEXTER-ADDLIQUIDITY-POSITIVE-SPEC
     requires CurrentTime <Int Deadline
      andBool XtzAmount   >Int 0
      andBool #ceildiv(Amount *Int TokenAmount, XtzAmount) <=Int MaxTokensDeposited
-     andBool (Amount *Int TokenAmount) %Int XtzAmount ==Int 0
-     andBool MinLqtMinted <=Int (Amount *Int OldLqt) /Int XtzAmount
-     andBool #IsLegalMutezValue(Amount +Int XtzAmount)
-
-     andBool #EntrypointExists(KnownAddresses, TokenAddress,   %transfer, #TokenTransferType(IsFA2))
-     andBool #EntrypointExists(KnownAddresses,   LqtAddress, %mintOrBurn, pair int %quantity .AnnotationList address %target .AnnotationList)
-```
-
-```k
-  claim <k> #runProof(IsFA2, AddLiquidity(Owner, MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => . </k>
-        <stack> .Stack </stack>
-        <selfIsUpdatingTokenPool> false </selfIsUpdatingTokenPool>
-        <mynow> #Timestamp(CurrentTime) </mynow>
-        <myamount> #Mutez(Amount) </myamount>
-        <myaddr> SelfAddress </myaddr>
-        <lqtTotal> OldLqt => OldLqt +Int (Amount *Int OldLqt) /Int XtzAmount </lqtTotal>
-        <xtzPool> #Mutez(XtzAmount => XtzAmount +Int Amount) </xtzPool>
-        <tokenPool> TokenAmount => TokenAmount +Int #ceildiv(Amount *Int TokenAmount, XtzAmount) </tokenPool>
-        <tokenAddress> TokenAddress:Address </tokenAddress>
-        <tokenId> TokenId </tokenId>
-        <lqtAddress> LqtAddress:Address </lqtAddress>
-        <senderaddr> Sender </senderaddr>
-        <nonce> #Nonce(Nonce => Nonce +Int 2) </nonce>
-        <knownaddrs> KnownAddresses </knownaddrs>
-        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
-        <operations> _
-                  => [ Transfer_tokens #TokenTransferData(IsFA2, Sender, SelfAddress, TokenId, #ceildiv(Amount *Int TokenAmount, XtzAmount)) #Mutez(0) TokenAddress Nonce ] ;;
-                     [ Transfer_tokens Pair ((Amount *Int OldLqt) /Int XtzAmount) Owner #Mutez(0) LqtAddress (Nonce +Int 1) ] ;;
-                     .InternalList
-        </operations>
-    requires CurrentTime <Int Deadline
-     andBool XtzAmount   >Int 0
-     andBool #ceildiv(Amount *Int TokenAmount, XtzAmount) <=Int MaxTokensDeposited
-     andBool (Amount *Int TokenAmount) %Int XtzAmount =/=Int 0
      andBool MinLqtMinted <=Int (Amount *Int OldLqt) /Int XtzAmount
      andBool #IsLegalMutezValue(Amount +Int XtzAmount)
 
