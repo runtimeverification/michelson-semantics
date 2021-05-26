@@ -52,11 +52,6 @@ This function has no evaluation rules, so the prover can make no assumptions abo
   rule (X *Int Y) /Int Z ==Int #mulDiv(X, Y, Z) => true [simplification]
 
   rule (X *Int Y) %Int Z  ==Int OTHER => #mulMod(X, Y, Z) ==Int OTHER [simplification]
-
-  syntax Int ::= #ceildiv(Int, Int) [function]
- // ------------------------------------------
-  rule #ceildiv(X, Y) => X /Int Y        requires Y =/=Int 0 andBool X %Int Y  ==Int 0
-  rule #ceildiv(X, Y) => X /Int Y +Int 1 requires Y =/=Int 0 andBool X %Int Y =/=Int 0
 ```
 
 ```k
