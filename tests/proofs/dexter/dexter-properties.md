@@ -442,6 +442,153 @@ proof [inv-token-to-token]:
      ==Int S' +Int MintBurns(Ops' ;; Ops) by Ops'
 ```
 
+```
+claim [inv-update-token-pool]:
+<operations>  ( [ UpdateTokenPool() ] => Ops' ) ;; Ops </operations>
+<xtzPool>     #Mutez(X => X')   </xtzPool>
+<tokenPool>          T => T'    </tokenPool>
+<lqtTotal>           L => L'    </lqtTotal>
+<mybalance>   #Mutez(B => B')   </mybalance>
+<tokenDexter>        D => D'    </tokenDexter>
+<lqtSupply>          S => S'    </lqtSupply>
+<sourceaddr>  Source            </sourceaddr>
+<senderaddr>  Sender            </senderaddr>
+<selfIsUpdatingTokenPool> false => true </selfIsUpdatingTokenPool>
+requires 0 <Int X  andBool X  ==Int B  +Int Transactions(Op ;; Ops)
+ andBool 0 <Int T  andBool T  <=Int D  +Int Transfers(Op ;; Ops)
+ andBool 0 <Int L  andBool L  ==Int S  +Int MintBurns(Op ;; Ops)
+ensures  0 <Int X' andBool X' ==Int B' +Int Transactions(Ops' ;; Ops)
+ andBool 0 <Int T' andBool T' <=Int D' +Int Transfers(Ops' ;; Ops)
+ andBool 0 <Int L' andBool L' ==Int S' +Int MintBurns(Ops' ;; Ops)
+
+proof [inv-update-token-pool]:
+- assume Source ==K Sender // otherwise, it reverts, and we conclude
+- apply [update-token-pool]
+- unify RHS
+  - Ops' == [ Transaction TOKEN 0 BalanceOf(DEXTER, UpdateTokenPoolInternal) ]
+  - X' == X
+  - T' == T
+  - L' == L
+  - B' == B
+  - D' == D
+  - S' == S
+- X' >Int 0 by X >Int 0
+- T' >Int 0 by T >Int 0
+- L' >Int 0 by L >Int 0
+- X' ==Int X
+     ==Int B +Int Transactions(UpdateTokenPool() ;; Ops) by premise
+     ==Int B' +Int Transactions(UpdateTokenPool() ;; Ops) by B'
+     ==Int B' +Int Transactions(Ops) by Transactions
+     ==Int B' +Int Transactions([ Transaction TOKEN 0 BalanceOf(DEXTER, UpdateTokenPoolInternal) ] ;; Ops) by Transactions
+     ==Int B' +Int Transactions(Ops' ;; Ops) by Ops'
+- T' ==Int T
+     <=Int D +Int Transfers(UpdateTokenPool() ;; Ops) by premise
+     ==Int D' +Int Transfers(UpdateTokenPool() ;; Ops) by D'
+     ==Int D' +Int Transfers(Ops) by Transactions
+     ==Int D' +Int Transfers([ Transaction TOKEN 0 BalanceOf(DEXTER, UpdateTokenPoolInternal) ] ;; Ops) by Transactions
+     ==Int D' +Int Transfers(Ops' ;; Ops) by Ops'
+- L' ==Int L
+     ==Int S +Int MintBurns(UpdateTokenPool() ;; Ops) by premise
+     ==Int S' +Int MintBurns(UpdateTokenPool() ;; Ops) by S'
+     ==Int S' +Int MintBurns(Ops) by Transactions
+     ==Int S' +Int MintBurns([ Transaction TOKEN 0 BalanceOf(DEXTER, UpdateTokenPoolInternal) ] ;; Ops) by Transactions
+     ==Int S' +Int MintBurns(Ops' ;; Ops) by Ops'
+```
+
+```
+claim [inv-update-token-pool-internal]:
+<operations>  ( [ UpdateTokenPoolInternal(TokenPool) ] => Ops' ) ;; Ops </operations>
+<xtzPool>     #Mutez(X => X')   </xtzPool>
+<tokenPool>          T => T'    </tokenPool>
+<lqtTotal>           L => L'    </lqtTotal>
+<mybalance>   #Mutez(B => B')   </mybalance>
+<tokenDexter>        D => D'    </tokenDexter>
+<lqtSupply>          S => S'    </lqtSupply>
+<senderaddr>  Sender            </senderaddr>
+<selfIsUpdatingTokenPool> true => false </selfIsUpdatingTokenPool>
+requires 0 <Int X  andBool X  ==Int B  +Int Transactions(Op ;; Ops)
+ andBool 0 <Int T  andBool T  <=Int D  +Int Transfers(Op ;; Ops)
+ andBool 0 <Int L  andBool L  ==Int S  +Int MintBurns(Op ;; Ops)
+ensures  0 <Int X' andBool X' ==Int B' +Int Transactions(Ops' ;; Ops)
+ andBool 0 <Int T' andBool T' <=Int D' +Int Transfers(Ops' ;; Ops)
+ andBool 0 <Int L' andBool L' ==Int S' +Int MintBurns(Ops' ;; Ops)
+
+proof [inv-update-token-pool-internal]:
+- assume Sender ==K TOKEN // otherwise, it reverts, and we conclude
+- assert TokenPool // TODO:
+- apply [update-token-pool-internal]
+- unify RHS
+  - Ops' == .List
+  - X' == X
+  - T' == TokenPool
+  - L' == L
+  - B' == B
+  - D' == D
+  - S' == S
+- X' >Int 0 by X >Int 0
+- T' >Int 0 by // TODO:
+- L' >Int 0 by L >Int 0
+- X' ==Int X
+     ==Int B +Int Transactions(UpdateTokenPoolInternal() ;; Ops) by premise
+     ==Int B' +Int Transactions(UpdateTokenPoolInternal() ;; Ops) by B'
+     ==Int B' +Int Transactions(Ops) by Transactions
+     ==Int B' +Int Transactions(Ops' ;; Ops) by Ops'
+- T' // TODO:
+- L' ==Int L
+     ==Int S +Int MintBurns(UpdateTokenPoolInternal() ;; Ops) by premise
+     ==Int S' +Int MintBurns(UpdateTokenPoolInternal() ;; Ops) by S'
+     ==Int S' +Int MintBurns(Ops) by Transactions
+     ==Int S' +Int MintBurns(Ops' ;; Ops) by Ops'
+```
+
+```
+claim [inv-default]:
+<operations>  ( [ Default() ] => Ops' ) ;; Ops </operations>
+<xtzPool>     #Mutez(X => X')   </xtzPool>
+<tokenPool>          T => T'    </tokenPool>
+<lqtTotal>           L => L'    </lqtTotal>
+<mybalance>   #Mutez(B => B')   </mybalance>
+<tokenDexter>        D => D'    </tokenDexter>
+<lqtSupply>          S => S'    </lqtSupply>
+<selfIsUpdatingTokenPool> IsUpdatingTokenPool </selfIsUpdatingTokenPool>
+requires 0 <Int X  andBool X  ==Int B  +Int Transactions(Op ;; Ops)
+ andBool 0 <Int T  andBool T  <=Int D  +Int Transfers(Op ;; Ops)
+ andBool 0 <Int L  andBool L  ==Int S  +Int MintBurns(Op ;; Ops)
+ensures  0 <Int X' andBool X' ==Int B' +Int Transactions(Ops' ;; Ops)
+ andBool 0 <Int T' andBool T' <=Int D' +Int Transfers(Ops' ;; Ops)
+ andBool 0 <Int L' andBool L' ==Int S' +Int MintBurns(Ops' ;; Ops)
+
+proof [inv-default]:
+- assume IsUpdatingTokenPool ==K false // otherwise, it reverts, and we conclude
+- apply [default]
+- unify RHS
+  - Ops' == .List
+  - X' == X +Int Amount
+  - T' == T
+  - L' == L
+  - B' == B +Int Amount
+  - D' == D
+  - S' == S
+- X' >Int 0 by X >Int 0 and Amount >=Int 0
+- T' >Int 0 by T >Int 0
+- L' >Int 0 by L >Int 0
+- X' ==Int X +Int Amount
+     ==Int B +Int Transactions(Default() ;; Ops) +Int Amount by premise
+     ==Int B' +Int Transactions(Default() ;; Ops) by B'
+     ==Int B' +Int Transactions(Ops) by Transactions
+     ==Int B' +Int Transactions(Ops' ;; Ops) by Ops'
+- T' ==Int T
+     <=Int D +Int Transfers(Default() ;; Ops) by premise
+     ==Int D' +Int Transfers(Default() ;; Ops) by D'
+     ==Int D' +Int Transfers(Ops) by Transactions
+     ==Int D' +Int Transfers(Ops' ;; Ops) by Ops'
+- L' ==Int L
+     ==Int S +Int MintBurns(Default() ;; Ops) by premise
+     ==Int S' +Int MintBurns(Default() ;; Ops) by S'
+     ==Int S' +Int MintBurns(Ops) by Transactions
+     ==Int S' +Int MintBurns(Ops' ;; Ops) by Ops'
+```
+
 ### Opearation-level Specs
 
 #### Common:
@@ -575,5 +722,49 @@ requires IS_VALID(Deadline)
 ensures  XtzBought ==Int 997 *Int TokensSold *Int X /Int (1000 *Int T +Int 997 *Int TokensSold)
  andBool OpsEmitted ==K [ Transfer Sender DEXTER TokensSold ]
                      ;; [ Transaction OutputDexterContract XtzBought XtzToToken(To, MinTokensBought, Deadline) ]
+```
+
+#### UpdateTokenPool()
+
+```
+rule [update-token-pool]:
+<operations>  ( [ UpdateTokenPool() ] => OpsEmitted ) ;; _ </operations>
+<xtzPool>     #Mutez(X) </xtzPool>
+<tokenPool>          T  </tokenPool>
+<lqtTotal>           L  </lqtTotal>
+<mybalance>   #Mutez(B) </mybalance>
+<tokenDexter>        D  </tokenDexter>
+<lqtSupply>          S  </lqtSupply>
+<senderaddr>  Sender    </senderaddr>
+<sourceaddr>  Source    </sourceaddr>
+<selfIsUpdatingTokenPool> false => true </selfIsUpdatingTokenPool>
+requires Sender ==K Source
+ensures  XtzBought ==Int 997 *Int TokensSold *Int X /Int (1000 *Int T +Int 997 *Int TokensSold)
+ andBool OpsEmitted ==K [ Transaction TOKEN 0 BalanceOf(DEXTER, UpdateTokenPoolInternal) ]
+
+rule [update-token-pool-internal]:
+<operations>  ( [ UpdateTokenPoolInternal(TokenPool) ] => .List ) ;; _ </operations>
+<xtzPool>     #Mutez(X)             </xtzPool>
+<tokenPool>          T => TokenPool </tokenPool>
+<lqtTotal>           L              </lqtTotal>
+<mybalance>   #Mutez(B)             </mybalance>
+<tokenDexter>        D              </tokenDexter>
+<lqtSupply>          S              </lqtSupply>
+<senderaddr>  TOKEN                 </senderaddr>
+<selfIsUpdatingTokenPool> true => false </selfIsUpdatingTokenPool>
+```
+
+#### Default()
+
+```
+rule [default]:
+<operations>  ( [ Default() ] => .List ) ;; _ </operations>
+<xtzPool>     #Mutez(X => X +Int Amount)    </xtzPool>
+<tokenPool>          T                      </tokenPool>
+<lqtTotal>           L                      </lqtTotal>
+<mybalance>   #Mutez(B => B +Int Amount)    </mybalance>
+<tokenDexter>        D                      </tokenDexter>
+<lqtSupply>          S                      </lqtSupply>
+<selfIsUpdatingTokenPool> false </selfIsUpdatingTokenPool>
 ```
 
