@@ -663,8 +663,9 @@ If the contract execution fails, storage is not updated.
                | #ceildivAux(Int, Int) [function, functional]
  // ---------------------------------------------------------
   rule #ceildiv   (X, Y) => #ceildivAux(X, Y) requires Y =/=Int 0
-  rule #ceildivAux(X, Y) => X /Int Y          requires         X %Int Y ==Int 0
-  rule #ceildivAux(X, Y) => X /Int Y +Int 1   requires notBool X %Int Y ==Int 0
+  rule #ceildivAux(_, Y) => 0                 requires Y  ==Int 0
+  rule #ceildivAux(X, Y) => X /Int Y          requires Y  =/=Int 0 andBool         X %Int Y ==Int 0
+  rule #ceildivAux(X, Y) => X /Int Y +Int 1   requires Y  =/=Int 0 andBool notBool X %Int Y ==Int 0
 
   syntax Int ::= #XtzBought   (Int, Int, Int)
                | #TokensBought(Int, Int, Int)
