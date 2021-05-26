@@ -168,7 +168,7 @@ TODO: Deal with the case when the token contract or the liquidity token contract
 endmodule
 ```
 
-# Remove Liquidity
+## Remove Liquidity
 
 The sender can burn liquidity tokens in exchange for tez and tokens sent to some address if the following conditions are satisfied:
 
