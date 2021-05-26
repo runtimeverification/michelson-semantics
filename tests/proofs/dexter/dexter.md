@@ -25,11 +25,26 @@ module DEXTER-VERIFICATION-SYNTAX
 endmodule
 ```
 
+## Dexter Lemmas
+
+```k
+module DEXTER-LEMMAS
+  imports MICHELSON
+```
+
+```k
+  rule X /Int 1 => X [simplification]
+```
+
+```k
+endmodule
+```
+
 ```k
 module DEXTER-VERIFICATION
   imports DEXTER-COMPILED
   imports DEXTER-VERIFICATION-SYNTAX
-  imports MICHELSON
+  imports DEXTER-LEMMAS
 ```
 
 ## Terminology Prerequisites
@@ -121,27 +136,6 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
                         andBool #IsLegalTimestamp(Deadline)
                               )
             ```
-
-        -   Storage updates:
-
-            ```
-            Storage( lqtTotal:  LqtTotal  => LqtTotal  + lqt_minted ;
-                     tokenPool: TokenPool => TokenPool + tokens_deposited ;
-                     xtzPool:   XtzPool   => XtzPool   + Tezos.amount
-                   )
-            ```
-
-        -   Operations:
-
-            1. self call to `transfer` entrypoint: Send tokens from sender to self.
-            2. self call to `mintOrBurn` entrypoint: Adds liquidity for the sender.
-
-        -   Preconditions
-
-            1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
-            2.  the deadline has not passed (i.e. the `Tezos.now >= input.deadline`)
-            3.  the tez transferred is less than `input.maxTokensDeposited`
-            4.  the liquidity minted is more than `input.minLqtMinted`
 
     2.  `remove_liquidity`
 
@@ -664,6 +658,14 @@ If the contract execution fails, storage is not updated.
  // -----------------------------------------------------------------------------------------
   rule #TokenTransferData(false, From, To, _TokenID, TokenAmt) =>   Pair From    Pair To              TokenAmt [simplification]
   rule #TokenTransferData(true,  From, To,  TokenID, TokenAmt) => [ Pair From ([ Pair To Pair TokenID TokenAmt ] ;; .InternalList)  ] ;; .InternalList [simplification]
+
+  syntax Int ::= #ceildiv   (Int, Int) [function]
+               | #ceildivAux(Int, Int) [function, functional]
+ // ---------------------------------------------------------
+  rule #ceildiv   (X, Y) => #ceildivAux(X, Y) requires Y =/=Int 0
+  rule #ceildivAux(_, Y) => 0                 requires Y  ==Int 0
+  rule #ceildivAux(X, Y) => X /Int Y          requires Y  =/=Int 0 andBool         X %Int Y ==Int 0
+  rule #ceildivAux(X, Y) => X /Int Y +Int 1   requires Y  =/=Int 0 andBool notBool X %Int Y ==Int 0
 
   syntax Int ::= #XtzBought   (Int, Int, Int)
                | #TokensBought(Int, Int, Int)

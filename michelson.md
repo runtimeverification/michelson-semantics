@@ -1593,10 +1593,10 @@ to the given addresses/key hashes.
 
 ```k
   rule <k> CONTRACT _AL T => . ... </k>
-       <stack> [address A] ; SS => [option contract #Name(T) Some {M[A]}:>Data] ; SS </stack>
+       <stack> [address A] ; SS => [option contract #Name(T) Some {M[A]}:>ContractData] ; SS </stack>
        <knownaddrs> M </knownaddrs>
     requires A in_keys(M)
-     andBool #TypeFromContractStruct({M[A]}:>Data) ==K T
+     andBool #TypeFromContractStruct({M[A]}:>ContractData) ==K T
 
   rule <k> CONTRACT _AL T => . ... </k>
        <stack> [address _] ; SS => [option contract #Name(T) None] ; SS </stack>
@@ -1607,7 +1607,7 @@ to the given addresses/key hashes.
             => [contract unit #Contract(#Address(A), unit .AnnotationList)] ; SS
        </stack>
 
-  syntax Type ::= #TypeFromContractStruct(Data) [function]
+  syntax Type ::= #TypeFromContractStruct(ContractData) [function, functional]
   rule #TypeFromContractStruct(#Contract(_, T)) => T
 ```
 

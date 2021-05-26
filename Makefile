@@ -371,7 +371,7 @@ prove_tests         := $(wildcard tests/proofs/*-spec.md) $(wildcard tests/proof
 prove_tests_failing := $(shell cat tests/failing.prove)
 prove_tests_passing := $(filter-out $(prove_tests_failing), $(prove_tests))
 
-tests/proofs/multisig-spec.md.prove: export KORE_EXEC_OPTS=--smt-timeout 1000
+tests/proofs/multisig-spec.md.prove: export KORE_EXEC_OPTS=--smt-timeout 10000
 
 test-prove:         $(prove_tests_passing:=.prove)
 test-prove-failing: $(prove_tests_failing:=.prove)
@@ -381,12 +381,13 @@ tests/%.prove: tests/% $(prove_kompiled)
 
 # Dexter proofs
 
-dexter_spec_modules = DEXTER-SPEC                 \
-                      DEXTER-REMOVELIQUIDITY-SPEC \
-                      DEXTER-SETMANAGER-SPEC      \
-                      DEXTER-SETBAKER-SPEC        \
-                      DEXTER-SETLQTADDRESS-SPEC   \
-                      DEXTER-UPDATETOKENPOOL-SPEC \
+dexter_spec_modules = DEXTER-SPEC                       \
+                      DEXTER-ADDLIQUIDITY-NEGATIVE-SPEC \
+                      DEXTER-REMOVELIQUIDITY-SPEC       \
+                      DEXTER-SETMANAGER-SPEC            \
+                      DEXTER-SETBAKER-SPEC              \
+                      DEXTER-SETLQTADDRESS-SPEC         \
+                      DEXTER-UPDATETOKENPOOL-SPEC       \
                       DEXTER-DEFAULT-SPEC
 
 dexter_spec_file := tests/proofs/dexter/dexter-spec.md

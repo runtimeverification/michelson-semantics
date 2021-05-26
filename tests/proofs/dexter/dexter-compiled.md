@@ -43,6 +43,7 @@ Since we work with specific code that contains a finite number of annotations, w
                            | "%transfer"
                            | "%updateTokenPoolInternal"
                            | "%xtzToToken"
+ // --------------------------------------
 
   rule %balance_of              => #token("%balance_of"             , "FieldAnnotation") [macro]
   rule %deadline                => #token("%deadline"               , "FieldAnnotation") [macro]
