@@ -96,8 +96,8 @@ We represent values of collection types (lists, sets, maps) as follows:
 The internal representation of mutez is bounded.
 
 ```k
-  syntax Int ::= "#MutezOverflowLimit" [function]
-  // --------------------------------------------
+  syntax Int ::= "#MutezOverflowLimit" [function, functional]
+  // --------------------------------------------------------
   rule #MutezOverflowLimit => 2 ^Int 63 // Signed 64 bit integers.
 
   syntax Bool ::= #IsLegalMutezValue(Int)   [function, functional]
