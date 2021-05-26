@@ -718,6 +718,13 @@ If all steps are completed, only the Dexter-specific storage is updated.
     andBool OpList ==K .InternalList
 ```
 
+## Miscellaneous Lemmas
+
+```k
+    rule X *Int 1 => X [simplification]
+    rule X /Int 1 => X [simplification]
+```
+
 ## Epilogue
 
 We close out our module context now, which contains all of the information necessary to complete our proof.
