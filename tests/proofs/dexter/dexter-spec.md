@@ -46,6 +46,8 @@ Storage( lqtTotal:  LqtTotal  => LqtTotal  + lqt_minted ;
 1. call to `transfer` entrypoint of liquidity address: Send tokens from sender to self.
 2. call to `mintOrBurn` entrypoint of token address: Adds liquidity for the sender.
 
+### Positive case
+
 -   Preconditions
 
 1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
@@ -124,6 +126,43 @@ module DEXTER-ADDLIQUIDITY-POSITIVE-SPEC
      andBool #EntrypointExists(KnownAddresses, TokenAddress,   %transfer, #TokenTransferType(IsFA2))
      andBool #EntrypointExists(KnownAddresses,   LqtAddress, %mintOrBurn, pair int %quantity .AnnotationList address %target .AnnotationList)
 ```
+
+```k
+endmodule
+```
+
+### Negative case
+
+The execution fails if any of the following are true:
+1.  the token pool is currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
+2.  the deadline has passed (i.e. the `Tezos.now < input.deadline`)
+3.  the tokens transferred is more than `input.maxTokensDeposited`
+4.  the liquidity minted is less than `input.minLqtMinted`
+5.  xtzPool is 0
+
+```k
+module DEXTER-ADDLIQUIDITY-NEGATIVE-SPEC
+  imports DEXTER-VERIFICATION
+```
+
+```k
+  claim <k> #runProof(_IsFA2, AddLiquidity(_Owner, MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ?_:FailedStack </stack>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <mynow> #Timestamp(CurrentTime) </mynow>
+        <myamount> #Mutez(Amount) </myamount>
+        <lqtTotal> OldLqt </lqtTotal>
+        <xtzPool> #Mutez(XtzAmount) </xtzPool>
+        <tokenPool> TokenAmount </tokenPool>
+    requires IsUpdating
+     orBool CurrentTime >=Int Deadline
+     orBool #ceildiv(Amount *Int TokenAmount, XtzAmount) >Int MaxTokensDeposited
+     orBool notBool #IsLegalMutezValue(Amount +Int XtzAmount)
+     orBool MinLqtMinted >Int (Amount *Int OldLqt) /Int XtzAmount
+     orBool XtzAmount ==Int 0
+```
+
+TODO: Deal with the case when the token contract or the liquidity token contract don't exist or have the wrong type.
 
 ```k
 endmodule
