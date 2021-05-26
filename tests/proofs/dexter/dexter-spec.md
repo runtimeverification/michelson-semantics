@@ -540,6 +540,8 @@ Summary: The underlying token contract updates the Dexter contract's view of its
         <senderaddr> TokenAddress </senderaddr>
 ```
 
+In the FA2, UpdateTokenPoolInternal ignores all balances additional balances passed in:
+
 ```k
   claim <k> #runProof(true, UpdateTokenPoolInternalFA2([ Pair Pair _ _ Balance ] ;; _BalanceOfResultRest)) => . </k>
         <stack> .Stack </stack>
