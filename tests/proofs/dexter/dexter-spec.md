@@ -499,7 +499,7 @@ endmodule
 
 ```k
 module DEXTER-TOKENTOXTZ-FA12-SPEC
-  imports DEXTER-VERIFICATION-TOKENTOXTZ
+  imports DEXTER-VERIFICATION
 ```
 
 A buyer sends tokens to the Dexter contract and receives a corresponding amount of xtz, if the following conditions are satisfied:
@@ -550,7 +550,7 @@ The following claims prove the negative case:
 
 ```k
 module DEXTER-TOKENTOXTZ-FA12-NEG-1-SPEC
-  imports DEXTER-VERIFICATION-TOKENTOXTZ
+  imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, TokenToXtz(_To, _TokensSold, #Mutez(_MinXtzBought), #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_ </stack>
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
@@ -568,7 +568,7 @@ endmodule
 
 ```k
 module DEXTER-TOKENTOXTZ-FA12-NEG-2-SPEC
-  imports DEXTER-VERIFICATION-TOKENTOXTZ
+  imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_ </stack>
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
@@ -590,7 +590,7 @@ endmodule
 
 ```k
 module DEXTER-TOKENTOXTZ-FA12-NEG-3-SPEC
-  imports DEXTER-VERIFICATION-TOKENTOXTZ
+  imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_ </stack>
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
@@ -614,7 +614,7 @@ endmodule
 
 ```k
 module DEXTER-TOKENTOXTZ-FA12-NEG-4-SPEC
-  imports DEXTER-VERIFICATION-TOKENTOXTZ
+  imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_ </stack>
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
@@ -643,7 +643,7 @@ endmodule
 
 ```k
 module DEXTER-TOKENTOXTZ-FA2-SPEC
-  imports DEXTER-VERIFICATION-TOKENTOXTZ
+  imports DEXTER-VERIFICATION
 ```
 
 As before, a buyer sends tokens to the Dexter contract and receives a corresponding amount of xtz, if the following conditions are satisfied:
@@ -694,7 +694,7 @@ The following cases prove the contract properly fails when these conditions aren
 
 ```k
 module DEXTER-TOKENTOXTZ-FA2-NEG-1-SPEC
-  imports DEXTER-VERIFICATION-TOKENTOXTZ
+  imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) =>  Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_ </stack>
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
@@ -711,7 +711,7 @@ endmodule
 
 ```k
 module DEXTER-TOKENTOXTZ-FA2-NEG-2-SPEC
-  imports DEXTER-VERIFICATION-TOKENTOXTZ
+  imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) =>  Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_ </stack>
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
@@ -741,7 +741,7 @@ endmodule
 
 ```k
 module DEXTER-TOKENTOXTZ-FA2-NEG-3-SPEC
-  imports DEXTER-VERIFICATION-TOKENTOXTZ
+  imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) =>  Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_ </stack>
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
