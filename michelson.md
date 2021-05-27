@@ -1721,7 +1721,7 @@ value is invalid.
   rule #FailureFromMutezValue(#Mutez(I), I1, I2) => ( MutezOverflow I1 I2 )  requires I >=Int #MutezOverflowLimit [simplification]
   rule #FailureFromMutezValue(#Mutez(I), I1, I2) => ( MutezUnderflow I1 I2 ) requires I  <Int 0                   [simplification]
 
-  rule #Ceil(#FailureFromMutezValue(#Mutez(I), I1, I2)) => #Bottom
+  rule #Ceil(#FailureFromMutezValue(#Mutez(I), _I1, _I2)) => #Bottom
     requires notBool(I >=Int #MutezOverflowLimit orBool I  <Int 0)
     [simplification]
 ```
