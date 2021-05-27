@@ -935,6 +935,10 @@ proof [only-dexter]:
 
 ### Assumptions for External Calls
 
+NOTE:
+- Transfer must update the balance before emitting continuation
+  - e.g., pull pattern (transfer calls receiver hook which claim the balance later) is not allowed, since it leads to an exploit
+
 ```
 rule [token-transfer]:
 <operations> ( [ Transaction _ TOKEN Amount Transfer(From, To, Value) ] => Ops' ) ;; Ops </operations>
