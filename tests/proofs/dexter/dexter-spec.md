@@ -202,13 +202,13 @@ module DEXTER-REMOVELIQUIDITY-NEGATIVE-SPEC
     requires CurrentTime >=Int Deadline
 
   claim <k> #runProof(_IsFA2, RemoveLiquidity(_, LqtBurned, _, _, _)) => Aborted(?_, ?_, ?_, ?_) </k>
-        <stack> .Stack => ( Failed ?_ ) </stack>
+        <stack> .Stack => _:FailedStack </stack>
         <lqtTotal> OldLqt </lqtTotal>
     requires OldLqt ==Int 0
       orBool OldLqt <Int LqtBurned
 
   claim <k> #runProof(_IsFA2, RemoveLiquidity(_, LqtBurned, #Mutez(MinXtzWithdrawn), _, _)) => Aborted(?_, ?_, ?_, ?_) </k>
-        <stack> .Stack => ( Failed ?_ ) </stack>
+        <stack> .Stack => _:FailedStack </stack>
         <lqtTotal> OldLqt </lqtTotal>
         <xtzPool> #Mutez(XtzAmount) </xtzPool>
     requires MinXtzWithdrawn >Int (LqtBurned *Int XtzAmount) /Int OldLqt
