@@ -776,7 +776,7 @@ endmodule
 ## XTZ To Token
 
 ```k
-module DEXTER-XTZTOTOKEN-SPEC
+module DEXTER-XTZTOTOKEN-FA12-POS-SPEC
   imports DEXTER-VERIFICATION
 ```
 
@@ -787,34 +787,40 @@ A buyer sends xtz to the Dexter contract and receives a corresponding amount of 
 3.  when the `txn.amount` (in mutez) is converted into tokens using the current exchange rate, the purchased amount is greater than `minTokensBought`
 4.  when the `txn.amount` (in mutez) is converted into tokens using the current exchange rate, it is less than or equal to the tokens owned by the Dexter contract
 
+TODO: We use TokensBought and XtzBought synonymously.
+
 ```k
   claim <k> #runProof(IsFA2, XtzToToken(To, MinTokensBought, #Timestamp(Deadline))) => . </k>
-        <stack> .Stack </stack>
-        <selfIsUpdatingTokenPool> false </selfIsUpdatingTokenPool>
+        <stack> .Stack => ?_ </stack>
+        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <myamount> #Mutez(Amount) </myamount>
         <tokenAddress> TokenAddress </tokenAddress>
         <xtzPool> #Mutez(XtzPool => XtzPool +Int Amount) </xtzPool>
-        <tokenPool> TokenPool => TokenPool -Int #TokensBought(XtzPool, TokenPool, Amount) </tokenPool>
+        <tokenPool> TokenPool => TokenPool -Int #XtzBought(TokenPool, XtzPool, Amount) </tokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
-        <senderaddr> Sender </senderaddr>
         <myaddr> SelfAddress </myaddr>
         <nonce> #Nonce(N => N +Int 1) </nonce>
         <tokenId> TokenID </tokenId>
         <knownaddrs> KnownAddresses </knownaddrs>
         <operations> _
-                  => [ Transfer_tokens #TokenTransferData(IsFA2, SelfAddress, To, TokenID, #TokensBought(XtzPool, TokenPool, Amount)) #Mutez(0) TokenAddress N ]
+                  => [ Transfer_tokens #TokenTransferData(IsFA2, SelfAddress, To, TokenID, #XtzBought(TokenPool, XtzPool, Amount)) #Mutez(0) TokenAddress N ]
                   ;; .InternalList
         </operations>
      requires notBool IsFA2
+      andBool notBool IsUpdating
       andBool CurrentTime <Int Deadline
       andBool Amount >Int 0
-      andBool #TokensBought(XtzPool, TokenPool, Amount) >Int  MinTokensBought
-      andBool #TokensBought(XtzPool, TokenPool, Amount) <=Int TokenPool
-      andBool XtzPool >Int 0
-      andBool TokenPool >Int 0
-      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType(IsFA2))
-```
+      andBool #XtzBought(TokenPool, XtzPool, Amount) >Int  MinTokensBought
+      andBool #XtzBought(TokenPool, XtzPool, Amount) <=Int TokenPool
+      andBool TokenPool -Int #XtzBought ( TokenPool , XtzPool , Amount ) >=Int 0
 
-```k
+      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType(IsFA2))
+
+      andBool #IsLegalMutezValue(TokenPool)
+      andBool #IsLegalMutezValue(Amount)
+      andBool #IsLegalMutezValue(MinTokensBought)
+      andBool #IsLegalMutezValue(TokenPool -Int #XtzBought ( TokenPool , XtzPool , Amount ))
+      andBool #IsLegalMutezValue(XtzPool +Int Amount)
 endmodule
 ```

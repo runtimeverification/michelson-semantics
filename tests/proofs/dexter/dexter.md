@@ -337,10 +337,9 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
         syntax XtzToTokenParams ::= XtzToToken(to              : Address,
                                                minTokensBought : Int,
                                                deadline        : Timestamp)
-        rule wellTypedParams(_IsFA2, XtzToToken(_To, MinTokensBought, Deadline)) => true
-          requires MinTokensBought >=Int 0 andBool #IsLegalTimestamp(Deadline)
-        rule wellTypedParams(_IsFA2, XtzToToken(_To, MinTokensBought, Deadline)) => false
-          requires notBool(MinTokensBought >=Int 0 andBool #IsLegalTimestamp(Deadline))
+        rule wellTypedParams(_IsFA2, XtzToToken(_To, MinTokensBought, Deadline))
+          => MinTokensBought >=Int 0 andBool #IsLegalTimestamp(Deadline)
+             [simplification]
         ```
 
         -   Output:
@@ -670,7 +669,7 @@ If the contract execution fails, storage is not updated.
     => #XtzBought(XtzPool, TokenPool, TokensSold)
     [simplification]
 
-  syntax Int ::= #TokensBought(Int, Int, Int) [function, functional, smtlib(tokensbought), no-evaluators]
+ // syntax Int ::= #TokensBought(Int, Int, Int) [function, functional, smtlib(tokensbought), no-evaluators]
  // ----------------------------------------
  // rule (XtzSold *Int 997 *Int TokenPool) /Int (XtzPool *Int 1000 +Int (XtzSold *Int 997))
  //   => #TokensBought(XtzPool, TokenPool, XtzSold)
