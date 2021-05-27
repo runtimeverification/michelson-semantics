@@ -413,4 +413,4 @@ dexter-prove_%:
   KPROVE_OPTIONS="$(KPROVE_OPTIONS) --spec-module $*"
 
 tests/%.dexter_prove: tests/% $(dexter_kompiled)
-	$(TEST) prove --backend prove --backend-dir $(dexter_dir) $< $(KPROVE_MODULE) $(KPROVE_OPTIONS)
+	$(TEST) prove --backend dexter $< $(KPROVE_MODULE) $(KPROVE_OPTIONS)
