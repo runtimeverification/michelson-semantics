@@ -536,7 +536,7 @@ A buyer sends tokens to the Dexter contract and receives a corresponding amount 
       andBool CurrentTime <Int Deadline
       andBool (TokenPool >Int 0 orBool TokensSold >Int 0)
       andBool (TokenPool >=Int 0) // Type Invariant
-      andBool #XtzBought(XtzPool, TokenPool, TokensSold) >Int  MinXtzBought
+      andBool #XtzBought(XtzPool, TokenPool, TokensSold) >=Int  MinXtzBought
       andBool #XtzBought(XtzPool, TokenPool, TokensSold) <=Int XtzPool
       andBool #IsLegalMutezValue(MinXtzBought)
       andBool #IsLegalMutezValue(#XtzBought(XtzPool, TokenPool, TokensSold))
@@ -606,7 +606,7 @@ module DEXTER-TOKENTOXTZ-FA12-NEG-3-SPEC
       andBool notBool CurrentTime <Int Deadline
       andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer,                             #TokenTransferType(IsFA2))
       andBool #EntrypointExists(KnownAddresses, To,           #token("%default", "FieldAnnotation"), #Type(unit))
-      andBool notBool( #XtzBought(XtzPool, TokenPool, TokensSold) >Int  MinXtzBought
+      andBool notBool( #XtzBought(XtzPool, TokenPool, TokensSold) >=Int  MinXtzBought
                andBool #IsLegalMutezValue(MinXtzBought)
                      )
 endmodule
@@ -630,7 +630,7 @@ module DEXTER-TOKENTOXTZ-FA12-NEG-4-SPEC
       andBool notBool CurrentTime <Int Deadline
       andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer,                             #TokenTransferType(IsFA2))
       andBool #EntrypointExists(KnownAddresses, To,           #token("%default", "FieldAnnotation"), #Type(unit))
-      andBool  #XtzBought(XtzPool, TokenPool, TokensSold) >Int  MinXtzBought
+      andBool  #XtzBought(XtzPool, TokenPool, TokensSold) >=Int  MinXtzBought
       andBool #IsLegalMutezValue(MinXtzBought)
       andBool notBool( #XtzBought(XtzPool, TokenPool, TokensSold) <=Int XtzPool
                andBool #IsLegalMutezValue(#XtzBought(XtzPool, TokenPool, TokensSold))
@@ -680,7 +680,7 @@ As before, a buyer sends tokens to the Dexter contract and receives a correspond
       andBool CurrentTime <Int Deadline
       andBool (TokenPool >Int 0 orBool TokensSold >Int 0)
       andBool (TokenPool >=Int 0)
-      andBool #XtzBought(XtzPool, TokenPool, TokensSold) >Int  MinXtzBought
+      andBool #XtzBought(XtzPool, TokenPool, TokensSold) >=Int  MinXtzBought
       andBool #XtzBought(XtzPool, TokenPool, TokensSold) <=Int XtzPool
       andBool #IsLegalMutezValue(MinXtzBought)
       andBool #IsLegalMutezValue(#XtzBought(XtzPool, TokenPool, TokensSold))
@@ -728,7 +728,7 @@ module DEXTER-TOKENTOXTZ-FA2-NEG-2-SPEC
       andBool CurrentTime <Int Deadline
       andBool (TokenPool >=Int 0)
       andBool notBool ( (TokenPool >Int 0 orBool TokensSold >Int 0)
-                andBool #XtzBought(XtzPool, TokenPool, TokensSold) >Int  MinXtzBought
+                andBool #XtzBought(XtzPool, TokenPool, TokensSold) >=Int  MinXtzBought
                 andBool #XtzBought(XtzPool, TokenPool, TokensSold) <=Int XtzPool
                       )
       andBool #IsLegalMutezValue(MinXtzBought)
@@ -759,7 +759,7 @@ module DEXTER-TOKENTOXTZ-FA2-NEG-3-SPEC
       andBool CurrentTime <Int Deadline
       andBool (TokenPool >=Int 0)
       andBool (TokenPool >Int 0 orBool TokensSold >Int 0)
-      andBool #XtzBought(XtzPool, TokenPool, TokensSold) >Int  MinXtzBought
+      andBool #XtzBought(XtzPool, TokenPool, TokensSold) >=Int  MinXtzBought
       andBool #XtzBought(XtzPool, TokenPool, TokensSold) <=Int XtzPool
       andBool notBool ( #IsLegalMutezValue(MinXtzBought)
                 andBool #IsLegalMutezValue(#XtzBought(XtzPool, TokenPool, TokensSold))
