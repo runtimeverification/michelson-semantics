@@ -207,8 +207,7 @@ module DEXTER-REMOVELIQUIDITY-POSITIVE-SPEC
                      [ Transfer_tokens Unit #Mutez((LqtBurned *Int XtzAmount) /Int OldLqt) To (Nonce +Int 2) ] ;;
                      .InternalList
         </operations>
-    requires notBool IsFA2
-     andBool CurrentTime <Int Deadline
+    requires CurrentTime <Int Deadline
      andBool OldLqt >Int 0
      andBool OldLqt >=Int LqtBurned
      andBool MinXtzWithdrawn <=Int (LqtBurned *Int XtzAmount) /Int OldLqt
