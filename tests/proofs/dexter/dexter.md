@@ -712,10 +712,14 @@ If all steps are completed, only the Dexter-specific storage is updated.
         ...
        </k>
        <myamount> #Mutez(Amount) </myamount>
+       <xtzPool> #Mutez(XtzPool) </xtzPool>
        <operations> OpList </operations>
+       <returncode> ReturnCode </returncode>
     ensures wellTypedParams(IsFA2, Params)
     andBool Amount >=Int 0
+    andBool #IsLegalMutezValue(XtzPool)
     andBool OpList ==K .InternalList
+    andBool ReturnCode ==Int 111
 ```
 
 ## Miscellaneous Lemmas
