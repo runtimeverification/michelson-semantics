@@ -217,6 +217,7 @@ module DEXTER-REMOVELIQUIDITY-POSITIVE-SPEC
      andBool #EntrypointExists(KnownAddresses,   LqtAddress, %mintOrBurn, pair int %quantity .AnnotationList address %target .AnnotationList)
      andBool #EntrypointExists(KnownAddresses,           To,    %default, unit)
 
+     andBool #IsLegalMutezValue(XtzAmount)
      andBool #IsLegalMutezValue((LqtBurned *Int XtzAmount) /Int OldLqt)
      andBool TokenAmount >=Int (LqtBurned *Int TokenAmount) /Int OldLqt
      andBool XtzAmount   >=Int (LqtBurned *Int   XtzAmount) /Int OldLqt
