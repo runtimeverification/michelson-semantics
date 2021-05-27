@@ -197,10 +197,12 @@ module DEXTER-REMOVELIQUIDITY-POSITIVE-SPEC
         <tokenAddress> TokenAddress:Address </tokenAddress>
         <tokenId> TokenId </tokenId>
         <lqtAddress> LqtAddress:Address </lqtAddress>
+        <senderaddr> Sender </senderaddr>
         <nonce> #Nonce(Nonce => Nonce +Int 3) </nonce>
         <knownaddrs> KnownAddresses </knownaddrs>
+        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype> // 1027
         <operations> _
-                  => [ Transfer_tokens (Pair (0 -Int LqtBurned) To) #Mutez(0) LqtAddress Nonce ] ;;
+                  => [ Transfer_tokens (Pair (0 -Int LqtBurned) Sender) #Mutez(0) LqtAddress Nonce ] ;;
                      [ Transfer_tokens #TokenTransferData(IsFA2, SelfAddress, To, TokenId,  (LqtBurned *Int TokenAmount) /Int OldLqt) #Mutez(0) TokenAddress (Nonce +Int 1) ] ;;
                      [ Transfer_tokens Unit #Mutez((LqtBurned *Int XtzAmount) /Int OldLqt) To (Nonce +Int 2) ] ;;
                      .InternalList
@@ -213,6 +215,11 @@ module DEXTER-REMOVELIQUIDITY-POSITIVE-SPEC
      andBool MinTokensWithdrawn <=Int (LqtBurned *Int TokenAmount) /Int OldLqt
      andBool #EntrypointExists(KnownAddresses, TokenAddress,   %transfer, #TokenTransferType(IsFA2))
      andBool #EntrypointExists(KnownAddresses,   LqtAddress, %mintOrBurn, pair int %quantity .AnnotationList address %target .AnnotationList)
+     andBool #EntrypointExists(KnownAddresses,           To,    %default, unit)
+
+     andBool #IsLegalMutezValue((LqtBurned *Int XtzAmount) /Int OldLqt)
+     andBool TokenAmount >=Int (LqtBurned *Int TokenAmount) /Int OldLqt
+     andBool XtzAmount   >=Int (LqtBurned *Int   XtzAmount) /Int OldLqt
 ```
 ```k
 endmodule
