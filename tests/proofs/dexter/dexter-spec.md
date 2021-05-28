@@ -817,8 +817,6 @@ module DEXTER-XTZTOTOKEN-FA12-POS-SPEC
 endmodule
 ```
 
-TODO: the side condition `#IsLegalMutezValue(TokenPool)` shouldn't be needed. 
-
 ```k
 module DEXTER-XTZTOTOKEN-FA12-NEG-SPEC
   imports DEXTER-VERIFICATION
