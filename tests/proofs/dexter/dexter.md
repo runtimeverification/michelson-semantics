@@ -135,20 +135,10 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
                                                        MinLqtMinted,
                                                        MaxTokensDeposited,
                                                        Deadline))
-                  => true
-              requires MinLqtMinted       >=Int 0
-               andBool MaxTokensDeposited >=Int 0
-               andBool #IsLegalTimestamp(Deadline)
-
-            rule wellTypedParams(_IsFA2, AddLiquidity(_Owner,
-                                                       MinLqtMinted,
-                                                       MaxTokensDeposited,
-                                                       Deadline))
-                  => false
-              requires notBool( MinLqtMinted       >=Int 0
-                        andBool MaxTokensDeposited >=Int 0
-                        andBool #IsLegalTimestamp(Deadline)
-                              )
+                 =>         MinLqtMinted       >=Int 0
+                    andBool MaxTokensDeposited >=Int 0
+                    andBool #IsLegalTimestamp(Deadline)
+                 [simplification]
             ```
 
     2.  `remove_liquidity`
