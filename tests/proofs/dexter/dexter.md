@@ -668,13 +668,20 @@ If the contract execution fails, storage is not updated.
   rule (TokensSold *Int 997 *Int XtzPool) /Int (TokenPool *Int 1000 +Int (TokensSold *Int 997))
     => #XtzBought(XtzPool, TokenPool, TokensSold)
     [simplification]
+```
 
+We'd like to additionally define `#TokensBought`, however this has the same structure as `#XtzBought`
+and so we can't have simplification rules for both.
+
+```k
  // syntax Int ::= #TokensBought(Int, Int, Int) [function, functional, smtlib(tokensbought), no-evaluators]
  // ----------------------------------------
- // rule (XtzSold *Int 997 *Int TokenPool) /Int (XtzPool *Int 1000 +Int (XtzSold *Int 997))
+ // rule (Amount *Int 997 *Int TokenPool) /Int (XtzPool *Int 1000 +Int (Amount *Int 997))
  //   => #TokensBought(XtzPool, TokenPool, XtzSold)
  //   [simplification]
+```
 
+```k
   syntax Bool ::= #EntrypointExists(Map, Address, FieldAnnotation, Type)
 // --------------------------------------------------------------------
   rule #EntrypointExists(KnownAddresses, Addr, _FieldAnnot, EntrypointType)
