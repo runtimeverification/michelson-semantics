@@ -811,7 +811,6 @@ module DEXTER-XTZTOTOKEN-FA12-POS-SPEC
      andBool #XtzBought(TokenPool, XtzPool, Amount) >=Int  MinTokensBought
      andBool #XtzBought(TokenPool, XtzPool, Amount) <=Int TokenPool
      andBool TokenPool -Int #XtzBought ( TokenPool , XtzPool , Amount ) >=Int 0
-     andBool #IsLegalMutezValue(TokenPool -Int #XtzBought ( TokenPool , XtzPool , Amount ))
      andBool #IsLegalMutezValue(XtzPool +Int Amount)
 
      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType(IsFA2))
@@ -841,12 +840,9 @@ module DEXTER-XTZTOTOKEN-FA12-NEG-SPEC
                andBool #XtzBought(TokenPool, XtzPool, Amount) >=Int MinTokensBought
                andBool #XtzBought(TokenPool, XtzPool, Amount) <=Int TokenPool
                andBool TokenPool -Int #XtzBought ( TokenPool , XtzPool , Amount ) >=Int 0
-               andBool #IsLegalMutezValue(TokenPool -Int #XtzBought ( TokenPool , XtzPool , Amount ))
                andBool #IsLegalMutezValue(XtzPool +Int Amount)
                      )
      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType(IsFA2))
-
-     andBool #IsLegalMutezValue(TokenPool) // TODO: We shouldn't need this side condition!
 endmodule
 ```
 
