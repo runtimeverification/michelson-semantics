@@ -313,7 +313,7 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
                                                minTokensBought : Int,
                                                deadline        : Timestamp)
         rule wellTypedParams(_IsFA2, XtzToToken(_To, MinTokensBought, Deadline))
-          => #IsLegalMutezValue(MinTokensBought) andBool #IsLegalTimestamp(Deadline)
+          => MinTokensBought >=Int 0 andBool #IsLegalTimestamp(Deadline)
              [simplification]
         ```
 

@@ -815,10 +815,6 @@ module DEXTER-XTZTOTOKEN-FA12-POS-SPEC
      andBool #IsLegalMutezValue(XtzPool +Int Amount)
 
      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType(IsFA2))
-
-     andBool #IsLegalMutezValue(XtzPool)
-     andBool #IsLegalMutezValue(Amount)
-     andBool #IsLegalMutezValue(MinTokensBought)
 endmodule
 ```
 
