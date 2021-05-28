@@ -328,7 +328,7 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
                                                minTokensBought : Int,
                                                deadline        : Timestamp)
         rule wellTypedParams(_IsFA2, XtzToToken(_To, MinTokensBought, Deadline))
-          => MinTokensBought >=Int 0 andBool #IsLegalTimestamp(Deadline)
+          => #IsLegalMutezValue(MinTokensBought) andBool #IsLegalTimestamp(Deadline)
              [simplification]
         ```
 
@@ -701,11 +701,13 @@ If all steps are completed, only the Dexter-specific storage is updated.
        </k>
        <myamount> #Mutez(Amount) </myamount>
        <xtzPool> #Mutez(XtzPool) </xtzPool>
+       <tokenPool> TokenPool </tokenPool>
        <operations> OpList </operations>
        <returncode> ReturnCode </returncode>
     ensures wellTypedParams(IsFA2, Params)
-    andBool Amount >=Int 0
+    andBool #IsLegalMutezValue(Amount)
     andBool #IsLegalMutezValue(XtzPool)
+    andBool TokenPool >=Int 0
     andBool OpList ==K .InternalList
     andBool ReturnCode ==Int 111
 ```
