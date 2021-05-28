@@ -818,6 +818,8 @@ module DEXTER-XTZTOTOKEN-FA12-POS-SPEC
 endmodule
 ```
 
+TODO: the side condition `#IsLegalMutezValue(TokenPool)` shouldn't be needed. 
+
 ```k
 module DEXTER-XTZTOTOKEN-FA12-NEG-SPEC
   imports DEXTER-VERIFICATION
@@ -831,8 +833,7 @@ module DEXTER-XTZTOTOKEN-FA12-NEG-SPEC
         <tokenPool> TokenPool </tokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <knownaddrs> KnownAddresses </knownaddrs>
-        <operations> _
-        </operations>
+        <operations> _ </operations>
     requires notBool IsFA2
      andBool notBool ( notBool IsUpdating
                andBool CurrentTime <Int Deadline
@@ -844,6 +845,8 @@ module DEXTER-XTZTOTOKEN-FA12-NEG-SPEC
                andBool #IsLegalMutezValue(XtzPool +Int Amount)
                      )
      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType(IsFA2))
+
+     andBool #IsLegalMutezValue(TokenPool) // TODO: We shouldn't need this side condition!
 endmodule
 ```
 
