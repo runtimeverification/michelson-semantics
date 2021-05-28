@@ -34,6 +34,20 @@ module DEXTER-LEMMAS
 
 ```k
   rule X /Int 1 => X [simplification]
+  rule X *Int 1 => X [simplification]
+```
+
+### Avoiding Interpreting Functions
+
+If a function value does not play well with the prover or SMT solver, it can be rewritten to `#uninterpreted`.
+This function has no evaluation rules, so the prover can make no assumptions about it -- it will be assumed it can take on any value.
+
+```k
+  syntax Int ::= #mulMod(Int, Int, Int) [function, functional, smtlib(mulMod), no-evaluators]
+               | #mulDiv(Int, Int, Int) [function, functional, smtlib(mulDiv), no-evaluators]
+ // -----------------------------------------------------------------------------------------
+  rule (X *Int Y) %Int Z => #mulMod(X, Y, Z) [simplification]
+  rule (X *Int Y) /Int Z => #mulDiv(X, Y, Z) [simplification]
 ```
 
 ```k

@@ -56,7 +56,80 @@ Storage( lqtTotal:  LqtTotal  => LqtTotal  + lqt_minted ;
 4.  the liquidity minted is more than `input.minLqtMinted`
 5.  xtzPool is positive
 
-TODO
+```k
+module DEXTER-ADDLIQUIDITY-POSITIVE-SPEC
+  imports DEXTER-VERIFICATION
+```
+
+```k
+  claim <k> #runProof(IsFA2, AddLiquidity(Owner, MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => . </k>
+        <stack> .Stack </stack>
+        <selfIsUpdatingTokenPool> false </selfIsUpdatingTokenPool>
+        <mynow> #Timestamp(CurrentTime) </mynow>
+        <myamount> #Mutez(Amount) </myamount>
+        <myaddr> SelfAddress </myaddr>
+        <lqtTotal> OldLqt => OldLqt +Int (Amount *Int OldLqt) /Int XtzAmount </lqtTotal>
+        <xtzPool> #Mutez(XtzAmount => XtzAmount +Int Amount) </xtzPool>
+        <tokenPool> TokenAmount => TokenAmount +Int #ceildiv(Amount *Int TokenAmount, XtzAmount) </tokenPool>
+        <tokenAddress> TokenAddress:Address </tokenAddress>
+        <tokenId> TokenId </tokenId>
+        <lqtAddress> LqtAddress:Address </lqtAddress>
+        <senderaddr> Sender </senderaddr>
+        <nonce> #Nonce(Nonce => Nonce +Int 2) </nonce>
+        <knownaddrs> KnownAddresses </knownaddrs>
+        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+        <operations> _
+                  => [ Transfer_tokens #TokenTransferData(IsFA2, Sender, SelfAddress, TokenId, #ceildiv(Amount *Int TokenAmount, XtzAmount)) #Mutez(0) TokenAddress Nonce ] ;;
+                     [ Transfer_tokens Pair ((Amount *Int OldLqt) /Int XtzAmount) Owner #Mutez(0) LqtAddress (Nonce +Int 1) ] ;;
+                     .InternalList
+        </operations>
+    requires CurrentTime <Int Deadline
+     andBool XtzAmount   >Int 0
+     andBool #ceildiv(Amount *Int TokenAmount, XtzAmount) <=Int MaxTokensDeposited
+     andBool (Amount *Int TokenAmount) %Int XtzAmount ==Int 0
+     andBool MinLqtMinted <=Int (Amount *Int OldLqt) /Int XtzAmount
+     andBool #IsLegalMutezValue(Amount +Int XtzAmount)
+
+     andBool #EntrypointExists(KnownAddresses, TokenAddress,   %transfer, #TokenTransferType(IsFA2))
+     andBool #EntrypointExists(KnownAddresses,   LqtAddress, %mintOrBurn, pair int %quantity .AnnotationList address %target .AnnotationList)
+```
+
+```k
+  claim <k> #runProof(IsFA2, AddLiquidity(Owner, MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => . </k>
+        <stack> .Stack </stack>
+        <selfIsUpdatingTokenPool> false </selfIsUpdatingTokenPool>
+        <mynow> #Timestamp(CurrentTime) </mynow>
+        <myamount> #Mutez(Amount) </myamount>
+        <myaddr> SelfAddress </myaddr>
+        <lqtTotal> OldLqt => OldLqt +Int (Amount *Int OldLqt) /Int XtzAmount </lqtTotal>
+        <xtzPool> #Mutez(XtzAmount => XtzAmount +Int Amount) </xtzPool>
+        <tokenPool> TokenAmount => TokenAmount +Int #ceildiv(Amount *Int TokenAmount, XtzAmount) </tokenPool>
+        <tokenAddress> TokenAddress:Address </tokenAddress>
+        <tokenId> TokenId </tokenId>
+        <lqtAddress> LqtAddress:Address </lqtAddress>
+        <senderaddr> Sender </senderaddr>
+        <nonce> #Nonce(Nonce => Nonce +Int 2) </nonce>
+        <knownaddrs> KnownAddresses </knownaddrs>
+        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+        <operations> _
+                  => [ Transfer_tokens #TokenTransferData(IsFA2, Sender, SelfAddress, TokenId, #ceildiv(Amount *Int TokenAmount, XtzAmount)) #Mutez(0) TokenAddress Nonce ] ;;
+                     [ Transfer_tokens Pair ((Amount *Int OldLqt) /Int XtzAmount) Owner #Mutez(0) LqtAddress (Nonce +Int 1) ] ;;
+                     .InternalList
+        </operations>
+    requires CurrentTime <Int Deadline
+     andBool XtzAmount   >Int 0
+     andBool #ceildiv(Amount *Int TokenAmount, XtzAmount) <=Int MaxTokensDeposited
+     andBool (Amount *Int TokenAmount) %Int XtzAmount =/=Int 0
+     andBool MinLqtMinted <=Int (Amount *Int OldLqt) /Int XtzAmount
+     andBool #IsLegalMutezValue(Amount +Int XtzAmount)
+
+     andBool #EntrypointExists(KnownAddresses, TokenAddress,   %transfer, #TokenTransferType(IsFA2))
+     andBool #EntrypointExists(KnownAddresses,   LqtAddress, %mintOrBurn, pair int %quantity .AnnotationList address %target .AnnotationList)
+```
+
+```k
+endmodule
+```
 
 ### Negative case
 
@@ -95,7 +168,7 @@ TODO: Deal with the case when the token contract or the liquidity token contract
 endmodule
 ```
 
-# Remove Liquidity
+## Remove Liquidity
 
 The sender can burn liquidity tokens in exchange for tez and tokens sent to some address if the following conditions are satisfied:
 
@@ -109,7 +182,51 @@ The sender can burn liquidity tokens in exchange for tez and tokens sent to some
 8.  the contract at address `storage.tokenAddress` has a well-formed `transfer` entrypoint
 
 ```k
-module DEXTER-REMOVELIQUIDITY-SPEC
+module DEXTER-REMOVELIQUIDITY-POSITIVE-SPEC
+  imports DEXTER-VERIFICATION
+
+  claim <k> #runProof(IsFA2, RemoveLiquidity(To, LqtBurned, #Mutez(MinXtzWithdrawn), MinTokensWithdrawn, #Timestamp(Deadline))) => . </k>
+        <stack> .Stack </stack>
+        <selfIsUpdatingTokenPool> false </selfIsUpdatingTokenPool>
+        <mynow> #Timestamp(CurrentTime) </mynow>
+        <myamount> #Mutez(0) </myamount>
+        <myaddr> SelfAddress </myaddr>
+        <lqtTotal> OldLqt => OldLqt -Int LqtBurned </lqtTotal>
+        <xtzPool> #Mutez(XtzAmount => XtzAmount -Int (LqtBurned *Int XtzAmount) /Int OldLqt) </xtzPool>
+        <tokenPool> TokenAmount => TokenAmount -Int (LqtBurned *Int TokenAmount) /Int OldLqt </tokenPool>
+        <tokenAddress> TokenAddress:Address </tokenAddress>
+        <tokenId> TokenId </tokenId>
+        <lqtAddress> LqtAddress:Address </lqtAddress>
+        <senderaddr> Sender </senderaddr>
+        <nonce> #Nonce(Nonce => Nonce +Int 3) </nonce>
+        <knownaddrs> KnownAddresses </knownaddrs>
+        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype> // 1027
+        <operations> _
+                  => [ Transfer_tokens (Pair (0 -Int LqtBurned) Sender) #Mutez(0) LqtAddress Nonce ] ;;
+                     [ Transfer_tokens #TokenTransferData(IsFA2, SelfAddress, To, TokenId,  (LqtBurned *Int TokenAmount) /Int OldLqt) #Mutez(0) TokenAddress (Nonce +Int 1) ] ;;
+                     [ Transfer_tokens Unit #Mutez((LqtBurned *Int XtzAmount) /Int OldLqt) To (Nonce +Int 2) ] ;;
+                     .InternalList
+        </operations>
+    requires CurrentTime <Int Deadline
+     andBool OldLqt >Int 0
+     andBool OldLqt >=Int LqtBurned
+     andBool MinXtzWithdrawn <=Int (LqtBurned *Int XtzAmount) /Int OldLqt
+     andBool MinTokensWithdrawn <=Int (LqtBurned *Int TokenAmount) /Int OldLqt
+     andBool #EntrypointExists(KnownAddresses, TokenAddress,   %transfer, #TokenTransferType(IsFA2))
+     andBool #EntrypointExists(KnownAddresses,   LqtAddress, %mintOrBurn, pair int %quantity .AnnotationList address %target .AnnotationList)
+     andBool #EntrypointExists(KnownAddresses,           To,    %default, unit)
+
+     andBool #IsLegalMutezValue(XtzAmount)
+     andBool #IsLegalMutezValue((LqtBurned *Int XtzAmount) /Int OldLqt)
+     andBool TokenAmount >=Int (LqtBurned *Int TokenAmount) /Int OldLqt
+     andBool XtzAmount   >=Int (LqtBurned *Int   XtzAmount) /Int OldLqt
+```
+```k
+endmodule
+```
+
+```k
+module DEXTER-REMOVELIQUIDITY-NEGATIVE-SPEC
   imports DEXTER-VERIFICATION
 
   claim <k> #runProof(_IsFA2, RemoveLiquidity(_, _, _, _, _)) => Aborted(?_, ?_, ?_, ?_) </k>
