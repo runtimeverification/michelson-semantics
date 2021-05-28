@@ -807,6 +807,7 @@ module DEXTER-XTZTOTOKEN-FA12-POS-SPEC
     requires notBool IsFA2
      andBool notBool IsUpdating
      andBool CurrentTime <Int Deadline
+     andBool (XtzPool >Int 0 orBool Amount >Int 0)
      andBool #XtzBought(TokenPool, XtzPool, Amount) >=Int  MinTokensBought
      andBool #XtzBought(TokenPool, XtzPool, Amount) <=Int TokenPool
      andBool TokenPool -Int #XtzBought ( TokenPool , XtzPool , Amount ) >=Int 0
@@ -823,7 +824,7 @@ endmodule
 ```
 
 ```k
-module DEXTER-XTZTOTOKEN-FA12-NEG-1-SPEC
+module DEXTER-XTZTOTOKEN-FA12-NEG-SPEC
   imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, XtzToToken(To, MinTokensBought, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_ </stack>
@@ -843,6 +844,7 @@ module DEXTER-XTZTOTOKEN-FA12-NEG-1-SPEC
     requires notBool IsFA2
      andBool notBool ( notBool IsUpdating
                andBool CurrentTime <Int Deadline
+               andBool (XtzPool >Int 0 orBool Amount >Int 0)
                andBool #XtzBought(TokenPool, XtzPool, Amount) >=Int MinTokensBought
                andBool #XtzBought(TokenPool, XtzPool, Amount) <=Int TokenPool
                andBool TokenPool -Int #XtzBought ( TokenPool , XtzPool , Amount ) >=Int 0
