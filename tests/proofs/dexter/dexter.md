@@ -157,23 +157,11 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
                                                           MinXtzWithdrawn,
                                                           MinTokensWithdrawn,
                                                           Deadline))
-                  => true
-              requires LqtBurned >=Int 0
-               andBool #IsLegalMutezValue(MinXtzWithdrawn)
-               andBool MinTokensWithdrawn >=Int 0
-               andBool #IsLegalTimestamp(Deadline)
-
-            rule wellTypedParams(_IsFA2, RemoveLiquidity(_To,
-                                                          LqtBurned,
-                                                          MinXtzWithdrawn,
-                                                          MinTokensWithdrawn,
-                                                          Deadline))
-                  => false
-              requires notBool( LqtBurned >=Int 0
-                        andBool #IsLegalMutezValue(MinXtzWithdrawn)
-                        andBool MinTokensWithdrawn >=Int 0
-                        andBool #IsLegalTimestamp(Deadline)
-                              )
+                  =>         LqtBurned >=Int 0
+                     andBool #IsLegalMutezValue(MinXtzWithdrawn)
+                     andBool MinTokensWithdrawn >=Int 0
+                     andBool #IsLegalTimestamp(Deadline)
+                     [simplification]
             ```
 
         -   Output:
@@ -199,8 +187,7 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
             syntax SetBakerParams   ::= SetBaker(baker       : OptionData,
                                                  freezeBaker : Bool)
             rule wellTypedParams(_IsFA2, SetBaker(None,        _)) => true
-            rule wellTypedParams(_IsFA2, SetBaker(Some D:Data, _)) => true  requires         isKeyHash(D)
-            rule wellTypedParams(_IsFA2, SetBaker(Some D:Data, _)) => false requires notBool isKeyHash(D)
+            rule wellTypedParams(_IsFA2, SetBaker(Some D:Data, _)) => isKeyHash(D) [simplification]
             ```
 
         -   Output:
@@ -216,7 +203,7 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
             ```k
             syntax EntryPointParams ::= SetManagerParams
             syntax SetManagerParams ::= SetManager(newManager : Address)
-            rule wellTypedParams(_IsFA2, _:SetManagerParams) => true
+            rule wellTypedParams(_IsFA2, _:SetManagerParams) => true [simplification]
             ```
 
         -   Output:
@@ -232,7 +219,7 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
             ```k
             syntax EntryPointParams    ::= SetLQTAddressParams
             syntax SetLQTAddressParams ::= SetLQTAddress(lqtAddress : Address)
-            rule wellTypedParams(_IsFA2, _:SetLQTAddressParams) => true
+            rule wellTypedParams(_IsFA2, _:SetLQTAddressParams) => true [simplification]
             ```
 
         -   Output:
@@ -248,7 +235,7 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
             ```k
             syntax EntryPointParams ::= DefaultParams
             syntax DefaultParams    ::= "Default"
-            rule wellTypedParams(_IsFA2, Default) => true
+            rule wellTypedParams(_IsFA2, Default) => true [simplification]
             ```
 
         -   Output:
@@ -264,7 +251,7 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
             ```k
             syntax EntryPointParams      ::= UpdateTokenPoolParams
             syntax UpdateTokenPoolParams ::= "UpdateTokenPool"
-            rule wellTypedParams(_IsFA2, UpdateTokenPool) => true
+            rule wellTypedParams(_IsFA2, UpdateTokenPool) => true [simplification]
             ```
 
         -   Output:
@@ -286,10 +273,8 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
             syntax UpdateTokenPoolInternalFA12Params ::= UpdateTokenPoolInternalFA12(balance         : Int)
             syntax UpdateTokenPoolInternalFA2Params  ::= UpdateTokenPoolInternalFA2 (balanceOfResult : InternalList)
 
-            rule wellTypedParams(false, UpdateTokenPoolInternalFA12(Balance))         => true  requires         Balance >=Int 0
-            rule wellTypedParams(false, UpdateTokenPoolInternalFA12(Balance))         => false requires notBool Balance >=Int 0
-            rule wellTypedParams(true,  UpdateTokenPoolInternalFA2 (BalanceOfResult)) => true  requires         validBalanceOfParams(BalanceOfResult)
-            rule wellTypedParams(true,  UpdateTokenPoolInternalFA2 (BalanceOfResult)) => false requires notBool validBalanceOfParams(BalanceOfResult)
+            rule wellTypedParams(false, UpdateTokenPoolInternalFA12(Balance))         => Balance >=Int 0                       [simplification]
+            rule wellTypedParams(true,  UpdateTokenPoolInternalFA2 (BalanceOfResult)) => validBalanceOfParams(BalanceOfResult) [simplification]
 
             syntax Bool ::= validBalanceOfParams(InternalList) [function, functional]
                           | validBalanceOfEntry(Data)          [function, functional]
@@ -352,20 +337,11 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
                                                tokensSold   : Int,
                                                minXtzBought : Mutez,
                                                deadline     : Timestamp)
-        rule wellTypedParams(_IsFA2, TokenToXtz(_To, TokensSold, MinXtzBought, Deadline)) => true
-          requires TokensSold >=Int 0
-           andBool #IsLegalMutezValue(MinXtzBought)
-           andBool #IsLegalTimestamp(Deadline)
-
-        rule wellTypedParams(_IsFA2, TokenToXtz(_To,
-                                                 TokensSold,
-                                                 MinXtzBought,
-                                                 Deadline))
-             => false
-          requires notBool( TokensSold >=Int 0
-                    andBool #IsLegalMutezValue(MinXtzBought)
-                    andBool #IsLegalTimestamp(Deadline)
-                          )
+        rule wellTypedParams(_IsFA2, TokenToXtz(_To, TokensSold, MinXtzBought, Deadline))
+          =>         TokensSold >=Int 0
+             andBool #IsLegalMutezValue(MinXtzBought)
+             andBool #IsLegalTimestamp(Deadline)
+             [simplification]
         ```
 
         -   Output:
@@ -395,21 +371,10 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
                                                   _To,
                                                    TokensSold,
                                                    Deadline))
-             => true
-        requires MinTokensBought >=Int 0
-         andBool TokensSold >=Int 0
-         andBool #IsLegalTimestamp(Deadline)
-
-        rule wellTypedParams(_IsFA2, TokenToToken(_OutputDexterContract,
-                                                   MinTokensBought,
-                                                  _To,
-                                                   TokensSold,
-                                                   Deadline))
-             => false
-        requires notBool( MinTokensBought >=Int 0
-                  andBool TokensSold >=Int 0
-                  andBool #IsLegalTimestamp(Deadline)
-                        )
+          =>         MinTokensBought >=Int 0
+             andBool TokensSold >=Int 0
+             andBool #IsLegalTimestamp(Deadline)
+             [simplification]
         ```
 
         -   Output:
