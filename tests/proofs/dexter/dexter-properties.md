@@ -264,9 +264,9 @@ requires CD ==K AddLiquidity _
   orBool CD ==K SetManager _
   orBool CD ==K SetLqtAddress _
 
-proof [sender-is-not-dexter]:
+proof sketch [sender-is-not-dexter]:
 - DEXTER is a smart contract
-- No entrypoint of DEXTER calls itself except XtzToToken and Default
+- No entrypoint of DEXTER may call itself except XtzToToken and Default
 ```
 
 ```
@@ -280,7 +280,7 @@ proposition [dexter-emitted-ops]:
    ) => true ]]
 <operations> [ Transaction DEXTER Target Amount CD ] ;; _ </operations>
 
-proof [dexter-emitted-ops]:
+proof sketch [dexter-emitted-ops]:
 - DEXTER is a smart contract
 - By case analysis of all entrypoint functions of DEXTER
 ```
@@ -664,6 +664,20 @@ proof [inv-update-token-pool-internal]:
 ```
 
 ```
+claim []:
+[[ T <=Int TokenPool andBool TokenPool <=Int D andBool Transfers(Ops) >=Int 0 => true ]]
+<operations>  [ Transaction TOKEN DEXTER 0 UpdateTokenPoolInternal(TokenPool) ] ;; Ops </operations>
+<tokenPool>   T </tokenPool>
+<tokenDexter> D </tokenDexter>
+
+proof sketch:
+- Let T1 be the parent transaction who emitted the current transaction, and T2 be the parent transaction of T1.
+- T1 must be `Transaction DEXTER TOKEN 0 BalanceOf(DEXTER, UpdateTokenPoolInternal)`, and T2 must be `Transaction _ DEXTER 0 UpdateTokenPool()`.  Moreover, T2 must be top-level.
+- Thus, `Ops` should consist of the remaining transactions emitted by T1 and the remaining top-level transactions.  Since the sender of the transactions in `Ops` is not DEXTER, we have `Transfers(Ops) >=Int 0`.
+- 
+```
+
+```
 claim [inv-default]:
 <operations>  ( [ Transaction Sender DEXTER Amount Default() ] #as Op => Ops' ) ;; Ops </operations>
 <xtzPool>     #Mutez(X => X')   </xtzPool>
@@ -1014,9 +1028,30 @@ rule TopLevelOps([ Transaction Sender _ _ _ ] ;; _, Source) => false ]] requires
 rule TopLevelOps(.List, _) => true
 ```
 
+### Assumptions for DEXTER Execution
+
+NOTE:
+- only the DEXTER entrypoint functions can emit a transaction whose sender is DEXTER
+- as a smart contract, DEXTER can emit only internal transactions (i.e., transactions whose source is not DEXTER).
+- the types of DEXTER-emitted internal transactions are fixed (i.e., no arbitrary transactions can be emitted by DEXTER)
+- DEXTER does not call itself except the following three cases:
+  - RemoveLiquidity(To, ...) where To is DEXTER, which calls Default() on itself
+  - TokenToXtz(To, ...) where To is DEXTER, which calls Default() on itself
+  - TokenToToken(OutputDexterContract, ...) where OutputDexterContract is DEXTER, which calls XtzToToken(...) on itself
+
 
 
 ### Assumptions for External Calls
+
+No others can spend DEXTER's token balance, that is, there exist no authorized users who are permitted to spend some of DEXTER-owned tokens in certain cases.
+- (there shouldn't exist a way to even temporarily borrow tokens from DEXTER.)
+
+```
+proposition [no-allowance-for-dexter]:
+[[ Sender ==K DEXTER => true ]]
+<operations> [ Transaction Sender TOKEN _ Transfer(DEXTER, _, _) ] #as Op ;; _ </operations>
+requires succeed(Op)
+```
 
 NOTE:
 - Transfer must update the balance before emitting continuation
