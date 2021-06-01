@@ -1,6 +1,0 @@
-code { ADD } ; 
-input { Stack_elt int $I1 ; Stack_elt int $I2 } ;
-output { Stack_elt int $I3 } ;
-precondition { { PUSH int $I1 ; PUSH int 0 ; COMPARE ; GT } ; 
-               { PUSH int $I2 ; PUSH int 0 ; COMPARE ; GT } } ;
-postcondition { { PUSH int $I3 ; PUSH int 0 ; COMPARE ; GT } } 

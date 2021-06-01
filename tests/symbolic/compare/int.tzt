@@ -1,6 +1,0 @@
-input  { Stack_elt int $VAL } ;
-code   { DUP } ;
-output { Stack_elt int $VAL1 ; Stack_elt int $VAL2 } ;
-postcondition {
-  { PUSH int $VAL ; DUP ; PUSH int $VAL1 ; COMPARE ; EQ ; SWAP ; PUSH int $VAL2 ; COMPARE ; EQ ; AND }
-}
