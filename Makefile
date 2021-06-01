@@ -382,15 +382,28 @@ tests/%.prove: tests/% $(prove_kompiled)
 # Dexter proofs
 
 dexter_spec_modules = DEXTER-SPEC                          \
-                      DEXTER-ADDLIQUIDITY-POSITIVE-SPEC    \
                       DEXTER-ADDLIQUIDITY-NEGATIVE-SPEC    \
-                      DEXTER-REMOVELIQUIDITY-POSITIVE-SPEC \
+                      DEXTER-ADDLIQUIDITY-POSITIVE-SPEC    \
+                      DEXTER-DEFAULT-SPEC                  \
                       DEXTER-REMOVELIQUIDITY-NEGATIVE-SPEC \
-                      DEXTER-SETMANAGER-SPEC               \
+                      DEXTER-REMOVELIQUIDITY-POSITIVE-SPEC \
                       DEXTER-SETBAKER-SPEC                 \
                       DEXTER-SETLQTADDRESS-SPEC            \
+                      DEXTER-SETMANAGER-SPEC               \
+                      DEXTER-TOKENTOXTZ-FA12-NEG-1-SPEC    \
+                      DEXTER-TOKENTOXTZ-FA12-NEG-2-SPEC    \
+                      DEXTER-TOKENTOXTZ-FA12-NEG-3-SPEC    \
+                      DEXTER-TOKENTOXTZ-FA12-NEG-4-SPEC    \
+                      DEXTER-TOKENTOXTZ-FA12-SPEC          \
+                      DEXTER-TOKENTOXTZ-FA2-NEG-1-SPEC     \
+                      DEXTER-TOKENTOXTZ-FA2-NEG-2-SPEC     \
+                      DEXTER-TOKENTOXTZ-FA2-NEG-3-SPEC     \
+                      DEXTER-TOKENTOXTZ-FA2-SPEC           \
                       DEXTER-UPDATETOKENPOOL-SPEC          \
-                      DEXTER-DEFAULT-SPEC
+                      DEXTER-XTZTOTOKEN-FA12-NEG-SPEC      \
+                      DEXTER-XTZTOTOKEN-FA12-POS-SPEC      \
+                      DEXTER-XTZTOTOKEN-FA2-NEG-SPEC       \
+                      DEXTER-XTZTOTOKEN-FA2-POS-SPEC       \
 
 dexter_spec_file := tests/proofs/dexter/dexter-spec.md
 
@@ -402,4 +415,4 @@ dexter-prove_%:
   KPROVE_OPTIONS="$(KPROVE_OPTIONS) --spec-module $*"
 
 tests/%.dexter_prove: tests/% $(dexter_kompiled)
-	$(TEST) prove --backend prove --backend-dir $(dexter_dir) $< $(KPROVE_MODULE) $(KPROVE_OPTIONS)
+	$(TEST) prove --backend dexter $< $(KPROVE_MODULE) $(KPROVE_OPTIONS)
