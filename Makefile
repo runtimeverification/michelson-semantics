@@ -381,25 +381,25 @@ tests/%.prove: tests/% $(prove_kompiled)
 
 # Dexter proofs
 
-dexter_spec_modules = DEXTER-SPEC                          \
-                      DEXTER-ADDLIQUIDITY-NEGATIVE-SPEC    \
-                      DEXTER-ADDLIQUIDITY-POSITIVE-SPEC    \
-                      DEXTER-DEFAULT-SPEC                  \
-                      DEXTER-REMOVELIQUIDITY-NEGATIVE-SPEC \
-                      DEXTER-REMOVELIQUIDITY-POSITIVE-SPEC \
-                      DEXTER-SETBAKER-SPEC                 \
-                      DEXTER-SETLQTADDRESS-SPEC            \
-                      DEXTER-SETMANAGER-SPEC               \
+dexter_spec_modules = DEXTER-SPEC                               \
+                      DEXTER-ADDLIQUIDITY-NEGATIVE-SPEC         \
+                      DEXTER-ADDLIQUIDITY-POSITIVE-SPEC         \
+                      DEXTER-DEFAULT-SPEC                       \
+                      DEXTER-REMOVELIQUIDITY-NEGATIVE-SPEC      \
+                      DEXTER-REMOVELIQUIDITY-POSITIVE-SPEC      \
+                      DEXTER-SETBAKER-SPEC                      \
+                      DEXTER-SETLQTADDRESS-SPEC                 \
+                      DEXTER-SETMANAGER-SPEC                    \
                       DEXTER-TOKENTOXTZ-FA12-NEGATIVE-1-SPEC    \
                       DEXTER-TOKENTOXTZ-FA12-NEGATIVE-2-SPEC    \
                       DEXTER-TOKENTOXTZ-FA12-NEGATIVE-3-SPEC    \
                       DEXTER-TOKENTOXTZ-FA12-NEGATIVE-4-SPEC    \
-                      DEXTER-TOKENTOXTZ-FA12-POSITIVE-SPEC          \
+                      DEXTER-TOKENTOXTZ-FA12-POSITIVE-SPEC      \
                       DEXTER-TOKENTOXTZ-FA2-NEGATIVE-1-SPEC     \
                       DEXTER-TOKENTOXTZ-FA2-NEGATIVE-2-SPEC     \
                       DEXTER-TOKENTOXTZ-FA2-NEGATIVE-3-SPEC     \
-                      DEXTER-TOKENTOXTZ-FA2-POSITIVE-SPEC           \
-                      DEXTER-UPDATETOKENPOOL-SPEC          \
+                      DEXTER-TOKENTOXTZ-FA2-POSITIVE-SPEC       \
+                      DEXTER-UPDATETOKENPOOL-SPEC               \
                       DEXTER-XTZTOTOKEN-FA12-NEGATIVE-SPEC      \
                       DEXTER-XTZTOTOKEN-FA12-POSITIVE-SPEC      \
                       DEXTER-XTZTOTOKEN-FA2-NEGATIVE-SPEC       \
