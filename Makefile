@@ -394,11 +394,11 @@ dexter_spec_modules = DEXTER-SPEC                          \
                       DEXTER-TOKENTOXTZ-FA12-NEGATIVE-2-SPEC    \
                       DEXTER-TOKENTOXTZ-FA12-NEGATIVE-3-SPEC    \
                       DEXTER-TOKENTOXTZ-FA12-NEGATIVE-4-SPEC    \
-                      DEXTER-TOKENTOXTZ-FA12-SPEC          \
+                      DEXTER-TOKENTOXTZ-FA12-POSITIVE-SPEC          \
                       DEXTER-TOKENTOXTZ-FA2-NEGATIVE-1-SPEC     \
                       DEXTER-TOKENTOXTZ-FA2-NEGATIVE-2-SPEC     \
                       DEXTER-TOKENTOXTZ-FA2-NEGATIVE-3-SPEC     \
-                      DEXTER-TOKENTOXTZ-FA2-SPEC           \
+                      DEXTER-TOKENTOXTZ-FA2-POSITIVE-SPEC           \
                       DEXTER-UPDATETOKENPOOL-SPEC          \
                       DEXTER-XTZTOTOKEN-FA12-NEGATIVE-SPEC      \
                       DEXTER-XTZTOTOKEN-FA12-POSITIVE-SPEC      \
