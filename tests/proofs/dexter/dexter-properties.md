@@ -249,7 +249,7 @@ proof [inv]:
 
 ```
 NOTE:
-- DEXTER may call XtzToToken or Default itself
+- DEXTER may call XtzToToken or Default on itself
 
 proposition [sender-is-not-dexter]:
 [[ Sender =/=K DEXTER => true ]]
@@ -1253,4 +1253,3 @@ assert   IsUpdatingTokenPool ==K false
 ensures  Sender =/=K DEXTER impliesBool B' ==Int B +Int Amount
  andBool Sender  ==K DEXTER impliesBool B' ==Int B
 ```
-
