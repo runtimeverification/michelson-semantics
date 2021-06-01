@@ -511,7 +511,7 @@ endmodule
 ### FA1.2
 
 ```k
-module DEXTER-TOKENTOXTZ-FA12-SPEC
+module DEXTER-TOKENTOXTZ-FA12-POSITIVE-SPEC
   imports DEXTER-VERIFICATION
 ```
 
@@ -562,7 +562,7 @@ endmodule
 The following claims prove the negative case:
 
 ```k
-module DEXTER-TOKENTOXTZ-FA12-NEG-1-SPEC
+module DEXTER-TOKENTOXTZ-FA12-NEGATIVE-1-SPEC
   imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, TokenToXtz(_To, _TokensSold, #Mutez(_MinXtzBought), #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_ </stack>
@@ -580,7 +580,7 @@ endmodule
 ```
 
 ```k
-module DEXTER-TOKENTOXTZ-FA12-NEG-2-SPEC
+module DEXTER-TOKENTOXTZ-FA12-NEGATIVE-2-SPEC
   imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_ </stack>
@@ -602,7 +602,7 @@ endmodule
 ```
 
 ```k
-module DEXTER-TOKENTOXTZ-FA12-NEG-3-SPEC
+module DEXTER-TOKENTOXTZ-FA12-NEGATIVE-3-SPEC
   imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_ </stack>
@@ -626,7 +626,7 @@ endmodule
 ```
 
 ```k
-module DEXTER-TOKENTOXTZ-FA12-NEG-4-SPEC
+module DEXTER-TOKENTOXTZ-FA12-NEGATIVE-4-SPEC
   imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_ </stack>
@@ -655,7 +655,7 @@ endmodule
 ### FA2
 
 ```k
-module DEXTER-TOKENTOXTZ-FA2-SPEC
+module DEXTER-TOKENTOXTZ-FA2-POSITIVE-SPEC
   imports DEXTER-VERIFICATION
 ```
 
@@ -706,7 +706,7 @@ endmodule
 The following cases prove the contract properly fails when these conditions aren't met.
 
 ```k
-module DEXTER-TOKENTOXTZ-FA2-NEG-1-SPEC
+module DEXTER-TOKENTOXTZ-FA2-NEGATIVE-1-SPEC
   imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) =>  Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_ </stack>
@@ -723,7 +723,7 @@ endmodule
 ```
 
 ```k
-module DEXTER-TOKENTOXTZ-FA2-NEG-2-SPEC
+module DEXTER-TOKENTOXTZ-FA2-NEGATIVE-2-SPEC
   imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) =>  Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_ </stack>
@@ -753,7 +753,7 @@ endmodule
 ```
 
 ```k
-module DEXTER-TOKENTOXTZ-FA2-NEG-3-SPEC
+module DEXTER-TOKENTOXTZ-FA2-NEGATIVE-3-SPEC
   imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) =>  Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_ </stack>
@@ -798,7 +798,7 @@ A buyer sends xtz to the Dexter contract and receives a corresponding amount of 
 4.  when the `txn.amount` (in mutez) is converted into tokens using the current exchange rate, it is less than or equal to the tokens owned by the Dexter contract
 
 ```k
-module DEXTER-XTZTOTOKEN-FA12-POS-SPEC
+module DEXTER-XTZTOTOKEN-FA12-POSITIVE-SPEC
   imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, XtzToToken(To, MinTokensBought, #Timestamp(Deadline))) => . </k>
         <stack> .Stack => ?_ </stack>
@@ -831,7 +831,7 @@ endmodule
 ```
 
 ```k
-module DEXTER-XTZTOTOKEN-FA12-NEG-SPEC
+module DEXTER-XTZTOTOKEN-FA12-NEGATIVE-SPEC
   imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, XtzToToken(_To, MinTokensBought, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_ </stack>
@@ -858,7 +858,7 @@ endmodule
 ```
 
 ```k
-module DEXTER-XTZTOTOKEN-FA2-POS-SPEC
+module DEXTER-XTZTOTOKEN-FA2-POSITIVE-SPEC
   imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, XtzToToken(To, MinTokensBought, #Timestamp(Deadline))) => . </k>
         <stack> .Stack => ?_ </stack>
@@ -891,7 +891,7 @@ endmodule
 ```
 
 ```k
-module DEXTER-XTZTOTOKEN-FA2-NEG-SPEC
+module DEXTER-XTZTOTOKEN-FA2-NEGATIVE-SPEC
   imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, XtzToToken(_To, MinTokensBought, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_ </stack>
