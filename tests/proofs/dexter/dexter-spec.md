@@ -549,7 +549,7 @@ endmodule
 The following claims prove the negative case:
 
 ```k
-module DEXTER-TOKENTOXTZ-FA12-NEG-1-SPEC
+module DEXTER-TOKENTOXTZ-FA12-NEGATIVE-1-SPEC
   imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, TokenToXtz(_To, _TokensSold, #Mutez(_MinXtzBought), #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_ </stack>
@@ -567,7 +567,7 @@ endmodule
 ```
 
 ```k
-module DEXTER-TOKENTOXTZ-FA12-NEG-2-SPEC
+module DEXTER-TOKENTOXTZ-FA12-NEGATIVE-2-SPEC
   imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_ </stack>
@@ -589,7 +589,7 @@ endmodule
 ```
 
 ```k
-module DEXTER-TOKENTOXTZ-FA12-NEG-3-SPEC
+module DEXTER-TOKENTOXTZ-FA12-NEGATIVE-3-SPEC
   imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_ </stack>
@@ -613,7 +613,7 @@ endmodule
 ```
 
 ```k
-module DEXTER-TOKENTOXTZ-FA12-NEG-4-SPEC
+module DEXTER-TOKENTOXTZ-FA12-NEGATIVE-4-SPEC
   imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_ </stack>
@@ -693,7 +693,7 @@ endmodule
 The following cases prove the contract properly fails when these conditions aren't met.
 
 ```k
-module DEXTER-TOKENTOXTZ-FA2-NEG-1-SPEC
+module DEXTER-TOKENTOXTZ-FA2-NEGATIVE-1-SPEC
   imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) =>  Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_ </stack>
@@ -710,7 +710,7 @@ endmodule
 ```
 
 ```k
-module DEXTER-TOKENTOXTZ-FA2-NEG-2-SPEC
+module DEXTER-TOKENTOXTZ-FA2-NEGATIVE-2-SPEC
   imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) =>  Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_ </stack>
@@ -740,7 +740,7 @@ endmodule
 ```
 
 ```k
-module DEXTER-TOKENTOXTZ-FA2-NEG-3-SPEC
+module DEXTER-TOKENTOXTZ-FA2-NEGATIVE-3-SPEC
   imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) =>  Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_ </stack>
@@ -818,7 +818,7 @@ endmodule
 ```
 
 ```k
-module DEXTER-XTZTOTOKEN-FA12-NEG-SPEC
+module DEXTER-XTZTOTOKEN-FA12-NEGATIVE-SPEC
   imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, XtzToToken(_To, MinTokensBought, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_ </stack>
@@ -878,7 +878,7 @@ endmodule
 ```
 
 ```k
-module DEXTER-XTZTOTOKEN-FA2-NEG-SPEC
+module DEXTER-XTZTOTOKEN-FA2-NEGATIVE-SPEC
   imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, XtzToToken(_To, MinTokensBought, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_ </stack>
