@@ -785,7 +785,7 @@ A buyer sends xtz to the Dexter contract and receives a corresponding amount of 
 4.  when the `txn.amount` (in mutez) is converted into tokens using the current exchange rate, it is less than or equal to the tokens owned by the Dexter contract
 
 ```k
-module DEXTER-XTZTOTOKEN-FA12-POS-SPEC
+module DEXTER-XTZTOTOKEN-FA12-POSITIVE-SPEC
   imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, XtzToToken(To, MinTokensBought, #Timestamp(Deadline))) => . </k>
         <stack> .Stack => ?_ </stack>
@@ -845,7 +845,7 @@ endmodule
 ```
 
 ```k
-module DEXTER-XTZTOTOKEN-FA2-POS-SPEC
+module DEXTER-XTZTOTOKEN-FA2-POSITIVE-SPEC
   imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, XtzToToken(To, MinTokensBought, #Timestamp(Deadline))) => . </k>
         <stack> .Stack => ?_ </stack>
