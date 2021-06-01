@@ -135,20 +135,10 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
                                                        MinLqtMinted,
                                                        MaxTokensDeposited,
                                                        Deadline))
-                  => true
-              requires MinLqtMinted       >=Int 0
-               andBool MaxTokensDeposited >=Int 0
-               andBool #IsLegalTimestamp(Deadline)
-
-            rule wellTypedParams(_IsFA2, AddLiquidity(_Owner,
-                                                       MinLqtMinted,
-                                                       MaxTokensDeposited,
-                                                       Deadline))
-                  => false
-              requires notBool( MinLqtMinted       >=Int 0
-                        andBool MaxTokensDeposited >=Int 0
-                        andBool #IsLegalTimestamp(Deadline)
-                              )
+                 =>         MinLqtMinted       >=Int 0
+                    andBool MaxTokensDeposited >=Int 0
+                    andBool #IsLegalTimestamp(Deadline)
+                 [simplification]
             ```
 
     2.  `remove_liquidity`
@@ -167,23 +157,11 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
                                                           MinXtzWithdrawn,
                                                           MinTokensWithdrawn,
                                                           Deadline))
-                  => true
-              requires LqtBurned >=Int 0
-               andBool #IsLegalMutezValue(MinXtzWithdrawn)
-               andBool MinTokensWithdrawn >=Int 0
-               andBool #IsLegalTimestamp(Deadline)
-
-            rule wellTypedParams(_IsFA2, RemoveLiquidity(_To,
-                                                          LqtBurned,
-                                                          MinXtzWithdrawn,
-                                                          MinTokensWithdrawn,
-                                                          Deadline))
-                  => false
-              requires notBool( LqtBurned >=Int 0
-                        andBool #IsLegalMutezValue(MinXtzWithdrawn)
-                        andBool MinTokensWithdrawn >=Int 0
-                        andBool #IsLegalTimestamp(Deadline)
-                              )
+                  =>         LqtBurned >=Int 0
+                     andBool #IsLegalMutezValue(MinXtzWithdrawn)
+                     andBool MinTokensWithdrawn >=Int 0
+                     andBool #IsLegalTimestamp(Deadline)
+                     [simplification]
             ```
 
         -   Output:
@@ -209,8 +187,7 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
             syntax SetBakerParams   ::= SetBaker(baker       : OptionData,
                                                  freezeBaker : Bool)
             rule wellTypedParams(_IsFA2, SetBaker(None,        _)) => true
-            rule wellTypedParams(_IsFA2, SetBaker(Some D:Data, _)) => true  requires         isKeyHash(D)
-            rule wellTypedParams(_IsFA2, SetBaker(Some D:Data, _)) => false requires notBool isKeyHash(D)
+            rule wellTypedParams(_IsFA2, SetBaker(Some D:Data, _)) => isKeyHash(D) [simplification]
             ```
 
         -   Output:
@@ -226,7 +203,7 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
             ```k
             syntax EntryPointParams ::= SetManagerParams
             syntax SetManagerParams ::= SetManager(newManager : Address)
-            rule wellTypedParams(_IsFA2, _:SetManagerParams) => true
+            rule wellTypedParams(_IsFA2, _:SetManagerParams) => true [simplification]
             ```
 
         -   Output:
@@ -242,7 +219,7 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
             ```k
             syntax EntryPointParams    ::= SetLQTAddressParams
             syntax SetLQTAddressParams ::= SetLQTAddress(lqtAddress : Address)
-            rule wellTypedParams(_IsFA2, _:SetLQTAddressParams) => true
+            rule wellTypedParams(_IsFA2, _:SetLQTAddressParams) => true [simplification]
             ```
 
         -   Output:
@@ -258,7 +235,7 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
             ```k
             syntax EntryPointParams ::= DefaultParams
             syntax DefaultParams    ::= "Default"
-            rule wellTypedParams(_IsFA2, Default) => true
+            rule wellTypedParams(_IsFA2, Default) => true [simplification]
             ```
 
         -   Output:
@@ -274,7 +251,7 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
             ```k
             syntax EntryPointParams      ::= UpdateTokenPoolParams
             syntax UpdateTokenPoolParams ::= "UpdateTokenPool"
-            rule wellTypedParams(_IsFA2, UpdateTokenPool) => true
+            rule wellTypedParams(_IsFA2, UpdateTokenPool) => true [simplification]
             ```
 
         -   Output:
@@ -296,10 +273,8 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
             syntax UpdateTokenPoolInternalFA12Params ::= UpdateTokenPoolInternalFA12(balance         : Int)
             syntax UpdateTokenPoolInternalFA2Params  ::= UpdateTokenPoolInternalFA2 (balanceOfResult : InternalList)
 
-            rule wellTypedParams(false, UpdateTokenPoolInternalFA12(Balance))         => true  requires         Balance >=Int 0
-            rule wellTypedParams(false, UpdateTokenPoolInternalFA12(Balance))         => false requires notBool Balance >=Int 0
-            rule wellTypedParams(true,  UpdateTokenPoolInternalFA2 (BalanceOfResult)) => true  requires         validBalanceOfParams(BalanceOfResult)
-            rule wellTypedParams(true,  UpdateTokenPoolInternalFA2 (BalanceOfResult)) => false requires notBool validBalanceOfParams(BalanceOfResult)
+            rule wellTypedParams(false, UpdateTokenPoolInternalFA12(Balance))         => Balance >=Int 0                       [simplification]
+            rule wellTypedParams(true,  UpdateTokenPoolInternalFA2 (BalanceOfResult)) => validBalanceOfParams(BalanceOfResult) [simplification]
 
             syntax Bool ::= validBalanceOfParams(InternalList) [function, functional]
                           | validBalanceOfEntry(Data)          [function, functional]
@@ -337,29 +312,20 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
         syntax XtzToTokenParams ::= XtzToToken(to              : Address,
                                                minTokensBought : Int,
                                                deadline        : Timestamp)
-        rule wellTypedParams(_IsFA2, XtzToToken(_To, MinTokensBought, Deadline)) => true
-          requires MinTokensBought >=Int 0 andBool #IsLegalTimestamp(Deadline)
-        rule wellTypedParams(_IsFA2, XtzToToken(_To, MinTokensBought, Deadline)) => false
-          requires notBool(MinTokensBought >=Int 0 andBool #IsLegalTimestamp(Deadline))
+        rule wellTypedParams(_IsFA2, XtzToToken(_To, MinTokensBought, Deadline))
+          => MinTokensBought >=Int 0 andBool #IsLegalTimestamp(Deadline)
+             [simplification]
         ```
 
         -   Output:
 
             ```
-            ( [ Transfer_tokens ( self.address, to_, $bought ) 0xtz storage.tokenAddress %transfer ],
-              { storage with xtzPool += txn.amount ; tokenPool -= $bought } )
+            ( [ Transfer_tokens ( self.address, to_, #TokensBought ) 0xtz storage.tokenAddress %transfer ],
+              { storage with xtzPool += txn.amount ; tokenPool -= #TokensBought } )
             ```
 
-            where `$bought` is the current total of tokens exchanged from `txn.amount` by the formula:
-
-            `(txn.amount * 997n * storage.tokenPool) / (xtzPool * 1000n + (txn.amount * 997n))`
-
-        -   Summary: A buyer sends xtz to the Dexter contract and receives a corresponding amount of tokens, if the following conditions are satisfied:
-
-            1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
-            2.  the current block time must be less than the deadline
-            3.  when the `txn.amount` (in mutez) is converted into tokens using the current exchange rate, the purchased amount is greater than `minTokensBought`
-            4.  when the `txn.amount` (in mutez) is converted into tokens using the current exchange rate, it is less than or equal to the tokens owned by the Dexter contract
+            where `#TokensBought` is the current total of tokens exchanged from `txn.amount` defined by
+            the macro given below.
 
     10. `token_to_xtz`
 
@@ -371,41 +337,23 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
                                                tokensSold   : Int,
                                                minXtzBought : Mutez,
                                                deadline     : Timestamp)
-        rule wellTypedParams(_IsFA2, TokenToXtz(_To, TokensSold, MinXtzBought, Deadline)) => true
-          requires TokensSold >=Int 0
-           andBool #IsLegalMutezValue(MinXtzBought)
-           andBool #IsLegalTimestamp(Deadline)
-
-        rule wellTypedParams(_IsFA2, TokenToXtz(_To,
-                                                 TokensSold,
-                                                 MinXtzBought,
-                                                 Deadline))
-             => false
-          requires notBool( TokensSold >=Int 0
-                    andBool #IsLegalMutezValue(MinXtzBought)
-                    andBool #IsLegalTimestamp(Deadline)
-                          )
+        rule wellTypedParams(_IsFA2, TokenToXtz(_To, TokensSold, MinXtzBought, Deadline))
+          =>         TokensSold >=Int 0
+             andBool #IsLegalMutezValue(MinXtzBought)
+             andBool #IsLegalTimestamp(Deadline)
+             [simplification]
         ```
 
         -   Output:
 
             ```
             ( [ Transfer_tokens ( txn.sender, self.address, tokensSold ) 0xtz self.tokenAddress %transfer ]
-              [ Transfer_tokens () $bought _to ],
-              { storage with xtzPool -= $bought ; tokenPool += tokensSold } )
+              [ Transfer_tokens () #XtzBought _to ],
+              { storage with xtzPool -= #XtzBought ; tokenPool += tokensSold } )
             ```
 
-            where `$bought` is the current total of xtz exchanged from `tokensSold` by the formula:
-
-            `(tokensSold * 997n * storage.xtzPool) / (storage.tokenPool * 1000n + (tokensSold * 997n))`
-
-        -   Summary: A buyer sends tokens to the Dexter contract and receives a corresponding amount of xtz, if the following conditions are satisfied:
-
-            1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
-            2.  the current block time must be less than the deadline
-            3.  exactly 0 tez was transferred to this contract when it was invoked
-            4.  the amount of tokens sold, when converted into xtz using the current exchange rate, is greater than `minXtzBought`
-            5.  the amount of tokens sold, when converted into xtz using the current exchange rate, it is less than or equal to the xtz owned by the Dexter contract
+            where `#XtzBought` is the current total of xtz exchanged from `tokensSold` by the formula
+            defined by the macro below.
 
     11. `token_to_token`
 
@@ -423,21 +371,10 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
                                                   _To,
                                                    TokensSold,
                                                    Deadline))
-             => true
-        requires MinTokensBought >=Int 0
-         andBool TokensSold >=Int 0
-         andBool #IsLegalTimestamp(Deadline)
-
-        rule wellTypedParams(_IsFA2, TokenToToken(_OutputDexterContract,
-                                                   MinTokensBought,
-                                                  _To,
-                                                   TokensSold,
-                                                   Deadline))
-             => false
-        requires notBool( MinTokensBought >=Int 0
-                  andBool TokensSold >=Int 0
-                  andBool #IsLegalTimestamp(Deadline)
-                        )
+          =>         MinTokensBought >=Int 0
+             andBool TokensSold >=Int 0
+             andBool #IsLegalTimestamp(Deadline)
+             [simplification]
         ```
 
         -   Output:
@@ -681,21 +618,27 @@ If the contract execution fails, storage is not updated.
   rule #ceildivAux(X, Y) => X /Int Y          requires Y  =/=Int 0 andBool         X %Int Y ==Int 0
   rule #ceildivAux(X, Y) => X /Int Y +Int 1   requires Y  =/=Int 0 andBool notBool X %Int Y ==Int 0
 
-  syntax Int ::= #XtzBought   (Int, Int, Int)
-               | #TokensBought(Int, Int, Int)
+  syntax Int ::= #XtzBought   (Int, Int, Int) [function, functional, smtlib(xtzbought), no-evaluators]
  // -----------------------------------------
-  rule #XtzBought(XtzPool, TokenPool, TokensSold)
-    => (TokensSold *Int 997 *Int XtzPool) /Int (TokenPool *Int 1000 +Int (TokensSold *Int 997))
-    [macro]
+  rule (TokensSold *Int 997 *Int XtzPool) /Int (TokenPool *Int 1000 +Int (TokensSold *Int 997))
+    => #XtzBought(XtzPool, TokenPool, TokensSold)
+    [simplification]
+```
 
-  syntax Int ::= #TokensBought(Int, Int, Int)
+We'd like to additionally define `#TokensBought`, however this has the same structure as `#XtzBought`
+and so we can't have simplification rules for both.
+
+```k
+ // syntax Int ::= #TokensBought(Int, Int, Int) [function, functional, smtlib(tokensbought), no-evaluators]
  // ----------------------------------------
-  rule #TokensBought(XtzPool, TokenPool, XtzSold)
-    => (XtzSold *Int 997 *Int TokenPool) /Int (XtzPool *Int 1000 +Int (XtzSold *Int 997))
-    [macro]
+ // rule (Amount *Int 997 *Int TokenPool) /Int (XtzPool *Int 1000 +Int (Amount *Int 997))
+ //   => #TokensBought(XtzPool, TokenPool, XtzSold)
+ //   [simplification]
+```
 
+```k
   syntax Bool ::= #EntrypointExists(Map, Address, FieldAnnotation, Type)
- // --------------------------------------------------------------------
+// --------------------------------------------------------------------
   rule #EntrypointExists(KnownAddresses, Addr, _FieldAnnot, EntrypointType)
     => Addr in_keys(KnownAddresses) andBool
        KnownAddresses[Addr] ==K #Contract(Addr, EntrypointType)
@@ -722,10 +665,23 @@ If all steps are completed, only the Dexter-specific storage is updated.
         ...
        </k>
        <myamount> #Mutez(Amount) </myamount>
+       <xtzPool> #Mutez(XtzPool) </xtzPool>
+       <tokenPool> TokenPool </tokenPool>
        <operations> OpList </operations>
+       <returncode> ReturnCode </returncode>
     ensures wellTypedParams(IsFA2, Params)
-    andBool Amount >=Int 0
+    andBool #IsLegalMutezValue(Amount)
+    andBool #IsLegalMutezValue(XtzPool)
+    andBool TokenPool >=Int 0
     andBool OpList ==K .InternalList
+    andBool ReturnCode ==Int 111
+```
+
+## Miscellaneous Lemmas
+
+```k
+    rule X *Int 1 => X [simplification]
+    rule X /Int 1 => X [simplification]
 ```
 
 ## Epilogue

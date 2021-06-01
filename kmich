@@ -53,7 +53,7 @@ run_prove() {
 
     additional_proof_args=()
     ! $debug      || additional_proof_args+=(--debug)
-    ! $repl       || additional_proof_args+=(--debugger --debug-script ./lib/kast.kscript)
+    ! $repl       || additional_proof_args+=(--debugger --debug-script ./lib/kast-$backend.kscript)
 
     export K_OPTS=-Xmx8G
 
@@ -100,7 +100,7 @@ if [[ $# -le 0 ]] || [[ "$run_command" == 'help' ]] || [[ "$run_command" == '--h
         usage: $0 run       [--backend (llvm|symbolic|contract-expander|extractor|input-creator|output-compare)] <pgm>  <K arg>*
                $0 kast      [--backend (llvm|symbolic|contract-expander|extractor|input-creator|output-compare)] <pgm>  <output format> <K arg>*
                $0 symbtest                                                                                       <pgm>                  <K arg>*
-               $0 prove     [--backend symbolic]                                                                 <spec> <def_module>    <K arg>*
+               $0 prove     [--backend (symbolic|prove|dexter)]                                                  <spec> <def_module>    <K arg>*
                $0 interpret [--backend (llvm|symbolic|contract-expander|extractor|input-creator|output-compare)] <pgm>  <LLVM KRun arg>*
 
                $0 [help|--help|version|--version]
@@ -147,7 +147,10 @@ backend_dir="${backend_dir:-$defn_dir/$backend}"
 kompiled_dir=$(find $backend_dir -name '*-kompiled')
 [[ -d "$kompiled_dir" ]] || fatal "Could not find single *-kompiled directory in $backend_dir"
 
-! $repl || [[ "$backend" == prove ]] || fatal "Option --repl only usable with --backend prove!"
+! $repl || \
+[[ "$backend" == prove ]] || \
+[[ "$backend" == dexter ]] || \
+    fatal "Option --repl only usable with --backend prove!"
 
 # get the run file
 run_file="$1" ; shift
@@ -173,7 +176,7 @@ case "$run_command-$backend" in
     run-@(llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare)       ) run_krun       "$@" ;;
     kast-@(llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare)      ) run_kast       "$@" ;;
     symbtest-driver                                                                           ) run_symbtest   "$@" ;;
-    prove-@(prove|symbolic)                                                                   ) run_prove      "$@" ;;
+    prove-@(prove|symbolic|dexter)                                                            ) run_prove      "$@" ;;
     interpret-@(llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare) ) run_interpret  "$@" ;;
     *) $0 help ; fatal "Unknown command on backend: $run_command $backend" ;;
 esac

@@ -1073,6 +1073,8 @@ The `#DoCompare` function requires additional lemmas for symbolic execution.
   rule X ==String X => true  [simplification]
   rule X  <String X => false [simplification]
 
+  rule #Ceil(#DoCompare(_:Int, _:Int)) => #Top [anywhere, simplification]
+
   rule #Ceil(#DoCompare(V1, V2)) => #Top
     requires (isBool(V1)      andBool isBool(V2))
       orBool (isInt(V1)       andBool isInt(V2))
@@ -1711,10 +1713,17 @@ value is invalid.
 
   syntax FailedStack ::= #FailureFromMutezValue(Mutez, Int, Int) [function]
   // ----------------------------------------------------------------------
-  rule #FailureFromMutezValue(#Mutez(I), I1, I2)
-    => ( MutezOverflow I1 I2 ) requires I >=Int #MutezOverflowLimit
-  rule #FailureFromMutezValue(#Mutez(I), I1, I2)
-    => ( MutezUnderflow I1 I2 ) requires I <Int 0
+  rule #FailureFromMutezValue(#Mutez(I), I1, I2) => ( MutezOverflow I1 I2 )  requires I >=Int #MutezOverflowLimit
+  rule #FailureFromMutezValue(#Mutez(I), I1, I2) => ( MutezUnderflow I1 I2 ) requires I  <Int 0
+```
+
+```symbolic
+  rule #FailureFromMutezValue(#Mutez(I), I1, I2) => ( MutezOverflow I1 I2 )  requires I >=Int #MutezOverflowLimit [simplification]
+  rule #FailureFromMutezValue(#Mutez(I), I1, I2) => ( MutezUnderflow I1 I2 ) requires I  <Int 0                   [simplification]
+
+  rule #Ceil(#FailureFromMutezValue(#Mutez(I), _I1, _I2)) => #Bottom
+    requires notBool(I >=Int #MutezOverflowLimit orBool I  <Int 0)
+    [simplification]
 ```
 
 Other than the mutez validation step, these arithmetic rules are essentially
@@ -2414,7 +2423,7 @@ When unfolding a symbolic container, we thus need to add a constraint forcing
 the item to be of the correct type.
 
 ```k
-    syntax KItem ::= #AssumeHasType(KItem, TypeName) 
+    syntax KItem ::= #AssumeHasType(KItem, TypeName)
 ```
 
 ```concrete

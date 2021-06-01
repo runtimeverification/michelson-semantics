@@ -492,3 +492,416 @@ If any of the conditions are not satisfied, the call fails.
 ```k
 endmodule
 ```
+
+## Token To XTZ
+
+### FA1.2
+
+```k
+module DEXTER-TOKENTOXTZ-FA12-SPEC
+  imports DEXTER-VERIFICATION
+```
+
+A buyer sends tokens to the Dexter contract and receives a corresponding amount of xtz, if the following conditions are satisfied:
+
+1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
+2.  the current block time must be less than the deadline
+3.  exactly 0 tez was transferred to this contract when it was invoked
+4.  the amount of tokens sold, when converted into xtz using the current exchange rate, is greater than `minXtzBought`
+5.  the amount of tokens sold, when converted into xtz using the current exchange rate, it is less than or equal to the xtz owned by the Dexter contract
+
+```k
+  claim <k> #runProof(IsFA2, TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) => . </k>
+        <stack> .Stack </stack>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <myamount> #Mutez(Amount) </myamount>
+        <tokenAddress> TokenAddress:Address </tokenAddress>
+        <xtzPool> #Mutez(XtzPool => XtzPool -Int #XtzBought(XtzPool, TokenPool, TokensSold)) </xtzPool>
+        <tokenPool> TokenPool => TokenPool +Int TokensSold </tokenPool>
+        <mynow> #Timestamp(CurrentTime) </mynow>
+        <senderaddr> Sender </senderaddr>
+        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+        <myaddr> SelfAddress:Address </myaddr>
+        <nonce> #Nonce(N => N +Int 2) </nonce>
+        <knownaddrs> KnownAddresses </knownaddrs>
+        <tokenId> TokenID </tokenId>
+        <operations> _
+                  => [ Transfer_tokens #TokenTransferData(IsFA2, Sender, SelfAddress, TokenID, TokensSold) #Mutez(0)                                          TokenAddress  N        ]
+                  ;; [ Transfer_tokens Unit                                                                #Mutez(#XtzBought(XtzPool, TokenPool, TokensSold)) To           (N +Int 1)]
+                  ;; .InternalList
+        </operations>
+     requires notBool IsFA2
+      andBool notBool IsUpdating
+      andBool Amount ==Int 0
+      andBool CurrentTime <Int Deadline
+      andBool (TokenPool >Int 0 orBool TokensSold >Int 0)
+      andBool (TokenPool >=Int 0) // Type Invariant
+      andBool #XtzBought(XtzPool, TokenPool, TokensSold) >=Int  MinXtzBought
+      andBool #XtzBought(XtzPool, TokenPool, TokensSold) <=Int XtzPool
+      andBool #IsLegalMutezValue(MinXtzBought)
+      andBool #IsLegalMutezValue(#XtzBought(XtzPool, TokenPool, TokensSold))
+      andBool #IsLegalMutezValue(XtzPool:Int -Int #XtzBought (XtzPool:Int, TokenPool:Int, TokensSold:Int))
+      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer,                             #TokenTransferType(IsFA2))
+      andBool #EntrypointExists(KnownAddresses, To,           #token("%default", "FieldAnnotation"), #Type(unit))
+endmodule
+```
+
+The following claims prove the negative case:
+
+```k
+module DEXTER-TOKENTOXTZ-FA12-NEG-1-SPEC
+  imports DEXTER-VERIFICATION
+  claim <k> #runProof(IsFA2, TokenToXtz(_To, _TokensSold, #Mutez(_MinXtzBought), #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ?_ </stack>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <mynow> #Timestamp(CurrentTime) </mynow>
+        <myamount> #Mutez(Amount) </myamount>
+        <tokenAddress> TokenAddress:Address </tokenAddress>
+        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+     requires notBool IsFA2
+      andBool ( IsUpdating
+         orBool notBool Amount ==Int 0
+         orBool notBool CurrentTime <Int Deadline
+              )
+endmodule
+```
+
+```k
+module DEXTER-TOKENTOXTZ-FA12-NEG-2-SPEC
+  imports DEXTER-VERIFICATION
+  claim <k> #runProof(IsFA2, TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ?_ </stack>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <mynow> #Timestamp(CurrentTime) </mynow>
+        <myamount> #Mutez(Amount) </myamount>
+        <tokenAddress> TokenAddress:Address </tokenAddress>
+        <xtzPool> #Mutez(XtzPool) </xtzPool>
+        <tokenPool> TokenPool </tokenPool>
+        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+     requires notBool IsFA2
+      andBool notBool IsUpdating
+      andBool notBool Amount ==Int 0
+      andBool notBool CurrentTime <Int Deadline
+      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer,                             #TokenTransferType(IsFA2))
+      andBool #EntrypointExists(KnownAddresses, To,           #token("%default", "FieldAnnotation"), #Type(unit))
+      andBool notBool (TokenPool >Int 0 orBool TokensSold >Int 0)
+endmodule
+```
+
+```k
+module DEXTER-TOKENTOXTZ-FA12-NEG-3-SPEC
+  imports DEXTER-VERIFICATION
+  claim <k> #runProof(IsFA2, TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ?_ </stack>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <mynow> #Timestamp(CurrentTime) </mynow>
+        <myamount> #Mutez(Amount) </myamount>
+        <tokenAddress> TokenAddress:Address </tokenAddress>
+        <xtzPool> #Mutez(XtzPool) </xtzPool>
+        <tokenPool> TokenPool </tokenPool>
+        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+     requires notBool IsFA2
+      andBool notBool IsUpdating
+      andBool notBool Amount ==Int 0
+      andBool notBool CurrentTime <Int Deadline
+      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer,                             #TokenTransferType(IsFA2))
+      andBool #EntrypointExists(KnownAddresses, To,           #token("%default", "FieldAnnotation"), #Type(unit))
+      andBool notBool( #XtzBought(XtzPool, TokenPool, TokensSold) >=Int  MinXtzBought
+               andBool #IsLegalMutezValue(MinXtzBought)
+                     )
+endmodule
+```
+
+```k
+module DEXTER-TOKENTOXTZ-FA12-NEG-4-SPEC
+  imports DEXTER-VERIFICATION
+  claim <k> #runProof(IsFA2, TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ?_ </stack>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <mynow> #Timestamp(CurrentTime) </mynow>
+        <myamount> #Mutez(Amount) </myamount>
+        <tokenAddress> TokenAddress:Address </tokenAddress>
+        <xtzPool> #Mutez(XtzPool) </xtzPool>
+        <tokenPool> TokenPool </tokenPool>
+        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+     requires notBool IsFA2
+      andBool notBool IsUpdating
+      andBool notBool Amount ==Int 0
+      andBool notBool CurrentTime <Int Deadline
+      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer,                             #TokenTransferType(IsFA2))
+      andBool #EntrypointExists(KnownAddresses, To,           #token("%default", "FieldAnnotation"), #Type(unit))
+      andBool  #XtzBought(XtzPool, TokenPool, TokensSold) >=Int  MinXtzBought
+      andBool #IsLegalMutezValue(MinXtzBought)
+      andBool notBool( #XtzBought(XtzPool, TokenPool, TokensSold) <=Int XtzPool
+               andBool #IsLegalMutezValue(#XtzBought(XtzPool, TokenPool, TokensSold))
+               andBool #IsLegalMutezValue(XtzPool:Int -Int #XtzBought (XtzPool:Int, TokenPool:Int, TokensSold:Int))
+                     )
+endmodule
+```
+
+### FA2
+
+```k
+module DEXTER-TOKENTOXTZ-FA2-SPEC
+  imports DEXTER-VERIFICATION
+```
+
+As before, a buyer sends tokens to the Dexter contract and receives a corresponding amount of xtz, if the following conditions are satisfied:
+
+1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
+2.  the current block time must be less than the deadline
+3.  exactly 0 tez was transferred to this contract when it was invoked
+4.  the amount of tokens sold, when converted into xtz using the current exchange rate, is greater than `minXtzBought`
+5.  the amount of tokens sold, when converted into xtz using the current exchange rate, it is less than or equal to the xtz owned by the Dexter contract
+
+```k
+  claim <k> #runProof(IsFA2, TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) => . </k>
+        <stack> .Stack </stack>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <myamount> #Mutez(Amount) </myamount>
+        <tokenAddress> TokenAddress:Address </tokenAddress>
+        <xtzPool> #Mutez(XtzPool => XtzPool -Int #XtzBought(XtzPool, TokenPool, TokensSold)) </xtzPool>
+        <tokenPool> TokenPool => TokenPool +Int TokensSold </tokenPool>
+        <mynow> #Timestamp(CurrentTime) </mynow>
+        <senderaddr> Sender </senderaddr>
+        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+        <myaddr> SelfAddress:Address </myaddr>
+        <nonce> #Nonce(N => N +Int 2) </nonce>
+        <knownaddrs> KnownAddresses </knownaddrs>
+        <tokenId> TokenID </tokenId>
+        <operations> _
+                  => [ Transfer_tokens #TokenTransferData(IsFA2, Sender, SelfAddress, TokenID, TokensSold) #Mutez(0)                                          TokenAddress  N        ]
+                  ;; [ Transfer_tokens Unit                                                                #Mutez(#XtzBought(XtzPool, TokenPool, TokensSold)) To           (N +Int 1)]
+                  ;; .InternalList
+        </operations>
+     requires IsFA2
+      andBool notBool IsUpdating
+      andBool Amount ==Int 0
+      andBool CurrentTime <Int Deadline
+      andBool (TokenPool >Int 0 orBool TokensSold >Int 0)
+      andBool (TokenPool >=Int 0)
+      andBool #XtzBought(XtzPool, TokenPool, TokensSold) >=Int  MinXtzBought
+      andBool #XtzBought(XtzPool, TokenPool, TokensSold) <=Int XtzPool
+      andBool #IsLegalMutezValue(MinXtzBought)
+      andBool #IsLegalMutezValue(#XtzBought(XtzPool, TokenPool, TokensSold))
+      andBool #IsLegalMutezValue(XtzPool:Int -Int #XtzBought (XtzPool:Int, TokenPool:Int, TokensSold:Int))
+      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer,                             #TokenTransferType(IsFA2))
+      andBool #EntrypointExists(KnownAddresses, To,           #token("%default", "FieldAnnotation"), #Type(unit))
+endmodule
+```
+
+The following cases prove the contract properly fails when these conditions aren't met.
+
+```k
+module DEXTER-TOKENTOXTZ-FA2-NEG-1-SPEC
+  imports DEXTER-VERIFICATION
+  claim <k> #runProof(IsFA2, TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) =>  Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ?_ </stack>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <myamount> #Mutez(Amount) </myamount>
+        <mynow> #Timestamp(CurrentTime) </mynow>
+        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+     requires IsFA2
+      andBool ( IsUpdating
+         orBool notBool Amount ==Int 0
+         orBool notBool CurrentTime <Int Deadline
+              )
+endmodule
+```
+
+```k
+module DEXTER-TOKENTOXTZ-FA2-NEG-2-SPEC
+  imports DEXTER-VERIFICATION
+  claim <k> #runProof(IsFA2, TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) =>  Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ?_ </stack>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <myamount> #Mutez(Amount) </myamount>
+        <mynow> #Timestamp(CurrentTime) </mynow>
+        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+        <tokenPool> TokenPool </tokenPool>
+        <xtzPool> #Mutez(XtzPool) </xtzPool>
+        <tokenAddress> TokenAddress:Address </tokenAddress>
+        <knownaddrs> KnownAddresses </knownaddrs>
+     requires IsFA2
+      andBool notBool IsUpdating
+      andBool Amount ==Int 0
+      andBool CurrentTime <Int Deadline
+      andBool (TokenPool >=Int 0)
+      andBool notBool ( (TokenPool >Int 0 orBool TokensSold >Int 0)
+                andBool #XtzBought(XtzPool, TokenPool, TokensSold) >=Int  MinXtzBought
+                andBool #XtzBought(XtzPool, TokenPool, TokensSold) <=Int XtzPool
+                      )
+      andBool #IsLegalMutezValue(MinXtzBought)
+      andBool #IsLegalMutezValue(#XtzBought(XtzPool, TokenPool, TokensSold))
+      andBool #IsLegalMutezValue(XtzPool:Int -Int #XtzBought (XtzPool:Int, TokenPool:Int, TokensSold:Int))
+      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer,                             #TokenTransferType(IsFA2))
+      andBool #EntrypointExists(KnownAddresses, To,           #token("%default", "FieldAnnotation"), #Type(unit))
+endmodule
+```
+
+```k
+module DEXTER-TOKENTOXTZ-FA2-NEG-3-SPEC
+  imports DEXTER-VERIFICATION
+  claim <k> #runProof(IsFA2, TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) =>  Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ?_ </stack>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <myamount> #Mutez(Amount) </myamount>
+        <mynow> #Timestamp(CurrentTime) </mynow>
+        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+        <tokenPool> TokenPool </tokenPool>
+        <xtzPool> #Mutez(XtzPool) </xtzPool>
+        <tokenAddress> TokenAddress:Address </tokenAddress>
+        <knownaddrs> KnownAddresses </knownaddrs>
+        <nonce> #Nonce(N => ?_) </nonce>
+     requires IsFA2
+      andBool notBool IsUpdating
+      andBool Amount ==Int 0
+      andBool CurrentTime <Int Deadline
+      andBool (TokenPool >=Int 0)
+      andBool (TokenPool >Int 0 orBool TokensSold >Int 0)
+      andBool #XtzBought(XtzPool, TokenPool, TokensSold) >=Int  MinXtzBought
+      andBool #XtzBought(XtzPool, TokenPool, TokensSold) <=Int XtzPool
+      andBool notBool ( #IsLegalMutezValue(MinXtzBought)
+                andBool #IsLegalMutezValue(#XtzBought(XtzPool, TokenPool, TokensSold))
+                andBool #IsLegalMutezValue(XtzPool:Int -Int #XtzBought (XtzPool:Int, TokenPool:Int, TokensSold:Int))
+                      )
+      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer,                             #TokenTransferType(IsFA2))
+      andBool #EntrypointExists(KnownAddresses, To,           #token("%default", "FieldAnnotation"), #Type(unit))
+```
+
+```k
+endmodule
+```
+
+## XTZ To Token
+
+### FA 1.2
+
+A buyer sends xtz to the Dexter contract and receives a corresponding amount of tokens, if the following conditions are satisfied:
+
+1.  the token pool is _not_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = false`)
+2.  the current block time must be less than the deadline
+3.  when the `txn.amount` (in mutez) is converted into tokens using the current exchange rate, the purchased amount is greater than `minTokensBought`
+4.  when the `txn.amount` (in mutez) is converted into tokens using the current exchange rate, it is less than or equal to the tokens owned by the Dexter contract
+
+```k
+module DEXTER-XTZTOTOKEN-FA12-POS-SPEC
+  imports DEXTER-VERIFICATION
+  claim <k> #runProof(IsFA2, XtzToToken(To, MinTokensBought, #Timestamp(Deadline))) => . </k>
+        <stack> .Stack => ?_ </stack>
+        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <myamount> #Mutez(Amount) </myamount>
+        <tokenAddress> TokenAddress </tokenAddress>
+        <xtzPool> #Mutez(XtzPool => XtzPool +Int Amount) </xtzPool>
+        <tokenPool> TokenPool => TokenPool -Int #XtzBought(TokenPool, XtzPool, Amount) </tokenPool>
+        <mynow> #Timestamp(CurrentTime) </mynow>
+        <myaddr> SelfAddress </myaddr>
+        <nonce> #Nonce(N => N +Int 1) </nonce>
+        <tokenId> TokenID </tokenId>
+        <knownaddrs> KnownAddresses </knownaddrs>
+        <operations> _
+                  => [ Transfer_tokens #TokenTransferData(IsFA2, SelfAddress, To, TokenID, #XtzBought(TokenPool, XtzPool, Amount)) #Mutez(0) TokenAddress N ]
+                  ;; .InternalList
+        </operations>
+    requires notBool IsFA2
+     andBool notBool IsUpdating
+     andBool CurrentTime <Int Deadline
+     andBool (XtzPool >Int 0 orBool Amount >Int 0)
+     andBool #XtzBought(TokenPool, XtzPool, Amount) >=Int  MinTokensBought
+     andBool #XtzBought(TokenPool, XtzPool, Amount) <=Int TokenPool
+     andBool TokenPool -Int #XtzBought ( TokenPool , XtzPool , Amount ) >=Int 0
+     andBool #IsLegalMutezValue(XtzPool +Int Amount)
+
+     andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType(IsFA2))
+endmodule
+```
+
+```k
+module DEXTER-XTZTOTOKEN-FA12-NEG-SPEC
+  imports DEXTER-VERIFICATION
+  claim <k> #runProof(IsFA2, XtzToToken(_To, MinTokensBought, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ?_ </stack>
+        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <myamount> #Mutez(Amount) </myamount>
+        <tokenAddress> TokenAddress </tokenAddress>
+        <xtzPool> #Mutez(XtzPool) </xtzPool>
+        <tokenPool> TokenPool </tokenPool>
+        <mynow> #Timestamp(CurrentTime) </mynow>
+        <knownaddrs> KnownAddresses </knownaddrs>
+        <operations> _ </operations>
+    requires notBool IsFA2
+     andBool notBool ( notBool IsUpdating
+               andBool CurrentTime <Int Deadline
+               andBool (XtzPool >Int 0 orBool Amount >Int 0)
+               andBool #XtzBought(TokenPool, XtzPool, Amount) >=Int MinTokensBought
+               andBool #XtzBought(TokenPool, XtzPool, Amount) <=Int TokenPool
+               andBool TokenPool -Int #XtzBought ( TokenPool , XtzPool , Amount ) >=Int 0
+               andBool #IsLegalMutezValue(XtzPool +Int Amount)
+                     )
+     andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType(IsFA2))
+endmodule
+```
+
+```k
+module DEXTER-XTZTOTOKEN-FA2-POS-SPEC
+  imports DEXTER-VERIFICATION
+  claim <k> #runProof(IsFA2, XtzToToken(To, MinTokensBought, #Timestamp(Deadline))) => . </k>
+        <stack> .Stack => ?_ </stack>
+        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <myamount> #Mutez(Amount) </myamount>
+        <tokenAddress> TokenAddress </tokenAddress>
+        <xtzPool> #Mutez(XtzPool => XtzPool +Int Amount) </xtzPool>
+        <tokenPool> TokenPool => TokenPool -Int #XtzBought(TokenPool, XtzPool, Amount) </tokenPool>
+        <mynow> #Timestamp(CurrentTime) </mynow>
+        <myaddr> SelfAddress </myaddr>
+        <nonce> #Nonce(N => N +Int 1) </nonce>
+        <tokenId> TokenID </tokenId>
+        <knownaddrs> KnownAddresses </knownaddrs>
+        <operations> _
+                  => [ Transfer_tokens #TokenTransferData(IsFA2, SelfAddress, To, TokenID, #XtzBought(TokenPool, XtzPool, Amount)) #Mutez(0) TokenAddress N ]
+                  ;; .InternalList
+        </operations>
+    requires IsFA2
+     andBool notBool IsUpdating
+     andBool CurrentTime <Int Deadline
+     andBool (XtzPool >Int 0 orBool Amount >Int 0)
+     andBool #XtzBought(TokenPool, XtzPool, Amount) >=Int  MinTokensBought
+     andBool #XtzBought(TokenPool, XtzPool, Amount) <=Int TokenPool
+     andBool TokenPool -Int #XtzBought ( TokenPool , XtzPool , Amount ) >=Int 0
+     andBool #IsLegalMutezValue(XtzPool +Int Amount)
+
+     andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType(IsFA2))
+endmodule
+```
+
+```k
+module DEXTER-XTZTOTOKEN-FA2-NEG-SPEC
+  imports DEXTER-VERIFICATION
+  claim <k> #runProof(IsFA2, XtzToToken(_To, MinTokensBought, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ?_ </stack>
+        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <myamount> #Mutez(Amount) </myamount>
+        <tokenAddress> TokenAddress </tokenAddress>
+        <xtzPool> #Mutez(XtzPool) </xtzPool>
+        <tokenPool> TokenPool </tokenPool>
+        <mynow> #Timestamp(CurrentTime) </mynow>
+        <knownaddrs> KnownAddresses </knownaddrs>
+        <operations> _ </operations>
+    requires IsFA2
+     andBool notBool ( notBool IsUpdating
+               andBool CurrentTime <Int Deadline
+               andBool (XtzPool >Int 0 orBool Amount >Int 0)
+               andBool #XtzBought(TokenPool, XtzPool, Amount) >=Int MinTokensBought
+               andBool #XtzBought(TokenPool, XtzPool, Amount) <=Int TokenPool
+               andBool TokenPool -Int #XtzBought ( TokenPool , XtzPool , Amount ) >=Int 0
+               andBool #IsLegalMutezValue(XtzPool +Int Amount)
+                     )
+     andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType(IsFA2))
+endmodule
+```
+
+
