@@ -1,5 +1,7 @@
 # Correctness Properties of Dexter Contract
 
+We formulate and prove correctness properties of Dexter over the sequence of arbitrary transactions.
+
 ## Faithfulness of State Variables
 
 In the Dexter contract, the token exchange rate and the liquidity price are determined by the three state variables (XtzPool, TokenPool, LqtTotal) which refers to the XTZ reserve, the token reserve, and the total liquidity supply, respectively.
@@ -8,7 +10,7 @@ The first invariant states that the Dexter state variables faithfully represent 
 
 The following claim `[inv-top-level]` states that the invariant holds at the completion of every top-level transaction.  Note that a top-level transaction is a transaction created by a non-contract account (i.e., a transaction whose sender is equal to the source), and the completion of a transaction involves the full execution “tree” following the DFS model adopted in the Florence upgrade.
 
-The `<xtzPool>`, `<tokenPool>`, and `<lqtTotal>` cells denote the Dexter state variables, XtzPool, TokenPool, and LqtTotal, respectively.  The `<mybalance>`, `<tokenDexter>`, and `<lqtSupply>` cells denote the actual XTZ and token reserves, and total liquidity supply, respectively.
+The `<xtzPool>`, `<tokenPool>`, and `<lqtTotal>` cells denote the Dexter state variables, XtzPool, TokenPool, and LqtTotal, respectively.  The `<xtzDexter>`, `<tokenDexter>`, and `<lqtSupply>` cells denote the actual XTZ and token reserves, and total liquidity supply, respectively.
 
 ```
 claim [inv-top-level]:
@@ -16,7 +18,7 @@ claim [inv-top-level]:
 <xtzPool>     #Mutez(X => X')   </xtzPool>
 <tokenPool>          T => T'    </tokenPool>
 <lqtTotal>           L => L'    </lqtTotal>
-<mybalance>   #Mutez(B => B')   </mybalance>
+<xtzDexter>   #Mutez(B => B')   </xtzDexter>
 <tokenDexter>        D => D'    </tokenDexter>
 <lqtSupply>          S => S'    </lqtSupply>
 <sourceaddr>  Source            </sourceaddr>
@@ -46,7 +48,7 @@ claim [inv-trans]:
 <xtzPool>     #Mutez(X => X')   </xtzPool>
 <tokenPool>          T => T'    </tokenPool>
 <lqtTotal>           L => L'    </lqtTotal>
-<mybalance>   #Mutez(B => B')   </mybalance>
+<xtzDexter>   #Mutez(B => B')   </xtzDexter>
 <tokenDexter>        D => D'    </tokenDexter>
 <lqtSupply>          S => S'    </lqtSupply>
 requires 0 <Int X  andBool X  ==Int B  +Int Sends(Op ;; Ops)
@@ -68,7 +70,7 @@ claim [inv]:
 <xtzPool>     #Mutez(X => X')   </xtzPool>
 <tokenPool>          T => T'    </tokenPool>
 <lqtTotal>           L => L'    </lqtTotal>
-<mybalance>   #Mutez(B => B')   </mybalance>
+<xtzDexter>   #Mutez(B => B')   </xtzDexter>
 <tokenDexter>        D => D'    </tokenDexter>
 <lqtSupply>          S => S'    </lqtSupply>
 requires 0 <Int X  andBool X  ==Int B  +Int Sends(Op ;; Ops)
@@ -184,7 +186,7 @@ claim [inv-add-liquidity]:
 <xtzPool>     #Mutez(X => X')   </xtzPool>
 <tokenPool>          T => T'    </tokenPool>
 <lqtTotal>           L => L'    </lqtTotal>
-<mybalance>   #Mutez(B => B')   </mybalance>
+<xtzDexter>   #Mutez(B => B')   </xtzDexter>
 <tokenDexter>        D => D'    </tokenDexter>
 <lqtSupply>          S => S'    </lqtSupply>
 requires 0 <Int X  andBool X  ==Int B  +Int Sends(Op ;; Ops)
@@ -240,7 +242,7 @@ claim [inv-remove-liquidity]:
 <xtzPool>     #Mutez(X => X')   </xtzPool>
 <tokenPool>          T => T'    </tokenPool>
 <lqtTotal>           L => L'    </lqtTotal>
-<mybalance>   #Mutez(B => B')   </mybalance>
+<xtzDexter>   #Mutez(B => B')   </xtzDexter>
 <tokenDexter>        D => D'    </tokenDexter>
 <lqtSupply>          S => S'    </lqtSupply>
 requires 0 <Int X  andBool X  ==Int B  +Int Sends(Op ;; Ops)
@@ -301,7 +303,7 @@ claim [inv-xtz-to-token]:
 <xtzPool>     #Mutez(X => X')   </xtzPool>
 <tokenPool>          T => T'    </tokenPool>
 <lqtTotal>           L => L'    </lqtTotal>
-<mybalance>   #Mutez(B => B')   </mybalance>
+<xtzDexter>   #Mutez(B => B')   </xtzDexter>
 <tokenDexter>        D => D'    </tokenDexter>
 <lqtSupply>          S => S'    </lqtSupply>
 requires 0 <Int X  andBool X  ==Int B  +Int Sends(Op ;; Ops)
@@ -359,7 +361,7 @@ claim [inv-token-to-xtz]:
 <xtzPool>     #Mutez(X => X')   </xtzPool>
 <tokenPool>          T => T'    </tokenPool>
 <lqtTotal>           L => L'    </lqtTotal>
-<mybalance>   #Mutez(B => B')   </mybalance>
+<xtzDexter>   #Mutez(B => B')   </xtzDexter>
 <tokenDexter>        D => D'    </tokenDexter>
 <lqtSupply>          S => S'    </lqtSupply>
 requires 0 <Int X  andBool X  ==Int B  +Int Sends(Op ;; Ops)
@@ -417,7 +419,7 @@ claim [inv-token-to-token]:
 <xtzPool>     #Mutez(X => X')   </xtzPool>
 <tokenPool>          T => T'    </tokenPool>
 <lqtTotal>           L => L'    </lqtTotal>
-<mybalance>   #Mutez(B => B')   </mybalance>
+<xtzDexter>   #Mutez(B => B')   </xtzDexter>
 <tokenDexter>        D => D'    </tokenDexter>
 <lqtSupply>          S => S'    </lqtSupply>
 requires 0 <Int X  andBool X  ==Int B  +Int Sends(Op ;; Ops)
@@ -475,7 +477,7 @@ claim [inv-update-token-pool]:
 <xtzPool>     #Mutez(X => X')   </xtzPool>
 <tokenPool>          T => T'    </tokenPool>
 <lqtTotal>           L => L'    </lqtTotal>
-<mybalance>   #Mutez(B => B')   </mybalance>
+<xtzDexter>   #Mutez(B => B')   </xtzDexter>
 <tokenDexter>        D => D'    </tokenDexter>
 <lqtSupply>          S => S'    </lqtSupply>
 requires 0 <Int X  andBool X  ==Int B  +Int Sends(Op ;; Ops)
@@ -522,7 +524,7 @@ claim [inv-update-token-pool-internal]:
 <xtzPool>     #Mutez(X => X')   </xtzPool>
 <tokenPool>          T => T'    </tokenPool>
 <lqtTotal>           L => L'    </lqtTotal>
-<mybalance>   #Mutez(B => B')   </mybalance>
+<xtzDexter>   #Mutez(B => B')   </xtzDexter>
 <tokenDexter>        D => D'    </tokenDexter>
 <lqtSupply>          S => S'    </lqtSupply>
 requires 0 <Int X  andBool X  ==Int B  +Int Sends(Op ;; Ops)
@@ -595,7 +597,7 @@ claim [inv-default]:
 <xtzPool>     #Mutez(X => X')   </xtzPool>
 <tokenPool>          T => T'    </tokenPool>
 <lqtTotal>           L => L'    </lqtTotal>
-<mybalance>   #Mutez(B => B')   </mybalance>
+<xtzDexter>   #Mutez(B => B')   </xtzDexter>
 <tokenDexter>        D => D'    </tokenDexter>
 <lqtSupply>          S => S'    </lqtSupply>
 requires 0 <Int X  andBool X  ==Int B  +Int Sends(Op ;; Ops)
@@ -651,7 +653,7 @@ claim [inv-setter]:
 <xtzPool>     #Mutez(X => X')   </xtzPool>
 <tokenPool>          T => T'    </tokenPool>
 <lqtTotal>           L => L'    </lqtTotal>
-<mybalance>   #Mutez(B => B')   </mybalance>
+<xtzDexter>   #Mutez(B => B')   </xtzDexter>
 <tokenDexter>        D => D'    </tokenDexter>
 <lqtSupply>          S => S'    </lqtSupply>
 requires CD ==K (SetBaker _) orBool CD ==K (SetManager _) orBool CD ==K (SetLqtAddress _)
@@ -720,7 +722,7 @@ claim [inv-send]:
 <xtzPool>     #Mutez(X => X')   </xtzPool>
 <tokenPool>          T => T'    </tokenPool>
 <lqtTotal>           L => L'    </lqtTotal>
-<mybalance>   #Mutez(B => B')   </mybalance>
+<xtzDexter>   #Mutez(B => B')   </xtzDexter>
 <tokenDexter>        D => D'    </tokenDexter>
 <lqtSupply>          S => S'    </lqtSupply>
 requires Target =/=K DEXTER
@@ -772,7 +774,7 @@ claim [inv-token-transfer]:
 <xtzPool>     #Mutez(X => X')   </xtzPool>
 <tokenPool>          T => T'    </tokenPool>
 <lqtTotal>           L => L'    </lqtTotal>
-<mybalance>   #Mutez(B => B')   </mybalance>
+<xtzDexter>   #Mutez(B => B')   </xtzDexter>
 <tokenDexter>        D => D'    </tokenDexter>
 <lqtSupply>          S => S'    </lqtSupply>
 requires 0 <Int X  andBool X  ==Int B  +Int Sends(Op ;; Ops)
@@ -840,7 +842,7 @@ claim [inv-token-balance-of]:
 <xtzPool>     #Mutez(X => X')   </xtzPool>
 <tokenPool>          T => T'    </tokenPool>
 <lqtTotal>           L => L'    </lqtTotal>
-<mybalance>   #Mutez(B => B')   </mybalance>
+<xtzDexter>   #Mutez(B => B')   </xtzDexter>
 <tokenDexter>        D => D'    </tokenDexter>
 <lqtSupply>          S => S'    </lqtSupply>
 requires 0 <Int X  andBool X  ==Int B  +Int Sends(Op ;; Ops)
@@ -891,7 +893,7 @@ claim [inv-lqt-mint]:
 <xtzPool>     #Mutez(X => X')   </xtzPool>
 <tokenPool>          T => T'    </tokenPool>
 <lqtTotal>           L => L'    </lqtTotal>
-<mybalance>   #Mutez(B => B')   </mybalance>
+<xtzDexter>   #Mutez(B => B')   </xtzDexter>
 <tokenDexter>        D => D'    </tokenDexter>
 <lqtSupply>          S => S'    </lqtSupply>
 requires 0 <Int X  andBool X  ==Int B  +Int Sends(Op ;; Ops)
@@ -937,7 +939,7 @@ claim [inv-lqt-burn]:
 <xtzPool>     #Mutez(X => X')   </xtzPool>
 <tokenPool>          T => T'    </tokenPool>
 <lqtTotal>           L => L'    </lqtTotal>
-<mybalance>   #Mutez(B => B')   </mybalance>
+<xtzDexter>   #Mutez(B => B')   </xtzDexter>
 <tokenDexter>        D => D'    </tokenDexter>
 <lqtSupply>          S => S'    </lqtSupply>
 requires 0 <Int X  andBool X  ==Int B  +Int Sends(Op ;; Ops)
@@ -1121,7 +1123,7 @@ NOTE:
 ```
 rule [send]:
 <operations> ( [ Transaction DEXTER Target Amount CD ] => Ops' ) ;; _ </operations>
-<mybalance> #Mutez(B => B -Int Amount) </mybalance>
+<xtzDexter> #Mutez(B => B -Int Amount) </xtzDexter>
 requires Target =/=K DEXTER
  andBool ( CD ==K Default() orBool CD ==K (XtzToToken _) )
 ```
@@ -1173,7 +1175,7 @@ rule [add-liquidity]:
 <xtzPool>     #Mutez(X => X +Int XtzDeposited)      </xtzPool>
 <tokenPool>          T => T +Int TokensDeposited    </tokenPool>
 <lqtTotal>           L => L +Int LqtMinted          </lqtTotal>
-<mybalance>   #Mutez(B => B +Int XtzDeposited)      </mybalance>
+<xtzDexter>   #Mutez(B => B +Int XtzDeposited)      </xtzDexter>
 <tokenDexter>        D                              </tokenDexter>
 <lqtSupply>          S                              </lqtSupply>
 requires Sender =/=K DEXTER // TODO: double-check if it is guaranteed
@@ -1198,7 +1200,7 @@ rule [remove-liquidity]:
 <xtzPool>     #Mutez(X => X -Int XtzWithdrawn)      </xtzPool>
 <tokenPool>          T => T -Int TokensWithdrawn    </tokenPool>
 <lqtTotal>           L => L -Int LqtBurned          </lqtTotal>
-<mybalance>   #Mutez(B)                             </mybalance>
+<xtzDexter>   #Mutez(B)                             </xtzDexter>
 <tokenDexter>        D                              </tokenDexter>
 <lqtSupply>          S                              </lqtSupply>
 assert   IS_VALID(Deadline)
@@ -1224,7 +1226,7 @@ rule [xtz-to-token]:
 <xtzPool>     #Mutez(X => X +Int XtzSold)       </xtzPool>
 <tokenPool>          T => T -Int TokensBought   </tokenPool>
 <lqtTotal>           L                          </lqtTotal>
-<mybalance>   #Mutez(B => B')                   </mybalance>
+<xtzDexter>   #Mutez(B => B')                   </xtzDexter>
 <tokenDexter>        D                          </tokenDexter>
 <lqtSupply>          S                          </lqtSupply>
 assert   IS_VALID(Deadline)
@@ -1246,7 +1248,7 @@ rule [token-to-xtz]:
 <xtzPool>     #Mutez(X => X -Int XtzBought)     </xtzPool>
 <tokenPool>          T => T +Int TokensSold     </tokenPool>
 <lqtTotal>           L                          </lqtTotal>
-<mybalance>   #Mutez(B)                         </mybalance>
+<xtzDexter>   #Mutez(B)                         </xtzDexter>
 <tokenDexter>        D                          </tokenDexter>
 <lqtSupply>          S                          </lqtSupply>
 assert   IS_VALID(Deadline)
@@ -1270,7 +1272,7 @@ rule [token-to-token]:
 <xtzPool>     #Mutez(X => X -Int XtzBought)     </xtzPool>
 <tokenPool>          T => T +Int TokensSold     </tokenPool>
 <lqtTotal>           L                          </lqtTotal>
-<mybalance>   #Mutez(B)                         </mybalance>
+<xtzDexter>   #Mutez(B)                         </xtzDexter>
 <tokenDexter>        D                          </tokenDexter>
 <lqtSupply>          S                          </lqtSupply>
 assert   IS_VALID(Deadline)
@@ -1288,7 +1290,7 @@ rule [update-token-pool]:
 <xtzPool>     #Mutez(X) </xtzPool>
 <tokenPool>          T  </tokenPool>
 <lqtTotal>           L  </lqtTotal>
-<mybalance>   #Mutez(B) </mybalance>
+<xtzDexter>   #Mutez(B) </xtzDexter>
 <tokenDexter>        D  </tokenDexter>
 <lqtSupply>          S  </lqtSupply>
 <sourceaddr>  Source    </sourceaddr>
@@ -1303,7 +1305,7 @@ rule [update-token-pool-internal]:
 <xtzPool>     #Mutez(X)             </xtzPool>
 <tokenPool>          T => TokenPool </tokenPool>
 <lqtTotal>           L              </lqtTotal>
-<mybalance>   #Mutez(B)             </mybalance>
+<xtzDexter>   #Mutez(B)             </xtzDexter>
 <tokenDexter>        D              </tokenDexter>
 <lqtSupply>          S              </lqtSupply>
 <selfIsUpdatingTokenPool> IsUpdatingTokenPool => false </selfIsUpdatingTokenPool>
@@ -1320,7 +1322,7 @@ rule [default]:
 <xtzPool>     #Mutez(X => X +Int Amount)    </xtzPool>
 <tokenPool>          T                      </tokenPool>
 <lqtTotal>           L                      </lqtTotal>
-<mybalance>   #Mutez(B => B')               </mybalance>
+<xtzDexter>   #Mutez(B => B')               </xtzDexter>
 <tokenDexter>        D                      </tokenDexter>
 <lqtSupply>          S                      </lqtSupply>
 <selfIsUpdatingTokenPool> IsUpdatingTokenPool </selfIsUpdatingTokenPool>
