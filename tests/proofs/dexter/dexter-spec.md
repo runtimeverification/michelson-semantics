@@ -920,7 +920,7 @@ endmodule
 ## Token To Token
 
 ```k
-module DEXTER-TOKENTOTOKEN-SPEC
+module DEXTER-TOKENTOTOKEN-POSITIVE-SPEC
   imports DEXTER-VERIFICATION
 ```
 
