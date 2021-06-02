@@ -146,7 +146,7 @@ module DEXTER-ADDLIQUIDITY-NEGATIVE-SPEC
 ```
 
 ```k
-  claim <k> #runProof(_IsFA2, AddLiquidity(_Owner, MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
+  claim <k> #runProof(IsFA2, AddLiquidity(_Owner, MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_:FailedStack </stack>
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
@@ -154,12 +154,31 @@ module DEXTER-ADDLIQUIDITY-NEGATIVE-SPEC
         <lqtTotal> OldLqt </lqtTotal>
         <xtzPool> #Mutez(XtzAmount) </xtzPool>
         <tokenPool> TokenAmount </tokenPool>
-    requires IsUpdating
-     orBool CurrentTime >=Int Deadline
-     orBool #ceildiv(Amount *Int TokenAmount, XtzAmount) >Int MaxTokensDeposited
-     orBool notBool #IsLegalMutezValue(Amount +Int XtzAmount)
-     orBool MinLqtMinted >Int (Amount *Int OldLqt) /Int XtzAmount
-     orBool XtzAmount ==Int 0
+    requires notBool IsFA2
+     andBool ( IsUpdating
+        orBool CurrentTime >=Int Deadline
+        orBool #ceildiv(Amount *Int TokenAmount, XtzAmount) >Int MaxTokensDeposited
+        orBool notBool #IsLegalMutezValue(Amount +Int XtzAmount)
+        orBool MinLqtMinted >Int (Amount *Int OldLqt) /Int XtzAmount
+        orBool XtzAmount ==Int 0
+             )
+
+  claim <k> #runProof(IsFA2, AddLiquidity(_Owner, MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ?_:FailedStack </stack>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <mynow> #Timestamp(CurrentTime) </mynow>
+        <myamount> #Mutez(Amount) </myamount>
+        <lqtTotal> OldLqt </lqtTotal>
+        <xtzPool> #Mutez(XtzAmount) </xtzPool>
+        <tokenPool> TokenAmount </tokenPool>
+    requires IsFA2
+     andBool ( IsUpdating
+        orBool CurrentTime >=Int Deadline
+        orBool #ceildiv(Amount *Int TokenAmount, XtzAmount) >Int MaxTokensDeposited
+        orBool notBool #IsLegalMutezValue(Amount +Int XtzAmount)
+        orBool MinLqtMinted >Int (Amount *Int OldLqt) /Int XtzAmount
+        orBool XtzAmount ==Int 0
+             )
 ```
 
 TODO: Deal with the case when the token contract or the liquidity token contract don't exist or have the wrong type.
