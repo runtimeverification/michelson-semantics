@@ -1,93 +1,14 @@
-# Properties
+# Correctness Properties of Dexter Contract
 
-Note that the real arithmetic is used throughout the document.
+## Faithfulness of State Variables
 
-## Storage Invariant
+In the Dexter contract, the token exchange rate and the liquidity price are determined by the three state variables (XtzPool, TokenPool, LqtTotal) which refers to the XTZ reserve, the token reserve, and the total liquidity supply, respectively.
 
-### Internal vs External
-- `xtzPool == Tezos.balance`
-- `tokenPool <= tokenAddress.balanceOf(Tezos.self_address)`
-- `lqtTotal == lqtAddress.totalSupply()`
+The first invariant states that the Dexter state variables faithfully represent the actual pool reserves and liquidity supply.  That is, XtzPool and TokenPool must be equal to the actual XTZ and token reserves, and LqtTotal must be equal to the actual total liquidity supply.  Note that the Dexter entrypoint functions immediately update the state variables, while the actual reserves or supply are to be updated later by the continuation operations emitted by the entrypoints.  More precisely, the actual token reserve may be possibly larger than TokenPool, since one can “donate” tokens to Dexter (i.e., directly sending tokens to Dexter without going through any of the Dexter entrypoint functions).  Note that, however, the actual XTZ reserve must be equal to the XtzPool value, since directly sending XTZ to Dexter will be captured by the Default() entrypoint.  (Indeed, we assume that, in Tezos, there is no way to “secretly” send XTZ to Dexter without triggering the Dexter entrypoint functions.  Note that, in Ethereum, it is _possible_ to send Ether to a smart contract without ever executing the contract code.)
 
-NOTE: `<` is possible when someone "donates" tokens (i.e., directly sending tokens to dexter without going through any dexter entrypoints).
+The following claim `[inv-top-level]` states that the invariant holds at the completion of every top-level transaction.  Note that a top-level transaction is a transaction created by a non-contract account (i.e., a transaction whose sender is equal to the source), and the completion of a transaction involves the full execution “tree” following the DFS model adopted in the Florence upgrade.
 
-### Reserve vs Liquidity
-
-```
-(new(xtzPool) * new(tokenPool)) / (old(xtzPool) * old(tokenPool)) >= (new(lqtTotal) / old(lqtTotal))^2
-```
-
-NOTE: `>` is due to the service fees, the rounding errors, and/or potential “donated” funds.
-
-## (Full) Functional Correctness
-
-These properties describe the end-to-end behavior of each entry point transaction.
-Note that the "Reserve vs Liquidity" property can be proven from these.
-
-### add_liquidity()
-
-- `new(xtzPool) == old(xtzPool) * (1 + alpha)`
-- `new(tokenPool) == ceil(old(tokenPool) * (1 + alpha))`
-- `new(lqtTotal) == floor(old(lqtTotal) * (1 + alpha))`
-
-where:
-```
-alpha := Tezos.amount / old(xtzPool)
-```
-
-### remove_liquidity()
-
-- `new(xtzPool) == ceil(old(xtzPool) * (1 - beta))`
-- `new(tokenPool) == ceil(old(tokenPool) * (1 - beta))`
-- `new(lqtTotal) == old(lqtTotal) * (1 - beta)`
-
-where:
-```
-beta := lqtBurned / old(lqtTotal)
-```
-
-### xtz_to_token()
-
-- `new(xtzPool) == old(xtzPool) + Tezos.amount`
-- `new(tokenPool) == old(tokenPool) - floor(tokenOut(0.997 * Tezos.amount))`
-- `new(lqtTotal) == old(lqtTotal)`
-
-where:
-```
-tokenOut(xtzIn) := old(tokenPool) - old(xtzPool) * old(tokenPool) / (old(xtzPool) + xtzIn)
-```
-
-### token_to_xtz()
-
-- `new(xtzPool) == old(xtzPool) - floor(xtzOut(0.997 * tokensSold))`
-- `new(tokenPool) == old(tokenPool) + tokensSold`
-- `new(lqtTotal) == old(lqtTotal)`
-
-where:
-```
-xtzOut(tokenIn) := old(xtzPool) - old(xtzPool) * old(tokenPool) / (old(tokenPool) + tokenIn)
-```
-
-## Operation-level Properties
-
-### Terminology
-
-Internal:
-- X : storage.xtzPool
-- T : storage.tokenPool
-- L : storage.lqtTotal
-
-External:
-- B : Tezos.balance
-- D : the token balance of dexter
-- S : the total supply of liquidity tokens
-
-### Invariant
-
-Given the operation list, Ops,
-- 0 < X == B - toSend(Ops)
-- 0 < T <= D + toTransfer(Ops)
-- 0 < L == S + toMintBurn(Ops)
+The `<xtzPool>`, `<tokenPool>`, and `<lqtTotal>` cells denote the Dexter state variables, XtzPool, TokenPool, and LqtTotal, respectively.  The `<mybalance>`, `<tokenDexter>`, and `<lqtSupply>` cells denote the actual XTZ and token reserves, and total liquidity supply, respectively.
 
 ```
 claim [inv-top-level]:
@@ -139,6 +60,8 @@ proof [inv-trans]:
 - by induction on =>* and [inv]
 ```
 
+The following claim `[inv]` generalizes the top-level claim `[inv-top-level]` at the operational level.  It says that the execution of an _arbitrary_ operation always preserves a certain relationship between the Dexter state variables and the actual pool reserves and liquidity supply.  Intuitively, the Dexter state variables must reflect the “ultimate” value of the pool reserves and liquidity supply, which will be updated by the continuation operations in the future.
+
 ```
 claim [inv]:
 <operations> (Op => Ops') ;; Ops </operations>
@@ -154,7 +77,13 @@ requires 0 <Int X  andBool X  ==Int B  +Int Sends(Op ;; Ops)
 ensures  0 <Int X' andBool X' ==Int B' +Int Sends(Ops' ;; Ops)
  andBool 0 <Int T' andBool T' <=Int D' +Int Transfers(Ops' ;; Ops)
  andBool 0 <Int L' andBool L' ==Int S' +Int MintBurns(Ops' ;; Ops)
+```
 
+Specifically, Sends(Ops) denotes the amount of XTZ that will be sent to others by the operations Ops, Transfers(Ops) denotes the amount of tokens that will be sent to or received from others by Ops, and MintBurns(Ops) denotes the amount of liquidity that will be minted or burned by Ops.  Thus, the difference between the Dexter state variable XtzPool and the current XTZ reserve must be equal to Sends(Ops), the difference between TokenPool and the current token reserve must be equal to Transfers(Ops), and the difference between LqtTotal and the current liquidity supply must be equal to MintBurns(Ops), where Ops is the current continuation operations to be executed.
+
+Note that Sends, Transfers, and MintBurns count only Dexter-emitted operations, thus they are defined to be zero for operations that are not generated by Dexter.  (See the proposition `[only-dexter]`.)  Since no top-level operations can be generated by Dexter, they are defined to be zero for any top-level operations.
+
+```
 syntax Int ::= Sends(OpList) [function]
 rule Sends([ Transaction DEXTER _ X _ ] ;; Ops) => Sends(Ops) -Int X
 rule Sends(_ ;; Ops) => Sends(Ops) [owise]
@@ -173,8 +102,11 @@ rule MintBurns(_ ;; Ops) => MintBurns(Ops) [owise]
 rule MintBurns(.List) => 0
 ```
 
+Below we prove the invariant `[inv]` by induction on the sequence of operations and case analysis over different types of operations.
+
 ```
 proof [inv]:
+- assume that the invariant has held in each of the previous operations
 - let Op = Transaction Sender Target Amount CD
 - split Sender, Target
   - case Sender <> DEXTER and Target == DEXTER
@@ -240,43 +172,11 @@ proof [inv]:
         - (X', T', L', B', D', S') == (X, T, L, B, D, S)
 ```
 
-```
-NOTE:
-- DEXTER may call XtzToToken or Default on itself
+### Proof for Dexter Entrypoint Functions
 
-proposition [sender-is-not-dexter]:
-[[ Sender =/=K DEXTER => true ]]
-<operations> [ Transaction Sender DEXTER _ CD ] ;; _ </operations>
-requires CD ==K AddLiquidity _
-  orBool CD ==K RemoveLiquidity _
-  orBool CD ==K TokenToXtz _
-  orBool CD ==K TokenToToken _
-  orBool CD ==K UpdateTokenPool _
-  orBool CD ==K UpdateTokenPoolInternal _
-  orBool CD ==K SetBaker _
-  orBool CD ==K SetManager _
-  orBool CD ==K SetLqtAddress _
+We prove the invariant for each Dexter entrypoint.
 
-proof sketch [sender-is-not-dexter]:
-- DEXTER is a smart contract
-- No entrypoint of DEXTER may call itself except XtzToToken and Default
-```
-
-```
-proposition [dexter-emitted-ops]:
-[[ (
-          ( Target ==K TOKEN andBool Amount ==Int 0 andBool CD ==K (Transfer _) )
-   orBool ( Target ==K TOKEN andBool Amount ==Int 0 andBool CD ==K BalanceOf(DEXTER, UpdateTokenPoolInternal) )
-   orBool ( Target ==K LQT   andBool Amount ==Int 0 andBool CD ==K (MintBurn _) )
-   orBool (                                                 CD ==K Default() )
-   orBool (                                                 CD ==K (XtzToToken _) )
-   ) => true ]]
-<operations> [ Transaction DEXTER Target Amount CD ] ;; _ </operations>
-
-proof sketch [dexter-emitted-ops]:
-- DEXTER is a smart contract
-- By case analysis of all entrypoint functions of DEXTER
-```
+#### AddLiquidity
 
 ```
 claim [inv-add-liquidity]:
@@ -331,6 +231,8 @@ proof [inv-add-liquidity]:
      ==Int S' +Int MintBurns(Op1 ;; Op2 ;; Ops) by MintBurns
      ==Int S' +Int MintBurns(Ops' ;; Ops) by Ops'
 ```
+
+#### RemoveLiquidity
 
 ```
 claim [inv-remove-liquidity]:
@@ -391,6 +293,8 @@ proof [inv-remove-liquidity]:
      ==Int S' +Int MintBurns(Ops' ;; Ops) by Ops'
 ```
 
+#### XtzToToken
+
 ```
 claim [inv-xtz-to-token]:
 <operations>  ( [ Transaction Sender DEXTER XtzSold XtzToToken(To, _, _) ] #as Op => Ops' ) ;; Ops </operations>
@@ -446,6 +350,8 @@ proof [inv-xtz-to-token]:
      ==Int S' +Int MintBurns(Ops) by MintBurns
      ==Int S' +Int MintBurns(Ops' ;; Ops) by MintBurns
 ```
+
+#### TokenToXtz
 
 ```
 claim [inv-token-to-xtz]:
@@ -503,6 +409,8 @@ proof [inv-token-to-xtz]:
      ==Int S' +Int MintBurns(Ops' ;; Ops) by Ops'
 ```
 
+#### TokenToToken
+
 ```
 claim [inv-token-to-token]:
 <operations>  ( [ Transaction Sender DEXTER Amount TokenToToken(OutputDexterContract, MinTokensBought, To, TokensSold, Deadline) ] #as Op => Ops' ) ;; Ops </operations>
@@ -558,6 +466,8 @@ proof [inv-token-to-token]:
      ==Int S' +Int MintBurns(Op1 ;; Op2 ;; Ops) by MintBurns
      ==Int S' +Int MintBurns(Ops' ;; Ops) by Ops'
 ```
+
+#### UpdateTokenPool and UpdateTokenPoolInternal
 
 ```
 claim [inv-update-token-pool]:
@@ -677,6 +587,8 @@ proof sketch:
 - Thus, we have `T <=Int TokenPool andBool TokenPool <=Int D`, which concludes.
 ```
 
+#### Default
+
 ```
 claim [inv-default]:
 <operations>  ( [ Transaction Sender DEXTER Amount Default() ] #as Op => Ops' ) ;; Ops </operations>
@@ -731,6 +643,8 @@ proof [inv-default]:
      ==Int S' +Int MintBurns(Ops' ;; Ops) by Ops'
 ```
 
+#### Setters
+
 ```
 claim [inv-setter]:
 <operations>  ( [ Transaction Sender DEXTER Amount CD ] #as Op => Ops' ) ;; Ops </operations>
@@ -783,6 +697,74 @@ proof [inv-setter]:
      ==Int S' +Int MintBurns(Ops) by MintBurns
      ==Int S' +Int MintBurns(Ops' ;; Ops) by Ops'
 ```
+
+### Proof for External Contract Calls
+
+We prove the invariant for external contract calls.
+
+Since the external contracts are unknown and arbitrary, we need to make certain assumptions on the behavior of external contracts that are required for the functional correctness and security of the Dexter contract.  The specific assumptions we made are presented later in this document.  The invariant proof is based on the assumptions, and it is important to independently verify that the token and liquidity contract implementations satisfy the assumptions.
+
+There exist different types of external calls made by Dexter as follows:
+- Simply send XTZ to others
+- Call another Dexter contract's XtzToToken()
+- Call the token contract's Transfer() or BalanceOf()
+- Call the liquidity contract's Mint() or Burn()
+
+#### XTZ Transfers
+
+The following claim formulates the invariant for the first two types of external calls.
+
+```
+claim [inv-send]:
+<operations>  ( [ Transaction DEXTER Target Amount CD ] #as Op => Ops' ) ;; Ops </operations>
+<xtzPool>     #Mutez(X => X')   </xtzPool>
+<tokenPool>          T => T'    </tokenPool>
+<lqtTotal>           L => L'    </lqtTotal>
+<mybalance>   #Mutez(B => B')   </mybalance>
+<tokenDexter>        D => D'    </tokenDexter>
+<lqtSupply>          S => S'    </lqtSupply>
+requires Target =/=K DEXTER
+ andBool ( CD ==K Default() orBool CD ==K (XtzToToken _) )
+requires 0 <Int X  andBool X  ==Int B  +Int Sends(Op ;; Ops)
+ andBool 0 <Int T  andBool T  <=Int D  +Int Transfers(Op ;; Ops)
+ andBool 0 <Int L  andBool L  ==Int S  +Int MintBurns(Op ;; Ops)
+ensures  0 <Int X' andBool X' ==Int B' +Int Sends(Ops' ;; Ops)
+ andBool 0 <Int T' andBool T' <=Int D' +Int Transfers(Ops' ;; Ops)
+ andBool 0 <Int L' andBool L' ==Int S' +Int MintBurns(Ops' ;; Ops)
+
+proof [inv-send]:
+- apply [send]
+- unify RHS
+  - X' == X
+  - T' == T
+  - L' == L
+  - B' == B -Int Amount
+  - D' == D
+  - S' == S
+- X' >Int 0 by X >Int 0
+- T' >Int 0 by T >Int 0
+- L' >Int 0 by L >Int 0
+- X' ==Int X
+     ==Int B +Int Sends(Op ;; Ops) by premise
+     ==Int (B' +Int Amount) +Int Sends(Op ;; Ops) by B'
+     ==Int (B' +Int Amount) +Int (Sends(Ops) -Int Amount) by Sends
+     ==Int B' +Int Sends(Ops) by simp
+     ==Int B' +Int Sends(Ops' ;; Ops) by Ops' and [only-dexter]
+- T' ==Int T
+     <=Int D +Int Transfers(Op ;; Ops) by premise
+     ==Int D' +Int Transfers(Op ;; Ops) by D'
+     ==Int D' +Int Transfers(Ops) by Transfers
+     ==Int D' +Int Transfers(Ops' ;; Ops) by Ops' and [only-dexter]
+- L' ==Int L
+     ==Int S +Int MintBurns(Op ;; Ops) by premise
+     ==Int S' +Int MintBurns(Op ;; Ops) by S'
+     ==Int S' +Int MintBurns(Ops) by MintBurns
+     ==Int S' +Int MintBurns(Ops' ;; Ops) by Ops' and [only-dexter]
+```
+
+#### Token Transfers and Balance Lookups
+
+The following two claims are for the token contract calls, Transfer() and BalanceOf().
 
 ```
 claim [inv-token-transfer]:
@@ -899,53 +881,9 @@ proof [inv-token-balance-of]:
      ==Int S' +Int MintBurns(Ops' ;; Ops) by Ops' and [only-dexter]
 ```
 
-```
-claim [inv-send]:
-<operations>  ( [ Transaction DEXTER Target Amount CD ] #as Op => Ops' ) ;; Ops </operations>
-<xtzPool>     #Mutez(X => X')   </xtzPool>
-<tokenPool>          T => T'    </tokenPool>
-<lqtTotal>           L => L'    </lqtTotal>
-<mybalance>   #Mutez(B => B')   </mybalance>
-<tokenDexter>        D => D'    </tokenDexter>
-<lqtSupply>          S => S'    </lqtSupply>
-requires Target =/=K DEXTER
- andBool ( CD ==K Default() orBool CD ==K (XtzToToken _) )
-requires 0 <Int X  andBool X  ==Int B  +Int Sends(Op ;; Ops)
- andBool 0 <Int T  andBool T  <=Int D  +Int Transfers(Op ;; Ops)
- andBool 0 <Int L  andBool L  ==Int S  +Int MintBurns(Op ;; Ops)
-ensures  0 <Int X' andBool X' ==Int B' +Int Sends(Ops' ;; Ops)
- andBool 0 <Int T' andBool T' <=Int D' +Int Transfers(Ops' ;; Ops)
- andBool 0 <Int L' andBool L' ==Int S' +Int MintBurns(Ops' ;; Ops)
+#### Liquidity Mints and Burns
 
-proof [inv-send]:
-- apply [send]
-- unify RHS
-  - X' == X
-  - T' == T
-  - L' == L
-  - B' == B -Int Amount
-  - D' == D
-  - S' == S
-- X' >Int 0 by X >Int 0
-- T' >Int 0 by T >Int 0
-- L' >Int 0 by L >Int 0
-- X' ==Int X
-     ==Int B +Int Sends(Op ;; Ops) by premise
-     ==Int (B' +Int Amount) +Int Sends(Op ;; Ops) by B'
-     ==Int (B' +Int Amount) +Int (Sends(Ops) -Int Amount) by Sends
-     ==Int B' +Int Sends(Ops) by simp
-     ==Int B' +Int Sends(Ops' ;; Ops) by Ops' and [only-dexter]
-- T' ==Int T
-     <=Int D +Int Transfers(Op ;; Ops) by premise
-     ==Int D' +Int Transfers(Op ;; Ops) by D'
-     ==Int D' +Int Transfers(Ops) by Transfers
-     ==Int D' +Int Transfers(Ops' ;; Ops) by Ops' and [only-dexter]
-- L' ==Int L
-     ==Int S +Int MintBurns(Op ;; Ops) by premise
-     ==Int S' +Int MintBurns(Op ;; Ops) by S'
-     ==Int S' +Int MintBurns(Ops) by MintBurns
-     ==Int S' +Int MintBurns(Ops' ;; Ops) by Ops' and [only-dexter]
-```
+The following two claims are for the liquidity contract calls, Mint() and Burn().
 
 ```
 claim [inv-lqt-mint]:
@@ -1041,6 +979,56 @@ proof [inv-lqt-mint-burn]:
      ==Int S' +Int MintBurns(Ops' ;; Ops) by Ops' and [only-dexter]
 ```
 
+### Assumptions for Tezos Dexter Executions
+
+NOTE:
+- only the DEXTER entrypoint functions can emit a transaction whose sender is DEXTER
+- as a smart contract, DEXTER can emit only internal transactions (i.e., transactions whose source is not DEXTER).
+- the types of DEXTER-emitted internal transactions are fixed (i.e., no arbitrary transactions can be emitted by DEXTER)
+- DEXTER does not call itself except the following three cases:
+  - RemoveLiquidity(To, ...) where To is DEXTER, which calls Default() on itself
+  - TokenToXtz(To, ...) where To is DEXTER, which calls Default() on itself
+  - TokenToToken(OutputDexterContract, ...) where OutputDexterContract is DEXTER, which calls XtzToToken(...) on itself
+
+
+```
+NOTE:
+- DEXTER may call XtzToToken or Default on itself
+
+proposition [sender-is-not-dexter]:
+[[ Sender =/=K DEXTER => true ]]
+<operations> [ Transaction Sender DEXTER _ CD ] ;; _ </operations>
+requires CD ==K AddLiquidity _
+  orBool CD ==K RemoveLiquidity _
+  orBool CD ==K TokenToXtz _
+  orBool CD ==K TokenToToken _
+  orBool CD ==K UpdateTokenPool _
+  orBool CD ==K UpdateTokenPoolInternal _
+  orBool CD ==K SetBaker _
+  orBool CD ==K SetManager _
+  orBool CD ==K SetLqtAddress _
+
+proof sketch [sender-is-not-dexter]:
+- DEXTER is a smart contract
+- No entrypoint of DEXTER may call itself except XtzToToken and Default
+```
+
+```
+proposition [dexter-emitted-ops]:
+[[ (
+          ( Target ==K TOKEN andBool Amount ==Int 0 andBool CD ==K (Transfer _) )
+   orBool ( Target ==K TOKEN andBool Amount ==Int 0 andBool CD ==K BalanceOf(DEXTER, UpdateTokenPoolInternal) )
+   orBool ( Target ==K LQT   andBool Amount ==Int 0 andBool CD ==K (MintBurn _) )
+   orBool (                                                 CD ==K Default() )
+   orBool (                                                 CD ==K (XtzToToken _) )
+   ) => true ]]
+<operations> [ Transaction DEXTER Target Amount CD ] ;; _ </operations>
+
+proof sketch [dexter-emitted-ops]:
+- DEXTER is a smart contract
+- By case analysis of all entrypoint functions of DEXTER
+```
+
 
 ```
 proposition [only-dexter]:
@@ -1081,20 +1069,9 @@ rule TopLevelOps([ Transaction Sender _ _ _ ] ;; _, Source) => false ]] requires
 rule TopLevelOps(.List, _) => true
 ```
 
-### Assumptions for DEXTER Execution
-
-NOTE:
-- only the DEXTER entrypoint functions can emit a transaction whose sender is DEXTER
-- as a smart contract, DEXTER can emit only internal transactions (i.e., transactions whose source is not DEXTER).
-- the types of DEXTER-emitted internal transactions are fixed (i.e., no arbitrary transactions can be emitted by DEXTER)
-- DEXTER does not call itself except the following three cases:
-  - RemoveLiquidity(To, ...) where To is DEXTER, which calls Default() on itself
-  - TokenToXtz(To, ...) where To is DEXTER, which calls Default() on itself
-  - TokenToToken(OutputDexterContract, ...) where OutputDexterContract is DEXTER, which calls XtzToToken(...) on itself
 
 
-
-### Assumptions for External Calls
+### Assumptions for External Contracts
 
 No others can spend DEXTER's token balance, that is, there exist no authorized users who are permitted to spend some of DEXTER-owned tokens in certain cases.
 - (there shouldn't exist a way to even temporarily borrow tokens from DEXTER.)
@@ -1166,20 +1143,10 @@ assert   Sender ==K DEXTER
  andBool Amount ==Int 0
 ```
 
+### Abstract Behaviors of Dexter Entrypoints
 
-### Opearation-level Specs
 
-#### Common:
-- caller cannot be dexter.
-- `to` may be dexter.
-
-```
-syntax Bool ::= IS_VALID(Int) [macro]
-rule [is-valid]:
-[[ IS_VALID(Deadline) => IsUpdatingTokenPool ==K false andBool Now <Int Deadline ]]
-<selfIsUpdatingTokenPool> IsUpdatingTokenPool </selfIsUpdatingTokenPool>
-<mynow> #Timestamp(Now) </mynow>
-```
+#### Constants and Macros
 
 ```
 syntax Address ::= DEXTER [constant]
@@ -1188,6 +1155,14 @@ syntax Address ::= TOKEN [constant]
 
 syntax Address ::= LQT [macro]
 rule [[ LQT => Lqt ]] <lqtAddress> Lqt </lqtAddress>
+```
+
+```
+syntax Bool ::= IS_VALID(Int) [macro]
+rule [is-valid]:
+[[ IS_VALID(Deadline) => IsUpdatingTokenPool ==K false andBool Now <Int Deadline ]]
+<selfIsUpdatingTokenPool> IsUpdatingTokenPool </selfIsUpdatingTokenPool>
+<mynow> #Timestamp(Now) </mynow>
 ```
 
 #### AddLiquidity(Owner, MinLqtMinted, MaxTokensDeposited, Deadline)
@@ -1388,4 +1363,69 @@ assert   IsUpdatingTokenPool ==K false
  andBool Amount ==Int 0
  andBool Sender ==K Manager
  andBool InitialLqtAddress ==K 0
+```
+
+
+
+
+
+----
+
+Note that the real arithmetic is used throughout the document.
+
+### Reserve vs Liquidity
+
+```
+(new(xtzPool) * new(tokenPool)) / (old(xtzPool) * old(tokenPool)) >= (new(lqtTotal) / old(lqtTotal))^2
+```
+
+NOTE: `>` is due to the service fees, the rounding errors, and/or potential “donated” funds.
+
+## (Full) Functional Correctness
+
+These properties describe the end-to-end behavior of each entry point transaction.
+Note that the "Reserve vs Liquidity" property can be proven from these.
+
+### add_liquidity()
+
+- `new(xtzPool) == old(xtzPool) * (1 + alpha)`
+- `new(tokenPool) == ceil(old(tokenPool) * (1 + alpha))`
+- `new(lqtTotal) == floor(old(lqtTotal) * (1 + alpha))`
+
+where:
+```
+alpha := Tezos.amount / old(xtzPool)
+```
+
+### remove_liquidity()
+
+- `new(xtzPool) == ceil(old(xtzPool) * (1 - beta))`
+- `new(tokenPool) == ceil(old(tokenPool) * (1 - beta))`
+- `new(lqtTotal) == old(lqtTotal) * (1 - beta)`
+
+where:
+```
+beta := lqtBurned / old(lqtTotal)
+```
+
+### xtz_to_token()
+
+- `new(xtzPool) == old(xtzPool) + Tezos.amount`
+- `new(tokenPool) == old(tokenPool) - floor(tokenOut(0.997 * Tezos.amount))`
+- `new(lqtTotal) == old(lqtTotal)`
+
+where:
+```
+tokenOut(xtzIn) := old(tokenPool) - old(xtzPool) * old(tokenPool) / (old(xtzPool) + xtzIn)
+```
+
+### token_to_xtz()
+
+- `new(xtzPool) == old(xtzPool) - floor(xtzOut(0.997 * tokensSold))`
+- `new(tokenPool) == old(tokenPool) + tokensSold`
+- `new(lqtTotal) == old(lqtTotal)`
+
+where:
+```
+xtzOut(tokenIn) := old(xtzPool) - old(xtzPool) * old(tokenPool) / (old(tokenPool) + tokenIn)
 ```
