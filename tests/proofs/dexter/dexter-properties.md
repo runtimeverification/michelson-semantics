@@ -193,12 +193,8 @@ proof [inv]:
         - apply [inv-update-token-pool]
       - case CD == UpdateTokenPoolInternal _
         - apply [inv-update-token-pool-internal]
-      - case CD == SetBaker _
-        - apply [inv-set-baker] // TODO:
-      - case CD == SetManager _
-        - apply [inv-set-manager] // TODO:
-      - case CD == SetLqtAddress _
-        - apply [inv-set-lqt-address] // TODO:
+      - case CD == SetBaker _ | CD == SetManager _ | CD == SetLqtAddress _
+        - apply [inv-setter]
       - case CD == Default _
         - apply [inv-default]
   - case Sender == DEXTER and Target == DEXTER
@@ -226,25 +222,22 @@ proof [inv]:
       - case _
         - apply [dexter-emitted-ops]
   - case Sender <> DEXTER and Target <> DEXTER
-    // TODO:
+    - Sends(Op) == Transfers(Op) == MintBurns(Op) == 0 by Sends, Transfers, MintBurns
+    - Sends(Ops') == Transfers(Ops') == MintBurns(Ops') == 0 by [only-dexter]
     - split Target
       - case Target == TOKEN
-        - CD <> Transfer(From, To, Value)
-          - case From == DEXTER and To == DEXTER
-            - ...
-          - case From == DEXTER and To <> DEXTER
-            - not possible
-          - case From <> DEXTER and To == DEXTER
-            - ok
-          - case Sneder <> DEXTER and To <> DEXTER
-            - no change
-        - CD <> Transfer(...)
-          - no storage change
+        - (X', T', L', B', S') == (X, T, L, B, S)
+        - CD == Transfer(From, To, Value)
+          - From <> DEXTER by [token-transfer]'s assertion
+          - D' >= D by [token-security]
+        - CD <> (Transfer _)
+          - D' >= D by [token-security]
       - case Target == LQT
-        - CD <> Mint(...) and CD <> Burn(...) by [...]
-          - no storage change
+        - (X', T', L', B', D') == (X, T, L, B, D)
+        - CD <> (Mint _) and CD <> (Burn _) by [lqt-mint] and [lqt-burn]
+          - S' == S
       - case Target <> TOKEN and Target <> LQT
-        - no storage change
+        - (X', T', L', B', D', S') == (X, T, L, B, D, S)
 ```
 
 ```
@@ -739,6 +732,59 @@ proof [inv-default]:
 ```
 
 ```
+claim [inv-setter]:
+<operations>  ( [ Transaction Sender DEXTER Amount CD ] #as Op => Ops' ) ;; Ops </operations>
+<xtzPool>     #Mutez(X => X')   </xtzPool>
+<tokenPool>          T => T'    </tokenPool>
+<lqtTotal>           L => L'    </lqtTotal>
+<mybalance>   #Mutez(B => B')   </mybalance>
+<tokenDexter>        D => D'    </tokenDexter>
+<lqtSupply>          S => S'    </lqtSupply>
+requires CD ==K (SetBaker _) orBool CD ==K (SetManager _) orBool CD ==K (SetLqtAddress _)
+requires 0 <Int X  andBool X  ==Int B  +Int Sends(Op ;; Ops)
+ andBool 0 <Int T  andBool T  <=Int D  +Int Transfers(Op ;; Ops)
+ andBool 0 <Int L  andBool L  ==Int S  +Int MintBurns(Op ;; Ops)
+ensures  0 <Int X' andBool X' ==Int B' +Int Sends(Ops' ;; Ops)
+ andBool 0 <Int T' andBool T' <=Int D' +Int Transfers(Ops' ;; Ops)
+ andBool 0 <Int L' andBool L' ==Int S' +Int MintBurns(Ops' ;; Ops)
+
+proof [inv-setter]:
+- split CD
+  - case CD == (SetBaker _)
+    - apply [set-baker]
+  - case CD == (SetManager _)
+    - apply [set-manager]
+  - case CD == (SetLqtAddress _)
+    - apply [set-lqt-address]
+- unify RHS
+  - Ops' == [ SetDelegate _ ] | Ops' == .List
+  - X' == X
+  - T' == T
+  - L' == L
+  - B' == B
+  - D' == D
+  - S' == S
+- X' >Int 0 by X >Int 0
+- T' >Int 0 by T >Int 0
+- L' >Int 0 by L >Int 0
+- X' ==Int X
+     ==Int B +Int Sends(Op ;; Ops) by premise
+     ==Int B' +Int Sends(Op ;; Ops) by B'
+     ==Int B' +Int Sends(Ops) by Sends
+     ==Int B' +Int Sends(Ops' ;; Ops) by Ops'
+- T' ==Int T
+     <=Int D +Int Transfers(Op ;; Ops) by premise
+     ==Int D' +Int Transfers(Op ;; Ops) by D'
+     ==Int D' +Int Transfers(Ops) by Transfers
+     ==Int D' +Int Transfers(Ops' ;; Ops) by Ops'
+- L' ==Int L
+     ==Int S +Int MintBurns(Op ;; Ops) by premise
+     ==Int S' +Int MintBurns(Op ;; Ops) by S'
+     ==Int S' +Int MintBurns(Ops) by MintBurns
+     ==Int S' +Int MintBurns(Ops' ;; Ops) by Ops'
+```
+
+```
 claim [inv-token-transfer]:
 <operations>  ( [ Transaction _ TOKEN Amount Transfer(From, To, Value) ] #as Op => Ops' ) ;; Ops </operations>
 <xtzPool>     #Mutez(X => X')   </xtzPool>
@@ -1060,15 +1106,24 @@ proposition [no-allowance-for-dexter]:
 requires succeed(Op)
 ```
 
+```
+proposition [token-security]:
+<operations> (Op => _) ;; _ </operations>
+<tokenDexter> D => D' </tokenDexter>
+ensures  D' <Int D impliesBool ( Op ==K Transaction DEXTER TOKEN 0 Transfer(DEXTER, To, Value) andBool To =/=K DEXTER andBool Value >Int 0 )
+ andBool D' >Int D impliesBool Op ==K Transaction _ TOKEN 0 Transfer(_, DEXTER, _)
+```
+
 NOTE:
 - Transfer must update the balance before emitting continuation
   - e.g., pull pattern (transfer calls receiver hook which claim the balance later) is not allowed, since it leads to an exploit
 
 ```
 rule [token-transfer]:
-<operations> ( [ Transaction _ TOKEN Amount Transfer(From, To, Value) ] => Ops' ) ;; Ops </operations>
+<operations> ( [ Transaction Sender TOKEN Amount Transfer(From, To, Value) ] => Ops' ) ;; Ops </operations>
 <tokenDexter> D => D' </tokenDexter>
 assert   Amount ==Int 0
+ andBool From ==K DEXTER impliesBool Sender ==K DEXTER
 ensures  ( From  ==K DEXTER andBool To =/=K DEXTER ) impliesBool D' ==Int D -Int Value
  andBool ( From =/=K DEXTER andBool To  ==K DEXTER ) impliesBool D' ==Int D +Int Value
  andBool ( From  ==K DEXTER andBool To  ==K DEXTER ) impliesBool D' ==Int D
@@ -1127,9 +1182,12 @@ rule [is-valid]:
 ```
 
 ```
-syntax Address ::= DEXTER
-syntax Address ::= TOKEN
-syntax Address ::= LQT
+syntax Address ::= DEXTER [constant]
+
+syntax Address ::= TOKEN [constant]
+
+syntax Address ::= LQT [macro]
+rule [[ LQT => Lqt ]] <lqtAddress> Lqt </lqtAddress>
 ```
 
 #### AddLiquidity(Owner, MinLqtMinted, MaxTokensDeposited, Deadline)
@@ -1294,4 +1352,40 @@ rule [default]:
 assert   IsUpdatingTokenPool ==K false
 ensures  Sender =/=K DEXTER impliesBool B' ==Int B +Int Amount
  andBool Sender  ==K DEXTER impliesBool B' ==Int B
+```
+
+#### Setters
+
+```
+rule [set-baker]:
+<operations>  ( [ Transaction Sender DEXTER Amount SetBaker(Baker, FreezeBaker) ] => [ SetDelegate Baker ] ) ;; _ </operations>
+<selfIsUpdatingTokenPool>   IsUpdatingTokenPool             </selfIsUpdatingTokenPool>
+<freezeBaker>               IsBakerFrozen => FreezeBaker    </freezeBaker>
+<manager>                   Manager                         </manager>
+assert   IsUpdatingTokenPool ==K false
+ andBool Amount ==Int 0
+ andBool Sender ==K Manager
+ andBool IsBakerFrozen ==K false
+```
+
+```
+rule [set-manager]:
+<operations>  ( [ Transaction Sender DEXTER Amount SetManager(NewManager) ] => .List ) ;; _ </operations>
+<selfIsUpdatingTokenPool>   IsUpdatingTokenPool     </selfIsUpdatingTokenPool>
+<manager>                   Manager => NewManager   </manager>
+assert   IsUpdatingTokenPool ==K false
+ andBool Amount ==Int 0
+ andBool Sender ==K Manager
+```
+
+```
+rule [set-lqt-address]:
+<operations>  ( [ Transaction Sender DEXTER Amount SetLqtAddress(LqtAddress) ] => .List ) ;; _ </operations>
+<selfIsUpdatingTokenPool>   IsUpdatingTokenPool             </selfIsUpdatingTokenPool>
+<manager>                   Manager                         </manager>
+<lqtAddress>                InitialLqtAddress => LqtAddress </lqtAddress>
+assert   IsUpdatingTokenPool ==K false
+ andBool Amount ==Int 0
+ andBool Sender ==K Manager
+ andBool InitialLqtAddress ==K 0
 ```
