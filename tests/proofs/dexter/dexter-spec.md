@@ -820,7 +820,7 @@ A buyer sends xtz to the Dexter contract and receives a corresponding amount of 
 module DEXTER-XTZTOTOKEN-FA12-POSITIVE-SPEC
   imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, XtzToToken(To, MinTokensBought, #Timestamp(Deadline))) => . </k>
-        <stack> .Stack => ?_:FailedStack </stack>
+        <stack> .Stack </stack>
         <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <myamount> #Mutez(Amount) </myamount>
@@ -880,7 +880,7 @@ endmodule
 module DEXTER-XTZTOTOKEN-FA2-POSITIVE-SPEC
   imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, XtzToToken(To, MinTokensBought, #Timestamp(Deadline))) => . </k>
-        <stack> .Stack => ?_:FailedStack </stack>
+        <stack> .Stack </stack>
         <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <myamount> #Mutez(Amount) </myamount>
