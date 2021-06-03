@@ -109,33 +109,33 @@ Below we prove the invariant `[inv]` by induction on the sequence of operations 
 ```
 proof [inv]:
 - assume that the invariant has held in each of the previous operations
-- let Op = Transaction Sender Target Amount CD
+- let Op = Transaction Sender Target Amount CallParams
 - split Sender, Target
   - case Sender <> DEXTER and Target == DEXTER
-    - split CD
-      - case CD == AddLiquidity _
+    - split CallParams
+      - case CallParams == AddLiquidity _
         - apply [inv-add-liquidity]
-      - case CD == RemoveLiquidity _
+      - case CallParams == RemoveLiquidity _
         - apply [inv-remove-liquidity]
-      - case CD == XtzToToken _
+      - case CallParams == XtzToToken _
         - apply [inv-xtz-to-token]
-      - case CD == TokenToXtz _
+      - case CallParams == TokenToXtz _
         - apply [inv-token-to-xtz]
-      - case CD == TokenToToken _
+      - case CallParams == TokenToToken _
         - apply [inv-token-to-token]
-      - case CD == UpdateTokenPool _
+      - case CallParams == UpdateTokenPool _
         - apply [inv-update-token-pool]
-      - case CD == UpdateTokenPoolInternal _
+      - case CallParams == UpdateTokenPoolInternal _
         - apply [inv-update-token-pool-internal]
-      - case CD == SetBaker _ | CD == SetManager _ | CD == SetLqtAddress _
+      - case CallParams == SetBaker _ | CallParams == SetManager _ | CallParams == SetLqtAddress _
         - apply [inv-setter]
-      - case CD == Default _
+      - case CallParams == Default _
         - apply [inv-default]
   - case Sender == DEXTER and Target == DEXTER
-    - split CD
-      - case CD == XtzToToken _
+    - split CallParams
+      - case CallParams == XtzToToken _
         - apply [inv-xtz-to-token]
-      - case CD == Default _
+      - case CallParams == Default _
         - apply [inv-default]
       - case _
         - apply [sender-is-not-dexter]
@@ -162,16 +162,16 @@ proof [inv]:
       - case Target == TOKEN
         - (X', T', L', B') == (X, T, L, B) by [only-dexter]
         - S' == S by [only-lqt-mint-burn]
-        - split CD
-          - case CD == Transfer(From, To, Value)
+        - split CallParams
+          - case CallParams == Transfer(From, To, Value)
             - From <> DEXTER by [token-transfer]'s assertion
             - D' >= D by [only-token-transfer]
-          - case CD <> (Transfer _)
+          - case CallParams <> (Transfer _)
             - D' >= D by [only-token-transfer]
       - case Target == LQT
         - (X', T', L', B') == (X, T, L, B) by [only-dexter]
         - D' == D by [only-token-transfer]
-        - CD <> (Mint _) and CD <> (Burn _) by [lqt-mint] and [lqt-burn]
+        - CallParams <> (Mint _) and CallParams <> (Burn _) by [lqt-mint] and [lqt-burn]
           - S' == S
       - case Target <> TOKEN and Target <> LQT
         - (X', T', L', B') == (X, T, L, B) by [only-dexter]
@@ -654,14 +654,14 @@ proof [inv-default]:
 
 ```
 claim [inv-setter]:
-<operations>  ( [ Transaction Sender DEXTER Amount CD ] #as Op => Ops' ) ;; Ops </operations>
+<operations>  ( [ Transaction Sender DEXTER Amount CallParams ] #as Op => Ops' ) ;; Ops </operations>
 <xtzPool>     #Mutez(X => X')   </xtzPool>
 <tokenPool>          T => T'    </tokenPool>
 <lqtTotal>           L => L'    </lqtTotal>
 <xtzDexter>   #Mutez(B => B')   </xtzDexter>
 <tokenDexter>        D => D'    </tokenDexter>
 <lqtSupply>          S => S'    </lqtSupply>
-requires CD ==K (SetBaker _) orBool CD ==K (SetManager _) orBool CD ==K (SetLqtAddress _)
+requires CallParams ==K (SetBaker _) orBool CallParams ==K (SetManager _) orBool CallParams ==K (SetLqtAddress _)
 requires 0 <Int X  andBool X  ==Int B  +Int Sends(Op ;; Ops)
  andBool 0 <Int T  andBool T  <=Int D  +Int Transfers(Op ;; Ops)
  andBool 0 <Int L  andBool L  ==Int S  +Int MintBurns(Op ;; Ops)
@@ -670,12 +670,12 @@ ensures  0 <Int X' andBool X' ==Int B' +Int Sends(Ops' ;; Ops)
  andBool 0 <Int L' andBool L' ==Int S' +Int MintBurns(Ops' ;; Ops)
 
 proof [inv-setter]:
-- split CD
-  - case CD == (SetBaker _)
+- split CallParams
+  - case CallParams == (SetBaker _)
     - apply [set-baker]
-  - case CD == (SetManager _)
+  - case CallParams == (SetManager _)
     - apply [set-manager]
-  - case CD == (SetLqtAddress _)
+  - case CallParams == (SetLqtAddress _)
     - apply [set-lqt-address]
 - unify RHS
   - Ops' == [ SetDelegate _ ] | Ops' == .List
@@ -723,7 +723,7 @@ The following claim formulates the invariant for the first two types of external
 
 ```
 claim [inv-send]:
-<operations>  ( [ Transaction DEXTER Target Amount CD ] #as Op => Ops' ) ;; Ops </operations>
+<operations>  ( [ Transaction DEXTER Target Amount CallParams ] #as Op => Ops' ) ;; Ops </operations>
 <xtzPool>     #Mutez(X => X')   </xtzPool>
 <tokenPool>          T => T'    </tokenPool>
 <lqtTotal>           L => L'    </lqtTotal>
@@ -731,7 +731,7 @@ claim [inv-send]:
 <tokenDexter>        D => D'    </tokenDexter>
 <lqtSupply>          S => S'    </lqtSupply>
 requires Target =/=K DEXTER
- andBool ( CD ==K Default() orBool CD ==K (XtzToToken _) )
+ andBool ( CallParams ==K Default() orBool CallParams ==K (XtzToToken _) )
 requires 0 <Int X  andBool X  ==Int B  +Int Sends(Op ;; Ops)
  andBool 0 <Int T  andBool T  <=Int D  +Int Transfers(Op ;; Ops)
  andBool 0 <Int L  andBool L  ==Int S  +Int MintBurns(Op ;; Ops)
@@ -1004,16 +1004,16 @@ The following proposition `[sender-is-not-dexter]` states that no entrypoint of 
 ```
 proposition [sender-is-not-dexter]:
 [[ Sender =/=K DEXTER => true ]]
-<operations> [ Transaction Sender DEXTER _ CD ] ;; _ </operations>
-requires CD ==K AddLiquidity _
-  orBool CD ==K RemoveLiquidity _
-  orBool CD ==K TokenToXtz _
-  orBool CD ==K TokenToToken _
-  orBool CD ==K UpdateTokenPool _
-  orBool CD ==K UpdateTokenPoolInternal _
-  orBool CD ==K SetBaker _
-  orBool CD ==K SetManager _
-  orBool CD ==K SetLqtAddress _
+<operations> [ Transaction Sender DEXTER _ CallParams ] ;; _ </operations>
+requires CallParams ==K AddLiquidity _
+  orBool CallParams ==K RemoveLiquidity _
+  orBool CallParams ==K TokenToXtz _
+  orBool CallParams ==K TokenToToken _
+  orBool CallParams ==K UpdateTokenPool _
+  orBool CallParams ==K UpdateTokenPoolInternal _
+  orBool CallParams ==K SetBaker _
+  orBool CallParams ==K SetManager _
+  orBool CallParams ==K SetLqtAddress _
 ```
 
 The following proposition `[dexter-emitted-ops]` enumerates all possible Dexter-emitted operations.
@@ -1021,13 +1021,13 @@ The following proposition `[dexter-emitted-ops]` enumerates all possible Dexter-
 ```
 proposition [dexter-emitted-ops]:
 [[ (
-          ( Target ==K TOKEN andBool Amount ==Int 0 andBool CD ==K (Transfer _) )
-   orBool ( Target ==K TOKEN andBool Amount ==Int 0 andBool CD ==K BalanceOf(DEXTER, UpdateTokenPoolInternal) )
-   orBool ( Target ==K LQT   andBool Amount ==Int 0 andBool CD ==K (MintBurn _) )
-   orBool (                                                 CD ==K Default() )
-   orBool (                                                 CD ==K (XtzToToken _) )
+          ( Target ==K TOKEN andBool Amount ==Int 0 andBool CallParams ==K (Transfer _) )
+   orBool ( Target ==K TOKEN andBool Amount ==Int 0 andBool CallParams ==K BalanceOf(DEXTER, UpdateTokenPoolInternal) )
+   orBool ( Target ==K LQT   andBool Amount ==Int 0 andBool CallParams ==K (MintBurn _) )
+   orBool (                                                 CallParams ==K Default() )
+   orBool (                                                 CallParams ==K (XtzToToken _) )
    ) => true ]]
-<operations> [ Transaction DEXTER Target Amount CD ] ;; _ </operations>
+<operations> [ Transaction DEXTER Target Amount CallParams ] ;; _ </operations>
 ```
 
 The following proposition `[only-dexter]` states that no one other than Dexter can emit operations whose sender is Dexter.  Note that Sends, Transfers, and MintBurns are defined to be zero for operations whose sender is not Dexter.  Also, obviously, the state variables and XTZ balance of Dexter can be updated only by Dexter.
@@ -1144,10 +1144,10 @@ For the other unknown external contract calls, the only functions Dexter can cal
 
 ```
 rule [send]:
-<operations> ( [ Transaction DEXTER Target Amount CD ] => Ops' ) ;; _ </operations>
+<operations> ( [ Transaction DEXTER Target Amount CallParams ] => Ops' ) ;; _ </operations>
 <xtzDexter> #Mutez(B => B -Int Amount) </xtzDexter>
 requires Target =/=K DEXTER
- andBool ( CD ==K Default() orBool CD ==K (XtzToToken _) )
+ andBool ( CallParams ==K Default() orBool CallParams ==K (XtzToToken _) )
 ```
 
 ### Abstract Behaviors of Dexter Entrypoints
@@ -1388,6 +1388,125 @@ assert   IsUpdatingTokenPool ==K false
  andBool InitialLqtAddress ==K 0
 ```
 
+## Pool Reserves
+
+
+```
+claim [pool]:
+<operations> (Op => _) ;; _ </operations>
+<xtzPool>     #Mutez(X => X')   </xtzPool>
+<tokenPool>          T => T'    </tokenPool>
+<lqtTotal>           L => L'    </lqtTotal>
+requires X >Int 0 andBool T >Int 0 andBool L >Int 0
+ensures  (X' *Int T') /Real (X *Int T) >=Real (L' /Real L) ^Real 2
+```
+
+```
+proof [pool]:
+- assume that the invariant has held in each of the previous operations
+- let Op = Transaction Sender Target Amount CallParams
+- split Target
+  - case Target == DEXTER
+    - split CallParams
+      - case CallParams == AddLiquidity _
+        - apply [add-liquidity]
+        - unify RHS
+          - X' == X +Int XtzDeposited
+          - T' == T +Int TokensDeposited
+          - L' == L +Int LqtMinted
+          - XtzDeposited    == Amount
+          - TokensDeposited == XtzDeposited *Int T up/Int X
+          - LqtMinted       == XtzDeposited *Int L   /Int X
+        - let TokensDepositedReal = XtzDeposited *Int T /Real X
+        - let LqtMintedReal       = XtzDeposited *Int L /Real X
+        - TokensDeposited >=Real TokensDepositedReal
+        - LqtMinted       <=Real LqtMintedReal
+        - (X' *Int T') /Real (X *Int T) ==Real ((X +Int XtzDeposited) *Int  (T +Int  TokensDeposited    )) /Real (X *Int T) by X' and T'
+                                        >=Real ((X +Int XtzDeposited) *Real (T +Real TokensDepositedReal)) /Real (X *Int T) by TokensDeposited >=Real TokensDepositedReal
+                                        ==Real (1 +Real XtzDeposited /Real X) *Real (1 +Real XtzDeposited /Real X) by simp(Real)
+                                        ==Real (1 +Real XtzDeposited /Real X) ^Real 2 by simp(Real)
+                                        ==Real ((L +Real LqtMintedReal) /Real L) ^Real 2 by simp(Real)
+                                        >=Real ((L +Real LqtMinted    ) /Real L) ^Real 2 by LqtMinted <=Real LqtMintedReal
+                                        ==Real (L' /Real L) ^Real 2 by L'
+      - case CallParams == RemoveLiquidity(_, LqtBurned, _, _, _)
+        - apply [remove-liquidity]
+        - unify RHS
+          - X' == X -Int XtzWithdrawn
+          - T' == T -Int TokensWithdrawn
+          - L' == L -Int LqtBurned
+          - XtzWithdrawn    == LqtBurned *Int X /Int L
+          - TokensWithdrawn == LqtBurned *Int T /Int L
+        - let XtzWithdrawnReal    = LqtBurned *Int X /Real L
+        - let TokensWithdrawnReal = LqtBurned *Int T /Real L
+        - XtzWithdrawn    <=Real XtzWithdrawnReal
+        - TokensWithdrawn <=Real TokensWithdrawnReal
+        - (X' *Int T') /Real (X *Int T) ==Real ((X -Int  XtzWithdrawn    ) *Int  (T -Int  TokensWithdrawn    )) /Real (X *Int T) by X' and T'
+                                        >=Real ((X -Real XtzWithdrawnReal) *Real (T -Real TokensWithdrawnReal)) /Real (X *Int T) by XtzWithdrawn <=Real XtzWithdrawnReal and TokensWithdrawn <=Real TokensWithdrawnReal
+                                        ==Real (1 -Real LqtBurned /Real L) *Real (1 -Real LqtBurned /Real L) by simp(Real)
+                                        ==Real (1 -Real LqtBurned /Real L) ^Real 2 by simp(Real)
+                                        ==Real ((L -Real LqtBurned) /Real L) ^Real 2 by simp(Real)
+                                        ==Real (L' /Real L) ^Real 2 by L'
+      - case CallParams == XtzToToken _
+        - apply [xtz-to-token]
+        - unify RHS
+          - X' == X +Int XtzSold
+          - T' == T -Int TokensBought
+          - L' == L
+          - XtzSold == Amount
+          - TokensBought == 997 *Int XtzSold *Int T /Int (1000 *Int X +Int 997 *Int XtzSold)
+        - let TokensBoughtReal = 997 *Int XtzSold *Int T /Real (1000 *Int X +Int 997 *Int XtzSold)
+        - TokensBought <=Real TokensBoughtReal
+        - (X' *Int T') /Real (X *Int T) ==Real ((X +Int XtzSold) *Int  (T -Int  TokensBought    )) /Real (X *Int T) by X' and T'
+                                        >=Real ((X +Int XtzSold) *Real (T -Real TokensBoughtReal)) /Real (X *Int T) by TokensBought <=Real TokensBoughtReal
+                                        ==Real (X +Real XtzSold) /Real (X +Real 0.997 *Real XtzSold) by simp(Real)
+                                        >=Real 1 by simp(Real)
+                                        ==Real (L' /Real L) ^Real 2 by L' == L
+      - case CallParams == TokenToXtz(_, TokensSold, _, _) | CallParams == TokenToToken(_, _, _, TokensSold, _)
+        - apply [token-to-xtz] or [token-to-token]
+        - unify RHS
+          - X' == X -Int XtzBought
+          - T' == T +Int TokensSold
+          - L' == L
+          - XtzBought == 997 *Int TokensSold *Int X /Int (1000 *Int T +Int 997 *Int TokensSold)
+        - let XtzBoughtReal = 997 *Int TokensSold *Int X /Real (1000 *Int T +Int 997 *Int TokensSold)
+        - XtzBought <=Real XtzBoughtReal
+        - (X' *Int T') /Real (X *Int T) ==Real ((X -Int  XtzBought    ) *Int  (T +Int TokensSold)) /Real (X *Int T) by X' and T'
+                                        >=Real ((X -Real XtzBoughtReal) *Real (T +Int TokensSold)) /Real (X *Int T) by XtzBought <=Real XtzBoughtReal
+                                        ==Real (T +Real TokensSold) /Real (T +Real 0.997 *Real TokensSold) by simp(Real)
+                                        >=Real 1 by simp(Real)
+                                        ==Real (L' /Real L) ^Real 2 by L' == L
+      - case CallParams == UpdateTokenPool _ | CallParams == SetBaker _ | CallParams == SetManager _ | CallParams == SetLqtAddress _
+        - apply [update-token-pool] or [set-baker] or [set-manager] or [set-lqt-address]
+        - unify RHS
+          - X' == X
+          - T' == T
+          - L' == L
+        - (X' *Int T') /Real (X *Int T) ==Real 1 by X' == X and T' == T
+                                        ==Real (L' /Real L) ^Real 2 by L' == L
+      - case CallParams == UpdateTokenPoolInternal(TokenPool)
+        - apply [update-token-pool-internal]
+        - unify RHS
+          - X' == X
+          - T' == TokenPool
+          - L' == L
+        - T <=Int TokenPool by [lemma-update-token-pool-internal]
+        - (X' *Int T') /Real (X *Int T) ==Real (X *Int TokenPool) /Real (X *Int T) by X' and T'
+                                        >=Real 1 by T <=Int TokenPool
+                                        ==Real (L' /Real L) ^Real 2 by L' == L
+      - case CallParams == Default _
+        - apply [default]
+        - unify RHS
+          - X' == X +Int Amount
+          - T' == T
+          - L' == L
+        - (X' *Int T') /Real (X *Int T) ==Real ((X +Int Amount) *Int T) /Real (X *Int T) by X' and T'
+                                        >=Real 1 by Amount >=Int 0
+                                        ==Real (L' /Real L) ^Real 2 by L' == L
+  - case Target <> DEXTER
+    - (X', T', L') == (X, T, L) by [only-dexter]
+    - (X' *Int T') /Real (X *Int T) ==Real 1 by X' == X and T' == T
+                                    ==Real (L' /Real L) ^Real 2 by L' == L
+```
 
 
 
