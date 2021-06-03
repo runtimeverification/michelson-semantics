@@ -1233,7 +1233,7 @@ rule [remove-liquidity]:
 <lqtSupply>          S                              </lqtSupply>
 assert   IS_VALID(Deadline)
  andBool Amount ==Int 0
- andBool LqtBurned <Int L // TODO: ask to fix
+ andBool LqtBurned <Int L // TODO: ask the Dexter team to add this check
  andBool XtzWithdrawn    >=Int MinXtzWithdrawn
  andBool TokensWithdrawn >=Int MinTokensWithdrawn
 ensures  XtzWithdrawn    ==Int LqtBurned *Int X /Int L
@@ -1283,9 +1283,9 @@ ensures  XtzBought ==Int 997 *Int TokensSold *Int X /Int (1000 *Int T +Int 997 *
 
 #### TokenToToken(OutputDexterContract, MinTokensBought, To, TokensSold, Deadline)
 
-Note that it is straightforward to prove the equivalence between the following two scenarios:
-- Alice simply sends a single transaction to Dexter, `Transaction Alice DEXTER 0 TokenToToken(OutputDexterContract, MinTokensBought, To, TokensSold, Deadline)`.
-- Alice first sends a transaction to Dexter, `Transaction Alice DEXTER 0 TokenToXtz(Alice, TokensSold, 0, Deadline)`, then immediately sends another transaction to OutputDexterContract, `Transaction Sender OutputDexterContract XtzBought XtzToToken(To, MinTokensBought, Deadline)`, where XtzBought is the amount she received from the first transaction.  (We assume that no transactions have been made to OutputDexterContract between the two transactions.)
+Note that it is straightforward to prove the equivalence between the following two methods:
+- Alice sends only a single transaction to Dexter, `Transaction Alice DEXTER 0 TokenToToken(OutputDexterContract, MinTokensBought, To, TokensSold, Deadline)`.
+- Alice first sends a transaction to Dexter, `Transaction Alice DEXTER 0 TokenToXtz(Alice, TokensSold, 0, Deadline)`, and then immediately sends another transaction to OutputDexterContract, `Transaction Alice OutputDexterContract XtzBought XtzToToken(To, MinTokensBought, Deadline)`, where XtzBought is the amount she received from the first transaction.  (We assume that no transactions have been made to OutputDexterContract between the two transactions.)
 
 ```
 rule [token-to-token]:
