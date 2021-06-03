@@ -1,6 +1,6 @@
 # Correctness Properties of Dexter Contract
 
-We formulate and prove correctness properties of Dexter over the sequence of arbitrary transactions.
+We formulate and prove correctness properties of Dexter over _the sequence of arbitrary transactions_.
 
 ## Faithfulness of State Variables
 
@@ -1030,7 +1030,7 @@ proposition [dexter-emitted-ops]:
 <operations> [ Transaction DEXTER Target Amount CD ] ;; _ </operations>
 ```
 
-The following proposition `[only-dexter]` states that no one other than Dexter can emit operations whose sender is Dexter.  Note that Sends, Transfers, and MintBurns are defined to be zero for operations whose sender is not Dexter.
+The following proposition `[only-dexter]` states that no one other than Dexter can emit operations whose sender is Dexter.  Note that Sends, Transfers, and MintBurns are defined to be zero for operations whose sender is not Dexter.  Also, obviously, the state variables and XTZ balance of Dexter can be updated only by Dexter.
 
 ```
 proposition [only-dexter]:
@@ -1152,6 +1152,26 @@ requires Target =/=K DEXTER
 
 ### Abstract Behaviors of Dexter Entrypoints
 
+We formulate the behavior of each Dexter entrypoint over an abstract configuration.  This formulation over the abstract configuration has been refined to the concrete configuration of the Michelson semantics, and then verified against the compiled bytecode of Dexter using the K framework.  The soundness of the refinement, which is currently in our trust base, allows us to conclude that the proved properties also hold for the Dexter bytecode.
+
+#### Abstract Configuration
+
+The abstract configuration consists of the following components (called “cells”):
+- `<operations>`: the sequence of operations to be executed
+- `<xtzPool>`: the XtzPool state variable
+- `<tokenPool>`: the TokenPool state variable
+- `<lqtTotal>`: the LqtTotal state variable
+- `<xtzDexter>`: the XTZ balance of Dexter
+- `<tokenDexter>`: the token balance of Dexter (stored in the token contract storage)
+- `<lqtSupply>`: the total liquidity supply (stored in the liquidity contract storage)
+- `<sourceaddr>`: the source of the current transaction
+- `<selfIsUpdatingTokenPool>`: the SelfIsUpdatingTokenPool lock
+- `<manager>`: the manager account address
+- `<lqtAddress>`: the liquidity contract address
+- `<freezeBaker>`: the FreezeBaker lock
+- `<mynow>`: the current timestamp
+
+Note that both `<xtzPool>` and `<xtzDexter>` are of the XTZ currency type, ranging from 0 to 2^64 - 1.  Throughout this document, we implicitly assume that they are _defined_ only when their values are within the valid range, otherwise they are undefined, meaning that any execution involving undefined currency values will fail or revert.
 
 #### Constants and Macros
 
@@ -1174,16 +1194,17 @@ rule [is-valid]:
 
 #### AddLiquidity(Owner, MinLqtMinted, MaxTokensDeposited, Deadline)
 
+The following rule formulates the behaviors of the AddLiquidity() entrypoint.  It states that, when it succeeds, the entrypoint execution updates the three state variables and the XTZ balance of Dexter.  The execution succeeds when the `assert` conditions are satisfied, and fails otherwise.
+
 ```
 rule [add-liquidity]:
 <operations>  ( [ Transaction Sender DEXTER XtzDeposited AddLiquidity(Owner, MinLqtMinted, MaxTokensDeposited, Deadline) ] => OpsEmitted ) ;; _ </operations>
 <xtzPool>     #Mutez(X => X +Int XtzDeposited)      </xtzPool>
 <tokenPool>          T => T +Int TokensDeposited    </tokenPool>
 <lqtTotal>           L => L +Int LqtMinted          </lqtTotal>
-<xtzDexter>   #Mutez(B => B +Int XtzDeposited)      </xtzDexter>
+<xtzDexter>   #Mutez(B => B')                       </xtzDexter>
 <tokenDexter>        D                              </tokenDexter>
 <lqtSupply>          S                              </lqtSupply>
-requires Sender =/=K DEXTER // TODO: double-check if it is guaranteed
 assert   IS_VALID(Deadline)
  andBool TokensDeposited <=Int MaxTokensDeposited
  andBool LqtMinted       >=Int MinLqtMinted
@@ -1191,6 +1212,8 @@ ensures  TokensDeposited ==Int XtzDeposited *Int T up/Int X
  andBool LqtMinted       ==Int XtzDeposited *Int L   /Int X
  andBool OpsEmitted ==K [ Transaction DEXTER TOKEN 0 Transfer(Sender, DEXTER, TokensDeposited) ]
                      ;; [ Transaction DEXTER LQT   0 Mint(Owner, LqtMinted) ]
+ andBool Sender =/=K DEXTER impliesBool B' ==Int B +Int XtzDeposited
+ andBool Sender  ==K DEXTER impliesBool B' ==Int B
 ```
 
 #### RemoveLiquidity(To, LqtBurned, MinXtzWithdrawn, MinTokensWithdrawn, Deadline)
