@@ -19,12 +19,17 @@ pipeline {
       }
     }
     stage('Test') {
-      options { timeout(time: 180, unit: 'MINUTES') }
+      options { timeout(time: 15, unit: 'MINUTES') }
       parallel {
         stage('Unit')             { steps { sh 'make test-unit     -j8' } }
         stage('Symbolic')         { steps { sh 'make test-symbolic -j2' } }
         stage('Prove')            { steps { sh 'make test-prove    -j2' } }
-        stage('Dexter Proofs')    { steps { sh 'make dexter-prove  -j8' } }
+      }
+    }
+    stage('Integration Proofs') { 
+      options { timeout(time: 180, unit: 'MINUTES') }
+      parallel {
+        stage('Dexter Proofs') { steps { sh 'make dexter-prove  -j8' } }
       }
     }
     stage('Cross Test') {
