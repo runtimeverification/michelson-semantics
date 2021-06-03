@@ -1390,6 +1390,19 @@ assert   IsUpdatingTokenPool ==K false
 
 ## Pool Reserves
 
+The property `[inv]` states the relationship between the Dexter state variables and the actual pool reserves and liquidity supply.  Now we formulate another property regarding the relationship over the Dexter state variables themselves.
+
+Let XtzPool, TokenPool, and LqtTotal be the current value of the Dexter state variables.  Suppose that an operation updates the state variables to new values, say, XtzPool’, TokenPool’, and LqtTotal’, respectively.  Then, for any (successful) execution of an arbitrary operation, we must have:
+```
+(XtzPool' * TokenPool') / (XtzPool * TokenPool) >= (LqtTotal' / LqtTotal)^2
+```
+where `/` is the real arithmetic division (i.e., no rounding).  This is formulated in the claim `[pool]` below.
+
+Note that the above property (together with the `[inv]` property) says that the pool share price (i.e., the multiplication of the amounts of XTZ and tokens to be redeemed per unit liquidity) _never_ decreases.  Intuitively, this implies the following desired properties:
+- When adding liquidity, users _cannot_ mint more liquidity tokens than they should.
+- When removing liquidity, users _cannot_ redeem more assets than they should.
+- When exchanging tokens, users _cannot_ receive more XTZ or tokens than they should.
+- Updating the token pool _cannot_ be exploited despite the non-atomicity.
 
 ```
 claim [pool]:
@@ -1403,8 +1416,7 @@ ensures  (X' *Int T') /Real (X *Int T) >=Real (L' /Real L) ^Real 2
 
 ```
 proof [pool]:
-- assume that the invariant has held in each of the previous operations
-- let Op = Transaction Sender Target Amount CallParams
+- let Op = Transaction _ Target Amount CallParams
 - split Target
   - case Target == DEXTER
     - split CallParams
