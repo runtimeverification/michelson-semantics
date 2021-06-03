@@ -1388,7 +1388,7 @@ assert   IsUpdatingTokenPool ==K false
  andBool InitialLqtAddress ==K 0
 ```
 
-## Pool Reserves
+## Pool Share Price Never Decreasing
 
 The property `[inv]` states the relationship between the Dexter state variables and the actual pool reserves and liquidity supply.  Now we formulate another property regarding the relationship over the Dexter state variables themselves.
 
@@ -1396,13 +1396,17 @@ Let XtzPool, TokenPool, and LqtTotal be the current value of the Dexter state va
 ```
 (XtzPool' * TokenPool') / (XtzPool * TokenPool) >= (LqtTotal' / LqtTotal)^2
 ```
-where `/` is the real arithmetic division (i.e., no rounding).  This is formulated in the claim `[pool]` below.
+where `/` is the real arithmetic division (i.e., no rounding).
 
 Note that the above property (together with the `[inv]` property) says that the pool share price (i.e., the multiplication of the amounts of XTZ and tokens to be redeemed per unit liquidity) _never_ decreases.  Intuitively, this implies the following desired properties:
 - When adding liquidity, users _cannot_ mint more liquidity tokens than they should.
 - When removing liquidity, users _cannot_ redeem more assets than they should.
 - When exchanging tokens, users _cannot_ receive more XTZ or tokens than they should.
 - Updating the token pool _cannot_ be exploited despite the non-atomicity.
+
+(Note that, however, this property says _nothing_ about the _USD value_ of the pool share.  Indeed, the USD value of the pool share could decrease due to the so-called “Impermanent Loss” problem.)
+
+The following claim `[pool]` formulates the pool share price property.
 
 ```
 claim [pool]:
@@ -1518,68 +1522,4 @@ proof [pool]:
     - (X', T', L') == (X, T, L) by [only-dexter]
     - (X' *Int T') /Real (X *Int T) ==Real 1 by X' == X and T' == T
                                     ==Real (L' /Real L) ^Real 2 by L' == L
-```
-
-
-
-
-----
-
-Note that the real arithmetic is used throughout the document.
-
-### Reserve vs Liquidity
-
-```
-(new(xtzPool) * new(tokenPool)) / (old(xtzPool) * old(tokenPool)) >= (new(lqtTotal) / old(lqtTotal))^2
-```
-
-NOTE: `>` is due to the service fees, the rounding errors, and/or potential “donated” funds.
-
-## (Full) Functional Correctness
-
-These properties describe the end-to-end behavior of each entry point transaction.
-Note that the "Reserve vs Liquidity" property can be proven from these.
-
-### add_liquidity()
-
-- `new(xtzPool) == old(xtzPool) * (1 + alpha)`
-- `new(tokenPool) == ceil(old(tokenPool) * (1 + alpha))`
-- `new(lqtTotal) == floor(old(lqtTotal) * (1 + alpha))`
-
-where:
-```
-alpha := Tezos.amount / old(xtzPool)
-```
-
-### remove_liquidity()
-
-- `new(xtzPool) == ceil(old(xtzPool) * (1 - beta))`
-- `new(tokenPool) == ceil(old(tokenPool) * (1 - beta))`
-- `new(lqtTotal) == old(lqtTotal) * (1 - beta)`
-
-where:
-```
-beta := lqtBurned / old(lqtTotal)
-```
-
-### xtz_to_token()
-
-- `new(xtzPool) == old(xtzPool) + Tezos.amount`
-- `new(tokenPool) == old(tokenPool) - floor(tokenOut(0.997 * Tezos.amount))`
-- `new(lqtTotal) == old(lqtTotal)`
-
-where:
-```
-tokenOut(xtzIn) := old(tokenPool) - old(xtzPool) * old(tokenPool) / (old(xtzPool) + xtzIn)
-```
-
-### token_to_xtz()
-
-- `new(xtzPool) == old(xtzPool) - floor(xtzOut(0.997 * tokensSold))`
-- `new(tokenPool) == old(tokenPool) + tokensSold`
-- `new(lqtTotal) == old(lqtTotal)`
-
-where:
-```
-xtzOut(tokenIn) := old(xtzPool) - old(xtzPool) * old(tokenPool) / (old(tokenPool) + tokenIn)
 ```
