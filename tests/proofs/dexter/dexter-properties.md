@@ -1394,9 +1394,11 @@ The property `[inv]` states the relationship between the Dexter state variables 
 
 Let XtzPool, TokenPool, and LqtTotal be the current value of the Dexter state variables.  Suppose that an operation updates the state variables to new values, say, XtzPool’, TokenPool’, and LqtTotal’, respectively.  Then, for any (successful) execution of an arbitrary operation, we must have:
 ```
-(XtzPool' * TokenPool') / (XtzPool * TokenPool) >= (LqtTotal' / LqtTotal)^2
+  XtzPool' * TokenPool'        LqtTotal'
+  ---------------------  >=  ( -------- )^2
+  XtzPool  * TokenPool         LqtTotal
 ```
-where `/` is the real arithmetic division (i.e., no rounding).
+where the division is the real arithmetic division (i.e., no rounding).
 
 Note that the above property (together with the `[inv]` property) says that the pool share price (i.e., the multiplication of the amounts of XTZ and tokens to be redeemed per unit liquidity) _never_ decreases.  Intuitively, this implies the following desired properties:
 - When adding liquidity, users _cannot_ mint more liquidity tokens than they should.
