@@ -1061,7 +1061,7 @@ rule TopLevelOps(.List, _) => true
 
 ### Assumptions for External Contracts
 
-We make assumptions on the behaviors of external contracts, especially the token and liquidity contracts.  _*These assumptions are required for the proof of the invariant, and thus it is important to verify that these are satisfied by the given implementation of the token and liquidity contracts.*_  If some of these assumptions are not satisfied for good reasons, then the proof needs to be revisited.
+We make assumptions on the behaviors of external contracts, especially the token and liquidity contracts.  _**These assumptions are required for the proof of the invariant, and thus it is important to verify that these are satisfied by the given implementation of the token and liquidity contracts.**_  If some of these assumptions are not satisfied for good reasons, then the proof needs to be revisited.
 
 We assume that _only_ Dexter can spend its own token, and no others can.  Specifically, for example, there must _not_ exist any authorized users who are permitted to spend (some of) Dexter-owned tokens (in any certain cases).  For another example, there must _not_ exist a way to (even temporarily) borrow tokens from Dexter.
 
