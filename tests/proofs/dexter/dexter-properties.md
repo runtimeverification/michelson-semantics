@@ -1218,9 +1218,9 @@ ensures  TokensDeposited ==Int XtzDeposited *Int T up/Int X
 
 #### RemoveLiquidity(To, LqtBurned, MinXtzWithdrawn, MinTokensWithdrawn, Deadline)
 
-NOTE:
-- It needs to check `l < L`, otherwise the contract becomes nonfunctional.
-- Given `l < L`, we have `x < X` and `t < T`, thus `X' > 0` and `T' > 0`.
+The following rule formulates the behaviors of the RemoveLiquidity entrypoint.  As in the previous formulation, this specifies both success and failure cases depending on the satisfiability of the assertion conditions.
+
+Note that the assertion explicitly includes the condition `LqtBurned <Int L` that requires the liquidity amount to be burned should be _strictly_ less than the total liquidity supply.  This condition is required for the functional correctness of Dexter, as already mentioned in the Dexter source code comment.  However, the current Dexter implementation does _not_ check the condition, leaving the potential for Dexter becoming nonfunctional by mistake or corrupted admin users.  _**It is strongly recommended to add an explicit input validation for LqtBurned.**_
 
 ```
 rule [remove-liquidity]:
@@ -1245,9 +1245,6 @@ ensures  XtzWithdrawn    ==Int LqtBurned *Int X /Int L
 
 #### XtzToToken(To, MinTokensBought, Deadline)
 
-NOTE:
-- `TokensBought < T` if `T > 0`
-
 ```
 rule [xtz-to-token]:
 <operations>  ( [ Transaction Sender DEXTER XtzSold XtzToToken(To, MinTokensBought, Deadline) ] => OpsEmitted ) ;; _ </operations>
@@ -1266,9 +1263,6 @@ ensures  TokensBought ==Int 997 *Int XtzSold *Int T /Int (1000 *Int X +Int 997 *
 ```
 
 #### TokenToXtz(To, TokensSold, MinXtzBought, Deadline)
-
-NOTE:
-- `XtzBought <Int X` if `X > 0`
 
 ```
 rule [token-to-xtz]:
@@ -1289,10 +1283,9 @@ ensures  XtzBought ==Int 997 *Int TokensSold *Int X /Int (1000 *Int T +Int 997 *
 
 #### TokenToToken(OutputDexterContract, MinTokensBought, To, TokensSold, Deadline)
 
-NOTE:
-- The following two should be equivalent:
-  - `[ Transaction DEXTER 0 TokenToToken(OutputDexterContract, MinTokensBought, To, TokensSold, Deadline) ]`
-  - `[ Transaction DEXTER 0 TokenToXtz(Sender, TokensSold, 0, Deadline) ] ;; [ Transaction OutputDexterContract XtzBought XtzToToken(To, MinTokensBought, Deadline) ]`
+Note that it is straightforward to prove the equivalence between the following two scenarios:
+- Alice simply sends a single transaction to Dexter, `Transaction Alice DEXTER 0 TokenToToken(OutputDexterContract, MinTokensBought, To, TokensSold, Deadline)`.
+- Alice first sends a transaction to Dexter, `Transaction Alice DEXTER 0 TokenToXtz(Alice, TokensSold, 0, Deadline)`, then immediately sends another transaction to OutputDexterContract, `Transaction Sender OutputDexterContract XtzBought XtzToToken(To, MinTokensBought, Deadline)`, where XtzBought is the amount she received from the first transaction.  (We assume that no transactions have been made to OutputDexterContract between the two transactions.)
 
 ```
 rule [token-to-token]:
