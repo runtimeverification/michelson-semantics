@@ -577,22 +577,37 @@ proof [inv-update-token-pool-internal]:
 ```
 claim [lemma-update-token-pool-internal]:
 [[ T <=Int TokenPool andBool TokenPool <=Int D andBool Transfers(Ops) ==Int 0 => true ]]
-<operations>  [ Transaction TOKEN DEXTER 0 UpdateTokenPoolInternal(TokenPool) ] ;; Ops </operations>
+<operations>  [ Transaction TOKEN DEXTER 0 UpdateTokenPoolInternal(TokenPool) ] #as Op ;; Ops </operations>
 <tokenPool>   T </tokenPool>
 <tokenDexter> D </tokenDexter>
-
-proof sketch:
-- Let Tx1 be the parent transaction who emitted the current transaction, and Tx2 be the parent transaction of Tx1.
-- Tx1 must be `Transaction DEXTER TOKEN 0 BalanceOf(DEXTER, UpdateTokenPoolInternal)`, and Tx2 must be `Transaction _ DEXTER 0 UpdateTokenPool()`.  Moreover, Tx2 must be top-level.
-- Let Ops1 be the remaining transactions in the queue emitted by Tx1 (that will be executed after the current transaction), and Ops2 be the remaining top-level transactions (that will be executed after the completion of Tx1).
-- Then, we have `Ops ==K Ops1 ;; Ops2`.  Since the sender of the transactions in `Ops` is not DEXTER, we have `Transfers(Ops) ==Int 0`.
-- Now, by IH, `[inv]` holds for Tx1.  Let T0 be the <tokenPool> value at Tx1, D0 be the <tokenDexter> value at Tx1, and Ops0 be the <operations> value at Tx1.  Then, by `[inv]`, we have `T0 <=Int D0 +Int Transfers(Ops0)`.
-- Note that Ops0 must be a certain operation sequence (say Ops0Pre) followed by the current transaction followed by Ops.  Since the sender of the transactions in `Ops0` is not DEXTER, we have `Transfers(Ops0) ==Int 0`.
-- By `[token-balance-of]`, we have `TokenPool ==Int D0`.
-- During the execution of Ops0Pre, the <tokenPool> value does not change, because no DEXTER entrypoint function can be executed (since `<selfIsUpdatingTokenPool>` is true).  Thus, we have `T ==Int T0`
-- Also, during the execution of Ops0Pre, the <tokenDexter> value cannot decrease, because only DEXTER can spend its own tokens.  Thus, we have `D >=Int D0`.
-- Thus, we have `T <=Int TokenPool andBool TokenPool <=Int D`, which concludes.
 ```
+
+Proof sketch for `[lemma-update-token-pool-internal]`:
+```
+                +-------+-----+-------+
+ top-level ---> | . . . | Tx2 |  Ops2 |         Tx2 = Transaction _ DEXTER 0 UpdateTokenPool()
+                +-------+--+--+-------+
+                           |
+                          \|/
+                        +-----+
+                        | Tx1 |                 Tx1 = Transaction DEXTER TOKEN 0 BalanceOf(DEXTER, UpdateTokenPoolInternal)
+                        +--+--+
+                           |
+                          \|/
+                +-------+-----+-------+
+                | Ops0  |  Op |  Ops1 |         Op  = Transaction TOKEN DEXTER 0 UpdateTokenPoolInternal(TokenPool)
+                +-------+-----+-------+
+```
+- Let Tx1 be the parent operation who emitted the current operation Op, and Tx2 be the parent operation of Tx1.
+- Tx1 must be `Transaction DEXTER TOKEN 0 BalanceOf(DEXTER, UpdateTokenPoolInternal)`, and Tx2 must be `Transaction _ DEXTER 0 UpdateTokenPool()`.  Moreover, Tx2 must be top-level.
+- Let Ops1 be the remaining operations emitted by Tx1 (that will be executed after the current operation Op), and Ops2 be the remaining top-level operations (that will be executed after the completion of Tx2).
+- Then, we have `Ops ==K Ops1 ;; Ops2`.  Since nothing in Ops was emitted by Dexter, we have `Transfers(Ops) ==Int 0`.
+- Now, by IH, `[inv]` holds for Tx1.  Let T', D', and Ops' be the post value of `<tokenPool>`, `<tokenDexter>`, and `<operations>`, respectively, for Tx1.  Then, by `[inv]`, we have `T' <=Int D' +Int Transfers(Ops')`.
+- Note that Ops' must be of the form `Ops0 ;; [ Op ] ;; Ops1 ;; Ops2`, where Ops0 is possibly empty.  Since nothing in Ops' was emitted by Dexter, we have `Transfers(Ops') ==Int 0`.
+- By `[token-balance-of]`, we have `TokenPool ==Int D'`.
+- During the entire execution of Ops0 (including their nested sub-operations), `<tokenPool>` does not change, because no Dexter entrypoint can be executed due to the `<selfIsUpdatingTokenPool>` lock.  Thus, we have `T ==Int T'`.  (Note that, if the lock is somehow released during the execution of Ops0, then Op will fail which will revert the entire transaction.  Also, note that the lock cannot be held again during Ops0, because only a top-level operation can hold the lock.)
+- Also, during the execution of Ops0, `<tokenDexter>` cannot decrease, because only Dexter can spend its own tokens.  Thus, we have `D >=Int D'`.
+- Thus, we have `T <=Int TokenPool andBool TokenPool <=Int D`, which concludes.
 
 #### Default
 
