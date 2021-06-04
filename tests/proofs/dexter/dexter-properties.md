@@ -8,7 +8,7 @@ In the Dexter contract, the token exchange rate and the liquidity price are dete
 
 The first invariant states that the Dexter state variables faithfully represent the actual pool reserves and liquidity supply.  That is, XtzPool and TokenPool must be equal to the actual XTZ and token reserves, and LqtTotal must be equal to the actual total liquidity supply.  Note that the Dexter entrypoint functions immediately update the state variables, while the actual reserves or supply are to be updated later by the continuation operations emitted by the entrypoints.  More precisely, the actual token reserve may be possibly larger than TokenPool, since one can “donate” tokens to Dexter (i.e., directly sending tokens to Dexter without going through any of the Dexter entrypoint functions).  Note that, however, the actual XTZ reserve must be equal to the XtzPool value, since directly sending XTZ to Dexter will be captured by the Default() entrypoint.  (Indeed, we assume that, in Tezos, there is no way to “secretly” send XTZ to Dexter without triggering the Dexter entrypoint functions.  Note that, in Ethereum, it is _possible_ to send Ether to a smart contract without ever executing the contract code.)
 
-The following claim `[inv-top-level]` states that the invariant holds at the completion of every top-level transaction.  Note that a top-level transaction is a transaction created by a non-contract account (i.e., a transaction whose sender is equal to the source), and the completion of a transaction involves the full execution “tree” following the DFS model adopted in the Florence upgrade.
+The following claim `[inv-top-level]` states that the invariant holds at the completion of every top-level transaction.  Note that a top-level transaction is a transaction created by an implicit account (i.e., a transaction whose sender is equal to the source), and the completion of a transaction involves the full execution “tree” following the DFS model adopted in the Florence upgrade.
 
 The `<xtzPool>`, `<tokenPool>`, and `<lqtTotal>` cells denote the Dexter state variables, XtzPool, TokenPool, and LqtTotal, respectively.  The `<xtzDexter>`, `<tokenDexter>`, and `<lqtSupply>` cells denote the actual XTZ and token reserves, and total liquidity supply, respectively.
 
@@ -1045,7 +1045,7 @@ proposition [dexter-emitted-ops]:
 <operations> [ Transaction DEXTER Target Amount CallParams ] ;; _ </operations>
 ```
 
-The following proposition `[only-dexter]` states that no one other than Dexter can emit operations whose sender is Dexter.  Note that Sends, Transfers, and MintBurns are defined to be zero for operations whose sender is not Dexter.  Also, obviously, the state variables and XTZ balance of Dexter can be updated only by Dexter.
+The following proposition `[only-dexter]` states that no one other than Dexter can emit operations whose sender is Dexter.  Note that Sends, Transfers, and MintBurns are defined to be zero for operations whose sender is not Dexter.  Also, obviously, the state variables and XTZ balance of Dexter cannot be updated without executing the Dexter contract.
 
 ```
 proposition [only-dexter]:
