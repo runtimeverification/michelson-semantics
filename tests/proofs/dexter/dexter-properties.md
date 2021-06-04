@@ -1082,8 +1082,8 @@ proposition [dfs]:
 <sourceaddr> Source </sourceaddr>
 
 syntax Bool ::= TopLevelOps(OpList, Address) [function]
-rule TopLevelOps([ Transaction Sender _ _ _ ] ;; Ops, Source) => TopLevelOps(Ops, Source) ]] requires Sender ==K Source
-rule TopLevelOps([ Transaction Sender _ _ _ ] ;; _, Source) => false ]] requires Sender =/=K Source
+rule TopLevelOps([ Transaction Sender _ _ _ ] ;; Ops, Source) => TopLevelOps(Ops, Source) requires Sender ==K Source
+rule TopLevelOps([ Transaction Sender _ _ _ ] ;; _, Source) => false requires Sender =/=K Source
 rule TopLevelOps(.List, _) => true
 ```
 
