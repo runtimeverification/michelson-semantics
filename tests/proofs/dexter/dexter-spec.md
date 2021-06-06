@@ -97,7 +97,7 @@ module DEXTER-ADDLIQUIDITY-POSITIVE-SPEC
 ```k
   claim <k> #runProof(IsFA2, AddLiquidity(Owner, MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => . </k>
         <stack> .Stack </stack>
-        <selfIsUpdatingTokenPool> false </selfIsUpdatingTokenPool>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <myamount> #Mutez(Amount) </myamount>
         <myaddr> SelfAddress </myaddr>
@@ -116,12 +116,13 @@ module DEXTER-ADDLIQUIDITY-POSITIVE-SPEC
                      [ Transfer_tokens Pair ((Amount *Int OldLqt) /Int XtzAmount) Owner #Mutez(0) LqtAddress (Nonce +Int 1) ] ;;
                      .InternalList
         </operations>
-    requires CurrentTime <Int Deadline
-     andBool XtzAmount   >Int 0
+    requires notBool IsUpdating
+     andBool CurrentTime <Int Deadline
      andBool #ceildiv(Amount *Int TokenAmount, XtzAmount) <=Int MaxTokensDeposited
-     andBool (Amount *Int TokenAmount) %Int XtzAmount =/=Int 0
-     andBool MinLqtMinted <=Int (Amount *Int OldLqt) /Int XtzAmount
      andBool #IsLegalMutezValue(Amount +Int XtzAmount)
+     andBool MinLqtMinted <=Int (Amount *Int OldLqt) /Int XtzAmount
+     andBool XtzAmount   >Int 0
+     andBool (Amount *Int TokenAmount) %Int XtzAmount =/=Int 0
 
      andBool #EntrypointExists(KnownAddresses, TokenAddress,   %transfer, #TokenTransferType(IsFA2))
      andBool #EntrypointExists(KnownAddresses,   LqtAddress, %mintOrBurn, pair int %quantity .AnnotationList address %target .AnnotationList)
@@ -146,7 +147,7 @@ module DEXTER-ADDLIQUIDITY-NEGATIVE-SPEC
 ```
 
 ```k
-  claim <k> #runProof(IsFA2, AddLiquidity(_Owner, MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
+  claim <k> #runProof(_IsFA2, AddLiquidity(_Owner, MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_:FailedStack </stack>
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
@@ -159,8 +160,8 @@ module DEXTER-ADDLIQUIDITY-NEGATIVE-SPEC
         orBool CurrentTime >=Int Deadline
         orBool #ceildiv(Amount *Int TokenAmount, XtzAmount) >Int MaxTokensDeposited
         orBool notBool #IsLegalMutezValue(Amount +Int XtzAmount)
-        orBool MinLqtMinted >Int (Amount *Int OldLqt) /Int XtzAmount
         orBool XtzAmount ==Int 0
+        orBool MinLqtMinted >Int (Amount *Int OldLqt) /Int XtzAmount
              )
 
   claim <k> #runProof(IsFA2, AddLiquidity(_Owner, MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
@@ -334,13 +335,13 @@ The contract sets its delegate to the value of `baker` (and optionally freezes t
 4.  the baker is _not_ already frozen
 
 ```k
-  claim <k> #runProof(_IsFA2, SetBaker(Baker, FreezeBaker)) => . </k>
+  claim <k> #runProof(_IsFA2, SetBaker(Baker, NewFreezeBaker)) => . </k>
         <stack> .Stack </stack>
         <manager> Sender </manager>
         <selfIsUpdatingTokenPool> false </selfIsUpdatingTokenPool>
         <myamount> #Mutez(Amount) </myamount>
         <senderaddr> Sender </senderaddr>
-        <freezeBaker> false => FreezeBaker </freezeBaker>
+        <freezeBaker> false => NewFreezeBaker </freezeBaker>
         <nonce> #Nonce(N => N +Int 1) </nonce>
         <operations> _ => [ Set_delegate Baker N:Int ] ;; .InternalList </operations>
     requires Amount ==Int 0
@@ -468,6 +469,8 @@ NOTE: The failure conditions are split into two claims with identical configurat
      orBool IsUpdating
      orBool Sender =/=K Source
 ```
+
+TODO: This seems redundant
 
 ```k
   claim <k> #runProof(IsFA2, UpdateTokenPool) => Aborted(?_, ?_, ?_, ?_) </k>
@@ -619,19 +622,6 @@ The following claims cover these cases:
         <myamount> #Mutez(Amount) </myamount>
         <tokenAddress> #Address(TokenAddress) </tokenAddress>
         <senderaddr> #Address(Sender) </senderaddr>
-     requires Amount >Int 0
-      andBool IsUpdating
-      andBool TokenAddress ==K Sender
-      andBool BalanceOfResult =/=K .InternalList
-```
-
-```k
-  claim <k> #runProof(true, UpdateTokenPoolInternalFA2(BalanceOfResult)) => Aborted(?_, ?_, ?_, ?_) </k>
-        <stack> .Stack => ( Failed ?_ ) </stack>
-        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
-        <myamount> #Mutez(Amount) </myamount>
-        <tokenAddress> #Address(TokenAddress) </tokenAddress>
-        <senderaddr> #Address(Sender) </senderaddr>
      requires (notBool IsUpdating)
 ```
 
@@ -654,6 +644,19 @@ The following claims cover these cases:
         <senderaddr> #Address(Sender) </senderaddr>
      requires TokenAddress ==K Sender
       andBool BalanceOfResult ==K .InternalList
+```
+
+```k
+  claim <k> #runProof(true, UpdateTokenPoolInternalFA2(BalanceOfResult)) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ( Failed ?_ ) </stack>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <myamount> #Mutez(Amount) </myamount>
+        <tokenAddress> #Address(TokenAddress) </tokenAddress>
+        <senderaddr> #Address(Sender) </senderaddr>
+     requires Amount >Int 0
+      andBool IsUpdating
+      andBool TokenAddress ==K Sender
+      andBool BalanceOfResult =/=K .InternalList
 ```
 
 ```k
@@ -975,7 +978,7 @@ module DEXTER-XTZTOTOKEN-FA12-POSITIVE-SPEC
      andBool notBool IsUpdating
      andBool CurrentTime <Int Deadline
      andBool (XtzPool >Int 0 orBool Amount >Int 0)
-     andBool #XtzBought(TokenPool, XtzPool, Amount) >=Int  MinTokensBought
+     andBool #XtzBought(TokenPool, XtzPool, Amount) >=Int MinTokensBought
      andBool #XtzBought(TokenPool, XtzPool, Amount) <=Int TokenPool
      andBool TokenPool -Int #XtzBought ( TokenPool , XtzPool , Amount ) >=Int 0
      andBool #IsLegalMutezValue(XtzPool +Int Amount)
@@ -1035,7 +1038,7 @@ module DEXTER-XTZTOTOKEN-FA2-POSITIVE-SPEC
      andBool notBool IsUpdating
      andBool CurrentTime <Int Deadline
      andBool (XtzPool >Int 0 orBool Amount >Int 0)
-     andBool #XtzBought(TokenPool, XtzPool, Amount) >=Int  MinTokensBought
+     andBool #XtzBought(TokenPool, XtzPool, Amount) >=Int MinTokensBought
      andBool #XtzBought(TokenPool, XtzPool, Amount) <=Int TokenPool
      andBool TokenPool -Int #XtzBought ( TokenPool , XtzPool , Amount ) >=Int 0
      andBool #IsLegalMutezValue(XtzPool +Int Amount)
@@ -1112,7 +1115,7 @@ A buyer sends tokens to the Dexter contract, converts its to xtz, and then immed
       andBool CurrentTime <Int Deadline
       andBool Amount ==Int 0
       andBool #XtzBought(XtzPool, TokenPool, TokensSold) <=Int XtzPool
-      andBool (TokenPool >Int 0 orBool TokensSold >Int 0) 
+      andBool (TokenPool >Int 0 orBool TokensSold >Int 0)
       andBool #IsLegalMutezValue(#XtzBought(XtzPool, TokenPool, TokensSold))
       andBool #EntrypointExists(KnownAddresses, TokenAddress,         %transfer,   #TokenTransferType(IsFA2))
       andBool #EntrypointExists(KnownAddresses, OutputDexterContract, %xtzToToken, pair (address %to) (pair (nat %minTokensBought) (timestamp %deadline)))
@@ -1143,7 +1146,7 @@ A buyer sends tokens to the Dexter contract, converts its to xtz, and then immed
       andBool CurrentTime <Int Deadline
       andBool Amount ==Int 0
       andBool #XtzBought(XtzPool, TokenPool, TokensSold) <=Int XtzPool
-      andBool (TokenPool >Int 0 orBool TokensSold >Int 0) 
+      andBool (TokenPool >Int 0 orBool TokensSold >Int 0)
       andBool #IsLegalMutezValue(#XtzBought(XtzPool, TokenPool, TokensSold))
       andBool #EntrypointExists(KnownAddresses, TokenAddress,         %transfer,   #TokenTransferType(IsFA2))
       andBool #EntrypointExists(KnownAddresses, OutputDexterContract, %xtzToToken, pair (address %to) (pair (nat %minTokensBought) (timestamp %deadline)))
@@ -1177,11 +1180,11 @@ module DEXTER-TOKENTOTOKEN-NEGATIVE-SPEC
         <knownaddrs> KnownAddresses </knownaddrs>
         <operations> _ </operations>
      requires notBool IsFA2
-      andBool notBool( notBool SelfIsUpdating 
+      andBool notBool( notBool SelfIsUpdating
                andBool CurrentTime <Int Deadline
                andBool Amount ==Int 0
                andBool #XtzBought(XtzPool, TokenPool, TokensSold) <=Int XtzPool
-               andBool (TokenPool >Int 0 orBool TokensSold >Int 0) 
+               andBool (TokenPool >Int 0 orBool TokensSold >Int 0)
                andBool #IsLegalMutezValue(#XtzBought(XtzPool, TokenPool, TokensSold))
                      )
       andBool #EntrypointExists(KnownAddresses, TokenAddress,         %transfer,   #TokenTransferType(IsFA2))
@@ -1207,11 +1210,11 @@ module DEXTER-TOKENTOTOKEN-NEGATIVE-SPEC
         <knownaddrs> KnownAddresses </knownaddrs>
         <operations> _ </operations>
      requires IsFA2
-      andBool notBool( notBool SelfIsUpdating 
+      andBool notBool( notBool SelfIsUpdating
                andBool CurrentTime <Int Deadline
                andBool Amount ==Int 0
                andBool #XtzBought(XtzPool, TokenPool, TokensSold) <=Int XtzPool
-               andBool (TokenPool >Int 0 orBool TokensSold >Int 0) 
+               andBool (TokenPool >Int 0 orBool TokensSold >Int 0)
                andBool #IsLegalMutezValue(#XtzBought(XtzPool, TokenPool, TokensSold))
                      )
       andBool #EntrypointExists(KnownAddresses, TokenAddress,         %transfer,   #TokenTransferType(IsFA2))
