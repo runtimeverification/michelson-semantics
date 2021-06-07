@@ -4,11 +4,11 @@ We formulate and prove safety properties of Dexter over _the sequence of arbitra
 
 ## Faithfulness of State Variables
 
-In the Dexter contract, the token exchange rate and the liquidity price are determined by the three state variables (XtzPool, TokenPool, LqtTotal) which refers to the XTZ reserve, the token reserve, and the total liquidity supply, respectively.
+In the Dexter contract, the token exchange rate and the liquidity share price are determined by the three state variables (XtzPool, TokenPool, LqtTotal) which keep track of the XTZ reserve, the token reserve, and the total liquidity supply, respectively.
 
-The first invariant states that the Dexter state variables faithfully represent the actual pool reserves and liquidity supply.  That is, XtzPool and TokenPool must be equal to the actual XTZ and token reserves, and LqtTotal must be equal to the actual total liquidity supply.  Note that the Dexter entrypoint functions immediately update the state variables, while the actual reserves or supply are to be updated later by the continuation operations emitted by the entrypoints.  More precisely, the actual token reserve may be possibly larger than TokenPool, since one can “donate” tokens to Dexter (i.e., directly sending tokens to Dexter without going through any of the Dexter entrypoint functions).  Note that, however, the actual XTZ reserve must be equal to the XtzPool value, since directly sending XTZ to Dexter will be captured by the Default() entrypoint.  (Indeed, we assume that, in Tezos, there is no way to “secretly” send XTZ to Dexter without triggering the Dexter entrypoint functions.  Note that, in Ethereum, it is _possible_ to send Ether to a smart contract without ever executing the contract code.)
+The first invariant we consider is that the Dexter state variables faithfully represent the actual pool reserves and liquidity supply.  That is, XtzPool and TokenPool must be equal to the actual XTZ and token reserves, and LqtTotal must be equal to the actual total liquidity supply.  Note that the Dexter entrypoint functions immediately update these state variables, while the actual reserves or supply will be updated later by the continuation operations emitted by the entrypoints.  Moreover, the actual token reserve may be possibly larger than TokenPool, since one can "donate" tokens to Dexter (i.e., directly sending tokens to Dexter without going through any of the Dexter entrypoint functions).  Note that, however, the actual XTZ reserve must be equal to the XtzPool value, since directly sending XTZ to Dexter will be captured by the Default() entrypoint.  (Indeed, we assume that, in Tezos, there is no way to "secretly" send XTZ to Dexter without triggering any Dexter entrypoint.  Note that, in Ethereum, it is _possible_ to send Ether to a smart contract without ever executing the contract code.)
 
-The following claim `[inv-top-level]` states that the invariant holds at the completion of every top-level transaction.  Note that a top-level transaction is a transaction created by an implicit account (i.e., a transaction whose sender is equal to the source), and the completion of a transaction involves the full execution “tree” following the DFS model adopted in the Florence upgrade.
+The following claim `[inv-top-level]` states that the invariant holds at the completion of every top-level operation.  Note that a top-level operation is the one created by an implicit account (i.e., an operation whose sender is equal to the source), and the completion of an operation involves the full execution "tree" following the DFS model adopted in the Florence upgrade.
 
 The `<xtzPool>`, `<tokenPool>`, and `<lqtTotal>` cells denote the Dexter state variables, XtzPool, TokenPool, and LqtTotal, respectively.  The `<xtzDexter>`, `<tokenDexter>`, and `<lqtSupply>` cells denote the actual XTZ and token reserves, and total liquidity supply, respectively.
 
@@ -62,7 +62,7 @@ proof [inv-trans]:
 - by induction on =>* and [inv]
 ```
 
-The following claim `[inv]` generalizes the top-level claim `[inv-top-level]` at the operational level.  It says that the execution of an _arbitrary_ operation always preserves a certain relationship between the Dexter state variables and the actual pool reserves and liquidity supply.  Intuitively, the Dexter state variables must reflect the “ultimate” value of the pool reserves and liquidity supply, which will be updated by the continuation operations in the future.
+The following claim `[inv]` generalizes the top-level claim `[inv-top-level]` over every intermediate operation.  It says that the execution of an _arbitrary_ operation always preserves a certain relationship between the Dexter state variables and the actual pool reserves and liquidity supply.  Intuitively, the Dexter state variables must reflect the "ultimate" value of the pool reserves and liquidity supply over the course of intermediate steps of execution, which will be eventualy updated by the continuation operations in the future.
 
 ```
 claim [inv]:
@@ -104,7 +104,7 @@ rule MintBurns(_ ;; Ops) => MintBurns(Ops) [owise]
 rule MintBurns(.List) => 0
 ```
 
-Below we prove the invariant `[inv]` by induction on the sequence of operations and case analysis over different types of operations.
+Below we prove the claim `[inv]` by the induction on sequences of operations, and the case analysis over different types of operations.
 
 ```
 proof [inv]:
@@ -181,7 +181,7 @@ proof [inv]:
 
 ### Proof for Dexter Entrypoint Functions
 
-We prove the invariant for each Dexter entrypoint.
+We prove the claim `[inv]` for each Dexter entrypoint.
 
 #### AddLiquidity
 
@@ -605,9 +605,9 @@ Proof sketch for `[lemma-update-token-pool-internal]`:
 - Now, by IH, `[inv]` holds for Tx1.  Let T0, D0, and OpsTx1 be the post value of `<tokenPool>`, `<tokenDexter>`, and `<operations>`, respectively, for Tx1.  Then, by `[inv]`, we have `T0 <=Int D0 +Int Transfers(OpsTx1)`.
 - Note that OpsTx1 must be of the form `Ops0 ;; [ Op ] ;; Ops1 ;; Ops2`, where Ops0 is possibly empty.  Since nothing in OpsTx1 was emitted by Dexter, we have `Transfers(OpsTx1) ==Int 0`.
 - By `[token-balance-of]`, we have `TokenPool ==Int D0`.
-- During the entire execution of Ops0 (including their nested sub-operations), `<tokenPool>` does not change, because no Dexter entrypoint can be executed due to the `<selfIsUpdatingTokenPool>` lock.  Thus, we have `T ==Int T0`.  (Note that, if the lock is somehow released during the execution of Ops0, then Op will fail which will revert the entire transaction.  Also, note that the lock cannot be held again during Ops0, because only a top-level operation can hold the lock.)
+- During the entire execution of Ops0 (including their nested sub-operations), `<tokenPool>` does not change, because no Dexter entrypoint can be executed due to the `<selfIsUpdatingTokenPool>` lock.  Thus, we have `T ==Int T0`.  (Note that, if the lock is somehow released during the execution of Ops0, then Op will fail which will revert the entire transaction.  Also, note that the lock cannot be held again during Ops0, because only a top-level operation can initiate the lock.)
 - Also, during the execution of Ops0, `<tokenDexter>` cannot decrease, because only Dexter can spend its own tokens.  Thus, we have `D >=Int D0`.
-- Thus, we have `T <=Int TokenPool andBool TokenPool <=Int D`, which concludes.
+- Thus, we have `T <=Int TokenPool <=Int D`, which concludes.
 
 #### Default
 
@@ -722,9 +722,9 @@ proof [inv-setter]:
 
 ### Proof for External Contract Calls
 
-We prove the invariant for external contract calls.
+We prove the claim `[inv]` for any external contract calls from Dexter.
 
-Since the external contracts are unknown and arbitrary, we need to make certain assumptions on the behavior of external contracts that are required for the functional correctness and security of the Dexter contract.  The specific assumptions we made are presented later in this document.  The invariant proof is based on the assumptions, and it is important to independently verify that the token and liquidity contract implementations satisfy the assumptions.
+Since external contracts are unknown and arbitrary, we need to make certain assumptions on the behavior of external contracts that are required for the functional correctness and security of the Dexter contract.  The specific assumptions we made are presented later in this document.  The invariant proof is based on the assumptions, and it is important to independently verify that the token and liquidity contract implementations satisfy the assumptions.
 
 There exist different types of external calls made by Dexter as follows:
 - Simply send XTZ to others
@@ -1003,18 +1003,18 @@ proof [inv-lqt-mint-burn]:
 
 ### Assumptions for Tezos Execution Environment
 
-We assume that the Tezos execution model does not allow any nonstandard behaviors regarding the Dexter smart contract execution.  Specifically, we make the following assumptions:
-- Only the Dexter entrypoint functions can emit a transaction whose sender is Dexter.
-- As a smart contract, Dexter can emit only _internal_ transactions (i.e., transactions whose source is not Dexter).
-- The types of Dexter-emitted internal transactions are fixed (i.e., no arbitrary transactions can be emitted by Dexter).
+We assume that the Tezos execution model does not allow any weird behaviors regarding the Dexter smart contract execution.  Specifically, we make the following assumptions:
+- Only the Dexter entrypoint functions can emit operations whose sender is Dexter.
+- As a smart contract, Dexter can emit only _internal_ operations (i.e., operations whose source is not Dexter).
+- The types of Dexter-emitted internal operations are fixed (i.e., no arbitrary operations can be emitted by Dexter).
 - Dexter _never_ calls on itself except the following cases:
   - RemoveLiquidity(To, ...) where To is Dexter, which calls Default() on itself.
   - TokenToXtz(To, ...) where To is Dexter, which calls Default() on itself.
-  - TokenToToken(OutputDexterContract, ...) where OutputDexterContract is Dexter, which calls XtzToToken(...) on itself.
+  - TokenToToken(OutputDexterContract, ...) where OutputDexterContract is Dexter, which calls XtzToToken() on itself.
 
-The above assumptions are formulated in the following propositions below.
+The above assumptions are formulated in a series of propositions below.
 
-The following proposition `[sender-is-not-dexter]` states that no entrypoint of Dexter may call on itself except Default and XtzToToken.
+The following proposition `[sender-is-not-dexter]` states that no entrypoint of Dexter may call on itself except Default() and XtzToToken().
 
 ```
 proposition [sender-is-not-dexter]:
@@ -1064,7 +1064,7 @@ ensures  Sends(Ops) ==Int 0
  andBool B' ==Int B
 ```
 
-The following proposition `[top-level]` states that a top-level transaction (i.e., a transaction whose sender is equal to the source) cannot be generated by Dexter.
+The following proposition `[top-level]` states that a top-level operation (i.e., an operation whose sender is equal to the source) cannot be generated by Dexter.
 
 ```
 proposition [top-level]:
@@ -1093,7 +1093,7 @@ We make assumptions on the behaviors of external contracts, especially the token
 
 We assume that _only_ Dexter can spend its own token, and no others can.  Specifically, for example, there must _not_ exist any authorized users who are permitted to spend (some of) Dexter-owned tokens (in any certain cases).  For another example, there must _not_ exist a way to (even temporarily) borrow tokens from Dexter.
 
-We also assume that the token transfer operation must update the balance before emitting continuation operations.  For example, the token contract must _not_ implement the “pull pattern” where the transfer operation does not immediately update the balance but only allows the receiver to claim the transferred amount later as a separate transaction.  Note that such a delayed update of balance may lead to an exploit.  For example, a malicious user calls XtzToToken() and then calls UpdateTokenPool() before claiming the bought tokens.  Later he claims the tokens, which makes TokenPool to be larger than the actual token reserve, and distorts the token exchange price.  (The delayed balance update may conform to the FA2 standard, violating the atomicity requirement, but it is not clear whether it conforms to the FA1.2 or not.)
+We also assume that the token transfer operation must update the balance before emitting continuation operations.  For example, the token contract must _not_ implement the so-called "pull pattern" where the transfer operation does not immediately update the balance but only allows the receiver to claim the transferred amount later as a separate transaction.  Note that such a delayed update of balance may lead to an exploit.  For example, a malicious user calls XtzToToken() and then calls UpdateTokenPool() before claiming the bought tokens.  Later he claims the tokens, which makes TokenPool to be larger than the actual token reserve, and distorts the token exchange price.  (The delayed balance update may not conform to the FA2 standard due to the violation of the atomicity requirement, but it is unclear whether it violates the FA1.2 standard or not.)
 
 These assumptions are formulated in the following proposition `[token-transfer]`.
 
@@ -1119,9 +1119,9 @@ ensures  D' <Int D impliesBool ( Op ==K Transaction DEXTER TOKEN 0 Transfer(DEXT
  andBool D' >Int D impliesBool Op ==K Transaction _ TOKEN 0 Transfer(_, DEXTER, _)
 ```
 
-Regarding the BalanceOf() function, we assume the behavior only for the specific use case with Dexter.  The UpdateTokenPool() function emits an internal transaction to the token contract that calls BalanceOf() with the UpdateTokenPoolInternal() callback.  We assume that, upon receipt of such a call, BalanceOf() emits a transaction that calls to the given callback function with the current token balance of Dexter.  Obviously, the token balance must not be altered.  This assumption is formulated in the following rule `[token-balance-of]`.
+Regarding the BalanceOf() function, we assume the behavior only for the specific usage with Dexter.  The UpdateTokenPool() function emits an internal transaction to the token contract that calls BalanceOf() with the UpdateTokenPoolInternal() callback.  We assume that, upon receipt of such a call, BalanceOf() emits a transaction that calls to the given callback function with the current token balance of Dexter.  Obviously, the token balance must _not_ be altered.  This assumption is formulated in the following rule `[token-balance-of]`.
 
-Note that, to admit more general behaviors, we assume that BalanceOf() can emit other operations that can be placed before and/or after the callback operation (denoted by OpsPre and OpsPost in the following rule).  Note that the additional operations placed before the callback can be arbitrary but cannot succeed in execution if they call any of the Dexter entrypoint functions, because of the SelfIsUpdatingTokenPool lock.  Also, if they somehow unlock SelfIsUpdatingTokenPool, then the callback will fail which will revert the entire transaction.  Note that they cannot relock after unlocking it, because locking is possible only by a top-level transaction to UpdateTokenPool() but no top-level transactions can be generated internally.
+Note that, to admit more general behaviors, we assume that BalanceOf() can emit other operations that can be placed before and/or after the callback operation (denoted by OpsPre and OpsPost in the following rule).  Note that the additional operations placed before the callback can be arbitrary but cannot succeed in execution if they call any Dexter entrypoint, because of the SelfIsUpdatingTokenPool lock.  Also, if they somehow unlock SelfIsUpdatingTokenPool, then the callback will fail which will revert the entire operations.  Note that they cannot relock after unlocking it, because locking is permitted only for a top-level transaction to UpdateTokenPool() but no top-level transactions can be generated internally.
 
 ```
 rule [token-balance-of]:
@@ -1155,7 +1155,7 @@ ensures  S' >Int S impliesBool ( Op ==K Transaction DEXTER LQT 0 Mint(_, Value) 
  andBool S' <Int S impliesBool ( Op ==K Transaction DEXTER LQT 0 Burn(_, Value) andBool Value >Int 0 )
 ```
 
-For the other unknown external contract calls, the only functions Dexter can call are Default() and XtzToToken().  We assume that such external calls can affect only the XTZ balance of Dexter (even if the target contract is either the token or liquidity contract).  The following rule `[send]` formulates that.
+For the other unknown external contract calls, the only functions Dexter can call are Default() and XtzToToken().  We assume that such external calls can affect only the XTZ balance of Dexter (even if the target contract is the token or liquidity contract).  The following rule `[send]` formulates that.
 
 ```
 rule [send]:
@@ -1171,7 +1171,7 @@ We formulate the behavior of each Dexter entrypoint over an abstract configurati
 
 #### Abstract Configuration
 
-The abstract configuration consists of the following components (called “cells”):
+The abstract configuration consists of the following components (called "cells" in the K framework):
 - `<operations>`: the sequence of operations to be executed
 - `<xtzPool>`: the XtzPool state variable
 - `<tokenPool>`: the TokenPool state variable
@@ -1179,14 +1179,14 @@ The abstract configuration consists of the following components (called “cells
 - `<xtzDexter>`: the XTZ balance of Dexter
 - `<tokenDexter>`: the token balance of Dexter (stored in the token contract storage)
 - `<lqtSupply>`: the total liquidity supply (stored in the liquidity contract storage)
-- `<sourceaddr>`: the source of the current transaction
+- `<sourceaddr>`: the source of the current operation
 - `<selfIsUpdatingTokenPool>`: the SelfIsUpdatingTokenPool lock
 - `<manager>`: the manager account address
 - `<lqtAddress>`: the liquidity contract address
 - `<freezeBaker>`: the FreezeBaker lock
 - `<mynow>`: the current timestamp
 
-Note that both `<xtzPool>` and `<xtzDexter>` are of the XTZ currency type, ranging from 0 to 2^64 - 1.  Throughout this document, we implicitly assume that they are _defined_ only when their values are within the valid range, otherwise they are undefined, meaning that any execution involving undefined currency values will fail or revert.
+Note that both `<xtzPool>` and `<xtzDexter>` are of the XTZ currency type, ranging from 0 to `2^64 - 1`.  Throughout this document, we implicitly assume that they are _defined_ only when their values are within the valid range, otherwise they are undefined, meaning that any execution involving undefined currency values will fail or revert.
 
 #### Constants and Macros
 
@@ -1298,9 +1298,9 @@ ensures  XtzBought ==Int 997 *Int TokensSold *Int X /Int (1000 *Int T +Int 997 *
 
 #### TokenToToken(OutputDexterContract, MinTokensBought, To, TokensSold, Deadline)
 
-Note that it is straightforward to prove the equivalence between the following two methods:
+Note that it is straightforward to prove the equivalence between the following two methods for the token-to-token exchange:
 - Alice sends only a single transaction to Dexter, `Transaction Alice DEXTER 0 TokenToToken(OutputDexterContract, MinTokensBought, To, TokensSold, Deadline)`.
-- Alice first sends a transaction to Dexter, `Transaction Alice DEXTER 0 TokenToXtz(Alice, TokensSold, 0, Deadline)`, and then immediately sends another transaction to OutputDexterContract, `Transaction Alice OutputDexterContract XtzBought XtzToToken(To, MinTokensBought, Deadline)`, where XtzBought is the amount she received from the first transaction.  (We assume that no transactions have been made to OutputDexterContract between the two transactions.)
+- Alice first sends a transaction to Dexter, `Transaction Alice DEXTER 0 TokenToXtz(Alice, TokensSold, 0, Deadline)`, and then immediately sends another transaction to OutputDexterContract, `Transaction Alice OutputDexterContract XtzBought XtzToToken(To, MinTokensBought, Deadline)`, where XtzBought is the amount she received from the first transaction, provided that no transactions have been made to OutputDexterContract between the two transactions.
 
 ```
 rule [token-to-token]:
@@ -1403,11 +1403,11 @@ assert   IsUpdatingTokenPool ==K false
  andBool InitialLqtAddress ==K 0
 ```
 
-## Pool Share Price Never Decreasing
+## Liquidity Share Price Never Decreasing
 
 The property `[inv]` states the relationship between the Dexter state variables and the actual pool reserves and liquidity supply.  Now we formulate another property regarding the relationship over the Dexter state variables themselves.
 
-Let XtzPool, TokenPool, and LqtTotal be the current value of the Dexter state variables.  Suppose that an operation updates the state variables to new values, say, XtzPool’, TokenPool’, and LqtTotal’, respectively.  Then, for any (successful) execution of an arbitrary operation, we must have:
+Let XtzPool, TokenPool, and LqtTotal be the current value of the Dexter state variables.  Suppose that an operation updates the state variables to new values, say, XtzPool', TokenPool', and LqtTotal', respectively.  Then, for any (successful) execution of an arbitrary operation, we must have:
 ```
   XtzPool' * TokenPool'        LqtTotal'
   ---------------------  >=  ( -------- )^2
@@ -1415,15 +1415,15 @@ Let XtzPool, TokenPool, and LqtTotal be the current value of the Dexter state va
 ```
 where the division is the real arithmetic division (i.e., no rounding).
 
-Note that the above property (together with the `[inv]` property) says that the pool share price (i.e., the multiplication of the amounts of XTZ and tokens to be redeemed per unit liquidity) _never_ decreases.  Intuitively, this implies the following desired properties:
-- When adding liquidity, users _cannot_ mint more liquidity tokens than they should.
+Note that the above property (together with the `[inv]` property) says that the liquidity share price (i.e., the multiplication of the amounts of XTZ and tokens to be redeemed per unit liquidity) _never_ decreases.  Intuitively, this implies the following desired properties:
+- When adding liquidity, users _cannot_ mint more liquidity shares than they should.
 - When removing liquidity, users _cannot_ redeem more assets than they should.
 - When exchanging tokens, users _cannot_ receive more XTZ or tokens than they should.
 - Updating the token pool _cannot_ be exploited despite the non-atomicity.
 
-(Note that, however, this property says _nothing_ about the _USD value_ of the pool share.  Indeed, the USD value of the pool share could decrease due to the so-called “Impermanent Loss” problem.)
+(Note that, however, this property has _nothing_ to do with the _USD value_ of the liquidity share.  Indeed, the USD value of the liquidity share could decrease due to the so-called "Impermanent Loss" problem.)
 
-The following claim `[pool]` formulates the pool share price property.
+The following claim `[pool]` formulates the liquidity share price property.
 
 ```
 claim [pool]:
