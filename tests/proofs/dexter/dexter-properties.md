@@ -4,7 +4,7 @@ We formulate and prove safety properties of Dexter over _any sequence of arbitra
 
 ## Faithfulness of State Variables
 
-In the Dexter contract, the token exchange rate and the liquidity share price are determined by the three state variables (XtzPool, TokenPool, LqtTotal) which keep track of the XTZ reserve, the token reserve, and the total liquidity supply, respectively.
+In the Dexter contract, the token exchange rate and the liquidity share price are determined by the three state variables (XtzPool, TokenPool, LqtTotal) which keep track of the XTZ reserve, the token reserve, and the total liquidity token supply, respectively.
 
 The first invariant we consider is that the Dexter state variables faithfully represent the actual pool reserves and liquidity supply.  That is, XtzPool and TokenPool must be equal to the actual XTZ and token reserves, and LqtTotal must be equal to the actual total liquidity supply.  Note that the Dexter entrypoint functions immediately update these state variables, while the actual reserves or supply will be updated later by the continuation operations emitted by the entrypoints.  Moreover, the actual token reserve may be possibly larger than TokenPool, since one can "donate" tokens to Dexter (i.e., directly sending tokens to Dexter without going through any of the Dexter entrypoint functions).  Note that, however, the actual XTZ reserve must be equal to the XtzPool value, since directly sending XTZ to Dexter will be captured by the Default() entrypoint.  (Indeed, we assume that, in Tezos, there is no way to "secretly" send XTZ to Dexter without triggering any Dexter entrypoint.  Note that, in Ethereum, it is _possible_ to send Ether to a smart contract without ever executing the contract code.)
 
