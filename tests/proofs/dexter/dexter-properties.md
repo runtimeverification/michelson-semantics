@@ -1,6 +1,6 @@
 # Inter-Transactional Properties of Dexter Contract
 
-We formulate and prove safety properties of Dexter over _any sequence of transactions_.
+We formulate and prove safety properties of Dexter over _any sequence of arbitrary transactions_.
 
 ## Faithfulness of State Variables
 
