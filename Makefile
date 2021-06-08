@@ -405,10 +405,14 @@ dexter_spec_modules = DEXTER-SPEC                               \
                       DEXTER-XTZTOTOKEN-FA12-POSITIVE-SPEC      \
                       DEXTER-XTZTOTOKEN-FA2-NEGATIVE-SPEC       \
                       DEXTER-XTZTOTOKEN-FA2-POSITIVE-SPEC       \
+                      
+dexter_spec_modules_flaky = \
+                      DEXTER-REMOVELIQUIDITY-POSITIVE-SPEC      \
 
 dexter_spec_file := tests/proofs/dexter/dexter-spec.md
 
-dexter-prove: $(dexter_spec_modules:%=dexter-prove_%)
+dexter-prove:       $(dexter_spec_modules:%=dexter-prove_%)
+dexter-prove-flaky: $(dexter_spec_modules_flaky:%=dexter-prove_%)
 
 dexter-prove_%:
 	$(MAKE) $(dexter_spec_file).dexter_prove \
