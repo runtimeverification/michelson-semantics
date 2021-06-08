@@ -470,8 +470,6 @@ NOTE: The failure conditions are split into two claims with identical configurat
      orBool Sender =/=K Source
 ```
 
-TODO: This seems redundant
-
 ```k
   claim <k> #runProof(IsFA2, UpdateTokenPool) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ( Failed ?_ ) </stack>
