@@ -29,7 +29,7 @@ pipeline {
     stage('Integration Proofs') { 
       options { timeout(time: 180, unit: 'MINUTES') }
       parallel {
-        stage('Dexter Proofs') { steps { sh 'make dexter-prove  -j8' } }
+        stage('Dexter Proofs') { steps { sh 'make dexter-prove  -j4' } }
       }
     }
     stage('Cross Test') {
