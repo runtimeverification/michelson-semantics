@@ -37,19 +37,6 @@ module DEXTER-LEMMAS
   rule X *Int 1 => X [simplification]
 ```
 
-### Avoiding Interpreting Functions
-
-If a function value does not play well with the prover or SMT solver, it can be rewritten to `#uninterpreted`.
-This function has no evaluation rules, so the prover can make no assumptions about it -- it will be assumed it can take on any value.
-
-```k
-  syntax Int ::= #mulMod(Int, Int, Int) [function, functional, smtlib(mulMod), no-evaluators]
-               | #mulDiv(Int, Int, Int) [function, functional, smtlib(mulDiv), no-evaluators]
- // -----------------------------------------------------------------------------------------
-  rule (X *Int Y) %Int Z => #mulMod(X, Y, Z) [simplification]
-  rule (X *Int Y) /Int Z => #mulDiv(X, Y, Z) [simplification]
-```
-
 ```k
 endmodule
 ```
@@ -296,12 +283,6 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
 
             where, in version FA2, `$tokenPool` is the second projection of the tuple at the head of the input list;
             in version FA12, `$tokenPool` is equal to the input.
-
-        -   Summary: The underlying token contract updates the Dexter contract's view of its own token balance if the following conditions are satisifed:
-
-            1.  the token pool _is_ currently updating (i.e. `storage.selfIsUpdatingTokenPool = true`)
-            2.  exactly 0 tez was transferred to this contract when it was invoked
-            3.  if using version FA2, the input parameter list is non-empty.
 
     9.  `xtz_to_token`
 
@@ -576,7 +557,7 @@ If the contract execution fails, storage is not updated.
   rule <k> Aborted(_, _, _, _) ~> (#storeDexterState(_) => .) ... </k>
 ```
 
-## Proof Simplification Macros
+## Proof Helper Functions
 
 ```k
   syntax Data ::= #UpdateTokenPoolTransferFrom(Bool, Address, Int) [function, functional]
@@ -634,6 +615,19 @@ and so we can't have simplification rules for both.
     [macro]
 ```
 
+### Avoiding Interpreting Functions
+
+If a function value does not play well with the prover or SMT solver, it can be rewritten to `#uninterpreted`.
+This function has no evaluation rules, so the prover can make no assumptions about it -- it will be assumed it can take on any value.
+
+```k
+  syntax Int ::= #mulMod(Int, Int, Int) [function, functional, smtlib(mulMod), no-evaluators]
+               | #mulDiv(Int, Int, Int) [function, functional, smtlib(mulDiv), no-evaluators]
+ // -----------------------------------------------------------------------------------------
+  rule (X *Int Y) %Int Z => #mulMod(X, Y, Z) [simplification]
+  rule (X *Int Y) /Int Z => #mulDiv(X, Y, Z) [simplification]
+```
+
 ## Putting It All Together
 
 All contract call specifications have common steps:
@@ -664,13 +658,6 @@ If all steps are completed, only the Dexter-specific storage is updated.
     andBool TokenPool >=Int 0
     andBool OpList ==K .InternalList
     andBool ReturnCode ==Int 111
-```
-
-## Miscellaneous Lemmas
-
-```k
-    rule X *Int 1 => X [simplification]
-    rule X /Int 1 => X [simplification]
 ```
 
 ## Epilogue
