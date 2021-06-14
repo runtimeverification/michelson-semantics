@@ -61,6 +61,9 @@ module DEXTER-ADDLIQUIDITY-POSITIVE-SPEC
   imports DEXTER-VERIFICATION
 ```
 
+For performance reasons, we split the claim depending on the result of the `#ceildiv` operation.
+We have one case for when `#ceildiv` results in an upwards rounding, and one for the case when the numerator is divisible by the denominator.
+
 ```k
   claim <k> #runProof(IsFA2, AddLiquidity(Owner, MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => . </k>
         <stack> .Stack </stack>
