@@ -176,7 +176,7 @@ case "$run_command-$backend" in
     run-@(llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare)       ) run_krun       "$@" ;;
     kast-@(llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare)      ) run_kast       "$@" ;;
     symbtest-driver                                                                           ) run_symbtest   "$@" ;;
-    prove-@(prove|symbolic|dexter)                                                            ) run_prove      "$@" ;;
+    prove-@(prove|symbolic|dexter|lb)                                                         ) run_prove      "$@" ;;
     interpret-@(llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare) ) run_interpret  "$@" ;;
     *) $0 help ; fatal "Unknown command on backend: $run_command $backend" ;;
 esac

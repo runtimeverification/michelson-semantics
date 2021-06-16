@@ -71,9 +71,9 @@ We have one case for when `#ceildiv` results in an upwards rounding, and one for
         <senderaddr> Sender </senderaddr>
         <nonce> #Nonce(Nonce => Nonce +Int 2) </nonce>
         <knownaddrs> KnownAddresses </knownaddrs>
-        <paramtype> #Type(#DexterVersionSpecificParamType()) </paramtype>
+        <paramtype> #Type(#LiquidityBakingParamType()) </paramtype>
         <operations> _
-                  => [ Transfer_tokens #TokenTransferData(Sender, SelfAddress, TokenId, #ceildiv(Amount *Int TokenAmount, XtzAmount)) #Mutez(0) TokenAddress Nonce ] ;;
+                  => [ Transfer_tokens #TokenTransferData(Sender, SelfAddress, #ceildiv(Amount *Int TokenAmount, XtzAmount)) #Mutez(0) TokenAddress Nonce ] ;;
                      [ Transfer_tokens Pair ((Amount *Int OldLqt) /Int XtzAmount) Owner #Mutez(0) LqtAddress (Nonce +Int 1) ] ;;
                      .InternalList
         </operations>
@@ -102,9 +102,9 @@ We have one case for when `#ceildiv` results in an upwards rounding, and one for
         <senderaddr> Sender </senderaddr>
         <nonce> #Nonce(Nonce => Nonce +Int 2) </nonce>
         <knownaddrs> KnownAddresses </knownaddrs>
-        <paramtype> #Type(#DexterVersionSpecificParamType()) </paramtype>
+        <paramtype> #Type(#LiquidityBakingParamType()) </paramtype>
         <operations> _
-                  => [ Transfer_tokens #TokenTransferData(Sender, SelfAddress, TokenId, #ceildiv(Amount *Int TokenAmount, XtzAmount)) #Mutez(0) TokenAddress Nonce ] ;;
+                  => [ Transfer_tokens #TokenTransferData(Sender, SelfAddress, #ceildiv(Amount *Int TokenAmount, XtzAmount)) #Mutez(0) TokenAddress Nonce ] ;;
                      [ Transfer_tokens Pair ((Amount *Int OldLqt) /Int XtzAmount) Owner #Mutez(0) LqtAddress (Nonce +Int 1) ] ;;
                      .InternalList
         </operations>
@@ -185,10 +185,10 @@ module LIQUIDITY-BAKING-REMOVELIQUIDITY-POSITIVE-SPEC
         <senderaddr> Sender </senderaddr>
         <nonce> #Nonce(Nonce => Nonce +Int 3) </nonce>
         <knownaddrs> KnownAddresses </knownaddrs>
-        <paramtype> #Type(#DexterVersionSpecificParamType()) </paramtype> // 1027
+        <paramtype> #Type(#LiquidityBakingParamType()) </paramtype> // 1027
         <operations> _
                   => [ Transfer_tokens (Pair (0 -Int LqtBurned) Sender) #Mutez(0) LqtAddress Nonce ] ;;
-                     [ Transfer_tokens #TokenTransferData(SelfAddress, To, TokenId,  (LqtBurned *Int TokenAmount) /Int OldLqt) #Mutez(0) TokenAddress (Nonce +Int 1) ] ;;
+                     [ Transfer_tokens #TokenTransferData(SelfAddress, To, (LqtBurned *Int TokenAmount) /Int OldLqt) #Mutez(0) TokenAddress (Nonce +Int 1) ] ;;
                      [ Transfer_tokens Unit #Mutez((LqtBurned *Int XtzAmount) /Int OldLqt) To (Nonce +Int 2) ] ;;
                      .InternalList
         </operations>
@@ -272,9 +272,11 @@ If any of the conditions are not satisfied, the call fails.
     requires notBool #IsLegalMutezValue(XtzPool +Int Amount)
 ```
 
-## Token To XTZ
+```k
+endmodule
+```
 
-### FA1.2
+## Token To XTZ
 
 ```k
 module LIQUIDITY-BAKING-TOKENTOXTZ-POSITIVE-SPEC
@@ -297,13 +299,13 @@ A buyer sends tokens to the Liquidity Baking contract and receives a correspondi
         <tokenPool> TokenPool => TokenPool +Int TokensSold </tokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <senderaddr> Sender </senderaddr>
-        <paramtype> #Type(#DexterVersionSpecificParamType()) </paramtype>
+        <paramtype> #Type(#LiquidityBakingParamType()) </paramtype>
         <myaddr> SelfAddress:Address </myaddr>
         <nonce> #Nonce(N => N +Int 2) </nonce>
         <knownaddrs> KnownAddresses </knownaddrs>
         <operations> _
-                  => [ Transfer_tokens #TokenTransferData(Sender, SelfAddress, TokenID, TokensSold) #Mutez(0)                                          TokenAddress  N        ]
-                  ;; [ Transfer_tokens Unit                                                                #Mutez(#XtzBought(XtzPool, TokenPool, TokensSold)) To           (N +Int 1)]
+                  => [ Transfer_tokens #TokenTransferData(Sender, SelfAddress, TokensSold) #Mutez(0)                                          TokenAddress  N        ]
+                  ;; [ Transfer_tokens Unit                                                #Mutez(#XtzBought(XtzPool, TokenPool, TokensSold)) To           (N +Int 1)]
                   ;; .InternalList
         </operations>
      requires Amount ==Int 0
@@ -330,7 +332,7 @@ module LIQUIDITY-BAKING-TOKENTOXTZ-NEGATIVE-1-SPEC
         <mynow> #Timestamp(CurrentTime) </mynow>
         <myamount> #Mutez(Amount) </myamount>
         <tokenAddress> TokenAddress:Address </tokenAddress>
-        <paramtype> #Type(#DexterVersionSpecificParamType()) </paramtype>
+        <paramtype> #Type(#LiquidityBakingParamType()) </paramtype>
      requires notBool Amount ==Int 0
          orBool notBool CurrentTime <Int Deadline
 endmodule
@@ -346,7 +348,7 @@ module LIQUIDITY-BAKING-TOKENTOXTZ-NEGATIVE-2-SPEC
         <tokenAddress> TokenAddress:Address </tokenAddress>
         <xtzPool> #Mutez(XtzPool) </xtzPool>
         <tokenPool> TokenPool </tokenPool>
-        <paramtype> #Type(#DexterVersionSpecificParamType()) </paramtype>
+        <paramtype> #Type(#LiquidityBakingParamType()) </paramtype>
      requires notBool Amount ==Int 0
       andBool notBool CurrentTime <Int Deadline
       andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer,                             #TokenTransferType())
@@ -365,7 +367,7 @@ module LIQUIDITY-BAKING-TOKENTOXTZ-NEGATIVE-3-SPEC
         <tokenAddress> TokenAddress:Address </tokenAddress>
         <xtzPool> #Mutez(XtzPool) </xtzPool>
         <tokenPool> TokenPool </tokenPool>
-        <paramtype> #Type(#DexterVersionSpecificParamType()) </paramtype>
+        <paramtype> #Type(#LiquidityBakingParamType()) </paramtype>
      requires notBool Amount ==Int 0
       andBool notBool CurrentTime <Int Deadline
       andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer,                             #TokenTransferType())
@@ -386,7 +388,7 @@ module LIQUIDITY-BAKING-TOKENTOXTZ-NEGATIVE-4-SPEC
         <tokenAddress> TokenAddress:Address </tokenAddress>
         <xtzPool> #Mutez(XtzPool) </xtzPool>
         <tokenPool> TokenPool </tokenPool>
-        <paramtype> #Type(#DexterVersionSpecificParamType()) </paramtype>
+        <paramtype> #Type(#LiquidityBakingParamType()) </paramtype>
      requires notBool Amount ==Int 0
       andBool notBool CurrentTime <Int Deadline
       andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer,                             #TokenTransferType())
@@ -413,7 +415,7 @@ module LIQUIDITY-BAKING-XTZTOTOKEN-POSITIVE-SPEC
   imports LIQUIDITY-BAKING-VERIFICATION
   claim <k> #runProof(XtzToToken(To, MinTokensBought, #Timestamp(Deadline))) => . </k>
         <stack> .Stack </stack>
-        <paramtype> #Type(#DexterVersionSpecificParamType()) </paramtype>
+        <paramtype> #Type(#LiquidityBakingParamType()) </paramtype>
         <myamount> #Mutez(Amount) </myamount>
         <tokenAddress> TokenAddress </tokenAddress>
         <xtzPool> #Mutez(XtzPool => XtzPool +Int Amount) </xtzPool>
@@ -442,7 +444,7 @@ module LIQUIDITY-BAKING-XTZTOTOKEN-NEGATIVE-SPEC
   imports LIQUIDITY-BAKING-VERIFICATION
   claim <k> #runProof(XtzToToken(_To, MinTokensBought, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_:FailedStack </stack>
-        <paramtype> #Type(#DexterVersionSpecificParamType()) </paramtype>
+        <paramtype> #Type(#LiquidityBakingParamType()) </paramtype>
         <myamount> #Mutez(Amount) </myamount>
         <tokenAddress> TokenAddress </tokenAddress>
         <xtzPool> #Mutez(XtzPool) </xtzPool>
@@ -460,8 +462,6 @@ module LIQUIDITY-BAKING-XTZTOTOKEN-NEGATIVE-SPEC
      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType())
 endmodule
 ```
-
-```k
 
 ## Token To Token
 
@@ -488,7 +488,7 @@ A buyer sends tokens to the Liquidity Baking contract, converts its to xtz, and 
         <mynow> #Timestamp(CurrentTime) </mynow>
         <senderaddr> Sender </senderaddr>
         <myaddr> SelfAddress </myaddr>
-        <paramtype> #Type(#DexterVersionSpecificParamType()) </paramtype>
+        <paramtype> #Type(#LiquidityBakingParamType()) </paramtype>
         <nonce> #Nonce(N => N +Int 2) </nonce>
         <knownaddrs> KnownAddresses </knownaddrs>
         <operations> _
@@ -526,7 +526,7 @@ module LIQUIDITY-BAKING-TOKENTOTOKEN-NEGATIVE-SPEC
         <mynow> #Timestamp(CurrentTime) </mynow>
         <senderaddr> Sender </senderaddr>
         <myaddr> SelfAddress </myaddr>
-        <paramtype> #Type(#DexterVersionSpecificParamType()) </paramtype>
+        <paramtype> #Type(#LiquidityBakingParamType()) </paramtype>
         <nonce> #Nonce(N => ?_) </nonce>
         <knownaddrs> KnownAddresses </knownaddrs>
         <operations> _ </operations>
