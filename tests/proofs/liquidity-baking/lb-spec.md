@@ -331,7 +331,7 @@ module LIQUIDITY-BAKING-TOKENTOXTZ-NEGATIVE-1-SPEC
         <stack> .Stack => ?_:FailedStack </stack>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <myamount> #Mutez(Amount) </myamount>
-        <tokenAddress> TokenAddress:Address </tokenAddress>
+        <tokenAddress> _TokenAddress:Address </tokenAddress>
         <paramtype> #Type(#LiquidityBakingParamType()) </paramtype>
      requires notBool Amount ==Int 0
          orBool notBool CurrentTime <Int Deadline
