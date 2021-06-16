@@ -136,7 +136,7 @@ module LIQUIDITY-BAKING-ADDLIQUIDITY-NEGATIVE-SPEC
 ```
 
 ```k
-  claim <k> #runProof(_AddLiquidity(_Owner, MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
+  claim <k> #runProof(AddLiquidity(_Owner, MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_:FailedStack </stack>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <myamount> #Mutez(Amount) </myamount>
@@ -215,26 +215,26 @@ endmodule
 module LIQUIDITY-BAKING-REMOVELIQUIDITY-NEGATIVE-SPEC
   imports LIQUIDITY-BAKING-VERIFICATION
 
-  claim <k> #runProof(_RemoveLiquidity(_, _, _, _, _)) => Aborted(?_, ?_, ?_, ?_) </k>
+  claim <k> #runProof(RemoveLiquidity(_, _, _, _, _)) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ( Failed ?_ ) </stack>
 
-  claim <k> #runProof(_RemoveLiquidity(_, _, _, _, _)) => Aborted(?_, ?_, ?_, ?_) </k>
+  claim <k> #runProof(RemoveLiquidity(_, _, _, _, _)) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ( Failed ?_ ) </stack>
         <myamount> #Mutez(Amount) </myamount>
     requires Amount >Int 0
 
-  claim <k> #runProof(_RemoveLiquidity(_, _, _, _, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
+  claim <k> #runProof(RemoveLiquidity(_, _, _, _, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ( Failed ?_ ) </stack>
         <mynow> #Timestamp(CurrentTime) </mynow>
     requires CurrentTime >=Int Deadline
 
-  claim <k> #runProof(_RemoveLiquidity(_, LqtBurned, _, _, _)) => Aborted(?_, ?_, ?_, ?_) </k>
+  claim <k> #runProof(RemoveLiquidity(_, LqtBurned, _, _, _)) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_:FailedStack </stack>
         <lqtTotal> OldLqt </lqtTotal>
     requires OldLqt ==Int 0
       orBool OldLqt <Int LqtBurned
 
-  claim <k> #runProof(_RemoveLiquidity(_, LqtBurned, #Mutez(MinXtzWithdrawn), _, _)) => Aborted(?_, ?_, ?_, ?_) </k>
+  claim <k> #runProof(RemoveLiquidity(_, LqtBurned, #Mutez(MinXtzWithdrawn), _, _)) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_:FailedStack </stack>
         <lqtTotal> OldLqt </lqtTotal>
         <xtzPool> #Mutez(XtzAmount) </xtzPool>
