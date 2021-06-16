@@ -80,15 +80,11 @@ We serialize these to the `<operations>` cell for ease of writing specifications
 configuration <dexterTop>
                 <michelsonTop/>
                 <storage>
-                  <tokenPool>               0                                                </tokenPool>
-                  <xtzPool>                 #Mutez(0)                                        </xtzPool>
-                  <selfIsUpdatingTokenPool> false                                            </selfIsUpdatingTokenPool>
-                  <freezeBaker>             false                                            </freezeBaker>
-                  <manager>                 #Address("tz1Ke2h7sDdakHJQh8WX4Z372du1KChsksyU") </manager>
-                  <lqtTotal>                0                                                </lqtTotal>
-                  <tokenAddress>            #Address("")                                     </tokenAddress>
-                  <lqtAddress>              #Address("")                                     </lqtAddress>
-                  <tokenId>                 0                                                </tokenId>
+                  <tokenPool>    0            </tokenPool>
+                  <xtzPool>      #Mutez(0)    </xtzPool>
+                  <lqtTotal>     0            </lqtTotal>
+                  <tokenAddress> #Address("") </tokenAddress>
+                  <lqtAddress>   #Address("") </lqtAddress>
                 </storage>
                 <operations> .InternalList </operations>
               </dexterTop>
@@ -296,40 +292,32 @@ We first define functions which build our parameter and our storage types.
   rule #LiquidityBakingParamType()
     => (or
           (or
-             (or
-                (or (pair address                        // addLiquidity
-                       pair nat
-                         pair nat timestamp)
-                    unit)                                // default
-                (or (pair address                        // removeLiquidity
-                       pair nat
-                         pair mutez
-                           pair nat timestamp)
-                    (pair option key_hash bool)))        // setBaker
-             (or
-                (or address                              // setLqtAddress
-                    address)                             // setManager
-                (or (pair address                        // tokenToToken
-                       pair nat
-                         pair address
-                           pair nat timestamp)
-                    (pair address                        // tokenToXtz
-                       pair nat
-                         pair mutez timestamp))))
-                 (pair address                               // xtzToToken
-                         pair nat timestamp))
+             (or (pair address                      // addLiquidity
+                    (pair nat
+                       (pair nat timestamp)))
+                  unit)                             // default
+             (or (pair address                      // removeLiquidity
+                    (pair nat
+                       (pair mutez
+                          (pair nat timestamp))))
+                 (pair address                      // tokenToToken
+                    (pair nat
+                       (pair address
+                          (pair nat timestamp))))))
+          (or (pair address                         // tokenToXtz
+                 (pair nat
+                   (pair mutez timestamp)))
+              (pair address                         // xtzToToken
+                 (pair nat timestamp))))
 
   syntax TypeName ::= #LiquidityBakingStorageType() [function, functional]
   // ---------------------------------------------------------------------
   rule #LiquidityBakingStorageType()
-    => pair nat
-         pair mutez
-           pair nat
-             pair bool
-               pair bool
-                 pair address
-                   pair address
-                     address
+    => (pair nat
+          (pair mutez
+             (pair nat
+               (pair address
+                 address))))
 ```
 
 We also define a functions that serialize and deserialize our abstract parameters and state.
@@ -338,19 +326,19 @@ We also define a functions that serialize and deserialize our abstract parameter
   syntax Data ::= #LoadLiquidityBakingParams(EntryPointParams) [function, functional]
   // --------------------------------------------------------------------------------
   rule #LoadLiquidityBakingParams(AddLiquidity(Owner, MinLqtMinted, MaxTokensDeposited, Deadline))
-    => Left Left Left Left Pair Owner Pair MinLqtMinted Pair MaxTokensDeposited Deadline
+    => Left Left Left Pair Owner Pair MinLqtMinted Pair MaxTokensDeposited Deadline
 
   rule #LoadLiquidityBakingParams(Default)
-    => Left Left Left Right Unit
+    => Left Left Right Unit
 
   rule #LoadLiquidityBakingParams(RemoveLiquidity(To, LqtBurned, MinXtzWithdrawn, MinTokensWithdrawn, Deadline))
-    => Left Left Right Left Pair To Pair LqtBurned Pair MinXtzWithdrawn Pair MinTokensWithdrawn Deadline
+    => Left Right Left Pair To Pair LqtBurned Pair MinXtzWithdrawn Pair MinTokensWithdrawn Deadline
 
-  rule #LoadLiquidityBakingParams(TokenToToken(OutputLiquidityBakingContract, MinTokensBought, To, TokensSold, Deadline))
-    => Left Right Right Left Pair OutputLiquidityBakingContract Pair MinTokensBought Pair To Pair TokensSold Deadline
+  rule #LoadLiquidityBakingParams(TokenToToken(OutputDexterContract, MinTokensBought, To, TokensSold, Deadline))
+    => Left Right Right Pair OutputDexterContract Pair MinTokensBought Pair To Pair TokensSold Deadline
 
   rule #LoadLiquidityBakingParams(TokenToXtz(To, TokensSold, MinXtzBought, Deadline))
-    => Left Right Right Right Pair To Pair TokensSold Pair MinXtzBought Deadline
+    => Right Left Pair To Pair TokensSold Pair MinXtzBought Deadline
 
   rule #LoadLiquidityBakingParams(XtzToToken(To, MinTokensBought, Deadline))
     => Right Right Pair To Pair MinTokensBought Deadline
@@ -364,20 +352,14 @@ We also define a functions that serialize and deserialize our abstract parameter
                    Pair TokenPool
                      Pair XTZPool
                        Pair LQTTotal
-                         Pair IsUpdatingTokenPool
-                           Pair IsBakerFrozen
-                             Pair Manager
-                               Pair TokenAddress
-                                   LQTAddress ]
+                         Pair TokenAddress
+                           LQTAddress ]
        </stack>
-       <tokenPool>               TokenPool           </tokenPool>
-       <xtzPool>                 XTZPool             </xtzPool>
-       <lqtTotal>                LQTTotal            </lqtTotal>
-       <selfIsUpdatingTokenPool> IsUpdatingTokenPool </selfIsUpdatingTokenPool>
-       <freezeBaker>             IsBakerFrozen       </freezeBaker>
-       <manager>                 Manager             </manager>
-       <tokenAddress>            TokenAddress        </tokenAddress>
-       <lqtAddress>              LQTAddress          </lqtAddress>
+       <tokenPool>    TokenPool    </tokenPool>
+       <xtzPool>      XTZPool      </xtzPool>
+       <lqtTotal>     LQTTotal     </lqtTotal>
+       <tokenAddress> TokenAddress </tokenAddress>
+       <lqtAddress>   LQTAddress   </lqtAddress>
 
   syntax KItem ::= #storeLiquidityBakingState()
   // ------------------------------------------
@@ -387,22 +369,16 @@ We also define a functions that serialize and deserialize our abstract parameter
                    Pair TokenPool
                      Pair XTZPool
                        Pair LQTTotal
-                         Pair IsUpdatingTokenPool
-                           Pair IsBakerFrozen
-                             Pair Manager
-                               Pair TokenContract
-                                 LQTAddress ]
+                         Pair TokenContract
+                           LQTAddress ]
             => .Stack
        </stack>
-       <tokenPool>               _ => TokenPool           </tokenPool>
-       <xtzPool>                 _ => XTZPool             </xtzPool>
-       <lqtTotal>                _ => LQTTotal            </lqtTotal>
-       <selfIsUpdatingTokenPool> _ => IsUpdatingTokenPool </selfIsUpdatingTokenPool>
-       <freezeBaker>             _ => IsBakerFrozen       </freezeBaker>
-       <manager>                 _ => Manager             </manager>
-       <tokenAddress>            _ => TokenContract       </tokenAddress>
-       <operations>              _ => OpList              </operations>
-       <lqtAddress>              _ => LQTAddress          </lqtAddress>
+       <tokenPool>     _ => TokenPool     </tokenPool>
+       <xtzPool>       _ => XTZPool       </xtzPool>
+       <lqtTotal>      _ => LQTTotal      </lqtTotal>
+       <tokenAddress>  _ => TokenContract </tokenAddress>
+       <operations>    _ => OpList        </operations>
+       <lqtAddress>    _ => LQTAddress    </lqtAddress>
 
     requires StorageType ==K #LiquidityBakingStorageType()
 
