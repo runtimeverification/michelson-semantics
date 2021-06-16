@@ -255,7 +255,7 @@ Adds more money to the xtz reserves if the following conditions are satisifed:
 1.  the updated token pool size is a legal mutez value
 
 ```k
-  claim <k> #runProof(_Default) => . </k>
+  claim <k> #runProof(Default) => . </k>
         <stack> .Stack </stack>
         <myamount> #Mutez(Amount) </myamount>
         <xtzPool> #Mutez(XtzPool => XtzPool +Int Amount) </xtzPool>
@@ -265,7 +265,7 @@ Adds more money to the xtz reserves if the following conditions are satisifed:
 If any of the conditions are not satisfied, the call fails.
 
 ```k
-  claim <k> #runProof(_Default) => Aborted(?_, ?_, ?_, ?_) </k>
+  claim <k> #runProof(Default) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_:FailedStack </stack>
         <myamount> #Mutez(Amount) </myamount>
         <xtzPool> #Mutez(XtzPool) </xtzPool>
