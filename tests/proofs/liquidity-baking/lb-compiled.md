@@ -36,10 +36,8 @@ Since we work with specific code that contains a finite number of annotations, w
                            | "%xtzToToken"
  // --------------------------------------
 
-  rule %balance_of              => #token("%balance_of"             , "FieldAnnotation") [macro]
   rule %deadline                => #token("%deadline"               , "FieldAnnotation") [macro]
   rule %default                 => #token("%default"                , "FieldAnnotation") [macro]
-  rule %getBalance              => #token("%getBalance"             , "FieldAnnotation") [macro]
   rule %minTokensBought         => #token("%minTokensBought"        , "FieldAnnotation") [macro]
   rule %mintOrBurn              => #token("%mintOrBurn"             , "FieldAnnotation") [macro]
   rule %quantity                => #token("%quantity"               , "FieldAnnotation") [macro]

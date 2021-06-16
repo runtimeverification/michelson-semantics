@@ -293,7 +293,7 @@ We first define functions which build our parameter and our storage types.
 ```k
   syntax TypeName ::= #LiquidityBakingParamType()  [function, functional]
   // --------------------------------------------------------------------
-  rule #LiquidityBakingParamType
+  rule #LiquidityBakingParamType()
     => (or
           (or
              (or
@@ -316,9 +316,8 @@ We first define functions which build our parameter and our storage types.
                     (pair address                        // tokenToXtz
                        pair nat
                          pair mutez timestamp))))
-          (or
-             (pair address                               // xtzToToken
-                pair nat timestamp)))
+                 (pair address                               // xtzToToken
+                         pair nat timestamp))
 
   syntax TypeName ::= #LiquidityBakingStorageType() [function, functional]
   // ---------------------------------------------------------------------
@@ -369,7 +368,7 @@ We also define a functions that serialize and deserialize our abstract parameter
                            Pair IsBakerFrozen
                              Pair Manager
                                Pair TokenAddress
-                                   #else LQTAddress
+                                   LQTAddress ]
        </stack>
        <tokenPool>               TokenPool           </tokenPool>
        <xtzPool>                 XTZPool             </xtzPool>
@@ -378,7 +377,6 @@ We also define a functions that serialize and deserialize our abstract parameter
        <freezeBaker>             IsBakerFrozen       </freezeBaker>
        <manager>                 Manager             </manager>
        <tokenAddress>            TokenAddress        </tokenAddress>
-       <tokenId>                 TokenId             </tokenId>
        <lqtAddress>              LQTAddress          </lqtAddress>
 
   syntax KItem ::= #storeLiquidityBakingState()
@@ -392,7 +390,8 @@ We also define a functions that serialize and deserialize our abstract parameter
                          Pair IsUpdatingTokenPool
                            Pair IsBakerFrozen
                              Pair Manager
-                               Pair TokenContract ]
+                               Pair TokenContract
+                                 LQTAddress ]
             => .Stack
        </stack>
        <tokenPool>               _ => TokenPool           </tokenPool>
@@ -403,6 +402,8 @@ We also define a functions that serialize and deserialize our abstract parameter
        <manager>                 _ => Manager             </manager>
        <tokenAddress>            _ => TokenContract       </tokenAddress>
        <operations>              _ => OpList              </operations>
+       <lqtAddress>              _ => LQTAddress          </lqtAddress>
+
     requires StorageType ==K #LiquidityBakingStorageType()
 
 ```
@@ -410,7 +411,7 @@ We also define a functions that serialize and deserialize our abstract parameter
 If the contract execution fails, storage is not updated.
 
 ```k
-  rule <k> Aborted(_, _, _, _) ~> (#storeLiquidityBakingState(_) => .) ... </k>
+  rule <k> Aborted(_, _, _, _) ~> (#storeLiquidityBakingState() => .) ... </k>
 ```
 
 ## Proof Helper Functions
@@ -492,7 +493,7 @@ If all steps are completed, only the Liquidity Baking specific storage is update
   rule <k> #runProof(Params)
         => #loadLiquidityBakingState(Params)
         ~> #liquidityBakingCode
-        ~> #storeLiquidityBakingState
+        ~> #storeLiquidityBakingState()
         ...
        </k>
        <myamount> #Mutez(Amount) </myamount>
