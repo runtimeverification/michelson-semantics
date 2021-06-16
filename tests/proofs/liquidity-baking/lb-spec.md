@@ -341,12 +341,12 @@ endmodule
 ```k
 module LIQUIDITY-BAKING-TOKENTOXTZ-NEGATIVE-2-SPEC
   imports LIQUIDITY-BAKING-VERIFICATION
-  claim <k> #runProof(TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
+  claim <k> #runProof(TokenToXtz(To, TokensSold, #Mutez(_MinXtzBought), #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_:FailedStack </stack>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <myamount> #Mutez(Amount) </myamount>
         <tokenAddress> TokenAddress:Address </tokenAddress>
-        <xtzPool> #Mutez(XtzPool) </xtzPool>
+        <xtzPool> #Mutez(_XtzPool) </xtzPool>
         <tokenPool> TokenPool </tokenPool>
         <paramtype> #Type(#LiquidityBakingParamType()) </paramtype>
      requires notBool Amount ==Int 0
@@ -425,7 +425,7 @@ module LIQUIDITY-BAKING-XTZTOTOKEN-POSITIVE-SPEC
         <nonce> #Nonce(N => N +Int 1) </nonce>
         <knownaddrs> KnownAddresses </knownaddrs>
         <operations> _
-                  => [ Transfer_tokens #TokenTransferData(SelfAddress, To, TokenID, #XtzBought(TokenPool, XtzPool, Amount)) #Mutez(0) TokenAddress N ]
+                  => [ Transfer_tokens #TokenTransferData(SelfAddress, To, #XtzBought(TokenPool, XtzPool, Amount)) #Mutez(0) TokenAddress N ]
                   ;; .InternalList
         </operations>
     requires CurrentTime <Int Deadline
@@ -492,8 +492,8 @@ A buyer sends tokens to the Liquidity Baking contract, converts its to xtz, and 
         <nonce> #Nonce(N => N +Int 2) </nonce>
         <knownaddrs> KnownAddresses </knownaddrs>
         <operations> _
-                  => [ Transfer_tokens #TokenTransferData(Sender, SelfAddress, TokenID, TokensSold) #Mutez(0)                                          TokenAddress          N        ]
-                  ;; [ Transfer_tokens Pair To Pair MinTokensBought #Timestamp(Deadline)                   #Mutez(#XtzBought(XtzPool, TokenPool, TokensSold)) OutputDexterContract (N +Int 1)]
+                  => [ Transfer_tokens #TokenTransferData(Sender, SelfAddress, TokensSold) #Mutez(0)                                          TokenAddress          N        ]
+                  ;; [ Transfer_tokens Pair To Pair MinTokensBought #Timestamp(Deadline)   #Mutez(#XtzBought(XtzPool, TokenPool, TokensSold)) OutputDexterContract (N +Int 1)]
                   ;; .InternalList
         </operations>
      requires CurrentTime <Int Deadline
