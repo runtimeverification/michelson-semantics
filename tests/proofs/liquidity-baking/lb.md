@@ -71,7 +71,6 @@ We may abbreviate `entrypoint_input_type` to just `input` when it is clear from 
 ### Storage Type
 
 In our proofs, we will use the following abstract representation of the Liquidity Baking contract storage state.
-For simplicity, we assume the that the `tokenId` field is always present, though the verification of the FA12 version of the contract will not touch this field.
 
 Calling functions produces not only storage changes but also a list of callbacks.
 We serialize these to the `<operations>` cell for ease of writing specifications.
