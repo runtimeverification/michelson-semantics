@@ -217,9 +217,6 @@ module LIQUIDITY-BAKING-REMOVELIQUIDITY-NEGATIVE-SPEC
 
   claim <k> #runProof(RemoveLiquidity(_, _, _, _, _)) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ( Failed ?_ ) </stack>
-
-  claim <k> #runProof(RemoveLiquidity(_, _, _, _, _)) => Aborted(?_, ?_, ?_, ?_) </k>
-        <stack> .Stack => ( Failed ?_ ) </stack>
         <myamount> #Mutez(Amount) </myamount>
     requires Amount >Int 0
 
