@@ -385,11 +385,11 @@ tests/%.cross: tests/% $(input_creator_kompiled) $(extractor_kompiled) $(contrac
 
 # Prove
 
+export KORE_EXEC_OPTS=--smt-timeout 1000
+
 prove_tests         := $(wildcard tests/proofs/*-spec.md) $(wildcard tests/proofs/*-spec.k)
 prove_tests_failing := $(shell cat tests/failing.prove)
 prove_tests_passing := $(filter-out $(prove_tests_failing), $(prove_tests))
-
-tests/proofs/multisig-spec.md.prove: export KORE_EXEC_OPTS=--smt-timeout 10000
 
 test-prove:         $(prove_tests_passing:=.prove)
 test-prove-failing: $(prove_tests_failing:=.prove)
@@ -422,15 +422,12 @@ dexter_spec_modules = DEXTER-SPEC                               \
                       DEXTER-XTZTOTOKEN-FA12-POSITIVE-SPEC      \
                       DEXTER-XTZTOTOKEN-FA2-NEGATIVE-SPEC       \
                       DEXTER-XTZTOTOKEN-FA2-POSITIVE-SPEC       \
-                      
-dexter_spec_modules_flaky = \
                       DEXTER-ADDLIQUIDITY-NEGATIVE-SPEC         \
                       DEXTER-REMOVELIQUIDITY-POSITIVE-SPEC      \
 
 dexter_spec_file := tests/proofs/dexter/dexter-spec.md
 
 dexter-prove:       $(dexter_spec_modules:%=dexter-prove_%)
-dexter-prove-flaky: $(dexter_spec_modules_flaky:%=dexter-prove_%)
 
 dexter-prove_%:
 	$(MAKE) $(dexter_spec_file).dexter_prove \
