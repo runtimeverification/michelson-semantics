@@ -414,7 +414,7 @@ If the contract execution fails, storage is not updated.
 
   syntax Int ::= #XtzBought   (Int, Int, Int) [function, functional, smtlib(xtzbought), no-evaluators]
  // --------------------------------------------------------------------------------------------------
-  rule (TokensSold *Int 997 *Int XtzPool) /Int (TokenPool *Int 1000 +Int (TokensSold *Int 997))
+  rule (TokensSold *Int 999 *Int XtzPool) /Int (TokenPool *Int 1000 +Int (TokensSold *Int 999))
     => #XtzBought(XtzPool, TokenPool, TokensSold)
     [simplification]
 ```
@@ -424,8 +424,8 @@ and so we can't have simplification rules for both.
 
 ```k
  // syntax Int ::= #TokensBought(Int, Int, Int) [function, functional, smtlib(tokensbought), no-evaluators]
- // ----------------------------------------
- // rule (Amount *Int 997 *Int TokenPool) /Int (XtzPool *Int 1000 +Int (Amount *Int 997))
+ // -------------------------------------------------------------------------------------------------------
+ // rule (Amount *Int 999 *Int TokenPool) /Int (XtzPool *Int 1000 +Int (Amount *Int 999))
  //   => #TokensBought(XtzPool, TokenPool, XtzSold)
  //   [simplification]
 ```
