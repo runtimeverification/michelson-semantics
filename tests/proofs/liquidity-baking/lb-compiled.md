@@ -18,7 +18,7 @@ We have pasted the code verbatim:
   // -----------------------------------
 ```
 
-## Annotations
+## Annotations and Addresses
 
 Annotations are arbitrary tokens.
 The set of permissible annotations is infinite.
@@ -45,6 +45,14 @@ Since we work with specific code that contains a finite number of annotations, w
   rule %to                      => #token("%to"                     , "FieldAnnotation") [macro]
   rule %transfer                => #token("%transfer"               , "FieldAnnotation") [macro]
   rule %xtzToToken              => #token("%xtzToToken"             , "FieldAnnotation") [macro]
+```
+
+Each Tezos account has an address. We make a macro which stores the null address to simplify our proof scripts.
+
+```k
+  syntax Address ::= "null_address"
+ // -------------------------------
+  rule null_address => #Address("tz1Ke2h7sDdakHJQh8WX4Z372du1KChsksyU") [macro]
 ```
 
 ```k
