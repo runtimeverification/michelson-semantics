@@ -298,11 +298,12 @@ A buyer sends tokens to the Liquidity Baking contract and receives a correspondi
         <senderaddr> Sender </senderaddr>
         <paramtype> #Type(#LiquidityBakingParamType()) </paramtype>
         <myaddr> SelfAddress:Address </myaddr>
-        <nonce> #Nonce(N => N +Int 2) </nonce>
+        <nonce> #Nonce(N => N +Int 3) </nonce>
         <knownaddrs> KnownAddresses </knownaddrs>
         <operations> _
-                  => [ Transfer_tokens #TokenTransferData(Sender, SelfAddress, TokensSold) #Mutez(0)                                          TokenAddress  N        ]
-                  ;; [ Transfer_tokens Unit                                                #Mutez(#XtzBought(XtzPool, TokenPool, TokensSold)) To           (N +Int 1)]
+                  => [ Transfer_tokens #TokenTransferData(Sender, SelfAddress, TokensSold) #Mutez(0)                                                    TokenAddress  N        ]
+                  ;; [ Transfer_tokens Unit                                                #Mutez(#XtzBought(XtzPool, TokenPool, TokensSold))           To           (N +Int 1)]
+                  ;; [ Transfer_tokens Unit                                                #Mutez(#XtzBurn(#XtzBought(XtzPool, TokenPool, TokensSold))) null_address (N +Int 2)]
                   ;; .InternalList
         </operations>
      requires Amount ==Int 0

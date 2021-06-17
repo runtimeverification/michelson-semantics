@@ -450,6 +450,10 @@ This function has no evaluation rules, so the prover can make no assumptions abo
  // -----------------------------------------------------------------------------------------
   rule (X *Int Y) %Int Z => #mulMod(X, Y, Z) [simplification]
   rule (X *Int Y) /Int Z => #mulDiv(X, Y, Z) [simplification]
+
+  // TODO: add #XtzBurn smt-lib symbol
+  // syntax Int ::= #XtzBurn(Int)
+  // rule Amount:Int -Int #mulDiv ( Amount:Int , 999 , 1000 ) => #XtzBurn(Amount)
 ```
 
 ## Putting It All Together
