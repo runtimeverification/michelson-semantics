@@ -506,7 +506,7 @@ A buyer sends tokens to the Liquidity Baking contract, converts its to xtz, and 
       andBool (TokenPool >Int 0 orBool TokensSold >Int 0)
       andBool #IsLegalMutezValue(#XtzBought(XtzPool, TokenPool, TokensSold))
       andBool #EntrypointExists(KnownAddresses, TokenAddress,         %transfer,   #TokenTransferType())
-      andBool #EntrypointExists(KnownAddresses, OutputDexterContract, %xtzToToken, #Type(pair (address %to) (pair (nat %minTokensBought) (timestamp %deadline))))
+      andBool #EntrypointExists(KnownAddresses, OutputDexterContract, %xtzToToken, pair (address %to) (pair (nat %minTokensBought) (timestamp %deadline)))
       andBool #EntrypointExists(KnownAddresses, null_address,         %default,    #Type(unit))
 ```
 
