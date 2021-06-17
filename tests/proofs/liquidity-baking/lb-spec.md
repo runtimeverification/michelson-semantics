@@ -199,7 +199,7 @@ module LIQUIDITY-BAKING-REMOVELIQUIDITY-POSITIVE-SPEC
      andBool MinTokensWithdrawn <=Int (LqtBurned *Int TokenAmount) /Int OldLqt
      andBool #EntrypointExists(KnownAddresses, TokenAddress,   %transfer, #TokenTransferType())
      andBool #EntrypointExists(KnownAddresses,   LqtAddress, %mintOrBurn, pair int %quantity .AnnotationList address %target .AnnotationList)
-     andBool #EntrypointExists(KnownAddresses,           To,    %default, unit)
+     andBool #EntrypointExists(KnownAddresses,           To,    %default, #Type(unit))
 
      andBool #IsLegalMutezValue(XtzAmount)
      andBool #IsLegalMutezValue((LqtBurned *Int XtzAmount) /Int OldLqt)
@@ -314,8 +314,8 @@ A buyer sends tokens to the Liquidity Baking contract and receives a correspondi
       andBool #IsLegalMutezValue(MinXtzBought)
       andBool #IsLegalMutezValue(#XtzBought(XtzPool, TokenPool, TokensSold))
       andBool #IsLegalMutezValue(XtzPool:Int -Int #XtzBought (XtzPool:Int, TokenPool:Int, TokensSold:Int))
-      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer,                             #TokenTransferType())
-      andBool #EntrypointExists(KnownAddresses, To,           #token("%default", "FieldAnnotation"), #Type(unit))
+      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType())
+      andBool #EntrypointExists(KnownAddresses, To,           %default,  #Type(unit))
 endmodule
 ```
 
@@ -348,8 +348,8 @@ module LIQUIDITY-BAKING-TOKENTOXTZ-NEGATIVE-2-SPEC
         <paramtype> #Type(#LiquidityBakingParamType()) </paramtype>
      requires notBool Amount ==Int 0
       andBool notBool CurrentTime <Int Deadline
-      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer,                             #TokenTransferType())
-      andBool #EntrypointExists(KnownAddresses, To,           #token("%default", "FieldAnnotation"), #Type(unit))
+      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType())
+      andBool #EntrypointExists(KnownAddresses, To,           %default,  #Type(unit))
       andBool notBool (TokenPool >Int 0 orBool TokensSold >Int 0)
 endmodule
 ```
@@ -367,8 +367,8 @@ module LIQUIDITY-BAKING-TOKENTOXTZ-NEGATIVE-3-SPEC
         <paramtype> #Type(#LiquidityBakingParamType()) </paramtype>
      requires notBool Amount ==Int 0
       andBool notBool CurrentTime <Int Deadline
-      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer,                             #TokenTransferType())
-      andBool #EntrypointExists(KnownAddresses, To,           #token("%default", "FieldAnnotation"), #Type(unit))
+      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType())
+      andBool #EntrypointExists(KnownAddresses, To,           %default,  #Type(unit))
       andBool notBool( #XtzBought(XtzPool, TokenPool, TokensSold) >=Int  MinXtzBought
                andBool #IsLegalMutezValue(MinXtzBought)
                      )
@@ -388,8 +388,8 @@ module LIQUIDITY-BAKING-TOKENTOXTZ-NEGATIVE-4-SPEC
         <paramtype> #Type(#LiquidityBakingParamType()) </paramtype>
      requires notBool Amount ==Int 0
       andBool notBool CurrentTime <Int Deadline
-      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer,                             #TokenTransferType())
-      andBool #EntrypointExists(KnownAddresses, To,           #token("%default", "FieldAnnotation"), #Type(unit))
+      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType())
+      andBool #EntrypointExists(KnownAddresses, To,           %default,  #Type(unit))
       andBool  #XtzBought(XtzPool, TokenPool, TokensSold) >=Int  MinXtzBought
       andBool #IsLegalMutezValue(MinXtzBought)
       andBool notBool( #XtzBought(XtzPool, TokenPool, TokensSold) <=Int XtzPool
