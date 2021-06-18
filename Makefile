@@ -200,6 +200,24 @@ $(dexter_kompiled): $(dexter_files)
 	                   --main-module $(dexter_main_module)     \
 	                   --syntax-module $(dexter_syntax_module)
 
+### Liquidity Baking
+lb_dir           := $(DEFN_DIR)/lb
+lb_main_file     := lb
+lb_main_file_loc := tests/proofs/liquidity-baking/$(lb_main_file)
+lb_files         := $(prove_files) $(lb_main_file_loc).md tests/proofs/liquidity-baking/lb-compiled.md
+lb_main_module   := LIQUIDITY-BAKING-VERIFICATION
+lb_syntax_module := LIQUIDITY-BAKING-VERIFICATION-SYNTAX
+lb_kompiled      := $(lb_dir)/$(notdir $(lb_main_file))-kompiled/definition.kore
+
+defn-lb:  $(lb_files)
+build-lb: $(lb_kompiled)
+
+$(lb_kompiled): $(lb_files)
+	$(KOMPILE_HASKELL) $(lb_main_file_loc).md              \
+	                   --directory $(lb_dir) -I $(CURDIR)  \
+	                   --main-module $(lb_main_module)     \
+	                   --syntax-module $(lb_syntax_module)
+
 ### Symbolic Driver
 
 driver_dir            := $(DEFN_DIR)/driver
@@ -418,3 +436,36 @@ dexter-prove_%:
 
 tests/%.dexter_prove: tests/% $(dexter_kompiled)
 	$(TEST) prove --backend dexter $< $(KPROVE_MODULE) $(KPROVE_OPTIONS)
+
+# Liquidity baking proofs
+
+lb_spec_modules_failing = \
+                      LIQUIDITY-BAKING-ADDLIQUIDITY-NEGATIVE-SPEC    \
+                      LIQUIDITY-BAKING-ADDLIQUIDITY-POSITIVE-SPEC    \
+                      LIQUIDITY-BAKING-DEFAULT-SPEC                  \
+                      LIQUIDITY-BAKING-REMOVELIQUIDITY-NEGATIVE-SPEC \
+                      LIQUIDITY-BAKING-REMOVELIQUIDITY-POSITIVE-SPEC \
+                      LIQUIDITY-BAKING-TOKENTOXTZ-NEGATIVE-1-SPEC    \
+                      LIQUIDITY-BAKING-TOKENTOXTZ-NEGATIVE-2-SPEC    \
+                      LIQUIDITY-BAKING-TOKENTOXTZ-NEGATIVE-3-SPEC    \
+                      LIQUIDITY-BAKING-TOKENTOXTZ-NEGATIVE-4-SPEC    \
+                      LIQUIDITY-BAKING-TOKENTOXTZ-POSITIVE-SPEC      \
+                      LIQUIDITY-BAKING-TOKENTOTOKEN-NEGATIVE-SPEC    \
+                      LIQUIDITY-BAKING-TOKENTOTOKEN-POSITIVE-SPEC    \
+                      LIQUIDITY-BAKING-XTZTOTOKEN-NEGATIVE-SPEC      \
+                      LIQUIDITY-BAKING-XTZTOTOKEN-POSITIVE-SPEC
+
+lb_spec_modules = LIQUIDITY-BAKING-SPEC
+
+lb_spec_file := tests/proofs/liquidity-baking/lb-spec.md
+
+lb-prove: $(lb_spec_modules:%=lb-prove_%)
+lb-prove-failing: $(lb_spec_modules_failing:%=lb-prove_%)
+
+lb-prove_%:
+	$(MAKE) $(lb_spec_file).lb_prove                   \
+  KPROVE_MODULE=LIQUIDITY-BAKING-VERIFICATION        \
+  KPROVE_OPTIONS="$(KPROVE_OPTIONS) --spec-module $*"
+
+tests/%.lb_prove: tests/% $(lb_kompiled)
+	$(TEST) prove --backend lb $< $(KPROVE_MODULE) $(KPROVE_OPTIONS)
