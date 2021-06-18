@@ -1,3 +1,0 @@
-input  { Stack_elt unit $VAL } ;
-code   { DUP } ;
-output { Stack_elt unit $VAL ; Stack_elt unit $VAL }

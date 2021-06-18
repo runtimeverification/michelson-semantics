@@ -1,0 +1,1549 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="A Michelson semantics for Tezos built using the K Framework."
+/>
+<meta name="keywords" content="runtime, verification, rv, k" />
+<meta name="author" content="Michelson Semantics | Runtime Verification Inc" />
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../../../assets/img/favicon.ico" /> -->
+
+<title>Michelson Semantics | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../../../index.html"> Michelson Semantics </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/michelson-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../../../">Homepage</a>
+      <a class="bd-toc-link" href="../../../../INSTALL">Install</a>
+      <a class="bd-toc-link" href="../../../../USER_GUIDE">User Guide</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-9 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="inter-transactional-properties-of-dexter-contract">Inter-Transactional Properties of Dexter Contract</h1>
+<p>We formulate and prove safety properties of Dexter over <em>any sequence of arbitrary transactions</em>.</p>
+<h2 id="faithfulness-of-state-variables">Faithfulness of State Variables</h2>
+<p>In the Dexter contract, the token exchange rate and the liquidity share price are determined by the three state variables (XtzPool, TokenPool, LqtTotal) which keep track of the XTZ reserve, the token reserve, and the total liquidity token supply, respectively.</p>
+<p>The first invariant we consider is that the Dexter state variables faithfully represent the actual pool reserves and liquidity supply.  That is, XtzPool and TokenPool must be equal to the actual XTZ and token reserves, and LqtTotal must be equal to the actual total liquidity supply. We show this holds inductively, i.e. we assume that the invariant is satisfied, and then show that no sequence of transactions can cause it to be violated.</p>
+<p>Note that the Dexter entrypoint functions immediately update these state variables, while the actual reserves or supply will be updated later by the continuation operations emitted by the entrypoints.  Moreover, the actual token reserve may be possibly larger than TokenPool, since one can &quot;donate&quot; tokens to Dexter (i.e., directly sending tokens to Dexter without going through any of the Dexter entrypoint functions).  Note that, however, the actual XTZ reserve must be equal to the XtzPool value, since directly sending XTZ to Dexter will be captured by the Default() entrypoint.  (Indeed, we assume that, in Tezos, there is no way to &quot;secretly&quot; send XTZ to Dexter without triggering any Dexter entrypoint.  Note that, in Ethereum, it is <em>possible</em> to send Ether to a smart contract without ever executing the contract code, either by making the contract therecipient of mining rewards or selfdestruct rewards.)</p>
+<p>The following claim <code>[inv-top-level]</code> states that the invariant holds at the completion of every top-level operation.  Note that a top-level operation is the one created by an implicit account (i.e., an operation whose sender is equal to the source), and the completion of an operation involves the full execution &quot;tree&quot; following the DFS model adopted in the Florence upgrade.</p>
+<p>The <code>&lt;xtzPool&gt;</code>, <code>&lt;tokenPool&gt;</code>, and <code>&lt;lqtTotal&gt;</code> cells denote the Dexter state variables, XtzPool, TokenPool, and LqtTotal, respectively.  The <code>&lt;xtzDexter&gt;</code>, <code>&lt;tokenDexter&gt;</code>, and <code>&lt;lqtSupply&gt;</code> cells denote the actual XTZ and token reserves, and total liquidity supply, respectively.</p>
+<pre class="language-text"><code>claim [inv-top-level]:
+&lt;operations&gt; ( [ Transaction Sender _ _ _ ] #as Op =&gt;* .List ) ;; Ops &lt;/operations&gt;
+&lt;xtzPool&gt;     #Mutez(X =&gt; X&apos;)   &lt;/xtzPool&gt;
+&lt;tokenPool&gt;          T =&gt; T&apos;    &lt;/tokenPool&gt;
+&lt;lqtTotal&gt;           L =&gt; L&apos;    &lt;/lqtTotal&gt;
+&lt;xtzDexter&gt;   #Mutez(B =&gt; B&apos;)   &lt;/xtzDexter&gt;
+&lt;tokenDexter&gt;        D =&gt; D&apos;    &lt;/tokenDexter&gt;
+&lt;lqtSupply&gt;          S =&gt; S&apos;    &lt;/lqtSupply&gt;
+&lt;sourceaddr&gt;  Source            &lt;/sourceaddr&gt;
+requires Sender ==K Source
+ andBool 0 &lt;Int X  andBool X  ==Int B
+ andBool 0 &lt;Int T  andBool T  &lt;=Int D
+ andBool 0 &lt;Int L  andBool L  ==Int S
+ensures  0 &lt;Int X&apos; andBool X&apos; ==Int B&apos;
+ andBool 0 &lt;Int T&apos; andBool T&apos; &lt;=Int D&apos;
+ andBool 0 &lt;Int L&apos; andBool L&apos; ==Int S&apos;
+
+proof [inv-top-level]:
+- Sender =/=K DEXTER by [top-level]
+- TopLevelOps(Ops, Source) by [dfs]
+- Sends(Op ;; Ops) ==Int 0 andBool Transfers(Op ;; Ops) ==Int 0 andBool MintBurns(Op ;; Ops) ==Int 0 by Sender =/=K DEXTER and TopLevelOps(Ops, Source)
+- apply [inv-trans]
+- unify RHS
+  - Ops&apos; == .List
+- Sends(Ops) ==Int 0 andBool Transfers(Ops) ==Int 0 andBool MintBurns(Ops) ==Int 0 by Sender =/=K DEXTER
+- Sends(Ops&apos; ;; Ops) ==Int 0 andBool Transfers(Ops&apos; ;; Ops) ==Int 0 andBool MintBurns(Ops&apos; ;; Ops) ==Int 0 by Ops&apos;
+- qed
+</code></pre>
+<pre class="language-text"><code>claim [inv-trans]:
+&lt;operations&gt; (Op =&gt;* Ops&apos;) ;; Ops &lt;/operations&gt;
+&lt;xtzPool&gt;     #Mutez(X =&gt; X&apos;)   &lt;/xtzPool&gt;
+&lt;tokenPool&gt;          T =&gt; T&apos;    &lt;/tokenPool&gt;
+&lt;lqtTotal&gt;           L =&gt; L&apos;    &lt;/lqtTotal&gt;
+&lt;xtzDexter&gt;   #Mutez(B =&gt; B&apos;)   &lt;/xtzDexter&gt;
+&lt;tokenDexter&gt;        D =&gt; D&apos;    &lt;/tokenDexter&gt;
+&lt;lqtSupply&gt;          S =&gt; S&apos;    &lt;/lqtSupply&gt;
+requires 0 &lt;Int X  andBool X  ==Int B  +Int Sends(Op ;; Ops)
+ andBool 0 &lt;Int T  andBool T  &lt;=Int D  +Int Transfers(Op ;; Ops)
+ andBool 0 &lt;Int L  andBool L  ==Int S  +Int MintBurns(Op ;; Ops)
+ensures  0 &lt;Int X&apos; andBool X&apos; ==Int B&apos; +Int Sends(Ops&apos; ;; Ops)
+ andBool 0 &lt;Int T&apos; andBool T&apos; &lt;=Int D&apos; +Int Transfers(Ops&apos; ;; Ops)
+ andBool 0 &lt;Int L&apos; andBool L&apos; ==Int S&apos; +Int MintBurns(Ops&apos; ;; Ops)
+
+proof [inv-trans]:
+- by induction on =&gt;* and [inv]
+</code></pre>
+<p>The following claim <code>[inv]</code> generalizes the top-level claim <code>[inv-top-level]</code> over every intermediate operation.  It says that the execution of an <em>arbitrary</em> operation always preserves a certain relationship between the Dexter state variables and the actual pool reserves and liquidity supply.  Intuitively, the Dexter state variables must reflect the &quot;ultimate&quot; value of the pool reserves and liquidity supply over the course of intermediate steps of execution, which will be eventualy updated by the continuation operations in the future.</p>
+<pre class="language-text"><code>claim [inv]:
+&lt;operations&gt; (Op =&gt; Ops&apos;) ;; Ops &lt;/operations&gt;
+&lt;xtzPool&gt;     #Mutez(X =&gt; X&apos;)   &lt;/xtzPool&gt;
+&lt;tokenPool&gt;          T =&gt; T&apos;    &lt;/tokenPool&gt;
+&lt;lqtTotal&gt;           L =&gt; L&apos;    &lt;/lqtTotal&gt;
+&lt;xtzDexter&gt;   #Mutez(B =&gt; B&apos;)   &lt;/xtzDexter&gt;
+&lt;tokenDexter&gt;        D =&gt; D&apos;    &lt;/tokenDexter&gt;
+&lt;lqtSupply&gt;          S =&gt; S&apos;    &lt;/lqtSupply&gt;
+requires 0 &lt;Int X  andBool X  ==Int B  +Int Sends(Op ;; Ops)
+ andBool 0 &lt;Int T  andBool T  &lt;=Int D  +Int Transfers(Op ;; Ops)
+ andBool 0 &lt;Int L  andBool L  ==Int S  +Int MintBurns(Op ;; Ops)
+ensures  0 &lt;Int X&apos; andBool X&apos; ==Int B&apos; +Int Sends(Ops&apos; ;; Ops)
+ andBool 0 &lt;Int T&apos; andBool T&apos; &lt;=Int D&apos; +Int Transfers(Ops&apos; ;; Ops)
+ andBool 0 &lt;Int L&apos; andBool L&apos; ==Int S&apos; +Int MintBurns(Ops&apos; ;; Ops)
+</code></pre>
+<p>Specifically, Sends(Ops) denotes the amount of XTZ that will be sent to others by the operations Ops, Transfers(Ops) denotes the amount of tokens that will be sent to or received from others by Ops, and MintBurns(Ops) denotes the amount of liquidity that will be minted or burned by Ops.  Thus, the difference between the Dexter state variable XtzPool and the current XTZ reserve must be equal to Sends(Ops), the difference between TokenPool and the current token reserve must be equal to Transfers(Ops), and the difference between LqtTotal and the current liquidity supply must be equal to MintBurns(Ops), where Ops is the current continuation operations to be executed.</p>
+<p>Note that Sends, Transfers, and MintBurns count only Dexter-emitted operations, thus they are defined to be zero for operations that are not generated by Dexter.  (See the proposition <code>[only-dexter]</code>.)  Since no top-level operations can be generated by Dexter, they are defined to be zero for any top-level operations.</p>
+<pre class="language-text"><code>syntax Int ::= Sends(OpList) [function]
+rule Sends([ Transaction DEXTER _ X _ ] ;; Ops) =&gt; Sends(Ops) -Int X
+rule Sends(_ ;; Ops) =&gt; Sends(Ops) [owise]
+rule Sends(.List) =&gt; 0
+
+syntax Int ::= Transfers(OpList) [function]
+rule Transfers([ Transaction DEXTER TOKEN 0 Transfer(From, To, T) ] ;; Ops) =&gt; Transfers(Ops) +Int T when From =/=K DEXTER andBool To ==K DEXTER
+rule Transfers([ Transaction DEXTER TOKEN 0 Transfer(From, To, T) ] ;; Ops) =&gt; Transfers(Ops) -Int T when From  ==K DEXTER
+rule Transfers(_ ;; Ops) =&gt; Transfers(Ops) [owise]
+rule Transfers(.List) =&gt; 0
+
+syntax Int ::= MintBurns(OpList) [function]
+rule MintBurns([ Transaction DEXTER LQT 0 Mint(_, L) ] ;; Ops) =&gt; MintBurns(Ops) +Int L
+rule MintBurns([ Transaction DEXTER LQT 0 Burn(_, L) ] ;; Ops) =&gt; MintBurns(Ops) -Int L
+rule MintBurns(_ ;; Ops) =&gt; MintBurns(Ops) [owise]
+rule MintBurns(.List) =&gt; 0
+</code></pre>
+<p>Below we prove the claim <code>[inv]</code> by the induction on sequences of operations, and the case analysis over different types of operations.</p>
+<pre class="language-text"><code>proof [inv]:
+- assume that the invariant has held in each of the previous operations
+- let Op = Transaction Sender Target Amount CallParams
+- split Sender, Target
+  - case Sender &lt;&gt; DEXTER and Target == DEXTER
+    - split CallParams
+      - case CallParams == AddLiquidity _
+        - apply [inv-add-liquidity]
+      - case CallParams == RemoveLiquidity _
+        - apply [inv-remove-liquidity]
+      - case CallParams == XtzToToken _
+        - apply [inv-xtz-to-token]
+      - case CallParams == TokenToXtz _
+        - apply [inv-token-to-xtz]
+      - case CallParams == TokenToToken _
+        - apply [inv-token-to-token]
+      - case CallParams == UpdateTokenPool _
+        - apply [inv-update-token-pool]
+      - case CallParams == UpdateTokenPoolInternal _
+        - apply [inv-update-token-pool-internal]
+      - case CallParams == SetBaker _ | CallParams == SetManager _ | CallParams == SetLqtAddress _
+        - apply [inv-setter]
+      - case CallParams == Default _
+        - apply [inv-default]
+  - case Sender == DEXTER and Target == DEXTER
+    - split CallParams
+      - case CallParams == XtzToToken _
+        - apply [inv-xtz-to-token]
+      - case CallParams == Default _
+        - apply [inv-default]
+      - case _
+        - apply [sender-is-not-dexter]
+  - case Sender == DEXTER and Target &lt;&gt; DEXTER
+    - split Op
+      - case Op == Transaction DEXTER TOKEN 0 (Transfer _)
+        - apply [inv-token-transfer]
+      - case Op == Transaction DEXTER TOKEN 0 BalanceOf(DEXTER, UpdateTokenPoolInternal) ]
+        - apply [inv-token-balance-of]
+      - case Op == Transaction DEXTER LQT 0 (Mint _)
+        - apply [inv-lqt-mint]
+      - case Op == Transaction DEXTER LQT 0 (Burn _)
+        - apply [inv-lqt-burn]
+      - case Op == Transaction DEXTER _ _ Default()
+        - apply [inv-send]
+      - case Op == Transaction DEXTER _ _ (XtzToToken _)
+        - apply [inv-send]
+      - case _
+        - apply [dexter-emitted-ops]
+  - case Sender &lt;&gt; DEXTER and Target &lt;&gt; DEXTER
+    - Sends(Op) == Transfers(Op) == MintBurns(Op) == 0 by Sends, Transfers, MintBurns
+    - Sends(Ops&apos;) == Transfers(Ops&apos;) == MintBurns(Ops&apos;) == 0 by [only-dexter]
+    - split Target
+      - case Target == TOKEN
+        - (X&apos;, T&apos;, L&apos;, B&apos;) == (X, T, L, B) by [only-dexter]
+        - S&apos; == S by [only-lqt-mint-burn]
+        - split CallParams
+          - case CallParams == Transfer(From, To, Value)
+            - From &lt;&gt; DEXTER by [token-transfer]&apos;s assertion
+            - D&apos; &gt;= D by [only-token-transfer]
+          - case CallParams &lt;&gt; (Transfer _)
+            - D&apos; &gt;= D by [only-token-transfer]
+      - case Target == LQT
+        - (X&apos;, T&apos;, L&apos;, B&apos;) == (X, T, L, B) by [only-dexter]
+        - D&apos; == D by [only-token-transfer]
+        - CallParams &lt;&gt; (Mint _) and CallParams &lt;&gt; (Burn _) by [lqt-mint] and [lqt-burn]
+          - S&apos; == S
+      - case Target &lt;&gt; TOKEN and Target &lt;&gt; LQT
+        - (X&apos;, T&apos;, L&apos;, B&apos;) == (X, T, L, B) by [only-dexter]
+        - D&apos; == D by [only-token-transfer]
+        - S&apos; == S by [only-lqt-mint-burn]
+</code></pre>
+<h3 id="proof-for-dexter-entrypoint-functions">Proof for Dexter Entrypoint Functions</h3>
+<p>We prove the claim <code>[inv]</code> for each Dexter entrypoint.</p>
+<h4 id="addliquidity">AddLiquidity</h4>
+<pre class="language-text"><code>claim [inv-add-liquidity]:
+&lt;operations&gt;  ( [ Transaction Sender DEXTER XtzDeposited AddLiquidity(Owner, _, _, _) ] #as Op =&gt; Ops&apos; ) ;; Ops &lt;/operations&gt;
+&lt;xtzPool&gt;     #Mutez(X =&gt; X&apos;)   &lt;/xtzPool&gt;
+&lt;tokenPool&gt;          T =&gt; T&apos;    &lt;/tokenPool&gt;
+&lt;lqtTotal&gt;           L =&gt; L&apos;    &lt;/lqtTotal&gt;
+&lt;xtzDexter&gt;   #Mutez(B =&gt; B&apos;)   &lt;/xtzDexter&gt;
+&lt;tokenDexter&gt;        D =&gt; D&apos;    &lt;/tokenDexter&gt;
+&lt;lqtSupply&gt;          S =&gt; S&apos;    &lt;/lqtSupply&gt;
+requires 0 &lt;Int X  andBool X  ==Int B  +Int Sends(Op ;; Ops)
+ andBool 0 &lt;Int T  andBool T  &lt;=Int D  +Int Transfers(Op ;; Ops)
+ andBool 0 &lt;Int L  andBool L  ==Int S  +Int MintBurns(Op ;; Ops)
+ensures  0 &lt;Int X&apos; andBool X&apos; ==Int B&apos; +Int Sends(Ops&apos; ;; Ops)
+ andBool 0 &lt;Int T&apos; andBool T&apos; &lt;=Int D&apos; +Int Transfers(Ops&apos; ;; Ops)
+ andBool 0 &lt;Int L&apos; andBool L&apos; ==Int S&apos; +Int MintBurns(Ops&apos; ;; Ops)
+
+proof [inv-add-liquidity]:
+- Sender =/=K DEXTER by [sender-is-not-dexter]
+- apply [add-liquidity]
+- unify RHS
+  - Ops&apos; == ( [ Transaction DEXTER TOKEN 0 Transfer(Sender, DEXTER, TokensDeposited) ] #as Op1 )
+         ;; ( [ Transaction DEXTER LQT 0 Mint(Owner, LqtMinted) ] #as Op2 )
+  - X&apos; == X +Int XtzDeposited
+  - T&apos; == T +Int ( XtzDeposited *Int T up/Int X #as TokensDeposited )
+  - L&apos; == L +Int ( XtzDeposited *Int L   /Int X #as LqtMinted )
+  - B&apos; == B +Int XtzDeposited
+  - D&apos; == D
+  - S&apos; == S
+- X&apos; &gt;Int 0 by X &gt;Int 0 and XtzDeposited &gt;=Int 0
+- T&apos; &gt;Int 0 by T &gt;Int 0 and TokensDeposited &gt;=Int 0
+- L&apos; &gt;Int 0 by L &gt;Int 0 and LqtMinted &gt;=Int 0
+- X&apos; ==Int X +Int XtzDeposited
+     ==Int B +Int Sends(Op ;; Ops) +Int XtzDeposited by premise
+     ==Int B&apos; +Int Sends(Op ;; Ops) by B&apos;
+     ==Int B&apos; +Int Sends(Ops) by Sends and Sender =/=K DEXTER
+     ==Int B&apos; +Int Sends(Op2 ;; Ops) by Sends
+     ==Int B&apos; +Int Sends(Op1 ;; Op2 ;; Ops) by Sends
+     ==Int B&apos; +Int Sends(Ops&apos; ;; Ops) by Ops&apos;
+- T&apos; ==Int T +Int TokensDeposited
+     &lt;=Int D +Int Transfers(Op ;; Ops) +Int TokensDeposited by premise
+     ==Int D&apos; +Int Transfers(Op ;; Ops) +Int TokensDeposited by D&apos;
+     ==Int D&apos; +Int Transfers(Ops) +Int TokensDeposited by Transfers
+     ==Int D&apos; +Int Transfers(Op2 ;; Ops) +Int TokensDeposited by Transfers
+     ==Int D&apos; +Int Transfers(Op1 ;; Op2 ;; Ops) by Transfers and Sender =/=K DEXTER
+     ==Int D&apos; +Int Transfers(Ops&apos; ;; Ops) by Ops&apos;
+- L&apos; ==Int L +Int LqtMinted
+     ==Int S +Int MintBurns(Op ;; Ops) +Int LqtMinted by premise
+     ==Int S&apos; +Int MintBurns(Op ;; Ops) +Int LqtBurned by S&apos;
+     ==Int S&apos; +Int MintBurns(Ops) +Int LqtBurned by MintBurns
+     ==Int S&apos; +Int MintBurns(Op2 ;; Ops) by MintBurns
+     ==Int S&apos; +Int MintBurns(Op1 ;; Op2 ;; Ops) by MintBurns
+     ==Int S&apos; +Int MintBurns(Ops&apos; ;; Ops) by Ops&apos;
+</code></pre>
+<h4 id="removeliquidity">RemoveLiquidity</h4>
+<pre class="language-text"><code>claim [inv-remove-liquidity]:
+&lt;operations&gt;  ( [ Transaction Sender DEXTER Amount RemoveLiquidity(To, LqtBurned, _, _, _) ] #as Op =&gt; Ops&apos; ) ;; Ops &lt;/operations&gt;
+&lt;xtzPool&gt;     #Mutez(X =&gt; X&apos;)   &lt;/xtzPool&gt;
+&lt;tokenPool&gt;          T =&gt; T&apos;    &lt;/tokenPool&gt;
+&lt;lqtTotal&gt;           L =&gt; L&apos;    &lt;/lqtTotal&gt;
+&lt;xtzDexter&gt;   #Mutez(B =&gt; B&apos;)   &lt;/xtzDexter&gt;
+&lt;tokenDexter&gt;        D =&gt; D&apos;    &lt;/tokenDexter&gt;
+&lt;lqtSupply&gt;          S =&gt; S&apos;    &lt;/lqtSupply&gt;
+requires 0 &lt;Int X  andBool X  ==Int B  +Int Sends(Op ;; Ops)
+ andBool 0 &lt;Int T  andBool T  &lt;=Int D  +Int Transfers(Op ;; Ops)
+ andBool 0 &lt;Int L  andBool L  ==Int S  +Int MintBurns(Op ;; Ops)
+ensures  0 &lt;Int X&apos; andBool X&apos; ==Int B&apos; +Int Sends(Ops&apos; ;; Ops)
+ andBool 0 &lt;Int T&apos; andBool T&apos; &lt;=Int D&apos; +Int Transfers(Ops&apos; ;; Ops)
+ andBool 0 &lt;Int L&apos; andBool L&apos; ==Int S&apos; +Int MintBurns(Ops&apos; ;; Ops)
+
+proof [inv-remove-liquidity]:
+- apply [remove-liquidity]
+  - Amount ==Int 0 by assert
+  - LqtBurned &lt;Int L by assert
+- unify RHS
+  - Ops&apos; == ( [ Transaction DEXTER LQT   0            Burn(Sender, LqtBurned) ] #as Op1 )
+         ;; ( [ Transaction DEXTER TOKEN 0            Transfer(DEXTER, To, TokensWithdrawn) ] #as Op2 )
+         ;; ( [ Transaction DEXTER To    XtzWithdrawn Default() ] #as Op3 )
+  - X&apos; == X -Int ( LqtBurned *Int X /Int L #as XtzWithdrawn )
+  - T&apos; == T -Int ( LqtBurned *Int T /Int L #as TokensWithdrawn )
+  - L&apos; == L -Int LqtBurned
+  - B&apos; == B
+  - D&apos; == D
+  - S&apos; == S
+- X&apos; &gt;Int 0 by X &gt;Int 0 and LqtBurned &lt;Int L
+- T&apos; &gt;Int 0 by T &gt;Int 0 and LqtBurned &lt;Int L
+- L&apos; &gt;Int 0 by LqtBurned &lt;Int L
+- X&apos; ==Int X -Int XtzWithdrawn
+     ==Int B +Int Sends(Op ;; Ops) -Int XtzWithdrawn by premise
+     ==Int B&apos; +Int Sends(Op ;; Ops) -Int XtzWithdrawn by B&apos;
+     ==Int B&apos; +Int Sends(Ops) -Int XtzWithdrawn by Sends and Amount ==Int 0
+     ==Int B&apos; +Int Sends(Op3 ;; Ops) by Sends
+     ==Int B&apos; +Int Sends(Op2 ;; Op3 ;; Ops) by Sends
+     ==Int B&apos; +Int Sends(Op1 ;; Op2 ;; Op3 ;; Ops) by Sends
+     ==Int B&apos; +Int Sends(Ops&apos; ;; Ops) by Ops&apos;
+- T&apos; ==Int T -Int TokensWithdrawn
+     &lt;=Int D +Int Transfers(Op ;; Ops) -Int TokensWithdrawn by premise
+     ==Int D&apos; +Int Transfers(Op ;; Ops) -Int TokensWithdrawn by D&apos;
+     ==Int D&apos; +Int Transfers(Ops) -Int TokensWithdrawn by Transfers
+     ==Int D&apos; +Int Transfers(Op3 ;; Ops) -Int TokensWithdrawn by Transfers
+     ==Int D&apos; +Int Transfers(Op2 ;; Op3 ;; Ops) by Transfers
+     ==Int D&apos; +Int Transfers(Op1 ;; Op2 ;; Op3 ;; Ops) by Transfers
+     ==Int D&apos; +Int Transfers(Ops&apos; ;; Ops) by Ops&apos;
+- L&apos; ==Int L -Int LqtBurned
+     ==Int S +Int MintBurns(Op ;; Ops) -Int LqtBurned by premise
+     ==Int S&apos; +Int MintBurns(Op ;; Ops) -Int LqtBurned by S&apos;
+     ==Int S&apos; +Int MintBurns(Ops) -Int LqtBurned by MintBurns
+     ==Int S&apos; +Int MintBurns(Op3 ;; Ops) -Int LqtBurned by MintBurns
+     ==Int S&apos; +Int MintBurns(Op2 ;; Op3 ;; Ops) -Int LqtBurned by MintBurns
+     ==Int S&apos; +Int MintBurns(Op1 ;; Op2 ;; Op3 ;; Ops) by MintBurns
+     ==Int S&apos; +Int MintBurns(Ops&apos; ;; Ops) by Ops&apos;
+</code></pre>
+<h4 id="xtztotoken">XtzToToken</h4>
+<pre class="language-text"><code>claim [inv-xtz-to-token]:
+&lt;operations&gt;  ( [ Transaction Sender DEXTER XtzSold XtzToToken(To, _, _) ] #as Op =&gt; Ops&apos; ) ;; Ops &lt;/operations&gt;
+&lt;xtzPool&gt;     #Mutez(X =&gt; X&apos;)   &lt;/xtzPool&gt;
+&lt;tokenPool&gt;          T =&gt; T&apos;    &lt;/tokenPool&gt;
+&lt;lqtTotal&gt;           L =&gt; L&apos;    &lt;/lqtTotal&gt;
+&lt;xtzDexter&gt;   #Mutez(B =&gt; B&apos;)   &lt;/xtzDexter&gt;
+&lt;tokenDexter&gt;        D =&gt; D&apos;    &lt;/tokenDexter&gt;
+&lt;lqtSupply&gt;          S =&gt; S&apos;    &lt;/lqtSupply&gt;
+requires 0 &lt;Int X  andBool X  ==Int B  +Int Sends(Op ;; Ops)
+ andBool 0 &lt;Int T  andBool T  &lt;=Int D  +Int Transfers(Op ;; Ops)
+ andBool 0 &lt;Int L  andBool L  ==Int S  +Int MintBurns(Op ;; Ops)
+ensures  0 &lt;Int X&apos; andBool X&apos; ==Int B&apos; +Int Sends(Ops&apos; ;; Ops)
+ andBool 0 &lt;Int T&apos; andBool T&apos; &lt;=Int D&apos; +Int Transfers(Ops&apos; ;; Ops)
+ andBool 0 &lt;Int L&apos; andBool L&apos; ==Int S&apos; +Int MintBurns(Ops&apos; ;; Ops)
+
+proof [inv-xtz-to-token]:
+- apply [xtz-to-token]
+- unify RHS
+  - Ops&apos; == [ Transaction DEXTER TOKEN 0 Transfer(DEXTER, To, TokensBought) ]
+  - X&apos; == X +Int XtzSold
+  - T&apos; == T -Int ( 997 *Int XtzSold *Int T /Int (1000 *Int X +Int 997 *Int XtzSold) #as TokensBought )
+  - L&apos; == L
+  - B&apos; == B +Int XtzSold
+  - D&apos; == D
+  - S&apos; == S
+- X&apos; &gt;Int 0 by X &gt;Int 0 and XtzSold &gt;=Int 0
+- TokensBought &lt;Int T by T &gt;Int 0 and X &gt;Int 0 and XtzSold &gt;=Int 0 // TODO: double-check
+- T&apos; &gt;Int 0 by TokensBought &lt;Int T
+- L&apos; &gt;Int 0 by L &gt;Int 0
+- split Sender
+  - case Sender &lt;&gt; DEXTER
+    - X&apos; ==Int X +Int XtzSold
+         ==Int B +Int Sends(Op ;; Ops) +Int XtzSold by premise
+         ==Int B&apos; +Int Sends(Op ;; Ops) by B&apos;
+         ==Int B&apos; +Int Sends(Ops) by Sends
+         ==Int B&apos; +Int Sends(Ops&apos; ;; Ops) by Sends
+  - case Sender == DEXTER
+    - X&apos; ==Int X +Int XtzSold
+         ==Int B +Int Sends(Op ;; Ops) +Int XtzSold by premise
+         ==Int B&apos; +Int Sends(Op ;; Ops) +Int XtzSold by B&apos;
+         ==Int B&apos; +Int (Sends(Ops) -Int XtzSold) +Int XtzSold by Sends
+         ==Int B&apos; +Int Sends(Ops) by simp
+         ==Int B&apos; +Int Sends(Ops&apos; ;; Ops) by Sends
+- T&apos; ==Int T -Int TokensBought
+     &lt;=Int D +Int Transfers(Op ;; Ops) -Int TokensBought by premise
+     ==Int D&apos; +Int Transfers(Op ;; Ops) -Int TokensBought by D&apos;
+     ==Int D&apos; +Int Transfers(Ops) -Int TokensBought by Transfers
+     ==Int D&apos; +Int Transfers(Ops&apos; ;; Ops) by Transfers
+- L&apos; ==Int L
+     ==Int S +Int MintBurns(Op ;; Ops) by premise
+     ==Int S&apos; +Int MintBurns(Op ;; Ops) by S&apos;
+     ==Int S&apos; +Int MintBurns(Ops) by MintBurns
+     ==Int S&apos; +Int MintBurns(Ops&apos; ;; Ops) by MintBurns
+</code></pre>
+<h4 id="tokentoxtz">TokenToXtz</h4>
+<pre class="language-text"><code>claim [inv-token-to-xtz]:
+&lt;operations&gt;  ( [ Transaction Sender DEXTER Amount TokenToXtz(To, TokensSold, _, _) ] #as Op =&gt; Ops&apos; ) ;; Ops &lt;/operations&gt;
+&lt;xtzPool&gt;     #Mutez(X =&gt; X&apos;)   &lt;/xtzPool&gt;
+&lt;tokenPool&gt;          T =&gt; T&apos;    &lt;/tokenPool&gt;
+&lt;lqtTotal&gt;           L =&gt; L&apos;    &lt;/lqtTotal&gt;
+&lt;xtzDexter&gt;   #Mutez(B =&gt; B&apos;)   &lt;/xtzDexter&gt;
+&lt;tokenDexter&gt;        D =&gt; D&apos;    &lt;/tokenDexter&gt;
+&lt;lqtSupply&gt;          S =&gt; S&apos;    &lt;/lqtSupply&gt;
+requires 0 &lt;Int X  andBool X  ==Int B  +Int Sends(Op ;; Ops)
+ andBool 0 &lt;Int T  andBool T  &lt;=Int D  +Int Transfers(Op ;; Ops)
+ andBool 0 &lt;Int L  andBool L  ==Int S  +Int MintBurns(Op ;; Ops)
+ensures  0 &lt;Int X&apos; andBool X&apos; ==Int B&apos; +Int Sends(Ops&apos; ;; Ops)
+ andBool 0 &lt;Int T&apos; andBool T&apos; &lt;=Int D&apos; +Int Transfers(Ops&apos; ;; Ops)
+ andBool 0 &lt;Int L&apos; andBool L&apos; ==Int S&apos; +Int MintBurns(Ops&apos; ;; Ops)
+
+proof [inv-token-to-xtz]:
+- Sender =/=K DEXTER by [sender-is-not-dexter]
+- apply [token-to-xtz]
+  - Amount ==Int 0 by assert
+- unify RHS
+  - Ops&apos; == ( [ Transaction DEXTER TOKEN 0         Transfer(Sender, DEXTER, TokensSold) ] #as Op1 )
+         ;; ( [ Transaction DEXTER To    XtzBought Default() ] #as Op2 )
+  - X&apos; == X -Int ( 997 *Int TokensSold *Int X /Int (1000 *Int T +Int 997 *Int TokensSold) #as XtzBought )
+  - T&apos; == T +Int TokensSold
+  - L&apos; == L
+  - B&apos; == B
+  - D&apos; == D
+  - S&apos; == S
+- XtzBought &lt;Int X by X &gt;Int 0 and T &gt;Int 0 and TokensSold &gt;=Int 0 // TODO: double-check
+- X&apos; &gt;Int 0 by XtzBought &lt;Int X
+- T&apos; &gt;Int 0 by T &gt;Int 0 and TokensSold &gt;=Int 0
+- L&apos; &gt;Int 0 by L &gt;Int 0
+- X&apos; ==Int X -Int XtzBought
+     ==Int B +Int Sends(Op ;; Ops) -Int XtzBought by premise
+     ==Int B&apos; +Int Sends(Op ;; Ops) -Int XtzBought by B&apos;
+     ==Int B&apos; +Int Sends(Ops) -Int XtzBought by Sends and Amount ==Int 0
+     ==Int B&apos; +Int Sends(Op2 ;; Ops) by Sends
+     ==Int B&apos; +Int Sends(Op1 ;; Op2 ;; Ops) by Sends
+     ==Int B&apos; +Int Sends(Ops&apos; ;; Ops) by Ops&apos;
+- T&apos; ==Int T +Int TokensSold
+     &lt;=Int D +Int Transfers(Op ;; Ops) +Int TokensSold by premise
+     ==Int D&apos; +Int Transfers(Op ;; Ops) +Int TokensSold by D&apos;
+     ==Int D&apos; +Int Transfers(Ops) +Int TokensSold by Transfers
+     ==Int D&apos; +Int Transfers(Op2 ;; Ops) +Int TokensSold by Transfers
+     ==Int D&apos; +Int Transfers(Op1 ;; Op2 ;; Ops) by Transfers and Sender =/=K DEXTER
+     ==Int D&apos; +Int Transfers(Ops&apos; ;; Ops) by Ops&apos;
+- L&apos; ==Int L
+     ==Int S +Int MintBurns(Op ;; Ops) by premise
+     ==Int S&apos; +Int MintBurns(Op ;; Ops) by S&apos;
+     ==Int S&apos; +Int MintBurns(Ops) by MintBurns
+     ==Int S&apos; +Int MintBurns(Op2 ;; Ops) by MintBurns
+     ==Int S&apos; +Int MintBurns(Op1 ;; Op2 ;; Ops) by MintBurns
+     ==Int S&apos; +Int MintBurns(Ops&apos; ;; Ops) by Ops&apos;
+</code></pre>
+<h4 id="tokentotoken">TokenToToken</h4>
+<pre class="language-text"><code>claim [inv-token-to-token]:
+&lt;operations&gt;  ( [ Transaction Sender DEXTER Amount TokenToToken(OutputDexterContract, MinTokensBought, To, TokensSold, Deadline) ] #as Op =&gt; Ops&apos; ) ;; Ops &lt;/operations&gt;
+&lt;xtzPool&gt;     #Mutez(X =&gt; X&apos;)   &lt;/xtzPool&gt;
+&lt;tokenPool&gt;          T =&gt; T&apos;    &lt;/tokenPool&gt;
+&lt;lqtTotal&gt;           L =&gt; L&apos;    &lt;/lqtTotal&gt;
+&lt;xtzDexter&gt;   #Mutez(B =&gt; B&apos;)   &lt;/xtzDexter&gt;
+&lt;tokenDexter&gt;        D =&gt; D&apos;    &lt;/tokenDexter&gt;
+&lt;lqtSupply&gt;          S =&gt; S&apos;    &lt;/lqtSupply&gt;
+requires 0 &lt;Int X  andBool X  ==Int B  +Int Sends(Op ;; Ops)
+ andBool 0 &lt;Int T  andBool T  &lt;=Int D  +Int Transfers(Op ;; Ops)
+ andBool 0 &lt;Int L  andBool L  ==Int S  +Int MintBurns(Op ;; Ops)
+ensures  0 &lt;Int X&apos; andBool X&apos; ==Int B&apos; +Int Sends(Ops&apos; ;; Ops)
+ andBool 0 &lt;Int T&apos; andBool T&apos; &lt;=Int D&apos; +Int Transfers(Ops&apos; ;; Ops)
+ andBool 0 &lt;Int L&apos; andBool L&apos; ==Int S&apos; +Int MintBurns(Ops&apos; ;; Ops)
+
+proof [inv-token-to-token]:
+- Sender =/=K DEXTER by [sender-is-not-dexter]
+- apply [token-to-token]
+  - Amount ==Int 0 by assert
+- unify RHS
+  - Ops&apos; == ( [ Transaction DEXTER TOKEN                0         Transfer(Sender, DEXTER, TokensSold) ] #as Op1 )
+         ;; ( [ Transaction DEXTER OutputDexterContract XtzBought XtzToToken(To, MinTokensBought, Deadline) ] #as Op2 )
+  - X&apos; == X -Int ( 997 *Int TokensSold *Int X /Int (1000 *Int T +Int 997 *Int TokensSold) #as XtzBought )
+  - T&apos; == T +Int TokensSold
+  - L&apos; == L
+  - B&apos; == B
+  - D&apos; == D
+  - S&apos; == S
+- XtzBought &lt;Int X by X &gt;Int 0 and T &gt;Int 0 and TokensSold &gt;=Int 0 // TODO: double-check
+- X&apos; &gt;Int 0 by XtzBought &lt;Int X
+- T&apos; &gt;Int 0 by T &gt;Int 0 and TokensSold &gt;=Int 0
+- L&apos; &gt;Int 0 by L &gt;Int 0
+- X&apos; ==Int X -Int XtzBought
+     ==Int B +Int Sends(Op ;; Ops) -Int XtzBought by premise
+     ==Int B&apos; +Int Sends(Op ;; Ops) -Int XtzBought by B&apos;
+     ==Int B&apos; +Int Sends(Ops) -Int XtzBought by Sends and Amount ==Int 0
+     ==Int B&apos; +Int Sends(Op2 ;; Ops) by Sends
+     ==Int B&apos; +Int Sends(Op1 ;; Op2 ;; Ops) by Sends
+     ==Int B&apos; +Int Sends(Ops&apos; ;; Ops) by Ops&apos;
+- T&apos; ==Int T +Int TokensSold
+     &lt;=Int D +Int Transfers(Op ;; Ops) +Int TokensSold by premise
+     ==Int D&apos; +Int Transfers(Op ;; Ops) +Int TokensSold by D&apos;
+     ==Int D&apos; +Int Transfers(Ops) +Int TokensSold by Transfers
+     ==Int D&apos; +Int Transfers(Op2 ;; Ops) +Int TokensSold by Transfers
+     ==Int D&apos; +Int Transfers(Op1 ;; Op2 ;; Ops) by Transfers and Sender =/=K DEXTER
+     ==Int D&apos; +Int Transfers(Ops&apos; ;; Ops) by Ops&apos;
+- L&apos; ==Int L
+     ==Int S +Int MintBurns(Op ;; Ops) by premise
+     ==Int S&apos; +Int MintBurns(Op ;; Ops) by S&apos;
+     ==Int S&apos; +Int MintBurns(Ops) by MintBurns
+     ==Int S&apos; +Int MintBurns(Op2 ;; Ops) by MintBurns
+     ==Int S&apos; +Int MintBurns(Op1 ;; Op2 ;; Ops) by MintBurns
+     ==Int S&apos; +Int MintBurns(Ops&apos; ;; Ops) by Ops&apos;
+</code></pre>
+<h4 id="updatetokenpool-and-updatetokenpoolinternal">UpdateTokenPool and UpdateTokenPoolInternal</h4>
+<pre class="language-text"><code>claim [inv-update-token-pool]:
+&lt;operations&gt;  ( [ Transaction Sender DEXTER Amount UpdateTokenPool() ] #as Op =&gt; Ops&apos; ) ;; Ops &lt;/operations&gt;
+&lt;xtzPool&gt;     #Mutez(X =&gt; X&apos;)   &lt;/xtzPool&gt;
+&lt;tokenPool&gt;          T =&gt; T&apos;    &lt;/tokenPool&gt;
+&lt;lqtTotal&gt;           L =&gt; L&apos;    &lt;/lqtTotal&gt;
+&lt;xtzDexter&gt;   #Mutez(B =&gt; B&apos;)   &lt;/xtzDexter&gt;
+&lt;tokenDexter&gt;        D =&gt; D&apos;    &lt;/tokenDexter&gt;
+&lt;lqtSupply&gt;          S =&gt; S&apos;    &lt;/lqtSupply&gt;
+requires 0 &lt;Int X  andBool X  ==Int B  +Int Sends(Op ;; Ops)
+ andBool 0 &lt;Int T  andBool T  &lt;=Int D  +Int Transfers(Op ;; Ops)
+ andBool 0 &lt;Int L  andBool L  ==Int S  +Int MintBurns(Op ;; Ops)
+ensures  0 &lt;Int X&apos; andBool X&apos; ==Int B&apos; +Int Sends(Ops&apos; ;; Ops)
+ andBool 0 &lt;Int T&apos; andBool T&apos; &lt;=Int D&apos; +Int Transfers(Ops&apos; ;; Ops)
+ andBool 0 &lt;Int L&apos; andBool L&apos; ==Int S&apos; +Int MintBurns(Ops&apos; ;; Ops)
+
+proof [inv-update-token-pool]:
+- apply [update-token-pool]
+  - Amount ==Int 0 by assert
+- unify RHS
+  - Ops&apos; == [ Transaction DEXTER TOKEN 0 BalanceOf(DEXTER, UpdateTokenPoolInternal) ]
+  - X&apos; == X
+  - T&apos; == T
+  - L&apos; == L
+  - B&apos; == B
+  - D&apos; == D
+  - S&apos; == S
+- X&apos; &gt;Int 0 by X &gt;Int 0
+- T&apos; &gt;Int 0 by T &gt;Int 0
+- L&apos; &gt;Int 0 by L &gt;Int 0
+- X&apos; ==Int X
+     ==Int B +Int Sends(Op ;; Ops) by premise
+     ==Int B&apos; +Int Sends(Op ;; Ops) by B&apos;
+     ==Int B&apos; +Int Sends(Ops) by Sends and Amount ==Int 0
+     ==Int B&apos; +Int Sends(Ops&apos; ;; Ops) by Sends
+- T&apos; ==Int T
+     &lt;=Int D +Int Transfers(Op ;; Ops) by premise
+     ==Int D&apos; +Int Transfers(Op ;; Ops) by D&apos;
+     ==Int D&apos; +Int Transfers(Ops) by Transfers
+     ==Int D&apos; +Int Transfers(Ops&apos; ;; Ops) by Transfers
+- L&apos; ==Int L
+     ==Int S +Int MintBurns(Op ;; Ops) by premise
+     ==Int S&apos; +Int MintBurns(Op ;; Ops) by S&apos;
+     ==Int S&apos; +Int MintBurns(Ops) by MintBurns
+     ==Int S&apos; +Int MintBurns(Ops&apos; ;; Ops) by MintBurns
+</code></pre>
+<pre class="language-text"><code>claim [inv-update-token-pool-internal]:
+&lt;operations&gt;  ( [ Transaction Sender DEXTER Amount UpdateTokenPoolInternal(TokenPool) ] #as Op =&gt; Ops&apos; ) ;; Ops &lt;/operations&gt;
+&lt;xtzPool&gt;     #Mutez(X =&gt; X&apos;)   &lt;/xtzPool&gt;
+&lt;tokenPool&gt;          T =&gt; T&apos;    &lt;/tokenPool&gt;
+&lt;lqtTotal&gt;           L =&gt; L&apos;    &lt;/lqtTotal&gt;
+&lt;xtzDexter&gt;   #Mutez(B =&gt; B&apos;)   &lt;/xtzDexter&gt;
+&lt;tokenDexter&gt;        D =&gt; D&apos;    &lt;/tokenDexter&gt;
+&lt;lqtSupply&gt;          S =&gt; S&apos;    &lt;/lqtSupply&gt;
+requires 0 &lt;Int X  andBool X  ==Int B  +Int Sends(Op ;; Ops)
+ andBool 0 &lt;Int T  andBool T  &lt;=Int D  +Int Transfers(Op ;; Ops)
+ andBool 0 &lt;Int L  andBool L  ==Int S  +Int MintBurns(Op ;; Ops)
+ensures  0 &lt;Int X&apos; andBool X&apos; ==Int B&apos; +Int Sends(Ops&apos; ;; Ops)
+ andBool 0 &lt;Int T&apos; andBool T&apos; &lt;=Int D&apos; +Int Transfers(Ops&apos; ;; Ops)
+ andBool 0 &lt;Int L&apos; andBool L&apos; ==Int S&apos; +Int MintBurns(Ops&apos; ;; Ops)
+
+proof [inv-update-token-pool-internal]:
+- apply [update-token-pool-internal]
+  - Amount ==Int 0 by assert
+  - Sender ==K TOKEN by assert
+- apply [lemma-token-pool-internal]
+  - T &lt;=Int TokenPool &lt;=Int D
+  - Transfers(Op ;; Ops) ==Int 0
+- unify RHS
+  - Ops&apos; == .List
+  - X&apos; == X
+  - T&apos; == TokenPool
+  - L&apos; == L
+  - B&apos; == B
+  - D&apos; == D
+  - S&apos; == S
+- X&apos; &gt;Int 0 by X &gt;Int 0
+- T&apos; &gt;Int 0 by T &gt;Int 0 and TokenPool &gt;=Int T
+- L&apos; &gt;Int 0 by L &gt;Int 0
+- X&apos; ==Int X
+     ==Int B +Int Sends(Op ;; Ops) by premise
+     ==Int B&apos; +Int Sends(Op ;; Ops) by B&apos;
+     ==Int B&apos; +Int Sends(Ops) by Sends and Amount ==Int 0
+     ==Int B&apos; +Int Sends(Ops&apos; ;; Ops) by Ops&apos;
+- T&apos; ==Int TokenPool
+     &lt;=Int D
+     ==Int D +Int Transfers(Op ;; Ops)
+     ==Int D +Int Transfers(Ops) by Transfers
+     ==Int D +Int Transfers(Ops&apos; ;; Ops) by Ops&apos;
+- L&apos; ==Int L
+     ==Int S +Int MintBurns(Op ;; Ops) by premise
+     ==Int S&apos; +Int MintBurns(Op ;; Ops) by S&apos;
+     ==Int S&apos; +Int MintBurns(Ops) by MintBurns
+     ==Int S&apos; +Int MintBurns(Ops&apos; ;; Ops) by Ops&apos;
+</code></pre>
+<pre class="language-text"><code>claim [lemma-update-token-pool-internal]:
+[[ T &lt;=Int TokenPool andBool TokenPool &lt;=Int D andBool Transfers(Ops) ==Int 0 =&gt; true ]]
+&lt;operations&gt;  [ Transaction TOKEN DEXTER 0 UpdateTokenPoolInternal(TokenPool) ] #as Op ;; Ops &lt;/operations&gt;
+&lt;tokenPool&gt;   T &lt;/tokenPool&gt;
+&lt;tokenDexter&gt; D &lt;/tokenDexter&gt;
+</code></pre>
+<p>Proof sketch for <code>[lemma-update-token-pool-internal]</code>:</p>
+<pre class="language-text"><code>                +-------+-----+-------+
+ top-level ---&gt; | . . . | Tx2 |  Ops2 |         Tx2 = Transaction _ DEXTER 0 UpdateTokenPool()
+                +-------+--+--+-------+
+                           |
+                          \|/
+                        +-----+
+                        | Tx1 |                 Tx1 = Transaction DEXTER TOKEN 0 BalanceOf(DEXTER, UpdateTokenPoolInternal)
+                        +--+--+
+                           |
+                          \|/
+                +-------+-----+-------+
+                | Ops0  |  Op |  Ops1 |         Op  = Transaction TOKEN DEXTER 0 UpdateTokenPoolInternal(TokenPool)
+                +-------+-----+-------+
+</code></pre>
+<ul>
+<li>Let Tx1 be the parent operation who emitted the current operation Op, and Tx2 be the parent operation of Tx1.</li>
+<li>Tx1 must be <code>Transaction DEXTER TOKEN 0 BalanceOf(DEXTER, UpdateTokenPoolInternal)</code>, and Tx2 must be <code>Transaction _ DEXTER 0 UpdateTokenPool()</code>.  Moreover, Tx2 must be top-level.</li>
+<li>Let Ops1 be the remaining operations emitted by Tx1 (that will be executed after the current operation Op), and Ops2 be the remaining top-level operations (that will be executed after the completion of Tx2).</li>
+<li>Then, we have <code>Ops ==K Ops1 ;; Ops2</code>.  Since nothing in Ops was emitted by Dexter, we have <code>Transfers(Ops) ==Int 0</code>.</li>
+<li>Now, by IH, <code>[inv]</code> holds for Tx1.  Let T0, D0, and OpsTx1 be the post value of <code>&lt;tokenPool&gt;</code>, <code>&lt;tokenDexter&gt;</code>, and <code>&lt;operations&gt;</code>, respectively, for Tx1.  Then, by <code>[inv]</code>, we have <code>T0 &lt;=Int D0 +Int Transfers(OpsTx1)</code>.</li>
+<li>Note that OpsTx1 must be of the form <code>Ops0 ;; [ Op ] ;; Ops1 ;; Ops2</code>, where Ops0 is possibly empty.  Since nothing in OpsTx1 was emitted by Dexter, we have <code>Transfers(OpsTx1) ==Int 0</code>.</li>
+<li>By <code>[token-balance-of]</code>, we have <code>TokenPool ==Int D0</code>.</li>
+<li>During the entire execution of Ops0 (including their nested sub-operations), <code>&lt;tokenPool&gt;</code> does not change, because no Dexter entrypoint can be executed due to the <code>&lt;selfIsUpdatingTokenPool&gt;</code> lock.  Thus, we have <code>T ==Int T0</code>.  (Note that, if the lock is somehow released during the execution of Ops0, then Op will fail which will revert the entire transaction.  Also, note that the lock cannot be held again during Ops0, because only a top-level operation can initiate the lock.)</li>
+<li>Also, during the execution of Ops0, <code>&lt;tokenDexter&gt;</code> cannot decrease, because only Dexter can spend its own tokens.  Thus, we have <code>D &gt;=Int D0</code>.</li>
+<li>Thus, we have <code>T &lt;=Int TokenPool &lt;=Int D</code>, which concludes.</li>
+</ul>
+<h4 id="default">Default</h4>
+<pre class="language-text"><code>claim [inv-default]:
+&lt;operations&gt;  ( [ Transaction Sender DEXTER Amount Default() ] #as Op =&gt; Ops&apos; ) ;; Ops &lt;/operations&gt;
+&lt;xtzPool&gt;     #Mutez(X =&gt; X&apos;)   &lt;/xtzPool&gt;
+&lt;tokenPool&gt;          T =&gt; T&apos;    &lt;/tokenPool&gt;
+&lt;lqtTotal&gt;           L =&gt; L&apos;    &lt;/lqtTotal&gt;
+&lt;xtzDexter&gt;   #Mutez(B =&gt; B&apos;)   &lt;/xtzDexter&gt;
+&lt;tokenDexter&gt;        D =&gt; D&apos;    &lt;/tokenDexter&gt;
+&lt;lqtSupply&gt;          S =&gt; S&apos;    &lt;/lqtSupply&gt;
+requires 0 &lt;Int X  andBool X  ==Int B  +Int Sends(Op ;; Ops)
+ andBool 0 &lt;Int T  andBool T  &lt;=Int D  +Int Transfers(Op ;; Ops)
+ andBool 0 &lt;Int L  andBool L  ==Int S  +Int MintBurns(Op ;; Ops)
+ensures  0 &lt;Int X&apos; andBool X&apos; ==Int B&apos; +Int Sends(Ops&apos; ;; Ops)
+ andBool 0 &lt;Int T&apos; andBool T&apos; &lt;=Int D&apos; +Int Transfers(Ops&apos; ;; Ops)
+ andBool 0 &lt;Int L&apos; andBool L&apos; ==Int S&apos; +Int MintBurns(Ops&apos; ;; Ops)
+
+proof [inv-default]:
+- apply [default]
+- unify RHS
+  - Ops&apos; == .List
+  - X&apos; == X +Int Amount
+  - T&apos; == T
+  - L&apos; == L
+  - D&apos; == D
+  - S&apos; == S
+- X&apos; &gt;Int 0 by X &gt;Int 0 and Amount &gt;=Int 0
+- T&apos; &gt;Int 0 by T &gt;Int 0
+- L&apos; &gt;Int 0 by L &gt;Int 0
+- split Sender
+  - case Sender &lt;&gt; DEXTER
+    - X&apos; ==Int X +Int Amount
+         ==Int B +Int Sends(Op ;; Ops) +Int Amount by premise
+         ==Int B&apos; +Int Sends(Op ;; Ops) by B&apos;
+         ==Int B&apos; +Int Sends(Ops) by Sends
+         ==Int B&apos; +Int Sends(Ops&apos; ;; Ops) by Ops&apos;
+  - case Sender == DEXTER
+    - X&apos; ==Int X +Int Amount
+         ==Int B +Int Sends(Op ;; Ops) +Int Amount by premise
+         ==Int B&apos; +Int Sends(Op ;; Ops) +Int Amount by B&apos;
+         ==Int B&apos; +Int (Sends(Ops) -Int Amount) +Int Amount by Sends
+         ==Int B&apos; +Int Sends(Ops) by simp
+         ==Int B&apos; +Int Sends(Ops&apos; ;; Ops) by Ops&apos;
+- T&apos; ==Int T
+     &lt;=Int D +Int Transfers(Op ;; Ops) by premise
+     ==Int D&apos; +Int Transfers(Op ;; Ops) by D&apos;
+     ==Int D&apos; +Int Transfers(Ops) by Transfers
+     ==Int D&apos; +Int Transfers(Ops&apos; ;; Ops) by Ops&apos;
+- L&apos; ==Int L
+     ==Int S +Int MintBurns(Op ;; Ops) by premise
+     ==Int S&apos; +Int MintBurns(Op ;; Ops) by S&apos;
+     ==Int S&apos; +Int MintBurns(Ops) by MintBurns
+     ==Int S&apos; +Int MintBurns(Ops&apos; ;; Ops) by Ops&apos;
+</code></pre>
+<h4 id="setters">Setters</h4>
+<pre class="language-text"><code>claim [inv-setter]:
+&lt;operations&gt;  ( [ Transaction Sender DEXTER Amount CallParams ] #as Op =&gt; Ops&apos; ) ;; Ops &lt;/operations&gt;
+&lt;xtzPool&gt;     #Mutez(X =&gt; X&apos;)   &lt;/xtzPool&gt;
+&lt;tokenPool&gt;          T =&gt; T&apos;    &lt;/tokenPool&gt;
+&lt;lqtTotal&gt;           L =&gt; L&apos;    &lt;/lqtTotal&gt;
+&lt;xtzDexter&gt;   #Mutez(B =&gt; B&apos;)   &lt;/xtzDexter&gt;
+&lt;tokenDexter&gt;        D =&gt; D&apos;    &lt;/tokenDexter&gt;
+&lt;lqtSupply&gt;          S =&gt; S&apos;    &lt;/lqtSupply&gt;
+requires CallParams ==K (SetBaker _) orBool CallParams ==K (SetManager _) orBool CallParams ==K (SetLqtAddress _)
+requires 0 &lt;Int X  andBool X  ==Int B  +Int Sends(Op ;; Ops)
+ andBool 0 &lt;Int T  andBool T  &lt;=Int D  +Int Transfers(Op ;; Ops)
+ andBool 0 &lt;Int L  andBool L  ==Int S  +Int MintBurns(Op ;; Ops)
+ensures  0 &lt;Int X&apos; andBool X&apos; ==Int B&apos; +Int Sends(Ops&apos; ;; Ops)
+ andBool 0 &lt;Int T&apos; andBool T&apos; &lt;=Int D&apos; +Int Transfers(Ops&apos; ;; Ops)
+ andBool 0 &lt;Int L&apos; andBool L&apos; ==Int S&apos; +Int MintBurns(Ops&apos; ;; Ops)
+
+proof [inv-setter]:
+- split CallParams
+  - case CallParams == (SetBaker _)
+    - apply [set-baker]
+  - case CallParams == (SetManager _)
+    - apply [set-manager]
+  - case CallParams == (SetLqtAddress _)
+    - apply [set-lqt-address]
+- unify RHS
+  - Ops&apos; == [ SetDelegate _ ] | Ops&apos; == .List
+  - X&apos; == X
+  - T&apos; == T
+  - L&apos; == L
+  - B&apos; == B
+  - D&apos; == D
+  - S&apos; == S
+- X&apos; &gt;Int 0 by X &gt;Int 0
+- T&apos; &gt;Int 0 by T &gt;Int 0
+- L&apos; &gt;Int 0 by L &gt;Int 0
+- X&apos; ==Int X
+     ==Int B +Int Sends(Op ;; Ops) by premise
+     ==Int B&apos; +Int Sends(Op ;; Ops) by B&apos;
+     ==Int B&apos; +Int Sends(Ops) by Sends
+     ==Int B&apos; +Int Sends(Ops&apos; ;; Ops) by Ops&apos;
+- T&apos; ==Int T
+     &lt;=Int D +Int Transfers(Op ;; Ops) by premise
+     ==Int D&apos; +Int Transfers(Op ;; Ops) by D&apos;
+     ==Int D&apos; +Int Transfers(Ops) by Transfers
+     ==Int D&apos; +Int Transfers(Ops&apos; ;; Ops) by Ops&apos;
+- L&apos; ==Int L
+     ==Int S +Int MintBurns(Op ;; Ops) by premise
+     ==Int S&apos; +Int MintBurns(Op ;; Ops) by S&apos;
+     ==Int S&apos; +Int MintBurns(Ops) by MintBurns
+     ==Int S&apos; +Int MintBurns(Ops&apos; ;; Ops) by Ops&apos;
+</code></pre>
+<h3 id="proof-for-external-contract-calls">Proof for External Contract Calls</h3>
+<p>We prove the claim <code>[inv]</code> for any external contract calls from Dexter.</p>
+<p>Since external contracts are unknown and arbitrary, we need to make certain assumptions on the behavior of external contracts that are required for the functional correctness and security of the Dexter contract.  The specific assumptions we made are presented later in this document.  The invariant proof is based on the assumptions, and it is important to independently verify that the token and liquidity contract implementations satisfy the assumptions.</p>
+<p>There exist different types of external calls made by Dexter as follows:</p>
+<ul>
+<li>Simply send XTZ to others</li>
+<li>Call another Dexter contract&apos;s XtzToToken()</li>
+<li>Call the token contract&apos;s Transfer() or BalanceOf()</li>
+<li>Call the liquidity contract&apos;s Mint() or Burn()</li>
+</ul>
+<h4 id="xtz-transfers">XTZ Transfers</h4>
+<p>The following claim formulates the invariant for the first two types of external calls.</p>
+<pre class="language-text"><code>claim [inv-send]:
+&lt;operations&gt;  ( [ Transaction DEXTER Target Amount CallParams ] #as Op =&gt; Ops&apos; ) ;; Ops &lt;/operations&gt;
+&lt;xtzPool&gt;     #Mutez(X =&gt; X&apos;)   &lt;/xtzPool&gt;
+&lt;tokenPool&gt;          T =&gt; T&apos;    &lt;/tokenPool&gt;
+&lt;lqtTotal&gt;           L =&gt; L&apos;    &lt;/lqtTotal&gt;
+&lt;xtzDexter&gt;   #Mutez(B =&gt; B&apos;)   &lt;/xtzDexter&gt;
+&lt;tokenDexter&gt;        D =&gt; D&apos;    &lt;/tokenDexter&gt;
+&lt;lqtSupply&gt;          S =&gt; S&apos;    &lt;/lqtSupply&gt;
+requires Target =/=K DEXTER
+ andBool ( CallParams ==K Default() orBool CallParams ==K (XtzToToken _) )
+requires 0 &lt;Int X  andBool X  ==Int B  +Int Sends(Op ;; Ops)
+ andBool 0 &lt;Int T  andBool T  &lt;=Int D  +Int Transfers(Op ;; Ops)
+ andBool 0 &lt;Int L  andBool L  ==Int S  +Int MintBurns(Op ;; Ops)
+ensures  0 &lt;Int X&apos; andBool X&apos; ==Int B&apos; +Int Sends(Ops&apos; ;; Ops)
+ andBool 0 &lt;Int T&apos; andBool T&apos; &lt;=Int D&apos; +Int Transfers(Ops&apos; ;; Ops)
+ andBool 0 &lt;Int L&apos; andBool L&apos; ==Int S&apos; +Int MintBurns(Ops&apos; ;; Ops)
+
+proof [inv-send]:
+- apply [send]
+- unify RHS
+  - X&apos; == X
+  - T&apos; == T
+  - L&apos; == L
+  - B&apos; == B -Int Amount
+  - D&apos; == D
+  - S&apos; == S
+- X&apos; &gt;Int 0 by X &gt;Int 0
+- T&apos; &gt;Int 0 by T &gt;Int 0
+- L&apos; &gt;Int 0 by L &gt;Int 0
+- X&apos; ==Int X
+     ==Int B +Int Sends(Op ;; Ops) by premise
+     ==Int (B&apos; +Int Amount) +Int Sends(Op ;; Ops) by B&apos;
+     ==Int (B&apos; +Int Amount) +Int (Sends(Ops) -Int Amount) by Sends
+     ==Int B&apos; +Int Sends(Ops) by simp
+     ==Int B&apos; +Int Sends(Ops&apos; ;; Ops) by Ops&apos; and [only-dexter]
+- T&apos; ==Int T
+     &lt;=Int D +Int Transfers(Op ;; Ops) by premise
+     ==Int D&apos; +Int Transfers(Op ;; Ops) by D&apos;
+     ==Int D&apos; +Int Transfers(Ops) by Transfers
+     ==Int D&apos; +Int Transfers(Ops&apos; ;; Ops) by Ops&apos; and [only-dexter]
+- L&apos; ==Int L
+     ==Int S +Int MintBurns(Op ;; Ops) by premise
+     ==Int S&apos; +Int MintBurns(Op ;; Ops) by S&apos;
+     ==Int S&apos; +Int MintBurns(Ops) by MintBurns
+     ==Int S&apos; +Int MintBurns(Ops&apos; ;; Ops) by Ops&apos; and [only-dexter]
+</code></pre>
+<h4 id="token-transfers-and-balance-lookups">Token Transfers and Balance Lookups</h4>
+<p>The following two claims are for the token contract calls, Transfer() and BalanceOf().</p>
+<pre class="language-text"><code>claim [inv-token-transfer]:
+&lt;operations&gt;  ( [ Transaction _ TOKEN Amount Transfer(From, To, Value) ] #as Op =&gt; Ops&apos; ) ;; Ops &lt;/operations&gt;
+&lt;xtzPool&gt;     #Mutez(X =&gt; X&apos;)   &lt;/xtzPool&gt;
+&lt;tokenPool&gt;          T =&gt; T&apos;    &lt;/tokenPool&gt;
+&lt;lqtTotal&gt;           L =&gt; L&apos;    &lt;/lqtTotal&gt;
+&lt;xtzDexter&gt;   #Mutez(B =&gt; B&apos;)   &lt;/xtzDexter&gt;
+&lt;tokenDexter&gt;        D =&gt; D&apos;    &lt;/tokenDexter&gt;
+&lt;lqtSupply&gt;          S =&gt; S&apos;    &lt;/lqtSupply&gt;
+requires 0 &lt;Int X  andBool X  ==Int B  +Int Sends(Op ;; Ops)
+ andBool 0 &lt;Int T  andBool T  &lt;=Int D  +Int Transfers(Op ;; Ops)
+ andBool 0 &lt;Int L  andBool L  ==Int S  +Int MintBurns(Op ;; Ops)
+ensures  0 &lt;Int X&apos; andBool X&apos; ==Int B&apos; +Int Sends(Ops&apos; ;; Ops)
+ andBool 0 &lt;Int T&apos; andBool T&apos; &lt;=Int D&apos; +Int Transfers(Ops&apos; ;; Ops)
+ andBool 0 &lt;Int L&apos; andBool L&apos; ==Int S&apos; +Int MintBurns(Ops&apos; ;; Ops)
+
+proof [inv-token-transfer]:
+- apply [token-transfer]
+  - Amount ==Int 0 by assert
+- unify RHS
+  - X&apos; == X
+  - T&apos; == T
+  - L&apos; == L
+  - B&apos; == B
+  - S&apos; == S
+- X&apos; &gt;Int 0 by X &gt;Int 0
+- T&apos; &gt;Int 0 by T &gt;Int 0
+- L&apos; &gt;Int 0 by L &gt;Int 0
+- X&apos; ==Int X
+     ==Int B +Int Sends(Op ;; Ops) by premise
+     ==Int B&apos; +Int Sends(Op ;; Ops) by B&apos;
+     ==Int B&apos; +Int Sends(Ops) by Sends and Amount ==Int 0
+     ==Int B&apos; +Int Sends(Ops&apos; ;; Ops) by Ops&apos; and [only-dexter]
+- L&apos; ==Int L
+     ==Int S +Int MintBurns(Op ;; Ops) by premise
+     ==Int S&apos; +Int MintBurns(Op ;; Ops) by S&apos;
+     ==Int S&apos; +Int MintBurns(Ops) by MintBurns
+     ==Int S&apos; +Int MintBurns(Ops&apos; ;; Ops) by Ops&apos; and [only-dexter]
+- split From, To
+  - case From == DEXTER and To &lt;&gt; DEXTER
+    - T&apos; ==Int T
+         &lt;=Int D +Int Transfers(Op ;; Ops) by premise
+         ==Int (D&apos; +Int Value) +Int Transfers(Op ;; Ops) by D&apos;
+         ==Int (D&apos; +Int Value) +Int (Transfers(Ops) -Int Value) by Transfers
+         ==Int D&apos; +Int Transfers(Ops) by simp
+         ==Int D&apos; +Int Transfers(Ops&apos; ;; Ops) by Ops&apos; and [only-dexter]
+  - case From &lt;&gt; DEXTER and To == DEXTER
+    - T&apos; ==Int T
+         &lt;=Int D +Int Transfers(Op ;; Ops) by premise
+         ==Int (D&apos; -Int Value) +Int Transfers(Op ;; Ops) by D&apos;
+         ==Int (D&apos; -Int Value) +Int (Transfers(Ops) +Int Value) by Transfers
+         ==Int D&apos; +Int Transfers(Ops) by simp
+         ==Int D&apos; +Int Transfers(Ops&apos; ;; Ops) by Ops&apos; and [only-dexter]
+  - case From == DEXTER and To == DEXTER
+    - T&apos; ==Int T
+         &lt;=Int D +Int Transfers(Op ;; Ops) by premise
+         ==Int D&apos; +Int Transfers(Op ;; Ops) by D&apos;
+         ==Int D&apos; +Int (Transfers(Ops) -Int Value) by Transfers
+         &lt;=Int D&apos; +Int Transfers(Ops) by simp
+         ==Int D&apos; +Int Transfers(Ops&apos; ;; Ops) by Ops&apos; and [only-dexter]
+  - case From &lt;&gt; DEXTER and To &lt;&gt; DEXTER
+    - T&apos; ==Int T
+         &lt;=Int D +Int Transfers(Op ;; Ops) by premise
+         ==Int D&apos; +Int Transfers(Op ;; Ops) by D&apos;
+         ==Int D&apos; +Int Transfers(Ops) by Transfers
+         ==Int D&apos; +Int Transfers(Ops&apos; ;; Ops) by Ops&apos; and [only-dexter]
+</code></pre>
+<pre class="language-text"><code>claim [inv-token-balance-of]:
+&lt;operations&gt;  ( [ Transaction DEXTER TOKEN Amount BalanceOf(DEXTER, UpdateTokenPoolInternal) ] #as Op =&gt; Ops&apos; ) ;; Ops &lt;/operations&gt;
+&lt;xtzPool&gt;     #Mutez(X =&gt; X&apos;)   &lt;/xtzPool&gt;
+&lt;tokenPool&gt;          T =&gt; T&apos;    &lt;/tokenPool&gt;
+&lt;lqtTotal&gt;           L =&gt; L&apos;    &lt;/lqtTotal&gt;
+&lt;xtzDexter&gt;   #Mutez(B =&gt; B&apos;)   &lt;/xtzDexter&gt;
+&lt;tokenDexter&gt;        D =&gt; D&apos;    &lt;/tokenDexter&gt;
+&lt;lqtSupply&gt;          S =&gt; S&apos;    &lt;/lqtSupply&gt;
+requires 0 &lt;Int X  andBool X  ==Int B  +Int Sends(Op ;; Ops)
+ andBool 0 &lt;Int T  andBool T  &lt;=Int D  +Int Transfers(Op ;; Ops)
+ andBool 0 &lt;Int L  andBool L  ==Int S  +Int MintBurns(Op ;; Ops)
+ensures  0 &lt;Int X&apos; andBool X&apos; ==Int B&apos; +Int Sends(Ops&apos; ;; Ops)
+ andBool 0 &lt;Int T&apos; andBool T&apos; &lt;=Int D&apos; +Int Transfers(Ops&apos; ;; Ops)
+ andBool 0 &lt;Int L&apos; andBool L&apos; ==Int S&apos; +Int MintBurns(Ops&apos; ;; Ops)
+
+proof [inv-token-balance-of]:
+- apply [token-balance-of]
+  - Amount ==Int 0 by assert
+- unify RHS
+  - Ops&apos; == OpsPre ;; [ Transaction TOKEN DEXTER 0 UpdateTokenPoolInternal(D) ] ;; OpsPost
+  - X&apos; == X
+  - T&apos; == T
+  - L&apos; == L
+  - B&apos; == B
+  - D&apos; == D
+  - S&apos; == S
+- X&apos; &gt;Int 0 by X &gt;Int 0
+- T&apos; &gt;Int 0 by T &gt;Int 0
+- L&apos; &gt;Int 0 by L &gt;Int 0
+- X&apos; ==Int X
+     ==Int B +Int Sends(Op ;; Ops) by premise
+     ==Int B&apos; +Int Sends(Op ;; Ops) by B&apos;
+     ==Int B&apos; +Int Sends(Ops) by Sends and Amount ==Int 0
+     ==Int B&apos; +Int Sends(Ops&apos; ;; Ops) by Ops&apos; and [only-dexter]
+- T&apos; ==Int T
+     &lt;=Int D +Int Transfers(Op ;; Ops) by premise
+     ==Int D&apos; +Int Transfers(Op ;; Ops) by D&apos;
+     ==Int D&apos; +Int Transfers(Ops) by Transfers
+     ==Int D&apos; +Int Transfers(Ops&apos; ;; Ops) by Ops&apos; and [only-dexter]
+- L&apos; ==Int L
+     ==Int S +Int MintBurns(Op ;; Ops) by premise
+     ==Int S&apos; +Int MintBurns(Op ;; Ops) by S&apos;
+     ==Int S&apos; +Int MintBurns(Ops) by MintBurns
+     ==Int S&apos; +Int MintBurns(Ops&apos; ;; Ops) by Ops&apos; and [only-dexter]
+</code></pre>
+<h4 id="liquidity-mints-and-burns">Liquidity Mints and Burns</h4>
+<p>The following two claims are for the liquidity contract calls, Mint() and Burn().</p>
+<pre class="language-text"><code>claim [inv-lqt-mint]:
+&lt;operations&gt;  ( [ Transaction Sender LQT Amount Mint(_, Value) ] #as Op =&gt; Ops&apos; ) ;; Ops &lt;/operations&gt;
+&lt;xtzPool&gt;     #Mutez(X =&gt; X&apos;)   &lt;/xtzPool&gt;
+&lt;tokenPool&gt;          T =&gt; T&apos;    &lt;/tokenPool&gt;
+&lt;lqtTotal&gt;           L =&gt; L&apos;    &lt;/lqtTotal&gt;
+&lt;xtzDexter&gt;   #Mutez(B =&gt; B&apos;)   &lt;/xtzDexter&gt;
+&lt;tokenDexter&gt;        D =&gt; D&apos;    &lt;/tokenDexter&gt;
+&lt;lqtSupply&gt;          S =&gt; S&apos;    &lt;/lqtSupply&gt;
+requires 0 &lt;Int X  andBool X  ==Int B  +Int Sends(Op ;; Ops)
+ andBool 0 &lt;Int T  andBool T  &lt;=Int D  +Int Transfers(Op ;; Ops)
+ andBool 0 &lt;Int L  andBool L  ==Int S  +Int MintBurns(Op ;; Ops)
+ensures  0 &lt;Int X&apos; andBool X&apos; ==Int B&apos; +Int Sends(Ops&apos; ;; Ops)
+ andBool 0 &lt;Int T&apos; andBool T&apos; &lt;=Int D&apos; +Int Transfers(Ops&apos; ;; Ops)
+ andBool 0 &lt;Int L&apos; andBool L&apos; ==Int S&apos; +Int MintBurns(Ops&apos; ;; Ops)
+
+proof [inv-lqt-mint]:
+- apply [lqt-mint]
+  - Sender ==K DEXTER by assert
+  - Amount ==Int 0 by assert
+- unify RHS
+  - X&apos; == X
+  - T&apos; == T
+  - L&apos; == L
+  - B&apos; == B
+  - D&apos; == D
+  - S&apos; == S +Int Value
+- X&apos; &gt;Int 0 by X &gt;Int 0
+- T&apos; &gt;Int 0 by T &gt;Int 0
+- L&apos; &gt;Int 0 by L &gt;Int 0
+- X&apos; ==Int X
+     ==Int B +Int Sends(Op ;; Ops) by premise
+     ==Int B&apos; +Int Sends(Op ;; Ops) by B&apos;
+     ==Int B&apos; +Int Sends(Ops) by Sends and Amount ==Int 0
+     ==Int B&apos; +Int Sends(Ops&apos; ;; Ops) by Ops&apos; and [only-dexter]
+- T&apos; ==Int T
+     &lt;=Int D +Int Transfers(Op ;; Ops) by premise
+     ==Int D&apos; +Int Transfers(Op ;; Ops) by D&apos;
+     ==Int D&apos; +Int Transfers(Ops) by Transfers
+     ==Int D&apos; +Int Transfers(Ops&apos; ;; Ops) by Ops&apos; and [only-dexter]
+- L&apos; ==Int L
+     ==Int S +Int MintBurns(Op ;; Ops) by premise
+     ==Int (S&apos; -Int Value) +Int MintBurns(Op ;; Ops) by S&apos;
+     ==Int (S&apos; -Int Value) +Int (MintBurns(Ops) +Int Value) by MintBurns
+     ==Int S&apos; +Int MintBurns(Ops) by simp
+     ==Int S&apos; +Int MintBurns(Ops&apos; ;; Ops) by Ops&apos; and [only-dexter]
+
+claim [inv-lqt-burn]:
+&lt;operations&gt;  ( [ Transaction Sender LQT Amount Burn(_, Value) ] #as Op =&gt; Ops&apos; ) ;; Ops &lt;/operations&gt;
+&lt;xtzPool&gt;     #Mutez(X =&gt; X&apos;)   &lt;/xtzPool&gt;
+&lt;tokenPool&gt;          T =&gt; T&apos;    &lt;/tokenPool&gt;
+&lt;lqtTotal&gt;           L =&gt; L&apos;    &lt;/lqtTotal&gt;
+&lt;xtzDexter&gt;   #Mutez(B =&gt; B&apos;)   &lt;/xtzDexter&gt;
+&lt;tokenDexter&gt;        D =&gt; D&apos;    &lt;/tokenDexter&gt;
+&lt;lqtSupply&gt;          S =&gt; S&apos;    &lt;/lqtSupply&gt;
+requires 0 &lt;Int X  andBool X  ==Int B  +Int Sends(Op ;; Ops)
+ andBool 0 &lt;Int T  andBool T  &lt;=Int D  +Int Transfers(Op ;; Ops)
+ andBool 0 &lt;Int L  andBool L  ==Int S  +Int MintBurns(Op ;; Ops)
+ensures  0 &lt;Int X&apos; andBool X&apos; ==Int B&apos; +Int Sends(Ops&apos; ;; Ops)
+ andBool 0 &lt;Int T&apos; andBool T&apos; &lt;=Int D&apos; +Int Transfers(Ops&apos; ;; Ops)
+ andBool 0 &lt;Int L&apos; andBool L&apos; ==Int S&apos; +Int MintBurns(Ops&apos; ;; Ops)
+
+proof [inv-lqt-mint-burn]:
+- apply [lqt-mint-burn]
+  - Sender ==K DEXTER by assert
+  - Amount ==Int 0 by assert
+- unify RHS
+  - X&apos; == X
+  - T&apos; == T
+  - L&apos; == L
+  - B&apos; == B
+  - D&apos; == D
+  - S&apos; == S -Int Value
+- X&apos; &gt;Int 0 by X &gt;Int 0
+- T&apos; &gt;Int 0 by T &gt;Int 0
+- L&apos; &gt;Int 0 by L &gt;Int 0
+- X&apos; ==Int X
+     ==Int B +Int Sends(Op ;; Ops) by premise
+     ==Int B&apos; +Int Sends(Op ;; Ops) by B&apos;
+     ==Int B&apos; +Int Sends(Ops) by Sends and Amount ==Int 0
+     ==Int B&apos; +Int Sends(Ops&apos; ;; Ops) by Ops&apos; and [only-dexter]
+- T&apos; ==Int T
+     &lt;=Int D +Int Transfers(Op ;; Ops) by premise
+     ==Int D&apos; +Int Transfers(Op ;; Ops) by D&apos;
+     ==Int D&apos; +Int Transfers(Ops) by Transfers
+     ==Int D&apos; +Int Transfers(Ops&apos; ;; Ops) by Ops&apos; and [only-dexter]
+- L&apos; ==Int L
+     ==Int S +Int MintBurns(Op ;; Ops) by premise
+     ==Int (S&apos; +Int Value) +Int MintBurns(Op ;; Ops) by S&apos;
+     ==Int (S&apos; +Int Value) +Int (MintBurns(Ops) -Int Value) by MintBurns
+     ==Int S&apos; +Int MintBurns(Ops) by simp
+     ==Int S&apos; +Int MintBurns(Ops&apos; ;; Ops) by Ops&apos; and [only-dexter]
+</code></pre>
+<h3 id="assumptions-for-tezos-execution-environment">Assumptions for Tezos Execution Environment</h3>
+<p>We assume that the Tezos execution model does not allow any weird behaviors regarding the Dexter smart contract execution.  Specifically, we make the following assumptions:</p>
+<ul>
+<li>Only the Dexter entrypoint functions can emit operations whose sender is Dexter.</li>
+<li>As a smart contract, Dexter can emit only <em>internal</em> operations (i.e., operations whose source is not Dexter).</li>
+<li>The types of Dexter-emitted internal operations are fixed (i.e., no arbitrary operations can be emitted by Dexter).</li>
+<li>Dexter <em>never</em> calls on itself except the following cases:
+<ul>
+<li>RemoveLiquidity(To, ...) where To is Dexter, which calls Default() on itself.</li>
+<li>TokenToXtz(To, ...) where To is Dexter, which calls Default() on itself.</li>
+<li>TokenToToken(OutputDexterContract, ...) where OutputDexterContract is Dexter, which calls XtzToToken() on itself.</li>
+</ul>
+</li>
+</ul>
+<p>The above assumptions are formulated in a series of propositions below.</p>
+<p>The following proposition <code>[sender-is-not-dexter]</code> states that no entrypoint of Dexter may call on itself except Default() and XtzToToken().</p>
+<pre class="language-text"><code>proposition [sender-is-not-dexter]:
+[[ Sender =/=K DEXTER =&gt; true ]]
+&lt;operations&gt; [ Transaction Sender DEXTER _ CallParams ] ;; _ &lt;/operations&gt;
+requires CallParams ==K AddLiquidity _
+  orBool CallParams ==K RemoveLiquidity _
+  orBool CallParams ==K TokenToXtz _
+  orBool CallParams ==K TokenToToken _
+  orBool CallParams ==K UpdateTokenPool _
+  orBool CallParams ==K UpdateTokenPoolInternal _
+  orBool CallParams ==K SetBaker _
+  orBool CallParams ==K SetManager _
+  orBool CallParams ==K SetLqtAddress _
+</code></pre>
+<p>The following proposition <code>[dexter-emitted-ops]</code> enumerates all possible Dexter-emitted operations.</p>
+<pre class="language-text"><code>proposition [dexter-emitted-ops]:
+[[ (
+          ( Target ==K TOKEN andBool Amount ==Int 0 andBool CallParams ==K (Transfer _) )
+   orBool ( Target ==K TOKEN andBool Amount ==Int 0 andBool CallParams ==K BalanceOf(DEXTER, UpdateTokenPoolInternal) )
+   orBool ( Target ==K LQT   andBool Amount ==Int 0 andBool CallParams ==K (MintBurn _) )
+   orBool (                                                 CallParams ==K Default() )
+   orBool (                                                 CallParams ==K (XtzToToken _) )
+   ) =&gt; true ]]
+&lt;operations&gt; [ Transaction DEXTER Target Amount CallParams ] ;; _ &lt;/operations&gt;
+</code></pre>
+<p>The following proposition <code>[only-dexter]</code> states that no one other than Dexter can emit operations whose sender is Dexter.  Note that Sends, Transfers, and MintBurns are defined to be zero for operations whose sender is not Dexter.  Also, obviously, the state variables and XTZ balance of Dexter cannot be updated without executing the Dexter contract.</p>
+<pre class="language-text"><code>proposition [only-dexter]:
+&lt;operations&gt; ( [ Transaction _ Target _ _ ] =&gt; Ops ) ;; _ &lt;/operations&gt;
+&lt;xtzPool&gt;     #Mutez(X =&gt; X&apos;)   &lt;/xtzPool&gt;
+&lt;tokenPool&gt;          T =&gt; T&apos;    &lt;/tokenPool&gt;
+&lt;lqtTotal&gt;           L =&gt; L&apos;    &lt;/lqtTotal&gt;
+&lt;xtzDexter&gt;   #Mutez(B =&gt; B&apos;)   &lt;/xtzDexter&gt;
+requires Target =/=K DEXTER
+ensures  Sends(Ops) ==Int 0
+ andBool Transfers(Ops) ==Int 0
+ andBool MintBurns(Ops) ==Int 0
+ andBool X&apos; ==Int X
+ andBool T&apos; ==Int T
+ andBool L&apos; ==Int L
+ andBool B&apos; ==Int B
+</code></pre>
+<p>The following proposition <code>[top-level]</code> states that a top-level operation (i.e., an operation whose sender is equal to the source) cannot be generated by Dexter.</p>
+<pre class="language-text"><code>proposition [top-level]:
+[[ Sender ==K Source impliesBool Sender =/=K DEXTER =&gt; true ]]
+&lt;operations&gt; [ Transaction Sender _ _ _ ] ;; Ops &lt;/operations&gt;
+&lt;sourceaddr&gt; Source &lt;/sourceaddr&gt;
+</code></pre>
+<p>The DFS execution model guarantees that if the current operation is top-level, then all the continuation operations are top-level with the same sender which is the source.  The following proposition <code>[dfs]</code> formulates that.</p>
+<pre class="language-text"><code>proposition [dfs]:
+[[ Sender ==K Source impliesBool TopLevelOps(Ops, Source) =&gt; true ]]
+&lt;operations&gt; [ Transaction Sender _ _ _ ] ;; Ops &lt;/operations&gt;
+&lt;sourceaddr&gt; Source &lt;/sourceaddr&gt;
+
+syntax Bool ::= TopLevelOps(OpList, Address) [function]
+rule TopLevelOps([ Transaction Sender _ _ _ ] ;; Ops, Source) =&gt; TopLevelOps(Ops, Source) requires Sender ==K Source
+rule TopLevelOps([ Transaction Sender _ _ _ ] ;; _, Source) =&gt; false requires Sender =/=K Source
+rule TopLevelOps(.List, _) =&gt; true
+</code></pre>
+<h3 id="assumptions-for-external-contracts">Assumptions for External Contracts</h3>
+<p>We make assumptions on the behaviors of external contracts, especially the token and liquidity contracts.  <em><strong>These assumptions are required for the proof of the invariant, and thus it is important to verify that these are satisfied by the given implementation of the token and liquidity contracts.</strong></em>  If some of these assumptions are not satisfied for good reasons, then the proof needs to be revisited.</p>
+<p>We assume that <em>only</em> Dexter can spend its own token, and no others can.  Specifically, for example, there must <em>not</em> exist any authorized users who are permitted to spend (some of) Dexter-owned tokens (in any certain cases).  For another example, there must <em>not</em> exist a way to (even temporarily) borrow tokens from Dexter.</p>
+<p>We also assume that the token transfer operation must update the balance before emitting continuation operations.  For example, the token contract must <em>not</em> implement the so-called &quot;pull pattern&quot; where the transfer operation does not immediately update the balance but only allows the receiver to claim the transferred amount later as a separate transaction.  Note that such a delayed update of balance may lead to an exploit.  For example, a malicious user calls XtzToToken() and then calls UpdateTokenPool() before claiming the bought tokens.  Later he claims the tokens, which makes TokenPool to be larger than the actual token reserve, and distorts the token exchange price.  (The delayed balance update may not conform to the FA2 standard due to the violation of the atomicity requirement, but it is unclear whether it violates the FA1.2 standard or not.)</p>
+<p>These assumptions are formulated in the following proposition <code>[token-transfer]</code>.</p>
+<pre class="language-text"><code>rule [token-transfer]:
+&lt;operations&gt; ( [ Transaction Sender TOKEN Amount Transfer(From, To, Value) ] =&gt; Ops&apos; ) ;; Ops &lt;/operations&gt;
+&lt;tokenDexter&gt; D =&gt; D&apos; &lt;/tokenDexter&gt;
+assert   Amount ==Int 0
+ andBool From ==K DEXTER impliesBool Sender ==K DEXTER
+ensures  ( From  ==K DEXTER andBool To =/=K DEXTER ) impliesBool D&apos; ==Int D -Int Value
+ andBool ( From =/=K DEXTER andBool To  ==K DEXTER ) impliesBool D&apos; ==Int D +Int Value
+ andBool ( From  ==K DEXTER andBool To  ==K DEXTER ) impliesBool D&apos; ==Int D
+ andBool ( From =/=K DEXTER andBool To =/=K DEXTER ) impliesBool D&apos; ==Int D
+</code></pre>
+<p>Moreover, we assume that the only way to alter the token balance of Dexter is the Transfer() function call.  No other functions can affect the token balance of Dexter.  The following proposition formulates that.</p>
+<pre class="language-text"><code>proposition [only-token-transfer]:
+&lt;operations&gt; (Op =&gt; _) ;; _ &lt;/operations&gt;
+&lt;tokenDexter&gt; D =&gt; D&apos; &lt;/tokenDexter&gt;
+ensures  D&apos; &lt;Int D impliesBool ( Op ==K Transaction DEXTER TOKEN 0 Transfer(DEXTER, To, Value) andBool To =/=K DEXTER andBool Value &gt;Int 0 )
+ andBool D&apos; &gt;Int D impliesBool Op ==K Transaction _ TOKEN 0 Transfer(_, DEXTER, _)
+</code></pre>
+<p>Regarding the BalanceOf() function, we assume the behavior only for the specific usage with Dexter.  The UpdateTokenPool() function emits an internal transaction to the token contract that calls BalanceOf() with the UpdateTokenPoolInternal() callback.  We assume that, upon receipt of such a call, BalanceOf() emits a transaction that calls to the given callback function with the current token balance of Dexter.  Obviously, the token balance must <em>not</em> be altered.  This assumption is formulated in the following rule <code>[token-balance-of]</code>.</p>
+<p>Note that, to admit more general behaviors, we assume that BalanceOf() can emit other operations that can be placed before and/or after the callback operation (denoted by OpsPre and OpsPost in the following rule).  Note that the additional operations placed before the callback can be arbitrary but cannot succeed in execution if they call any Dexter entrypoint, because of the SelfIsUpdatingTokenPool lock.  Also, if they somehow unlock SelfIsUpdatingTokenPool, then the callback will fail which will revert the entire operations.  Note that they cannot relock after unlocking it, because locking is permitted only for a top-level transaction to UpdateTokenPool() but no top-level transactions can be generated internally.</p>
+<pre class="language-text"><code>rule [token-balance-of]:
+&lt;operations&gt; ( [ Transaction DEXTER TOKEN Amount BalanceOf(DEXTER, UpdateTokenPoolInternal) ] =&gt; Ops&apos; ) ;; Ops &lt;/operations&gt;
+&lt;tokenDexter&gt; D &lt;/tokenDexter&gt;
+assert   Amount ==Int 0
+ensures  Ops&apos; ==K OpsPre ;; [ Transaction TOKEN DEXTER 0 UpdateTokenPoolInternal(D) ] ;; OpsPost
+</code></pre>
+<p>Regarding the liquidity contract, we assume that only Mint() and Burn() can update the total liquidity supply, and only Dexter is permitted to call them.</p>
+<pre class="language-text"><code>rule [lqt-mint]:
+&lt;operations&gt; ( [ Transaction Sender LQT Amount Mint(_, Value) ] =&gt; Ops&apos; ) ;; _ &lt;/operations&gt;
+&lt;lqtSupply&gt; S =&gt; S +Int Value &lt;/lqtSupply&gt;
+assert   Sender ==K DEXTER
+ andBool Amount ==Int 0
+
+rule [lqt-burn]:
+&lt;operations&gt; ( [ Transaction Sender LQT Amount Burn(_, Value) ] =&gt; Ops&apos; ) ;; _ &lt;/operations&gt;
+&lt;lqtSupply&gt; S =&gt; S -Int Value &lt;/lqtSupply&gt;
+assert   Sender ==K DEXTER
+ andBool Amount ==Int 0
+</code></pre>
+<pre class="language-text"><code>proposition [only-lqt-mint-burn]:
+&lt;operations&gt; (Op =&gt; _) ;; _ &lt;/operations&gt;
+&lt;lqtSupply&gt; S =&gt; S&apos; &lt;/lqtSupply&gt;
+ensures  S&apos; &gt;Int S impliesBool ( Op ==K Transaction DEXTER LQT 0 Mint(_, Value) andBool Value &gt;Int 0 )
+ andBool S&apos; &lt;Int S impliesBool ( Op ==K Transaction DEXTER LQT 0 Burn(_, Value) andBool Value &gt;Int 0 )
+</code></pre>
+<p>For the other unknown external contract calls, the only functions Dexter can call are Default() and XtzToToken().  We assume that such external calls can affect only the XTZ balance of Dexter (even if the target contract is the token or liquidity contract).  The following rule <code>[send]</code> formulates that.</p>
+<pre class="language-text"><code>rule [send]:
+&lt;operations&gt; ( [ Transaction DEXTER Target Amount CallParams ] =&gt; Ops&apos; ) ;; _ &lt;/operations&gt;
+&lt;xtzDexter&gt; #Mutez(B =&gt; B -Int Amount) &lt;/xtzDexter&gt;
+requires Target =/=K DEXTER
+ andBool ( CallParams ==K Default() orBool CallParams ==K (XtzToToken _) )
+</code></pre>
+<h3 id="abstract-behaviors-of-dexter-entrypoints">Abstract Behaviors of Dexter Entrypoints</h3>
+<p>We formulate the behavior of each Dexter entrypoint over an abstract configuration.  This formulation over the abstract configuration has been refined to the concrete configuration of the Michelson semantics, and then verified against the compiled bytecode of Dexter using the K framework.  The soundness of the refinement, which is currently in our trust base, allows us to conclude that the proved properties also hold for the Dexter bytecode.</p>
+<h4 id="abstract-configuration">Abstract Configuration</h4>
+<p>The abstract configuration consists of the following components (called &quot;cells&quot; in the K framework):</p>
+<ul>
+<li><code>&lt;operations&gt;</code>: the sequence of operations to be executed</li>
+<li><code>&lt;xtzPool&gt;</code>: the XtzPool state variable</li>
+<li><code>&lt;tokenPool&gt;</code>: the TokenPool state variable</li>
+<li><code>&lt;lqtTotal&gt;</code>: the LqtTotal state variable</li>
+<li><code>&lt;xtzDexter&gt;</code>: the XTZ balance of Dexter</li>
+<li><code>&lt;tokenDexter&gt;</code>: the token balance of Dexter (stored in the token contract storage)</li>
+<li><code>&lt;lqtSupply&gt;</code>: the total liquidity supply (stored in the liquidity contract storage)</li>
+<li><code>&lt;sourceaddr&gt;</code>: the source of the current operation</li>
+<li><code>&lt;selfIsUpdatingTokenPool&gt;</code>: the SelfIsUpdatingTokenPool lock</li>
+<li><code>&lt;manager&gt;</code>: the manager account address</li>
+<li><code>&lt;lqtAddress&gt;</code>: the liquidity contract address</li>
+<li><code>&lt;freezeBaker&gt;</code>: the FreezeBaker lock</li>
+<li><code>&lt;mynow&gt;</code>: the current timestamp</li>
+</ul>
+<p>Note that both <code>&lt;xtzPool&gt;</code> and <code>&lt;xtzDexter&gt;</code> are of the XTZ currency type, ranging from 0 to <code>2^64 - 1</code>.  Throughout this document, we implicitly assume that they are <em>defined</em> only when their values are within the valid range, otherwise they are undefined, meaning that any execution involving undefined currency values will fail or revert.</p>
+<h4 id="constants-and-macros">Constants and Macros</h4>
+<pre class="language-text"><code>syntax Address ::= DEXTER [constant]
+
+syntax Address ::= TOKEN [constant]
+
+syntax Address ::= LQT [macro]
+rule [[ LQT =&gt; Lqt ]] &lt;lqtAddress&gt; Lqt &lt;/lqtAddress&gt;
+</code></pre>
+<pre class="language-text"><code>syntax Bool ::= IS_VALID(Int) [macro]
+rule [is-valid]:
+[[ IS_VALID(Deadline) =&gt; IsUpdatingTokenPool ==K false andBool Now &lt;Int Deadline ]]
+&lt;selfIsUpdatingTokenPool&gt; IsUpdatingTokenPool &lt;/selfIsUpdatingTokenPool&gt;
+&lt;mynow&gt; #Timestamp(Now) &lt;/mynow&gt;
+</code></pre>
+<h4 id="addliquidity(owner%2C-minlqtminted%2C-maxtokensdeposited%2C-deadline)">AddLiquidity(Owner, MinLqtMinted, MaxTokensDeposited, Deadline)</h4>
+<p>The following rule formulates the behaviors of the AddLiquidity() entrypoint.  It states that, when it succeeds, the entrypoint execution updates the three state variables and the XTZ balance of Dexter.  The execution succeeds when the <code>assert</code> conditions are satisfied, and fails otherwise.</p>
+<pre class="language-text"><code>rule [add-liquidity]:
+&lt;operations&gt;  ( [ Transaction Sender DEXTER XtzDeposited AddLiquidity(Owner, MinLqtMinted, MaxTokensDeposited, Deadline) ] =&gt; OpsEmitted ) ;; _ &lt;/operations&gt;
+&lt;xtzPool&gt;     #Mutez(X =&gt; X +Int XtzDeposited)      &lt;/xtzPool&gt;
+&lt;tokenPool&gt;          T =&gt; T +Int TokensDeposited    &lt;/tokenPool&gt;
+&lt;lqtTotal&gt;           L =&gt; L +Int LqtMinted          &lt;/lqtTotal&gt;
+&lt;xtzDexter&gt;   #Mutez(B =&gt; B&apos;)                       &lt;/xtzDexter&gt;
+&lt;tokenDexter&gt;        D                              &lt;/tokenDexter&gt;
+&lt;lqtSupply&gt;          S                              &lt;/lqtSupply&gt;
+assert   IS_VALID(Deadline)
+ andBool TokensDeposited &lt;=Int MaxTokensDeposited
+ andBool LqtMinted       &gt;=Int MinLqtMinted
+ensures  TokensDeposited ==Int XtzDeposited *Int T up/Int X
+ andBool LqtMinted       ==Int XtzDeposited *Int L   /Int X
+ andBool OpsEmitted ==K [ Transaction DEXTER TOKEN 0 Transfer(Sender, DEXTER, TokensDeposited) ]
+                     ;; [ Transaction DEXTER LQT   0 Mint(Owner, LqtMinted) ]
+ andBool Sender =/=K DEXTER impliesBool B&apos; ==Int B +Int XtzDeposited
+ andBool Sender  ==K DEXTER impliesBool B&apos; ==Int B
+</code></pre>
+<h4 id="removeliquidity(to%2C-lqtburned%2C-minxtzwithdrawn%2C-mintokenswithdrawn%2C-deadline)">RemoveLiquidity(To, LqtBurned, MinXtzWithdrawn, MinTokensWithdrawn, Deadline)</h4>
+<p>The following rule formulates the behaviors of the RemoveLiquidity entrypoint.  As in the previous formulation, this specifies both success and failure cases depending on the satisfiability of the assertion conditions.</p>
+<p>Note that the assertion explicitly includes the condition <code>LqtBurned &lt;Int L</code> that requires the liquidity amount to be burned should be <em>strictly</em> less than the total liquidity supply.  This condition is required for the functional correctness of Dexter, as already mentioned in the Dexter source code comment.  However, the current Dexter implementation does <em>not</em> check the condition, leaving the potential for Dexter becoming nonfunctional by mistake or corrupted admin users.  <em><strong>It is strongly recommended to add an explicit input validation for LqtBurned.</strong></em></p>
+<pre class="language-text"><code>rule [remove-liquidity]:
+&lt;operations&gt;  ( [ Transaction Sender DEXTER Amount RemoveLiquidity(To, LqtBurned, MinXtzWithdrawn, MinTokensWithdrawn, Deadline) ] =&gt; OpsEmitted ) ;; _ &lt;/operations&gt;
+&lt;xtzPool&gt;     #Mutez(X =&gt; X -Int XtzWithdrawn)      &lt;/xtzPool&gt;
+&lt;tokenPool&gt;          T =&gt; T -Int TokensWithdrawn    &lt;/tokenPool&gt;
+&lt;lqtTotal&gt;           L =&gt; L -Int LqtBurned          &lt;/lqtTotal&gt;
+&lt;xtzDexter&gt;   #Mutez(B)                             &lt;/xtzDexter&gt;
+&lt;tokenDexter&gt;        D                              &lt;/tokenDexter&gt;
+&lt;lqtSupply&gt;          S                              &lt;/lqtSupply&gt;
+assert   IS_VALID(Deadline)
+ andBool Amount ==Int 0
+ andBool LqtBurned &lt;Int L // TODO: ask the Dexter team to add this check
+ andBool XtzWithdrawn    &gt;=Int MinXtzWithdrawn
+ andBool TokensWithdrawn &gt;=Int MinTokensWithdrawn
+ensures  XtzWithdrawn    ==Int LqtBurned *Int X /Int L
+ andBool TokensWithdrawn ==Int LqtBurned *Int T /Int L
+ andBool OpsEmitted ==K [ Transaction DEXTER LQT   0            Burn(Sender, LqtBurned) ]
+                     ;; [ Transaction DEXTER TOKEN 0            Transfer(DEXTER, To, TokensWithdrawn) ]
+                     ;; [ Transaction DEXTER To    XtzWithdrawn Default() ]
+</code></pre>
+<h4 id="xtztotoken(to%2C-mintokensbought%2C-deadline)">XtzToToken(To, MinTokensBought, Deadline)</h4>
+<pre class="language-text"><code>rule [xtz-to-token]:
+&lt;operations&gt;  ( [ Transaction Sender DEXTER XtzSold XtzToToken(To, MinTokensBought, Deadline) ] =&gt; OpsEmitted ) ;; _ &lt;/operations&gt;
+&lt;xtzPool&gt;     #Mutez(X =&gt; X +Int XtzSold)       &lt;/xtzPool&gt;
+&lt;tokenPool&gt;          T =&gt; T -Int TokensBought   &lt;/tokenPool&gt;
+&lt;lqtTotal&gt;           L                          &lt;/lqtTotal&gt;
+&lt;xtzDexter&gt;   #Mutez(B =&gt; B&apos;)                   &lt;/xtzDexter&gt;
+&lt;tokenDexter&gt;        D                          &lt;/tokenDexter&gt;
+&lt;lqtSupply&gt;          S                          &lt;/lqtSupply&gt;
+assert   IS_VALID(Deadline)
+ andBool TokensBought &gt;=Int MinTokensBought
+ensures  TokensBought ==Int 997 *Int XtzSold *Int T /Int (1000 *Int X +Int 997 *Int XtzSold)
+ andBool OpsEmitted ==K [ Transaction DEXTER TOKEN 0 Transfer(DEXTER, To, TokensBought) ]
+ andBool Sender =/=K DEXTER impliesBool B&apos; ==Int B +Int XtzSold
+ andBool Sender  ==K DEXTER impliesBool B&apos; ==Int B
+</code></pre>
+<h4 id="tokentoxtz(to%2C-tokenssold%2C-minxtzbought%2C-deadline)">TokenToXtz(To, TokensSold, MinXtzBought, Deadline)</h4>
+<pre class="language-text"><code>rule [token-to-xtz]:
+&lt;operations&gt;  ( [ Transaction Sender DEXTER Amount TokenToXtz(To, TokensSold, MinXtzBought, Deadline) ] =&gt; OpsEmitted ) ;; _ &lt;/operations&gt;
+&lt;xtzPool&gt;     #Mutez(X =&gt; X -Int XtzBought)     &lt;/xtzPool&gt;
+&lt;tokenPool&gt;          T =&gt; T +Int TokensSold     &lt;/tokenPool&gt;
+&lt;lqtTotal&gt;           L                          &lt;/lqtTotal&gt;
+&lt;xtzDexter&gt;   #Mutez(B)                         &lt;/xtzDexter&gt;
+&lt;tokenDexter&gt;        D                          &lt;/tokenDexter&gt;
+&lt;lqtSupply&gt;          S                          &lt;/lqtSupply&gt;
+assert   IS_VALID(Deadline)
+ andBool Amount ==Int 0
+ andBool XtzBought &gt;=Int MinXtzBought
+ensures  XtzBought ==Int 997 *Int TokensSold *Int X /Int (1000 *Int T +Int 997 *Int TokensSold)
+ andBool OpsEmitted ==K [ Transaction DEXTER TOKEN 0         Transfer(Sender, DEXTER, TokensSold) ]
+                     ;; [ Transaction DEXTER To    XtzBought Default() ]
+</code></pre>
+<h4 id="tokentotoken(outputdextercontract%2C-mintokensbought%2C-to%2C-tokenssold%2C-deadline)">TokenToToken(OutputDexterContract, MinTokensBought, To, TokensSold, Deadline)</h4>
+<p>Note that it is straightforward to prove the equivalence between the following two methods for the token-to-token exchange:</p>
+<ul>
+<li>Alice sends only a single transaction to Dexter, <code>Transaction Alice DEXTER 0 TokenToToken(OutputDexterContract, MinTokensBought, To, TokensSold, Deadline)</code>.</li>
+<li>Alice first sends a transaction to Dexter, <code>Transaction Alice DEXTER 0 TokenToXtz(Alice, TokensSold, 0, Deadline)</code>, and then immediately sends another transaction to OutputDexterContract, <code>Transaction Alice OutputDexterContract XtzBought XtzToToken(To, MinTokensBought, Deadline)</code>, where XtzBought is the amount she received from the first transaction, provided that no transactions have been made to OutputDexterContract between the two transactions.</li>
+</ul>
+<pre class="language-text"><code>rule [token-to-token]:
+&lt;operations&gt;  ( [ Transaction Sender DEXTER Amount TokenToToken(OutputDexterContract, MinTokensBought, To, TokensSold, Deadline) ] =&gt; OpsEmitted ) ;; _ &lt;/operations&gt;
+&lt;xtzPool&gt;     #Mutez(X =&gt; X -Int XtzBought)     &lt;/xtzPool&gt;
+&lt;tokenPool&gt;          T =&gt; T +Int TokensSold     &lt;/tokenPool&gt;
+&lt;lqtTotal&gt;           L                          &lt;/lqtTotal&gt;
+&lt;xtzDexter&gt;   #Mutez(B)                         &lt;/xtzDexter&gt;
+&lt;tokenDexter&gt;        D                          &lt;/tokenDexter&gt;
+&lt;lqtSupply&gt;          S                          &lt;/lqtSupply&gt;
+assert   IS_VALID(Deadline)
+ andBool Amount ==Int 0
+ensures  XtzBought ==Int 997 *Int TokensSold *Int X /Int (1000 *Int T +Int 997 *Int TokensSold)
+ andBool OpsEmitted ==K [ Transaction DEXTER TOKEN                0         Transfer(Sender, DEXTER, TokensSold) ]
+                     ;; [ Transaction DEXTER OutputDexterContract XtzBought XtzToToken(To, MinTokensBought, Deadline) ]
+</code></pre>
+<h4 id="updatetokenpool()">UpdateTokenPool()</h4>
+<pre class="language-text"><code>rule [update-token-pool]:
+&lt;operations&gt;  ( [ Transaction Sender DEXTER Amount UpdateTokenPool() ] =&gt; OpsEmitted ) ;; _ &lt;/operations&gt;
+&lt;xtzPool&gt;     #Mutez(X) &lt;/xtzPool&gt;
+&lt;tokenPool&gt;          T  &lt;/tokenPool&gt;
+&lt;lqtTotal&gt;           L  &lt;/lqtTotal&gt;
+&lt;xtzDexter&gt;   #Mutez(B) &lt;/xtzDexter&gt;
+&lt;tokenDexter&gt;        D  &lt;/tokenDexter&gt;
+&lt;lqtSupply&gt;          S  &lt;/lqtSupply&gt;
+&lt;sourceaddr&gt;  Source    &lt;/sourceaddr&gt;
+&lt;selfIsUpdatingTokenPool&gt; IsUpdatingTokenPool =&gt; true &lt;/selfIsUpdatingTokenPool&gt;
+assert   IsUpdatingTokenPool ==K false
+ andBool Amount ==Int 0
+ andBool Sender ==K Source
+ensures  OpsEmitted ==K [ Transaction DEXTER TOKEN 0 BalanceOf(DEXTER, UpdateTokenPoolInternal) ]
+
+rule [update-token-pool-internal]:
+&lt;operations&gt;  ( [ Transaction Sender DEXTER Amount UpdateTokenPoolInternal(TokenPool) ] =&gt; .List ) ;; _ &lt;/operations&gt;
+&lt;xtzPool&gt;     #Mutez(X)             &lt;/xtzPool&gt;
+&lt;tokenPool&gt;          T =&gt; TokenPool &lt;/tokenPool&gt;
+&lt;lqtTotal&gt;           L              &lt;/lqtTotal&gt;
+&lt;xtzDexter&gt;   #Mutez(B)             &lt;/xtzDexter&gt;
+&lt;tokenDexter&gt;        D              &lt;/tokenDexter&gt;
+&lt;lqtSupply&gt;          S              &lt;/lqtSupply&gt;
+&lt;selfIsUpdatingTokenPool&gt; IsUpdatingTokenPool =&gt; false &lt;/selfIsUpdatingTokenPool&gt;
+assert   IsUpdatingTokenPool ==K true
+ andBool Amount ==Int 0
+ andBool Sender ==K TOKEN
+</code></pre>
+<h4 id="default()">Default()</h4>
+<pre class="language-text"><code>rule [default]:
+&lt;operations&gt;  ( [ Transaction Sender DEXTER Amount Default() ] =&gt; .List ) ;; _ &lt;/operations&gt;
+&lt;xtzPool&gt;     #Mutez(X =&gt; X +Int Amount)    &lt;/xtzPool&gt;
+&lt;tokenPool&gt;          T                      &lt;/tokenPool&gt;
+&lt;lqtTotal&gt;           L                      &lt;/lqtTotal&gt;
+&lt;xtzDexter&gt;   #Mutez(B =&gt; B&apos;)               &lt;/xtzDexter&gt;
+&lt;tokenDexter&gt;        D                      &lt;/tokenDexter&gt;
+&lt;lqtSupply&gt;          S                      &lt;/lqtSupply&gt;
+&lt;selfIsUpdatingTokenPool&gt; IsUpdatingTokenPool &lt;/selfIsUpdatingTokenPool&gt;
+assert   IsUpdatingTokenPool ==K false
+ensures  Sender =/=K DEXTER impliesBool B&apos; ==Int B +Int Amount
+ andBool Sender  ==K DEXTER impliesBool B&apos; ==Int B
+</code></pre>
+<h4 id="setters-1">Setters</h4>
+<pre class="language-text"><code>rule [set-baker]:
+&lt;operations&gt;  ( [ Transaction Sender DEXTER Amount SetBaker(Baker, FreezeBaker) ] =&gt; [ SetDelegate Baker ] ) ;; _ &lt;/operations&gt;
+&lt;selfIsUpdatingTokenPool&gt;   IsUpdatingTokenPool             &lt;/selfIsUpdatingTokenPool&gt;
+&lt;freezeBaker&gt;               IsBakerFrozen =&gt; FreezeBaker    &lt;/freezeBaker&gt;
+&lt;manager&gt;                   Manager                         &lt;/manager&gt;
+assert   IsUpdatingTokenPool ==K false
+ andBool Amount ==Int 0
+ andBool Sender ==K Manager
+ andBool IsBakerFrozen ==K false
+</code></pre>
+<pre class="language-text"><code>rule [set-manager]:
+&lt;operations&gt;  ( [ Transaction Sender DEXTER Amount SetManager(NewManager) ] =&gt; .List ) ;; _ &lt;/operations&gt;
+&lt;selfIsUpdatingTokenPool&gt;   IsUpdatingTokenPool     &lt;/selfIsUpdatingTokenPool&gt;
+&lt;manager&gt;                   Manager =&gt; NewManager   &lt;/manager&gt;
+assert   IsUpdatingTokenPool ==K false
+ andBool Amount ==Int 0
+ andBool Sender ==K Manager
+</code></pre>
+<pre class="language-text"><code>rule [set-lqt-address]:
+&lt;operations&gt;  ( [ Transaction Sender DEXTER Amount SetLqtAddress(LqtAddress) ] =&gt; .List ) ;; _ &lt;/operations&gt;
+&lt;selfIsUpdatingTokenPool&gt;   IsUpdatingTokenPool             &lt;/selfIsUpdatingTokenPool&gt;
+&lt;manager&gt;                   Manager                         &lt;/manager&gt;
+&lt;lqtAddress&gt;                InitialLqtAddress =&gt; LqtAddress &lt;/lqtAddress&gt;
+assert   IsUpdatingTokenPool ==K false
+ andBool Amount ==Int 0
+ andBool Sender ==K Manager
+ andBool InitialLqtAddress ==K 0
+</code></pre>
+<h2 id="liquidity-share-price-never-decreasing">Liquidity Share Price Never Decreasing</h2>
+<p>The property <code>[inv]</code> states the relationship between the Dexter state variables and the actual pool reserves and liquidity supply.  Now we formulate another property regarding the relationship over the Dexter state variables themselves.</p>
+<p>Let XtzPool, TokenPool, and LqtTotal be the current value of the Dexter state variables.  Suppose that an operation updates the state variables to new values, say, XtzPool&apos;, TokenPool&apos;, and LqtTotal&apos;, respectively.  Then, for any (successful) execution of an arbitrary operation, we must have:</p>
+<pre class="language-text"><code>  XtzPool&apos; * TokenPool&apos;        LqtTotal&apos;
+  ---------------------  &gt;=  ( -------- )^2
+  XtzPool  * TokenPool         LqtTotal
+</code></pre>
+<p>where the division is the real arithmetic division (i.e., no rounding).</p>
+<p>Note that the above property (together with the <code>[inv]</code> property) says that the liquidity share price (i.e., the multiplication of the amounts of XTZ and tokens to be redeemed per unit liquidity) <em>never</em> decreases.  Intuitively, this implies the following desired properties:</p>
+<ul>
+<li>When adding liquidity, users <em>cannot</em> mint more liquidity shares than they should.</li>
+<li>When removing liquidity, users <em>cannot</em> redeem more assets than they should.</li>
+<li>When exchanging tokens, users <em>cannot</em> receive more XTZ or tokens than they should.</li>
+<li>Updating the token pool <em>cannot</em> be exploited despite the non-atomicity.</li>
+</ul>
+<p>(Note that, however, this property has <em>nothing</em> to do with the <em>USD value</em> of the liquidity share.  Indeed, the USD value of the liquidity share could decrease due to the so-called &quot;Impermanent Loss&quot; problem.)</p>
+<p>The following claim <code>[pool]</code> formulates the liquidity share price property.</p>
+<pre class="language-text"><code>claim [pool]:
+&lt;operations&gt; (Op =&gt; _) ;; _ &lt;/operations&gt;
+&lt;xtzPool&gt;     #Mutez(X =&gt; X&apos;)   &lt;/xtzPool&gt;
+&lt;tokenPool&gt;          T =&gt; T&apos;    &lt;/tokenPool&gt;
+&lt;lqtTotal&gt;           L =&gt; L&apos;    &lt;/lqtTotal&gt;
+requires X &gt;Int 0 andBool T &gt;Int 0 andBool L &gt;Int 0
+ensures  (X&apos; *Int T&apos;) /Real (X *Int T) &gt;=Real (L&apos; /Real L) ^Real 2
+</code></pre>
+<pre class="language-text"><code>proof [pool]:
+- let Op = Transaction _ Target Amount CallParams
+- split Target
+  - case Target == DEXTER
+    - split CallParams
+      - case CallParams == AddLiquidity _
+        - apply [add-liquidity]
+        - unify RHS
+          - X&apos; == X +Int XtzDeposited
+          - T&apos; == T +Int TokensDeposited
+          - L&apos; == L +Int LqtMinted
+          - XtzDeposited    == Amount
+          - TokensDeposited == XtzDeposited *Int T up/Int X
+          - LqtMinted       == XtzDeposited *Int L   /Int X
+        - let TokensDepositedReal = XtzDeposited *Int T /Real X
+        - let LqtMintedReal       = XtzDeposited *Int L /Real X
+        - TokensDeposited &gt;=Real TokensDepositedReal
+        - LqtMinted       &lt;=Real LqtMintedReal
+        - (X&apos; *Int T&apos;) /Real (X *Int T) ==Real ((X +Int XtzDeposited) *Int  (T +Int  TokensDeposited    )) /Real (X *Int T) by X&apos; and T&apos;
+                                        &gt;=Real ((X +Int XtzDeposited) *Real (T +Real TokensDepositedReal)) /Real (X *Int T) by TokensDeposited &gt;=Real TokensDepositedReal
+                                        ==Real (1 +Real XtzDeposited /Real X) *Real (1 +Real XtzDeposited /Real X) by simp(Real)
+                                        ==Real (1 +Real XtzDeposited /Real X) ^Real 2 by simp(Real)
+                                        ==Real ((L +Real LqtMintedReal) /Real L) ^Real 2 by simp(Real)
+                                        &gt;=Real ((L +Real LqtMinted    ) /Real L) ^Real 2 by LqtMinted &lt;=Real LqtMintedReal
+                                        ==Real (L&apos; /Real L) ^Real 2 by L&apos;
+      - case CallParams == RemoveLiquidity(_, LqtBurned, _, _, _)
+        - apply [remove-liquidity]
+        - unify RHS
+          - X&apos; == X -Int XtzWithdrawn
+          - T&apos; == T -Int TokensWithdrawn
+          - L&apos; == L -Int LqtBurned
+          - XtzWithdrawn    == LqtBurned *Int X /Int L
+          - TokensWithdrawn == LqtBurned *Int T /Int L
+        - let XtzWithdrawnReal    = LqtBurned *Int X /Real L
+        - let TokensWithdrawnReal = LqtBurned *Int T /Real L
+        - XtzWithdrawn    &lt;=Real XtzWithdrawnReal
+        - TokensWithdrawn &lt;=Real TokensWithdrawnReal
+        - (X&apos; *Int T&apos;) /Real (X *Int T) ==Real ((X -Int  XtzWithdrawn    ) *Int  (T -Int  TokensWithdrawn    )) /Real (X *Int T) by X&apos; and T&apos;
+                                        &gt;=Real ((X -Real XtzWithdrawnReal) *Real (T -Real TokensWithdrawnReal)) /Real (X *Int T) by XtzWithdrawn &lt;=Real XtzWithdrawnReal and TokensWithdrawn &lt;=Real TokensWithdrawnReal
+                                        ==Real (1 -Real LqtBurned /Real L) *Real (1 -Real LqtBurned /Real L) by simp(Real)
+                                        ==Real (1 -Real LqtBurned /Real L) ^Real 2 by simp(Real)
+                                        ==Real ((L -Real LqtBurned) /Real L) ^Real 2 by simp(Real)
+                                        ==Real (L&apos; /Real L) ^Real 2 by L&apos;
+      - case CallParams == XtzToToken _
+        - apply [xtz-to-token]
+        - unify RHS
+          - X&apos; == X +Int XtzSold
+          - T&apos; == T -Int TokensBought
+          - L&apos; == L
+          - XtzSold == Amount
+          - TokensBought == 997 *Int XtzSold *Int T /Int (1000 *Int X +Int 997 *Int XtzSold)
+        - let TokensBoughtReal = 997 *Int XtzSold *Int T /Real (1000 *Int X +Int 997 *Int XtzSold)
+        - TokensBought &lt;=Real TokensBoughtReal
+        - (X&apos; *Int T&apos;) /Real (X *Int T) ==Real ((X +Int XtzSold) *Int  (T -Int  TokensBought    )) /Real (X *Int T) by X&apos; and T&apos;
+                                        &gt;=Real ((X +Int XtzSold) *Real (T -Real TokensBoughtReal)) /Real (X *Int T) by TokensBought &lt;=Real TokensBoughtReal
+                                        ==Real (X +Real XtzSold) /Real (X +Real 0.997 *Real XtzSold) by simp(Real)
+                                        &gt;=Real 1 by simp(Real)
+                                        ==Real (L&apos; /Real L) ^Real 2 by L&apos; == L
+      - case CallParams == TokenToXtz(_, TokensSold, _, _) | CallParams == TokenToToken(_, _, _, TokensSold, _)
+        - apply [token-to-xtz] or [token-to-token]
+        - unify RHS
+          - X&apos; == X -Int XtzBought
+          - T&apos; == T +Int TokensSold
+          - L&apos; == L
+          - XtzBought == 997 *Int TokensSold *Int X /Int (1000 *Int T +Int 997 *Int TokensSold)
+        - let XtzBoughtReal = 997 *Int TokensSold *Int X /Real (1000 *Int T +Int 997 *Int TokensSold)
+        - XtzBought &lt;=Real XtzBoughtReal
+        - (X&apos; *Int T&apos;) /Real (X *Int T) ==Real ((X -Int  XtzBought    ) *Int  (T +Int TokensSold)) /Real (X *Int T) by X&apos; and T&apos;
+                                        &gt;=Real ((X -Real XtzBoughtReal) *Real (T +Int TokensSold)) /Real (X *Int T) by XtzBought &lt;=Real XtzBoughtReal
+                                        ==Real (T +Real TokensSold) /Real (T +Real 0.997 *Real TokensSold) by simp(Real)
+                                        &gt;=Real 1 by simp(Real)
+                                        ==Real (L&apos; /Real L) ^Real 2 by L&apos; == L
+      - case CallParams == UpdateTokenPool _ | CallParams == SetBaker _ | CallParams == SetManager _ | CallParams == SetLqtAddress _
+        - apply [update-token-pool] or [set-baker] or [set-manager] or [set-lqt-address]
+        - unify RHS
+          - X&apos; == X
+          - T&apos; == T
+          - L&apos; == L
+        - (X&apos; *Int T&apos;) /Real (X *Int T) ==Real 1 by X&apos; == X and T&apos; == T
+                                        ==Real (L&apos; /Real L) ^Real 2 by L&apos; == L
+      - case CallParams == UpdateTokenPoolInternal(TokenPool)
+        - apply [update-token-pool-internal]
+        - unify RHS
+          - X&apos; == X
+          - T&apos; == TokenPool
+          - L&apos; == L
+        - T &lt;=Int TokenPool by [lemma-update-token-pool-internal]
+        - (X&apos; *Int T&apos;) /Real (X *Int T) ==Real (X *Int TokenPool) /Real (X *Int T) by X&apos; and T&apos;
+                                        &gt;=Real 1 by T &lt;=Int TokenPool
+                                        ==Real (L&apos; /Real L) ^Real 2 by L&apos; == L
+      - case CallParams == Default _
+        - apply [default]
+        - unify RHS
+          - X&apos; == X +Int Amount
+          - T&apos; == T
+          - L&apos; == L
+        - (X&apos; *Int T&apos;) /Real (X *Int T) ==Real ((X +Int Amount) *Int T) /Real (X *Int T) by X&apos; and T&apos;
+                                        &gt;=Real 1 by Amount &gt;=Int 0
+                                        ==Real (L&apos; /Real L) ^Real 2 by L&apos; == L
+  - case Target &lt;&gt; DEXTER
+    - (X&apos;, T&apos;, L&apos;) == (X, T, L) by [only-dexter]
+    - (X&apos; *Int T&apos;) /Real (X *Int T) ==Real 1 by X&apos; == X and T&apos; == T
+                                    ==Real (L&apos; /Real L) ^Real 2 by L&apos; == L
+</code></pre>
+</body></html></div>
+        </main>
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Typist/1.2/typist.min.js"></script>
+    <script src="../../../../assets/js/index.js"></script>
+  </body>
+</html>
