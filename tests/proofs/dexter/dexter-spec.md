@@ -150,7 +150,7 @@ module DEXTER-ADDLIQUIDITY-NEGATIVE-SPEC
 ```
 
 ```k
-  claim <k> #runProof(_IsFA2, AddLiquidity(_Owner, MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
+  claim <k> #runProof(IsFA2, AddLiquidity(_Owner, MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_:FailedStack </stack>
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
@@ -509,7 +509,16 @@ If any of the conditions are not satisfied, the call fails.
       orBool notBool #IsLegalMutezValue(XtzPool +Int Amount)
 ```
 
+```k
+endmodule
+```
+
 ## Update Token Pool Internal
+
+```k
+module DEXTER-UPDATETOKENPOOLINTERNAL-SPEC
+  imports DEXTER-VERIFICATION
+```
 
 Summary: The underlying token contract updates the Dexter contract's view of its own token balance if the following conditions are satisifed:
 
@@ -601,20 +610,20 @@ For FA2, we reach a failing state when any of these conditions hold:
 The following claims cover these cases:
 
 ```k
-  claim <k> #runProof(true, UpdateTokenPoolInternalFA2(BalanceOfResult)) => Aborted(?_, ?_, ?_, ?_) </k>
+  claim <k> #runProof(true, UpdateTokenPoolInternalFA2(_BalanceOfResult)) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ( Failed ?_ ) </stack>
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
-        <myamount> #Mutez(Amount) </myamount>
-        <tokenAddress> #Address(TokenAddress) </tokenAddress>
-        <senderaddr> #Address(Sender) </senderaddr>
+        <myamount> #Mutez(_Amount) </myamount>
+        <tokenAddress> #Address(_TokenAddress) </tokenAddress>
+        <senderaddr> #Address(_Sender) </senderaddr>
      requires (notBool IsUpdating)
 ```
 
 ```k
-  claim <k> #runProof(true, UpdateTokenPoolInternalFA2(BalanceOfResult)) => Aborted(?_, ?_, ?_, ?_) </k>
+  claim <k> #runProof(true, UpdateTokenPoolInternalFA2(_BalanceOfResult)) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ( Failed ?_ ) </stack>
-        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
-        <myamount> #Mutez(Amount) </myamount>
+        <selfIsUpdatingTokenPool> _IsUpdating </selfIsUpdatingTokenPool>
+        <myamount> #Mutez(_Amount) </myamount>
         <tokenAddress> #Address(TokenAddress) </tokenAddress>
         <senderaddr> #Address(Sender) </senderaddr>
      requires TokenAddress =/=K Sender
@@ -623,8 +632,8 @@ The following claims cover these cases:
 ```k
   claim <k> #runProof(true, UpdateTokenPoolInternalFA2(BalanceOfResult)) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ( Failed ?_ ) </stack>
-        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
-        <myamount> #Mutez(Amount) </myamount>
+        <selfIsUpdatingTokenPool> _IsUpdating </selfIsUpdatingTokenPool>
+        <myamount> #Mutez(_Amount) </myamount>
         <tokenAddress> #Address(TokenAddress) </tokenAddress>
         <senderaddr> #Address(Sender) </senderaddr>
      requires TokenAddress ==K Sender
@@ -711,7 +720,7 @@ module DEXTER-TOKENTOXTZ-FA12-NEGATIVE-1-SPEC
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <myamount> #Mutez(Amount) </myamount>
-        <tokenAddress> TokenAddress:Address </tokenAddress>
+        <tokenAddress> _TokenAddress:Address </tokenAddress>
         <paramtype> %updateTokenPoolInternal |-> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
      requires notBool IsFA2
       andBool ( IsUpdating
@@ -724,13 +733,13 @@ endmodule
 ```k
 module DEXTER-TOKENTOXTZ-FA12-NEGATIVE-2-SPEC
   imports DEXTER-VERIFICATION
-  claim <k> #runProof(IsFA2, TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
+  claim <k> #runProof(IsFA2, TokenToXtz(To, TokensSold, #Mutez(_MinXtzBought), #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_:FailedStack </stack>
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <myamount> #Mutez(Amount) </myamount>
         <tokenAddress> TokenAddress:Address </tokenAddress>
-        <xtzPool> #Mutez(XtzPool) </xtzPool>
+        <xtzPool> #Mutez(_XtzPool) </xtzPool>
         <tokenPool> TokenPool </tokenPool>
         <paramtype> %updateTokenPoolInternal |-> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
      requires notBool IsFA2
@@ -850,7 +859,7 @@ The following cases prove the contract properly fails when these conditions aren
 ```k
 module DEXTER-TOKENTOXTZ-FA2-NEGATIVE-1-SPEC
   imports DEXTER-VERIFICATION
-  claim <k> #runProof(IsFA2, TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) =>  Aborted(?_, ?_, ?_, ?_) </k>
+  claim <k> #runProof(IsFA2, TokenToXtz(_To, _TokensSold, #Mutez(_MinXtzBought), #Timestamp(Deadline))) =>  Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_:FailedStack </stack>
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <myamount> #Mutez(Amount) </myamount>
@@ -907,7 +916,7 @@ module DEXTER-TOKENTOXTZ-FA2-NEGATIVE-3-SPEC
         <xtzPool> #Mutez(XtzPool) </xtzPool>
         <tokenAddress> TokenAddress:Address </tokenAddress>
         <knownaddrs> KnownAddresses </knownaddrs>
-        <nonce> #Nonce(N => ?_) </nonce>
+        <nonce> #Nonce(_N => ?_) </nonce>
      requires IsFA2
       andBool notBool IsUpdating
       andBool Amount ==Int 0
