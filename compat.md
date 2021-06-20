@@ -468,16 +468,6 @@ The following macros are currently disabled.
     " " +String
     #doUnparse(I, true)
 
-  rule #doUnparse(Transfer_tokens O M A:Address I, _) =>
-    "Transfer_tokens " +String
-    #doUnparse(O, true) +String
-    " " +String
-    #doUnparse(M, true) +String
-    " " +String
-    #doUnparse(A, true) +String
-    " " +String
-    #doUnparse(I, true)
-
   rule #doUnparse(Transfer_tokens O M A:Entrypoint I, _) =>
     "Transfer_tokens " +String
     #doUnparse(O, true) +String
