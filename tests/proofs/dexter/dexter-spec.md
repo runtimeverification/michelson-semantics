@@ -447,7 +447,7 @@ The contract queries its underlying token contract for its own token balance if 
         <sourceaddr> Sender </sourceaddr>
         <paramtype> %updateTokenPoolInternal |-> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
         <knownaddrs> KnownAddresses </knownaddrs>
-        <operations> _ => [ Transfer_tokens Pair #UpdateTokenPoolTransferFrom(IsFA2, SelfAddress, TokenId) #Contract(SelfAddress, #DexterVersionSpecificParamType(IsFA2)) #Mutez(0) #TokenBalanceEntrypoint(TokenAddress, IsFA2) O ] ;; .InternalList </operations>
+        <operations> _ => [ Transfer_tokens Pair #UpdateTokenPoolTransferFrom(IsFA2, SelfAddress, TokenId) #Contract(SelfAddress . %updateTokenPoolInternal, #DexterVersionSpecificParamType(IsFA2)) #Mutez(0) #TokenBalanceEntrypoint(TokenAddress, IsFA2) O ] ;; .InternalList </operations>
         <nonce> #Nonce(O) => #Nonce(O +Int 1) </nonce>
     requires Amount ==Int 0
      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType(IsFA2))
