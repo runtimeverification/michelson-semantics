@@ -80,10 +80,10 @@ We have one case for when `#ceildiv` results in an upwards rounding, and one for
         <senderaddr> Sender </senderaddr>
         <nonce> #Nonce(Nonce => Nonce +Int 2) </nonce>
         <knownaddrs> KnownAddresses </knownaddrs>
-        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+        <paramtype> %updateTokenPoolInternal |-> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
         <operations> _
-                  => [ Transfer_tokens #TokenTransferData(IsFA2, Sender, SelfAddress, TokenId, #ceildiv(Amount *Int TokenAmount, XtzAmount)) #Mutez(0) TokenAddress Nonce ] ;;
-                     [ Transfer_tokens Pair ((Amount *Int OldLqt) /Int XtzAmount) Owner #Mutez(0) LqtAddress (Nonce +Int 1) ] ;;
+                  => [ Transfer_tokens #TokenTransferData(IsFA2, Sender, SelfAddress, TokenId, #ceildiv(Amount *Int TokenAmount, XtzAmount)) #Mutez(0) TokenAddress . %transfer Nonce ] ;;
+                     [ Transfer_tokens Pair ((Amount *Int OldLqt) /Int XtzAmount) Owner #Mutez(0) LqtAddress . %mintOrBurn (Nonce +Int 1) ] ;;
                      .InternalList
         </operations>
     requires CurrentTime <Int Deadline
@@ -113,10 +113,10 @@ We have one case for when `#ceildiv` results in an upwards rounding, and one for
         <senderaddr> Sender </senderaddr>
         <nonce> #Nonce(Nonce => Nonce +Int 2) </nonce>
         <knownaddrs> KnownAddresses </knownaddrs>
-        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+        <paramtype> %updateTokenPoolInternal |-> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
         <operations> _
-                  => [ Transfer_tokens #TokenTransferData(IsFA2, Sender, SelfAddress, TokenId, #ceildiv(Amount *Int TokenAmount, XtzAmount)) #Mutez(0) TokenAddress Nonce ] ;;
-                     [ Transfer_tokens Pair ((Amount *Int OldLqt) /Int XtzAmount) Owner #Mutez(0) LqtAddress (Nonce +Int 1) ] ;;
+                  => [ Transfer_tokens #TokenTransferData(IsFA2, Sender, SelfAddress, TokenId, #ceildiv(Amount *Int TokenAmount, XtzAmount)) #Mutez(0) TokenAddress . %transfer Nonce ] ;;
+                     [ Transfer_tokens Pair ((Amount *Int OldLqt) /Int XtzAmount) Owner #Mutez(0) LqtAddress . %mintOrBurn (Nonce +Int 1) ] ;;
                      .InternalList
         </operations>
     requires notBool IsUpdating
@@ -223,11 +223,11 @@ module DEXTER-REMOVELIQUIDITY-POSITIVE-SPEC
         <senderaddr> Sender </senderaddr>
         <nonce> #Nonce(Nonce => Nonce +Int 3) </nonce>
         <knownaddrs> KnownAddresses </knownaddrs>
-        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype> // 1027
+        <paramtype> %updateTokenPoolInternal |-> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype> // 1027
         <operations> _
-                  => [ Transfer_tokens (Pair (0 -Int LqtBurned) Sender) #Mutez(0) LqtAddress Nonce ] ;;
-                     [ Transfer_tokens #TokenTransferData(IsFA2, SelfAddress, To, TokenId,  (LqtBurned *Int TokenAmount) /Int OldLqt) #Mutez(0) TokenAddress (Nonce +Int 1) ] ;;
-                     [ Transfer_tokens Unit #Mutez((LqtBurned *Int XtzAmount) /Int OldLqt) To (Nonce +Int 2) ] ;;
+                  => [ Transfer_tokens (Pair (0 -Int LqtBurned) Sender) #Mutez(0) LqtAddress . %mintOrBurn Nonce ] ;;
+                     [ Transfer_tokens #TokenTransferData(IsFA2, SelfAddress, To, TokenId,  (LqtBurned *Int TokenAmount) /Int OldLqt) #Mutez(0) TokenAddress . %transfer (Nonce +Int 1) ] ;;
+                     [ Transfer_tokens Unit #Mutez((LqtBurned *Int XtzAmount) /Int OldLqt) To . %default (Nonce +Int 2) ] ;;
                      .InternalList
         </operations>
     requires CurrentTime <Int Deadline
@@ -445,9 +445,9 @@ The contract queries its underlying token contract for its own token balance if 
         <myamount> #Mutez(Amount) </myamount>
         <senderaddr> Sender </senderaddr>
         <sourceaddr> Sender </sourceaddr>
-        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+        <paramtype> %updateTokenPoolInternal |-> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
         <knownaddrs> KnownAddresses </knownaddrs>
-        <operations> _ => [ Transfer_tokens Pair #UpdateTokenPoolTransferFrom(IsFA2, SelfAddress, TokenId) #Contract(SelfAddress, #Type(#DexterVersionSpecificParamType(IsFA2))) #Mutez(0) TokenAddress O ] ;; .InternalList </operations>
+        <operations> _ => [ Transfer_tokens Pair #UpdateTokenPoolTransferFrom(IsFA2, SelfAddress, TokenId) #Contract(SelfAddress, #DexterVersionSpecificParamType(IsFA2)) #Mutez(0) #TokenBalanceEntrypoint(TokenAddress, IsFA2) O ] ;; .InternalList </operations>
         <nonce> #Nonce(O) => #Nonce(O +Int 1) </nonce>
     requires Amount ==Int 0
      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType(IsFA2))
@@ -464,7 +464,7 @@ NOTE: The failure conditions are split into two claims with identical configurat
         <myamount> #Mutez(Amount) </myamount>
         <senderaddr> Sender </senderaddr>
         <sourceaddr> Source </sourceaddr>
-        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+        <paramtype> %updateTokenPoolInternal |-> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
         <knownaddrs> KnownAddresses </knownaddrs>
     requires Amount >Int 0
      orBool (notBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType(IsFA2)))
@@ -675,14 +675,14 @@ A buyer sends tokens to the Dexter contract and receives a corresponding amount 
         <tokenPool> TokenPool => TokenPool +Int TokensSold </tokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <senderaddr> Sender </senderaddr>
-        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+        <paramtype> %updateTokenPoolInternal |-> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
         <myaddr> SelfAddress:Address </myaddr>
         <nonce> #Nonce(N => N +Int 2) </nonce>
         <knownaddrs> KnownAddresses </knownaddrs>
         <tokenId> TokenID </tokenId>
         <operations> _
-                  => [ Transfer_tokens #TokenTransferData(IsFA2, Sender, SelfAddress, TokenID, TokensSold) #Mutez(0)                                          TokenAddress  N        ]
-                  ;; [ Transfer_tokens Unit                                                                #Mutez(#XtzBought(XtzPool, TokenPool, TokensSold)) To           (N +Int 1)]
+                  => [ Transfer_tokens #TokenTransferData(IsFA2, Sender, SelfAddress, TokenID, TokensSold) #Mutez(0)                                          TokenAddress . %transfer N        ]
+                  ;; [ Transfer_tokens Unit                                                                #Mutez(#XtzBought(XtzPool, TokenPool, TokensSold)) To           . %default (N +Int 1)]
                   ;; .InternalList
         </operations>
      requires notBool IsFA2
@@ -712,7 +712,7 @@ module DEXTER-TOKENTOXTZ-FA12-NEGATIVE-1-SPEC
         <mynow> #Timestamp(CurrentTime) </mynow>
         <myamount> #Mutez(Amount) </myamount>
         <tokenAddress> TokenAddress:Address </tokenAddress>
-        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+        <paramtype> %updateTokenPoolInternal |-> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
      requires notBool IsFA2
       andBool ( IsUpdating
          orBool notBool Amount ==Int 0
@@ -732,7 +732,7 @@ module DEXTER-TOKENTOXTZ-FA12-NEGATIVE-2-SPEC
         <tokenAddress> TokenAddress:Address </tokenAddress>
         <xtzPool> #Mutez(XtzPool) </xtzPool>
         <tokenPool> TokenPool </tokenPool>
-        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+        <paramtype> %updateTokenPoolInternal |-> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
      requires notBool IsFA2
       andBool notBool IsUpdating
       andBool notBool Amount ==Int 0
@@ -754,7 +754,7 @@ module DEXTER-TOKENTOXTZ-FA12-NEGATIVE-3-SPEC
         <tokenAddress> TokenAddress:Address </tokenAddress>
         <xtzPool> #Mutez(XtzPool) </xtzPool>
         <tokenPool> TokenPool </tokenPool>
-        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+        <paramtype> %updateTokenPoolInternal |-> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
      requires notBool IsFA2
       andBool notBool IsUpdating
       andBool notBool Amount ==Int 0
@@ -778,7 +778,7 @@ module DEXTER-TOKENTOXTZ-FA12-NEGATIVE-4-SPEC
         <tokenAddress> TokenAddress:Address </tokenAddress>
         <xtzPool> #Mutez(XtzPool) </xtzPool>
         <tokenPool> TokenPool </tokenPool>
-        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+        <paramtype> %updateTokenPoolInternal |-> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
      requires notBool IsFA2
       andBool notBool IsUpdating
       andBool notBool Amount ==Int 0
@@ -819,14 +819,14 @@ As before, a buyer sends tokens to the Dexter contract and receives a correspond
         <tokenPool> TokenPool => TokenPool +Int TokensSold </tokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <senderaddr> Sender </senderaddr>
-        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+        <paramtype> %updateTokenPoolInternal |-> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
         <myaddr> SelfAddress:Address </myaddr>
         <nonce> #Nonce(N => N +Int 2) </nonce>
         <knownaddrs> KnownAddresses </knownaddrs>
         <tokenId> TokenID </tokenId>
         <operations> _
-                  => [ Transfer_tokens #TokenTransferData(IsFA2, Sender, SelfAddress, TokenID, TokensSold) #Mutez(0)                                          TokenAddress  N        ]
-                  ;; [ Transfer_tokens Unit                                                                #Mutez(#XtzBought(XtzPool, TokenPool, TokensSold)) To           (N +Int 1)]
+                  => [ Transfer_tokens #TokenTransferData(IsFA2, Sender, SelfAddress, TokenID, TokensSold) #Mutez(0)                                          TokenAddress . %transfer N        ]
+                  ;; [ Transfer_tokens Unit                                                                #Mutez(#XtzBought(XtzPool, TokenPool, TokensSold)) To           . %default (N +Int 1)]
                   ;; .InternalList
         </operations>
      requires IsFA2
@@ -855,7 +855,7 @@ module DEXTER-TOKENTOXTZ-FA2-NEGATIVE-1-SPEC
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <myamount> #Mutez(Amount) </myamount>
         <mynow> #Timestamp(CurrentTime) </mynow>
-        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+        <paramtype> %updateTokenPoolInternal |-> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
      requires IsFA2
       andBool ( IsUpdating
          orBool notBool Amount ==Int 0
@@ -872,7 +872,7 @@ module DEXTER-TOKENTOXTZ-FA2-NEGATIVE-2-SPEC
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <myamount> #Mutez(Amount) </myamount>
         <mynow> #Timestamp(CurrentTime) </mynow>
-        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+        <paramtype> %updateTokenPoolInternal |-> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
         <tokenPool> TokenPool </tokenPool>
         <xtzPool> #Mutez(XtzPool) </xtzPool>
         <tokenAddress> TokenAddress:Address </tokenAddress>
@@ -902,7 +902,7 @@ module DEXTER-TOKENTOXTZ-FA2-NEGATIVE-3-SPEC
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <myamount> #Mutez(Amount) </myamount>
         <mynow> #Timestamp(CurrentTime) </mynow>
-        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+        <paramtype> %updateTokenPoolInternal |-> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
         <tokenPool> TokenPool </tokenPool>
         <xtzPool> #Mutez(XtzPool) </xtzPool>
         <tokenAddress> TokenAddress:Address </tokenAddress>
@@ -944,7 +944,7 @@ module DEXTER-XTZTOTOKEN-FA12-POSITIVE-SPEC
   imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, XtzToToken(To, MinTokensBought, #Timestamp(Deadline))) => . </k>
         <stack> .Stack </stack>
-        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+        <paramtype> %updateTokenPoolInternal |-> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <myamount> #Mutez(Amount) </myamount>
         <tokenAddress> TokenAddress </tokenAddress>
@@ -956,7 +956,7 @@ module DEXTER-XTZTOTOKEN-FA12-POSITIVE-SPEC
         <tokenId> TokenID </tokenId>
         <knownaddrs> KnownAddresses </knownaddrs>
         <operations> _
-                  => [ Transfer_tokens #TokenTransferData(IsFA2, SelfAddress, To, TokenID, #XtzBought(TokenPool, XtzPool, Amount)) #Mutez(0) TokenAddress N ]
+                  => [ Transfer_tokens #TokenTransferData(IsFA2, SelfAddress, To, TokenID, #XtzBought(TokenPool, XtzPool, Amount)) #Mutez(0) TokenAddress . %transfer N ]
                   ;; .InternalList
         </operations>
     requires notBool IsFA2
@@ -977,7 +977,7 @@ module DEXTER-XTZTOTOKEN-FA12-NEGATIVE-SPEC
   imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, XtzToToken(_To, MinTokensBought, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_:FailedStack </stack>
-        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+        <paramtype> %updateTokenPoolInternal |-> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <myamount> #Mutez(Amount) </myamount>
         <tokenAddress> TokenAddress </tokenAddress>
@@ -1004,7 +1004,7 @@ module DEXTER-XTZTOTOKEN-FA2-POSITIVE-SPEC
   imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, XtzToToken(To, MinTokensBought, #Timestamp(Deadline))) => . </k>
         <stack> .Stack </stack>
-        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+        <paramtype> %updateTokenPoolInternal |-> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <myamount> #Mutez(Amount) </myamount>
         <tokenAddress> TokenAddress </tokenAddress>
@@ -1016,7 +1016,7 @@ module DEXTER-XTZTOTOKEN-FA2-POSITIVE-SPEC
         <tokenId> TokenID </tokenId>
         <knownaddrs> KnownAddresses </knownaddrs>
         <operations> _
-                  => [ Transfer_tokens #TokenTransferData(IsFA2, SelfAddress, To, TokenID, #XtzBought(TokenPool, XtzPool, Amount)) #Mutez(0) TokenAddress N ]
+                  => [ Transfer_tokens #TokenTransferData(IsFA2, SelfAddress, To, TokenID, #XtzBought(TokenPool, XtzPool, Amount)) #Mutez(0) TokenAddress . %transfer N ]
                   ;; .InternalList
         </operations>
     requires IsFA2
@@ -1037,7 +1037,7 @@ module DEXTER-XTZTOTOKEN-FA2-NEGATIVE-SPEC
   imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, XtzToToken(_To, MinTokensBought, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_:FailedStack </stack>
-        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+        <paramtype> %updateTokenPoolInternal |-> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <myamount> #Mutez(Amount) </myamount>
         <tokenAddress> TokenAddress </tokenAddress>
@@ -1086,13 +1086,13 @@ A buyer sends tokens to the Dexter contract, converts its to xtz, and then immed
         <mynow> #Timestamp(CurrentTime) </mynow>
         <senderaddr> Sender </senderaddr>
         <myaddr> SelfAddress </myaddr>
-        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+        <paramtype> %updateTokenPoolInternal |-> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
         <nonce> #Nonce(N => N +Int 2) </nonce>
         <tokenId> TokenID </tokenId>
         <knownaddrs> KnownAddresses </knownaddrs>
         <operations> _
-                  => [ Transfer_tokens #TokenTransferData(IsFA2, Sender, SelfAddress, TokenID, TokensSold) #Mutez(0)                                          TokenAddress          N        ]
-                  ;; [ Transfer_tokens Pair To Pair MinTokensBought #Timestamp(Deadline)                   #Mutez(#XtzBought(XtzPool, TokenPool, TokensSold)) OutputDexterContract (N +Int 1)]
+                  => [ Transfer_tokens #TokenTransferData(IsFA2, Sender, SelfAddress, TokenID, TokensSold) #Mutez(0)                                          TokenAddress         . %transfer    N        ]
+                  ;; [ Transfer_tokens Pair To Pair MinTokensBought #Timestamp(Deadline)                   #Mutez(#XtzBought(XtzPool, TokenPool, TokensSold)) OutputDexterContract . %xtzToToken (N +Int 1)]
                   ;; .InternalList
         </operations>
      requires notBool IsFA2
@@ -1117,13 +1117,13 @@ A buyer sends tokens to the Dexter contract, converts its to xtz, and then immed
         <mynow> #Timestamp(CurrentTime) </mynow>
         <senderaddr> Sender </senderaddr>
         <myaddr> SelfAddress </myaddr>
-        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+        <paramtype> %updateTokenPoolInternal |-> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
         <nonce> #Nonce(N => N +Int 2) </nonce>
         <tokenId> TokenID </tokenId>
         <knownaddrs> KnownAddresses </knownaddrs>
         <operations> _
-                  => [ Transfer_tokens #TokenTransferData(IsFA2, Sender, SelfAddress, TokenID, TokensSold) #Mutez(0)                                          TokenAddress          N        ]
-                  ;; [ Transfer_tokens Pair To Pair MinTokensBought #Timestamp(Deadline)                   #Mutez(#XtzBought(XtzPool, TokenPool, TokensSold)) OutputDexterContract (N +Int 1)]
+                  => [ Transfer_tokens #TokenTransferData(IsFA2, Sender, SelfAddress, TokenID, TokensSold) #Mutez(0)                                          TokenAddress         . %transfer    N        ]
+                  ;; [ Transfer_tokens Pair To Pair MinTokensBought #Timestamp(Deadline)                   #Mutez(#XtzBought(XtzPool, TokenPool, TokensSold)) OutputDexterContract . %xtzToToken (N +Int 1)]
                   ;; .InternalList
         </operations>
      requires IsFA2
@@ -1159,7 +1159,7 @@ module DEXTER-TOKENTOTOKEN-NEGATIVE-SPEC
         <mynow> #Timestamp(CurrentTime) </mynow>
         <senderaddr> Sender </senderaddr>
         <myaddr> SelfAddress </myaddr>
-        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+        <paramtype> %updateTokenPoolInternal |-> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
         <nonce> #Nonce(N => ?_) </nonce>
         <tokenId> TokenID </tokenId>
         <knownaddrs> KnownAddresses </knownaddrs>
@@ -1189,7 +1189,7 @@ module DEXTER-TOKENTOTOKEN-NEGATIVE-SPEC
         <mynow> #Timestamp(CurrentTime) </mynow>
         <senderaddr> Sender </senderaddr>
         <myaddr> SelfAddress </myaddr>
-        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
+        <paramtype> %updateTokenPoolInternal |-> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
         <nonce> #Nonce(N => ?_) </nonce>
         <tokenId> TokenID </tokenId>
         <knownaddrs> KnownAddresses </knownaddrs>

@@ -580,6 +580,11 @@ If the contract execution fails, storage is not updated.
   rule #TokenTransferData(false, From, To, _TokenID, TokenAmt) =>   Pair From    Pair To              TokenAmt [simplification]
   rule #TokenTransferData(true,  From, To,  TokenID, TokenAmt) => [ Pair From ([ Pair To Pair TokenID TokenAmt ] ;; .InternalList)  ] ;; .InternalList [simplification]
 
+  syntax Entrypoint ::= #TokenBalanceEntrypoint(Address, Bool) [function, functional]
+ // ---------------------------------------------------------------------------------
+  rule #TokenBalanceEntrypoint(TokenAddr, false) => TokenAddr . %getBalance
+  rule #TokenBalanceEntrypoint(TokenAddr, true ) => TokenAddr . %balance_of
+
   syntax Int ::= #ceildiv   (Int, Int) [function]
                | #ceildivAux(Int, Int) [function, functional]
  // ---------------------------------------------------------
