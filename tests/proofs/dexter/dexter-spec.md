@@ -450,8 +450,7 @@ The contract queries its underlying token contract for its own token balance if 
         <operations> _ => [ Transfer_tokens Pair #UpdateTokenPoolTransferFrom(IsFA2, SelfAddress, TokenId) #Contract(SelfAddress, #Type(#DexterVersionSpecificParamType(IsFA2))) #Mutez(0) TokenAddress O ] ;; .InternalList </operations>
         <nonce> #Nonce(O) => #Nonce(O +Int 1) </nonce>
     requires Amount ==Int 0
-     andBool TokenAddress in_keys(KnownAddresses)
-     andBool KnownAddresses[TokenAddress] ==K #Contract(TokenAddress, #TokenContractType(IsFA2))
+     andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType(IsFA2))
 ```
 
 If any of the conditions are not satisfied, the call fails.
@@ -468,24 +467,9 @@ NOTE: The failure conditions are split into two claims with identical configurat
         <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
         <knownaddrs> KnownAddresses </knownaddrs>
     requires Amount >Int 0
-     orBool (notBool TokenAddress in_keys(KnownAddresses))
+     orBool (notBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType(IsFA2)))
      orBool IsUpdating
      orBool Sender =/=K Source
-```
-
-```k
-  claim <k> #runProof(IsFA2, UpdateTokenPool) => Aborted(?_, ?_, ?_, ?_) </k>
-        <stack> .Stack => ( Failed ?_ ) </stack>
-        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
-        <tokenAddress> TokenAddress:Address </tokenAddress>
-        <myamount> #Mutez(Amount) </myamount>
-        <senderaddr> Sender </senderaddr>
-        <sourceaddr> Source </sourceaddr>
-        <paramtype> #Type(#DexterVersionSpecificParamType(IsFA2)) </paramtype>
-        <knownaddrs> KnownAddresses </knownaddrs>
-    requires (TokenAddress in_keys(KnownAddresses)
-      andBool KnownAddresses[TokenAddress] ==K #Contract(_, T)
-      andBool T =/=K #TokenContractType(IsFA2))
 ```
 
 ```k

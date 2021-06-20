@@ -608,10 +608,10 @@ and so we can't have simplification rules for both.
 
 ```k
   syntax Bool ::= #EntrypointExists(Map, Address, FieldAnnotation, Type)
-// --------------------------------------------------------------------
-  rule #EntrypointExists(KnownAddresses, Addr, _FieldAnnot, EntrypointType)
-    => Addr in_keys(KnownAddresses) andBool
-       KnownAddresses[Addr] ==K #Contract(Addr, EntrypointType)
+// ---------------------------------------------------------------------
+  rule #EntrypointExists(KnownAddresses, Addr, FieldAnnot, EntrypointType)
+    => Addr . FieldAnnot  in_keys(KnownAddresses) andBool
+       KnownAddresses[Addr . FieldAnnot] ==K #Name(EntrypointType)
     [macro]
 ```
 
