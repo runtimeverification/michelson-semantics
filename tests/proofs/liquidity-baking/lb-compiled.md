@@ -26,7 +26,6 @@ Since we work with specific code that contains a finite number of annotations, w
 
 ```k
   syntax FieldAnnotation ::= "%deadline"
-                           | "%default"
                            | "%minTokensBought"
                            | "%mintOrBurn"
                            | "%quantity"
@@ -37,7 +36,6 @@ Since we work with specific code that contains a finite number of annotations, w
  // --------------------------------------
 
   rule %deadline                => #token("%deadline"               , "FieldAnnotation") [macro]
-  rule %default                 => #token("%default"                , "FieldAnnotation") [macro]
   rule %minTokensBought         => #token("%minTokensBought"        , "FieldAnnotation") [macro]
   rule %mintOrBurn              => #token("%mintOrBurn"             , "FieldAnnotation") [macro]
   rule %quantity                => #token("%quantity"               , "FieldAnnotation") [macro]

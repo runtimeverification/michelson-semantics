@@ -432,10 +432,10 @@ and so we can't have simplification rules for both.
 
 ```k
   syntax Bool ::= #EntrypointExists(Map, Address, FieldAnnotation, Type)
-// --------------------------------------------------------------------
-  rule #EntrypointExists(KnownAddresses, Addr, _FieldAnnot, EntrypointType)
-    => Addr in_keys(KnownAddresses) andBool
-       KnownAddresses[Addr] ==K #Contract(Addr, EntrypointType)
+ // --------------------------------------------------------------------
+  rule #EntrypointExists(KnownAddresses, Addr, FieldAnnot, EntrypointType)
+    => Addr . FieldAnnot  in_keys(KnownAddresses) andBool
+       KnownAddresses[Addr . FieldAnnot] ==K #Name(EntrypointType)
     [macro]
 ```
 
@@ -451,9 +451,9 @@ This function has no evaluation rules, so the prover can make no assumptions abo
   rule (X *Int Y) %Int Z => #mulMod(X, Y, Z) [simplification]
   rule (X *Int Y) /Int Z => #mulDiv(X, Y, Z) [simplification]
 
-  // TODO: add #XtzBurn smt-lib symbol
-  // syntax Int ::= #XtzBurn(Int)
-  // rule Amount:Int -Int #mulDiv ( Amount:Int , 999 , 1000 ) => #XtzBurn(Amount)
+  syntax Int ::= #XtzBurn(Int) [function, functional, smtlib(xtxBurn), no-evaluators]
+ // ---------------------------------------------------------------------------------
+  rule Amount:Int -Int #mulDiv ( Amount:Int , 999 , 1000 ) => #XtzBurn(Amount) [simplification]
 ```
 
 ## Putting It All Together
