@@ -24,6 +24,7 @@ module MICHELSON-UNPARSER
   // We add sorts here to simplify when terms are primitive arguments
   syntax ApplicationData ::= Pair | OrData | OptionData
   syntax Data ::= ApplicationData
+  syntax Data ::= Entrypoint
 
   // Michelson IR Unparsing Entrypoint
   syntax String ::= #unparse(K) [function]
@@ -114,9 +115,10 @@ module MICHELSON-UNPARSER
   rule #doUnparse(#KeyHash(S), _) => #doUnparse(S, false)
   rule #doUnparse(#Mutez(I), _) => #doUnparse(I, false)
   rule #doUnparse(#Address(S), _) => #doUnparse(S, false)
-  rule #doUnparse(#Contract(A, _), _) => #doUnparse(A, false)
+  rule #doUnparse(#Contract(A, _), _) => #doUnparse(#ToString(A), false)
   rule #doUnparse(#Key(S), _) => #doUnparse(S, false)
   rule #doUnparse(#Signature(S), _) => #doUnparse(S, false)
+  rule #doUnparse(EP:Entrypoint, _) => #doUnparse(#ToString(EP), false)
 
   // Unparse types.
 
@@ -379,7 +381,7 @@ The following macros are currently disabled.
     "Contract " +String
     #doUnparse(S, false) +String
     " " +String
-    #doUnparse(T, false)
+    #doUnparse(T, true)
 
   rule #doUnparse(O:OtherContractsMapEntry ; O':OtherContractsMapEntry ; Os:OtherContractsMapEntryList, _) =>
     #doUnparse(O, false) +String
@@ -466,7 +468,7 @@ The following macros are currently disabled.
     " " +String
     #doUnparse(I, true)
 
-  rule #doUnparse(Transfer_tokens O M A:Address I, _) =>
+  rule #doUnparse(Transfer_tokens O M A:Entrypoint I, _) =>
     "Transfer_tokens " +String
     #doUnparse(O, true) +String
     " " +String
@@ -815,7 +817,7 @@ module OUTPUT-COMPARE
        </out> [owise]
 
   rule <k> other_contracts { M } ; Gs => Gs </k>
-       <knownaddrs> _ => #OtherContractsMapEntryListToKMap(M) </knownaddrs>
+       <knownaddrs> _ => #OtherContractsMapToKMap(M) </knownaddrs>
 
   rule <k> real_output AOS ; output EOS => #CheckOutput(EOS, AOS) ... </k>
 endmodule

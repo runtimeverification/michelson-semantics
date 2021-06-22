@@ -580,6 +580,11 @@ If the contract execution fails, storage is not updated.
   rule #TokenTransferData(false, From, To, _TokenID, TokenAmt) =>   Pair From    Pair To              TokenAmt [simplification]
   rule #TokenTransferData(true,  From, To,  TokenID, TokenAmt) => [ Pair From ([ Pair To Pair TokenID TokenAmt ] ;; .InternalList)  ] ;; .InternalList [simplification]
 
+  syntax Entrypoint ::= #TokenBalanceEntrypoint(Address, Bool) [function, functional]
+ // ---------------------------------------------------------------------------------
+  rule #TokenBalanceEntrypoint(TokenAddr, false) => TokenAddr . %getBalance
+  rule #TokenBalanceEntrypoint(TokenAddr, true ) => TokenAddr . %balance_of
+
   syntax Int ::= #ceildiv   (Int, Int) [function]
                | #ceildivAux(Int, Int) [function, functional]
  // ---------------------------------------------------------
@@ -608,10 +613,10 @@ and so we can't have simplification rules for both.
 
 ```k
   syntax Bool ::= #EntrypointExists(Map, Address, FieldAnnotation, Type)
-// --------------------------------------------------------------------
-  rule #EntrypointExists(KnownAddresses, Addr, _FieldAnnot, EntrypointType)
-    => Addr in_keys(KnownAddresses) andBool
-       KnownAddresses[Addr] ==K #Contract(Addr, EntrypointType)
+// ---------------------------------------------------------------------
+  rule #EntrypointExists(KnownAddresses, Addr, FieldAnnot, EntrypointType)
+    => Addr . FieldAnnot  in_keys(KnownAddresses) andBool
+       KnownAddresses[Addr . FieldAnnot] ==K #Name(EntrypointType)
     [macro]
 ```
 

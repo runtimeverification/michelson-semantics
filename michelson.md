@@ -64,15 +64,15 @@ The values of many of these cells are accessible via Michelson instructions.
         <bigmaps> .Map </bigmaps>
 
         <myaddr> #Address("InvalidMyAddr") </myaddr>
-        <paramtype> #NotSet </paramtype>
-        <storagetype> #NotSet </storagetype>
-        <script> #NoData </script>
+        <paramtype> .Map </paramtype>
+        <storagetype> .Type </storagetype>
+        <script> .Data </script>
 
-        <storagevalue> #NoData </storagevalue>
+        <storagevalue> .Data </storagevalue>
         <mybalance> #Mutez(0) </mybalance>
         <nonce> #Nonce(0) </nonce>
 
-        <paramvalue> #NoData </paramvalue>
+        <paramvalue> .Data </paramvalue>
         <myamount> #Mutez(0) </myamount>
         <sourceaddr> #Address("InvalidSourceAddr") </sourceaddr>
         <senderaddr> #Address("InvalidSenderAddr") </senderaddr>
@@ -182,6 +182,7 @@ Semantics Initialization
 ```k
   rule <k> #Init
         => #ConvertBigMapsToNative
+        ~> #EnsureLocalEntrypointsInitialized
         ~> #ConvertParamToNative
         ~> #ConvertStorageToNative
         ~> #ExecutePreConditions
@@ -199,14 +200,17 @@ Below are the rules for loading specific groups.
 #### Default Contract Groups
 
 ```k
-  rule <k> parameter T => .K ... </k>
-       <paramtype> #NotSet => T </paramtype>
+  rule <k> parameter T:Type => .K ... </k>
+       <paramtype> .Map => #BuildAnnotationMap(.FieldAnnotation, T) </paramtype>
+
+  rule <k> parameter FA:FieldAnnotation T:Type => .K ... </k>
+       <paramtype> .Map => #BuildAnnotationMap(FA, T) </paramtype>
 
   rule <k> storage T => .K ... </k>
-       <storagetype> #NotSet => T </storagetype>
+       <storagetype> .Type => T </storagetype>
 
   rule <k> code C => .K ... </k>
-       <script> #NoData => C </script>
+       <script> .Data => C </script>
 
   rule <k> G:Group ; Gs:Groups => G:Group ~> Gs ... </k>
 ```
@@ -238,7 +242,7 @@ Below are the rules for loading specific groups.
     requires #IsLegalMutezValue(I)
 
   rule <k> other_contracts { M } => .K ... </k>
-       <knownaddrs> .Map => #OtherContractsMapEntryListToKMap(M) </knownaddrs>
+       <knownaddrs> .Map => #OtherContractsMapToKMap(M) </knownaddrs>
 
   rule <k> big_maps { M } => .K ... </k>
        <bigmaps> .Map => #BigMapsEntryListToKMap(M) </bigmaps>
@@ -309,6 +313,12 @@ The following unit test groups are not supported by the symbolic interpreter.
 ### Micheline to Native Conversion
 
 ```k
+  syntax KItem ::= "#EnsureLocalEntrypointsInitialized"
+  rule <k> #EnsureLocalEntrypointsInitialized => .K ... </k>
+       <paramtype> LocalEntrypointMap => #AddDefaultEntry(LocalEntrypointMap, #Type(unit)) </paramtype>
+```
+
+```k
   syntax KItem ::= "#ConvertBigMapsToNative"
   rule <k> #ConvertBigMapsToNative => .K ... </k>
        <bigmaps> BigMaps => #ConvertBigMapsToNative(BigMaps) </bigmaps>
@@ -323,13 +333,12 @@ The following unit test groups are not supported by the symbolic interpreter.
 ```k
   syntax KItem ::= "#ConvertParamToNative"
   rule <k> #ConvertParamToNative => .K ... </k>
-       <paramvalue> D:Data => #MichelineToNative(D, #ConvertToType(T), .Map, BigMaps) </paramvalue>
-       <paramtype>  T      => #ConvertToType(T)                                       </paramtype>
+       <paramvalue> D:Data => #MichelineToNative(D, #Type({ LocalEntrypoints [ %default ] }:>TypeName), .Map, BigMaps) </paramvalue>
+       <paramtype> LocalEntrypoints </paramtype>
        <bigmaps> BigMaps </bigmaps>
 
   rule <k> #ConvertParamToNative => .K ... </k>
-       <paramvalue> #NoData                </paramvalue>
-       <paramtype>  T => #ConvertToType(T) </paramtype>
+       <paramvalue> .Data </paramvalue>
 
   syntax KItem ::= "#ConvertStorageToNative"
   rule <k> #ConvertStorageToNative => .K ... </k>
@@ -338,11 +347,11 @@ The following unit test groups are not supported by the symbolic interpreter.
        <bigmaps> BigMaps </bigmaps>
 
   rule <k> #ConvertStorageToNative => .K ... </k>
-       <storagevalue> #NoData                </storagevalue>
+       <storagevalue> .Data                </storagevalue>
        <storagetype>  T => #ConvertToType(T) </storagetype>
 
-  syntax Type ::= #ConvertToType(PreType) [function]
-  rule #ConvertToType(#NotSet) => unit .AnnotationList
+  syntax Type ::= #ConvertToType(MaybeType) [function]
+  rule #ConvertToType(.Type)   => unit .AnnotationList
   rule #ConvertToType(T:Type)  => T
 ```
 
@@ -461,7 +470,7 @@ version.
 
   syntax KItem ::= "#ExecuteScript"
   rule <k> #ExecuteScript
-        => #if Script ==K #NoData #then {} #else Script #fi
+        => #if Script ==K .Data #then {} #else Script #fi
            ...
        </k>
        <script> Script </script>
@@ -1089,6 +1098,8 @@ The `#DoCompare` function requires additional lemmas for symbolic execution.
   rule X::String ==String Y::String => false
     requires #Not ( { X #Equals Y } )
     [anywhere, simplification]
+
+  rule #Address(X:String) ==K #Address(Y:String) => X ==String Y [simplification]
 ```
 
 ### String Operations
@@ -1571,8 +1582,8 @@ however forces us to use two rules for each operation.
        <nonce> #Nonce(O) => #NextNonce(#Nonce(O)) </nonce>
 
   rule <k> TRANSFER_TOKENS _A => . ... </k>
-       <stack> [T D] ; [mutez M:Mutez] ; [contract T #Contract(A:Address, _)] ; SS
-            => [operation Transfer_tokens D M A O] ; SS
+       <stack> [T D] ; [mutez #Mutez(M)] ; [contract T #Contract(A, T)] ; SS
+            => [operation Transfer_tokens D #Mutez(M) A O] ; SS
        </stack>
        <nonce> #Nonce(O) => #NextNonce(#Nonce(O)) </nonce>
 
@@ -1594,23 +1605,25 @@ These instructions push fresh `contract` literals on the stack corresponding
 to the given addresses/key hashes.
 
 ```k
-  rule <k> CONTRACT _AL T => . ... </k>
-       <stack> [address A] ; SS => [option contract #Name(T) Some {M[A]}:>ContractData] ; SS </stack>
-       <knownaddrs> M </knownaddrs>
-    requires A in_keys(M)
-     andBool #TypeFromContractStruct({M[A]}:>ContractData) ==K T
+  syntax Instruction ::= CONTRACT(FieldAnnotation, TypeName)
+  rule <k> CONTRACT AL:AnnotationList T:Type => CONTRACT(#GetFieldAnnot(AL), #Name(T)) ... </k>
 
-  rule <k> CONTRACT _AL T => . ... </k>
-       <stack> [address _] ; SS => [option contract #Name(T) None] ; SS </stack>
+  rule <k> CONTRACT(FA, T) => . ... </k>
+       <stack> [address A:Address]                            ; SS
+            => [option contract T Some #Contract(A . FA, T) ] ; SS
+       </stack>
+       <knownaddrs> ContractMap </knownaddrs>
+    requires A . FA in_keys(ContractMap)
+     andBool ContractMap [ A . FA ] ==K T
+
+  rule <k> CONTRACT(_FA, T) => . ... </k>
+       <stack> [address _] ; SS => [option contract T None] ; SS </stack>
        <knownaddrs> _ </knownaddrs> [owise]
 
   rule <k> IMPLICIT_ACCOUNT _AL => . ... </k>
        <stack> [key_hash #KeyHash(A)] ; SS
-            => [contract unit #Contract(#Address(A), unit .AnnotationList)] ; SS
+            => [contract unit #Contract(#Address(A) . %default, unit)] ; SS
        </stack>
-
-  syntax Type ::= #TypeFromContractStruct(ContractData) [function, functional]
-  rule #TypeFromContractStruct(#Contract(_, T)) => T
 ```
 
 These instructions push blockchain state on the stack.
@@ -1621,8 +1634,7 @@ These instructions push blockchain state on the stack.
        <mybalance> B </mybalance>
 
   rule <k> ADDRESS _AL => . ... </k>
-       <stack> [contract TN #Contract(A, T)] ; SS => [address A] ; SS </stack>
-    requires TN ==K #Name(T)
+       <stack> [contract T #Contract(A . _, T)] ; SS => [address A] ; SS </stack>
 
   rule <k> SOURCE _AL => . ... </k>
        <stack> SS => [address A] ; SS </stack>
@@ -1632,10 +1644,19 @@ These instructions push blockchain state on the stack.
        <stack> SS => [address A] ; SS </stack>
        <senderaddr> A </senderaddr>
 
-  rule <k> SELF _AL => . ... </k>
-       <stack> SS => [contract #Name(T) #Contract(A, T)] ; SS </stack>
-       <paramtype> T </paramtype>
+  syntax Instruction ::= SELF(FieldAnnotation)
+  rule <k> SELF AL:AnnotationList => SELF(#GetFieldAnnot(AL)) ... </k>
+
+  rule <k> SELF(FA) => .K ... </k>
+       <stack> SS
+            => [contract {LocalEntrypointMap [ FA ]}:>TypeName
+                #Contract(A . FA, {LocalEntrypointMap [ FA ]}:>TypeName)]
+             ; SS
+       </stack>
+       <paramtype> LocalEntrypointMap </paramtype>
        <myaddr> A </myaddr>
+    ensures FA in_keys( LocalEntrypointMap )
+    andBool isTypeName(LocalEntrypointMap [ FA ])
 
   rule <k> AMOUNT _A => . ... </k>
        <stack> SS => [mutez M] ; SS </stack>
@@ -1955,7 +1976,7 @@ abstract out pieces of the stack which are non-invariant during loop execution.
 ```k
   syntax Instruction ::= "BIND" OutputStack Block
   rule <k> BIND Shape Block
-        => #Bind(#LiteralStackToStack(Shape), Stack)
+        => #Bind(Shape, Stack)
         ~> Block
         ~> #RestoreSymbols(Symbols)
            ...
@@ -1965,37 +1986,40 @@ abstract out pieces of the stack which are non-invariant during loop execution.
 ```
 
 ```k
-  syntax KItem ::= #Bind(InternalStack, InternalStack)
+  syntax KItem ::= #Bind(OutputStack, InternalStack)
 
-  rule <k> #Bind(.Stack, .Stack) => .K ... </k>
+  rule <k> #Bind({ .StackElementList }, .Stack) => .K ... </k>
 
   rule <k> #Bind(S1:FailedStack, S2:FailedStack) => .K ... </k>
     requires #Matches(S1, S2)
 
-  rule <k> #Bind( [ T S:SymbolicData ] ; SS  => SS
-                , [ T D ]              ; SS' => SS'
+  rule <k> #Bind( { Stack_elt T S:SymbolicData ; SS  => SS }
+                ,   [ TN D ]                   ; SS' => SS'
                 )
            ...
        </k>
-       <symbols> Syms => S |-> #TypedSymbol(T, D) Syms </symbols>
+       <symbols> Syms => S |-> #TypedSymbol(TN, D) Syms </symbols>
     requires notBool S in_keys(Syms)
+     andBool TN ==K #Name(T)
 
-  rule <k> #Bind( [ T S:SymbolicData ] ; SS  => SS
-                , [ T D1 ]             ; SS' => SS'
+  rule <k> #Bind( { Stack_elt T S:SymbolicData ; SS  => SS }
+                ,   [ TN D1 ]                  ; SS' => SS'
                 )
            ...
        </k>
-       <symbols> S |-> #TypedSymbol(T, D2) ... </symbols>
+       <symbols> S |-> #TypedSymbol(TN, D2) ... </symbols>
     requires D1 ==K D2
+     andBool TN ==K #Name(T)
 
-  rule <k> #Bind( [ T ED ] ; SS  => SS
-                , [ T AD ] ; SS' => SS'
+  rule <k> #Bind( { Stack_elt T ED ; SS  => SS }
+                ,   [ TN AD ]      ; SS' => SS'
                 )
            ...
        </k>
        <knownaddrs> KnownAddrs </knownaddrs>
        <bigmaps> BigMaps </bigmaps>
-    requires #ConcreteMatch(ED, #Type(T), KnownAddrs, BigMaps, AD)
+    requires #ConcreteMatch(ED, T, KnownAddrs, BigMaps, AD)
+     andBool TN ==K #Name(T)
 
   // NOTE: this function protects against unification errors
   syntax Bool ::= #ConcreteMatch(Data, Type, Map, Map, Data) [function]
@@ -2321,9 +2345,9 @@ It has an untyped and typed variant.
   rule isValue(chain_id,  #ChainId(_:Bytes))     => true
   rule isValue(operation, _:BlockchainOperation) => true
 
-  rule isValue(contract T, #Contract(#Address(_:String),TY)) => true requires T ==K #Name(TY)
-  rule isValue(option _, None)                               => true
-  rule isValue(option T, Some V)                             => isValue(T, V)
+  rule isValue(contract T, #Contract(_:Entrypoint,T)) => true
+  rule isValue(option _, None)                        => true
+  rule isValue(option T, Some V)                      => isValue(T, V)
 
   rule isValue(pair T1 T2, Pair LV RV)                => isValue(T1, LV) andBool isValue(T2, RV)
   rule isValue(or  T1 _T2, Left  V)                   => isValue(T1, V)
@@ -2377,11 +2401,11 @@ It has an untyped and typed variant.
   // TODO: should we expand into the three separate kinds of Blockchain operations?
   rule <k> #MakeFresh(operation _:AnnotationList) => ?_:BlockchainOperation ... </k>
 
-  rule <k> #MakeFresh(list      _:AnnotationList _:Type)        => ?_:InternalList                       ... </k>
-  rule <k> #MakeFresh(set       _:AnnotationList _:Type)        => ?_:Set                                ... </k>
-  rule <k> #MakeFresh(map       _:AnnotationList _:Type _:Type) => ?_:Map                                ... </k>
-  rule <k> #MakeFresh(big_map   _:AnnotationList _:Type _:Type) => ?_:Map                                ... </k>
-  rule <k> #MakeFresh(contract  _:AnnotationList T)             => #Contract(#Address(?_:String),T)      ... </k>
+  rule <k> #MakeFresh(list      _:AnnotationList _:Type)        => ?_:InternalList                                     ... </k>
+  rule <k> #MakeFresh(set       _:AnnotationList _:Type)        => ?_:Set                                              ... </k>
+  rule <k> #MakeFresh(map       _:AnnotationList _:Type _:Type) => ?_:Map                                              ... </k>
+  rule <k> #MakeFresh(big_map   _:AnnotationList _:Type _:Type) => ?_:Map                                              ... </k>
+  rule <k> #MakeFresh(contract  _:AnnotationList T)             => #Contract(#Address(?_:String ) . ?_:FieldAnnotation, #Name(T)) ... </k>
 
   rule <k> #MakeFresh(pair _:AnnotationList T1 T2)
         => (Pair #MakeFresh(T1) #MakeFresh(T2))
@@ -2475,12 +2499,12 @@ module MATCHER
        #Matches(M1, M2) andBool
        #Matches(D1, D2)
 
-  rule #Matches(Transfer_tokens D1 M1 A1:Address I1,
-                Transfer_tokens D2 M2 A2:Address I2)
+  rule #Matches(Transfer_tokens D1 M1 A1:Entrypoint I1,
+                Transfer_tokens D2 M2 A2:Entrypoint I2)
     => #Matches(I1, I2) andBool
        #Matches(D1, D2) andBool
        #Matches(M1, M2) andBool
-       #Matches(A1, A2)
+       A1 ==K A2
 
   rule #Matches(Set_delegate O1 I1,
                 Set_delegate O2 I2)
