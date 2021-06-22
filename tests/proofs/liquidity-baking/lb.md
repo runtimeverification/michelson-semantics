@@ -439,6 +439,12 @@ and so we can't have simplification rules for both.
     [macro]
 ```
 
+```k
+  syntax Int ::= #XtzBurn(Int)
+ // --------------------------
+  rule #XtzBurn(Amount) => Amount:Int -Int #mulDiv ( Amount:Int , 999 , 1000 ) [macro]
+```
+
 ### Avoiding Interpreting Functions
 
 If a function value does not play well with the prover or SMT solver, it can be rewritten to `#uninterpreted`.
@@ -450,10 +456,6 @@ This function has no evaluation rules, so the prover can make no assumptions abo
  // -----------------------------------------------------------------------------------------
   rule (X *Int Y) %Int Z => #mulMod(X, Y, Z) [simplification]
   rule (X *Int Y) /Int Z => #mulDiv(X, Y, Z) [simplification]
-
-  syntax Int ::= #XtzBurn(Int) [function, functional, smtlib(xtxBurn), no-evaluators]
- // ---------------------------------------------------------------------------------
-  rule Amount:Int -Int #mulDiv ( Amount:Int , 999 , 1000 ) => #XtzBurn(Amount) [simplification]
 ```
 
 ## Putting It All Together
