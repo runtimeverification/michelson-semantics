@@ -485,8 +485,8 @@ lb-prove-failing: $(lb_spec_modules_failing:%=lb-prove_%)
 
 lb-prove_%:
 	$(MAKE) $(lb_spec_file).lb_prove                   \
-  KPROVE_MODULE=LIQUIDITY-BAKING-VERIFICATION        \
-  KPROVE_OPTIONS="$(KPROVE_OPTIONS) --spec-module $*"
+    KPROVE_MODULE=LIQUIDITY-BAKING-VERIFICATION        \
+    KPROVE_OPTIONS="$(KPROVE_OPTIONS) --spec-module $*"
 
 tests/%.lb_prove: tests/% $(lb_kompiled)
 	$(TEST) prove --backend lb $< $(KPROVE_MODULE) $(KPROVE_OPTIONS)
@@ -495,7 +495,6 @@ tests/%.lb_prove: tests/% $(lb_kompiled)
 # LQT token proofs
 
 lqt_spec_modules_failing = \
-
 
 lqt_spec_modules = LQT-TOKEN-SPEC
 
@@ -506,8 +505,8 @@ lqt-prove-failing: $(lqt_spec_modules_failing:%=lqt-prove_%)
 
 lqt-prove_%:
 	$(MAKE) $(lqt_spec_file).lqt_prove                   \
-  KPROVE_MODULE=LIQUIDITY-BAKING-VERIFICATION        \
-  KPROVE_OPTIONS="$(KPROVE_OPTIONS) --spec-module $*"
+    KPROVE_MODULE=LQT-TOKEN-VERIFICATION        \
+    KPROVE_OPTIONS="$(KPROVE_OPTIONS) --spec-module $*"
 
 tests/%.lqt_prove: tests/% $(lqt_kompiled)
 	$(TEST) prove --backend lqt $< $(KPROVE_MODULE) $(KPROVE_OPTIONS)

@@ -100,7 +100,7 @@ if [[ $# -le 0 ]] || [[ "$run_command" == 'help' ]] || [[ "$run_command" == '--h
         usage: $0 run       [--backend (llvm|symbolic|contract-expander|extractor|input-creator|output-compare)] <pgm>  <K arg>*
                $0 kast      [--backend (llvm|symbolic|contract-expander|extractor|input-creator|output-compare)] <pgm>  <output format> <K arg>*
                $0 symbtest                                                                                       <pgm>                  <K arg>*
-               $0 prove     [--backend (symbolic|prove|dexter)]                                                  <spec> <def_module>    <K arg>*
+               $0 prove     [--backend (symbolic|prove|dexter|lqt|lb)]                                           <spec> <def_module>    <K arg>*
                $0 interpret [--backend (llvm|symbolic|contract-expander|extractor|input-creator|output-compare)] <pgm>  <LLVM KRun arg>*
 
                $0 [help|--help|version|--version]
@@ -176,7 +176,7 @@ case "$run_command-$backend" in
     run-@(llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare)       ) run_krun       "$@" ;;
     kast-@(llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare)      ) run_kast       "$@" ;;
     symbtest-driver                                                                           ) run_symbtest   "$@" ;;
-    prove-@(prove|symbolic|dexter|lb)                                                         ) run_prove      "$@" ;;
+    prove-@(prove|symbolic|dexter|lb|lqt)                                                     ) run_prove      "$@" ;;
     interpret-@(llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare) ) run_interpret  "$@" ;;
     *) $0 help ; fatal "Unknown command on backend: $run_command $backend" ;;
 esac

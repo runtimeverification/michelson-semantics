@@ -1,13 +1,13 @@
 ```k
-module LIQUIDITY-BAKING-SPEC
-  imports LIQUIDITY-BAKING-VERIFICATION
+module LQT-TOKEN-SPEC
+  imports LQT-TOKEN-VERIFICATION
 ```
 
 ```k
   claim <k> now 0 => . ... </k>
         <mynow> #Timestamp(0) </mynow>
 
-  claim <k> (now 0 => .) ~> #liquidityBakingCode ... </k>
+  claim <k> (now 0 => .) ~> #lqtTokenCode ... </k>
         <mynow> #Timestamp(0) </mynow>
 
   claim <k> PUSH nat X:Int ; PUSH nat Y:Int ; PUSH nat Z:Int ; MUL ; EDIV ; IF_NONE {} { DUP ; CDR ; SWAP ; CAR ; PUSH nat 0 ; DIG 2 ; COMPARE ; EQ } => . ... </k>
@@ -50,8 +50,8 @@ Storage( lqtTotal:  LqtTotal  => LqtTotal  + lqt_minted ;
 4.  xtzPool is positive
 
 ```k
-module LIQUIDITY-BAKING-ADDLIQUIDITY-POSITIVE-SPEC
-  imports LIQUIDITY-BAKING-VERIFICATION
+module LQT-TOKEN-ADDLIQUIDITY-POSITIVE-SPEC
+  imports LQT-TOKEN-VERIFICATION
 ```
 
 For performance reasons, we split the claim depending on the result of the `#ceildiv` operation.
@@ -131,8 +131,8 @@ The execution fails if any of the following are true:
 4.  xtzPool is 0
 
 ```k
-module LIQUIDITY-BAKING-ADDLIQUIDITY-NEGATIVE-SPEC
-  imports LIQUIDITY-BAKING-VERIFICATION
+module LQT-TOKEN-ADDLIQUIDITY-NEGATIVE-SPEC
+  imports LQT-TOKEN-VERIFICATION
 ```
 
 ```k
@@ -169,8 +169,8 @@ The sender can burn liquidity tokens in exchange for tez and tokens sent to some
 7.  the contract at address `storage.tokenAddress` has a well-formed `transfer` entrypoint
 
 ```k
-module LIQUIDITY-BAKING-REMOVELIQUIDITY-POSITIVE-SPEC
-  imports LIQUIDITY-BAKING-VERIFICATION
+module LQT-TOKEN-REMOVELIQUIDITY-POSITIVE-SPEC
+  imports LQT-TOKEN-VERIFICATION
 
   claim <k> #runProof(RemoveLiquidity(To, LqtBurned, #Mutez(MinXtzWithdrawn), MinTokensWithdrawn, #Timestamp(Deadline))) => . </k>
         <stack> .Stack </stack>
@@ -212,8 +212,8 @@ endmodule
 ```
 
 ```k
-module LIQUIDITY-BAKING-REMOVELIQUIDITY-NEGATIVE-SPEC
-  imports LIQUIDITY-BAKING-VERIFICATION
+module LQT-TOKEN-REMOVELIQUIDITY-NEGATIVE-SPEC
+  imports LQT-TOKEN-VERIFICATION
 
   claim <k> #runProof(RemoveLiquidity(_, _, _, _, _)) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ( Failed ?_ ) </stack>
@@ -243,8 +243,8 @@ endmodule
 ## Default
 
 ```k
-module LIQUIDITY-BAKING-DEFAULT-SPEC
-  imports LIQUIDITY-BAKING-VERIFICATION
+module LQT-TOKEN-DEFAULT-SPEC
+  imports LQT-TOKEN-VERIFICATION
 ```
 
 Adds more money to the xtz reserves if the following conditions are satisifed:
@@ -276,8 +276,8 @@ endmodule
 ## Token To XTZ
 
 ```k
-module LIQUIDITY-BAKING-TOKENTOXTZ-POSITIVE-SPEC
-  imports LIQUIDITY-BAKING-VERIFICATION
+module LQT-TOKEN-TOKENTOXTZ-POSITIVE-SPEC
+  imports LQT-TOKEN-VERIFICATION
 ```
 
 A buyer sends tokens to the Liquidity Baking contract and receives a corresponding amount of xtz, if the following conditions are satisfied:
@@ -324,8 +324,8 @@ endmodule
 The following claims prove the negative case:
 
 ```k
-module LIQUIDITY-BAKING-TOKENTOXTZ-NEGATIVE-1-SPEC
-  imports LIQUIDITY-BAKING-VERIFICATION
+module LQT-TOKEN-TOKENTOXTZ-NEGATIVE-1-SPEC
+  imports LQT-TOKEN-VERIFICATION
   claim <k> #runProof(TokenToXtz(_To, _TokensSold, #Mutez(_MinXtzBought), #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_:FailedStack </stack>
         <mynow> #Timestamp(CurrentTime) </mynow>
@@ -338,8 +338,8 @@ endmodule
 ```
 
 ```k
-module LIQUIDITY-BAKING-TOKENTOXTZ-NEGATIVE-2-SPEC
-  imports LIQUIDITY-BAKING-VERIFICATION
+module LQT-TOKEN-TOKENTOXTZ-NEGATIVE-2-SPEC
+  imports LQT-TOKEN-VERIFICATION
   claim <k> #runProof(TokenToXtz(To, TokensSold, #Mutez(_MinXtzBought), #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_:FailedStack </stack>
         <mynow> #Timestamp(CurrentTime) </mynow>
@@ -358,8 +358,8 @@ endmodule
 ```
 
 ```k
-module LIQUIDITY-BAKING-TOKENTOXTZ-NEGATIVE-3-SPEC
-  imports LIQUIDITY-BAKING-VERIFICATION
+module LQT-TOKEN-TOKENTOXTZ-NEGATIVE-3-SPEC
+  imports LQT-TOKEN-VERIFICATION
   claim <k> #runProof(TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_:FailedStack </stack>
         <mynow> #Timestamp(CurrentTime) </mynow>
@@ -380,8 +380,8 @@ endmodule
 ```
 
 ```k
-module LIQUIDITY-BAKING-TOKENTOXTZ-NEGATIVE-4-SPEC
-  imports LIQUIDITY-BAKING-VERIFICATION
+module LQT-TOKEN-TOKENTOXTZ-NEGATIVE-4-SPEC
+  imports LQT-TOKEN-VERIFICATION
   claim <k> #runProof(TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_:FailedStack </stack>
         <mynow> #Timestamp(CurrentTime) </mynow>
@@ -413,8 +413,8 @@ A buyer sends xtz to the Liquidity Baking contract and receives a corresponding 
 3.  when the `txn.amount` (in mutez) is converted into tokens using the current exchange rate, it is less than or equal to the tokens owned by the Liquidity Baking contract
 
 ```k
-module LIQUIDITY-BAKING-XTZTOTOKEN-POSITIVE-SPEC
-  imports LIQUIDITY-BAKING-VERIFICATION
+module LQT-TOKEN-XTZTOTOKEN-POSITIVE-SPEC
+  imports LQT-TOKEN-VERIFICATION
   claim <k> #runProof(XtzToToken(To, MinTokensBought, #Timestamp(Deadline))) => . </k>
         <stack> .Stack </stack>
         <paramtype> #Type(#LiquidityBakingParamType()) </paramtype>
@@ -443,8 +443,8 @@ endmodule
 ```
 
 ```k
-module LIQUIDITY-BAKING-XTZTOTOKEN-NEGATIVE-SPEC
-  imports LIQUIDITY-BAKING-VERIFICATION
+module LQT-TOKEN-XTZTOTOKEN-NEGATIVE-SPEC
+  imports LQT-TOKEN-VERIFICATION
   claim <k> #runProof(XtzToToken(_To, MinTokensBought, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_:FailedStack </stack>
         <paramtype> #Type(#LiquidityBakingParamType()) </paramtype>
@@ -470,8 +470,8 @@ endmodule
 ## Token To Token
 
 ```k
-module LIQUIDITY-BAKING-TOKENTOTOKEN-POSITIVE-SPEC
-  imports LIQUIDITY-BAKING-VERIFICATION
+module LQT-TOKEN-TOKENTOTOKEN-POSITIVE-SPEC
+  imports LQT-TOKEN-VERIFICATION
 ```
 
 A buyer sends tokens to the Liquidity Baking contract, converts its to xtz, and then immediately purchases a corresponding amount of tokens from a Dexter contract (such that all transactions succeed or fail atomically), if the following conditions are satisfied:
@@ -515,8 +515,8 @@ endmodule
 ```
 
 ```k
-module LIQUIDITY-BAKING-TOKENTOTOKEN-NEGATIVE-SPEC
-  imports LIQUIDITY-BAKING-VERIFICATION
+module LQT-TOKEN-TOKENTOTOKEN-NEGATIVE-SPEC
+  imports LQT-TOKEN-VERIFICATION
 ```
 
 ```k
