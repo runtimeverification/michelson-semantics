@@ -418,6 +418,7 @@ dexter_spec_modules = DEXTER-SPEC                               \
                       DEXTER-TOKENTOXTZ-FA2-POSITIVE-SPEC       \
                       DEXTER-TOKENTOTOKEN-POSITIVE-SPEC         \
                       DEXTER-UPDATETOKENPOOL-SPEC               \
+                      DEXTER-UPDATETOKENPOOLINTERNAL-SPEC       \
                       DEXTER-XTZTOTOKEN-FA12-NEGATIVE-SPEC      \
                       DEXTER-XTZTOTOKEN-FA12-POSITIVE-SPEC      \
                       DEXTER-XTZTOTOKEN-FA2-NEGATIVE-SPEC       \

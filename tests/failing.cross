@@ -32,6 +32,12 @@ tests/unit/update_bigmapstringstring_04.tzt
 tests/unit/update_bigmapstringstring_05.tzt
 tests/unit/update_bigmapstringstring_06.tzt
 tests/unit/update_bigmapstringstring_07.tzt
+tests/unit/contract_06.tzt
+tests/unit/contract_07.tzt
+tests/unit/contract_08.tzt
+tests/unit/self_01.tzt
+tests/unit/self_02.tzt
+tests/unit/self_03.tzt
 
 tests/macros/pair_00.tzt
 tests/macros/unpair_00.tzt
