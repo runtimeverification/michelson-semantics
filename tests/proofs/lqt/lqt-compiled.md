@@ -1,20 +1,20 @@
 ```k
 requires "../../../pretty-syntax.md"
-module LIQUIDITY-BAKING-COMPILED
+module LQT-TOKEN-COMPILED
   imports MICHELSON-PRETTY-SYNTAX
   imports MICHELSON
 ```
 
 # Purpose
 
-This module contains the compiled LQT token code in the `#lqtCode` macro.
+This module contains the compiled LQT token code in the `#lqtTokenCode` macro.
 We have pasted the code verbatim:
 (https://gitlab.com/dexter2tz/dexter2tz/-/blob/d98643881fe14996803997f1283e84ebd2067e35/lqt_fa12.mligo.tz)
 
 # The Liquidity Baking Smart Contract Code
 
 ```k
-  syntax Data ::= "#lqtCode"
+  syntax Data ::= "#lqtTokenCode"
   // -----------------------------------
 ```
 
@@ -37,7 +37,7 @@ Since we work with specific code that contains a finite number of annotations, w
 Each Tezos account has an address. We make a macro which stores the null address to simplify our proof scripts.
 
 ```k
-  rule #lqtCode
+  rule #lqtTokenCode
     => { DUP ;
          CDR ;
          PUSH mutez 0 ;

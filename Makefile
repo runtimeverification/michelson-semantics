@@ -201,6 +201,7 @@ $(dexter_kompiled): $(dexter_files)
 	                   --syntax-module $(dexter_syntax_module)
 
 ### Liquidity Baking
+
 lb_dir           := $(DEFN_DIR)/lb
 lb_main_file     := lb
 lb_main_file_loc := tests/proofs/liquidity-baking/$(lb_main_file)
@@ -217,6 +218,25 @@ $(lb_kompiled): $(lb_files)
 	                   --directory $(lb_dir) -I $(CURDIR)  \
 	                   --main-module $(lb_main_module)     \
 	                   --syntax-module $(lb_syntax_module)
+	                   
+### LQT Token
+
+lqt_dir           := $(DEFN_DIR)/lqt
+lqt_main_file     := lqt
+lqt_main_file_loc := tests/proofs/lqt/$(lqt_main_file)
+lqt_files         := $(prove_files) $(lqt_main_file_loc).md tests/proofs/lqt/lqt-compiled.md
+lqt_main_module   := LQT-TOKEN-VERIFICATION
+lqt_syntax_module := LQT-TOKEN-VERIFICATION-SYNTAX
+lqt_kompiled      := $(lqt_dir)/$(notdir $(lqt_main_file))-kompiled/definition.kore
+
+defn-lqt:  $(lqt_files)
+build-lqt: $(lqt_kompiled)
+
+$(lqt_kompiled): $(lqt_files)
+	$(KOMPILE_HASKELL) $(lqt_main_file_loc).md              \
+	                   --directory $(lqt_dir) -I $(CURDIR)  \
+	                   --main-module $(lqt_main_module)     \
+	                   --syntax-module $(lqt_syntax_module)
 
 ### Symbolic Driver
 
@@ -470,3 +490,24 @@ lb-prove_%:
 
 tests/%.lb_prove: tests/% $(lb_kompiled)
 	$(TEST) prove --backend lb $< $(KPROVE_MODULE) $(KPROVE_OPTIONS)
+
+	
+# LQT token proofs
+
+lqt_spec_modules_failing = \
+
+
+lqt_spec_modules = LQT-TOKEN-SPEC
+
+lqt_spec_file := tests/proofs/lqt/lqt-spec.md
+
+lqt-prove: $(lqt_spec_modules:%=lqt-prove_%)
+lqt-prove-failing: $(lqt_spec_modules_failing:%=lqt-prove_%)
+
+lqt-prove_%:
+	$(MAKE) $(lqt_spec_file).lqt_prove                   \
+  KPROVE_MODULE=LIQUIDITY-BAKING-VERIFICATION        \
+  KPROVE_OPTIONS="$(KPROVE_OPTIONS) --spec-module $*"
+
+tests/%.lqt_prove: tests/% $(lqt_kompiled)
+	$(TEST) prove --backend lqt $< $(KPROVE_MODULE) $(KPROVE_OPTIONS)

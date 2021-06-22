@@ -17,8 +17,9 @@ We begin start our verification project by opening a new module context in which
 
 ```k
 requires "../lemmas.md"
-requires "lb-compiled.md"
-module LQT-VERIFICATION-SYNTAX
+requires "lqt-compiled.md"
+
+module LQT-TOKEN-VERIFICATION-SYNTAX
   imports MICHELSON-INTERNAL-SYNTAX
 ```
 
@@ -29,7 +30,7 @@ endmodule
 ## LQT Token Lemmas
 
 ```k
-module LQT-LEMMAS
+module LQT-TOKEN-LEMMAS
   imports MICHELSON
 ```
 
@@ -43,10 +44,10 @@ endmodule
 ```
 
 ```k
-module LQT-VERIFICATION
-  imports LQT-COMPILED
-  imports LQT-VERIFICATION-SYNTAX
-  imports LQT-LEMMAS
+module LQT-TOKEN-VERIFICATION
+  imports LQT-TOKEN-COMPILED
+  imports LQT-TOKEN-VERIFICATION-SYNTAX
+  imports LQT-TOKEN-LEMMAS
 ```
 
 ## Terminology Prerequisites
@@ -110,28 +111,28 @@ We first define functions which build our parameter and our storage types.
   syntax TypeName ::= #lqtParamType()  [function, functional]
   // --------------------------------------------------------------------
   rule #lqtParamType()
-    => (or  (or (or (pair %approve (address %spender) (nat %value))
-                   (pair %getAllowance
-                        (pair %request (address %owner) (address %spender))
-                        (contract %callback nat)))
-                (or (pair %getBalance (address %owner) (contract %callback nat))
-                    (pair %getTotalSupply (unit %request) (contract %callback nat))))
-            (or (pair %mintOrBurn (int %quantity) (address %target))
-                (pair %transfer (address %from) (pair (address %to) (nat %value)))))
+    => (or (or (or (pair (address) (nat))
+                  (pair 
+                       (pair (address) (address))
+                       (contract nat)))
+               (or (pair (address) (contract nat))
+                   (pair (unit) (contract nat))))
+           (or (pair (int) (address))
+               (pair (address) (pair (address) (nat)))))
 
-  syntax TypeName ::= #LqtStorageType() [function, functional]
+  syntax TypeName ::= #lqtStorageType() [function, functional]
   // ---------------------------------------------------------------------
   rule #lqtStorageType()
-    => (pair (big_map %tokens address nat)
-             (pair (big_map %allowances (pair (address %owner) (address %spender)) nat)
-                   (pair (address %admin)
-                         (nat %total_supply))))
+    => (pair (big_map address nat)
+             (pair (big_map (pair (address) (address)) nat)
+                   (pair (address)
+                         (nat))))
 ```
 
 We also define a functions that serialize and deserialize our abstract parameters and state.
 
 ```k
-  syntax Data ::= #LoadLqtParams(EntryPointParams) [function, functional]
+  syntax Data ::= #loadLqtParams(EntryPointParams) [function, functional]
   // --------------------------------------------------------------------------------
 
   syntax KItem ::= #loadLqtState(EntryPointParams)
@@ -139,11 +140,11 @@ We also define a functions that serialize and deserialize our abstract parameter
   rule <k> #loadLqtState(Params) => . ... </k>
        <stack> .Stack
             => [ pair #lqtParamType() #lqtStorageType()
-                 Pair #LoadLqtParams(Params)
-                 Pair big_map (address) nat TokensMap
-                 Pair big_map (pair (address) (address)) nat AllowanceMap
-                 Pair address AdminAddress
-                      nat     TotalSupply ]
+                 Pair #loadLqtParams(Params)
+                   Pair TokensMap
+                     Pair AllowanceMap
+                       Pair AdminAddress
+                            TotalSupply ]
        </stack>
        <tokens> TokensMap </tokens>
        <allowances> AllowanceMap </allowances>
@@ -152,25 +153,20 @@ We also define a functions that serialize and deserialize our abstract parameter
 
   syntax KItem ::= #storeLqtState()
   // ------------------------------------------
-  rule <k> #storeLqtState() => . ... </k>
-       <stack> [ pair list operation StorageType:TypeName
+  rule <k> #loadLqtState(Params) => . ... </k>
+       <stack>  [ pair list operation _
                  Pair OpList
-                   Pair TokenPool
-                     Pair XTZPool
-                       Pair LQTTotal
-                         Pair TokenContract
-                           LQTAddress ]
+                   Pair TokensMap
+                     Pair AllowanceMap
+                       Pair AdminAddress
+                            TotalSupply ]
             => .Stack
        </stack>
-       <tokenPool>     _ => TokenPool     </tokenPool>
-       <xtzPool>       _ => XTZPool       </xtzPool>
-       <lqtTotal>      _ => LQTTotal      </lqtTotal>
-       <tokenAddress>  _ => TokenContract </tokenAddress>
-       <operations>    _ => OpList        </operations>
-       <lqtAddress>    _ => LQTAddress    </lqtAddress>
-
-    requires StorageType ==K #LqtStorageType()
-
+       <tokens> _ => TokensMap </tokens>
+       <allowances> _ => AllowanceMap </allowances>
+       <adminAddress> _ => AdminAddress </adminAddress>
+       <totalSupply> _ => TotalSupply </totalSupply>
+       <operations> _ => OpList </operations>
 ```
 
 If the contract execution fails, storage is not updated.
@@ -183,10 +179,10 @@ If the contract execution fails, storage is not updated.
 
 ```k
   syntax Bool ::= #EntrypointExists(Map, Address, FieldAnnotation, Type)
-// --------------------------------------------------------------------
-  rule #EntrypointExists(KnownAddresses, Addr, _FieldAnnot, EntrypointType)
-    => Addr in_keys(KnownAddresses) andBool
-       KnownAddresses[Addr] ==K #Contract(Addr, EntrypointType)
+// ---------------------------------------------------------------------
+  rule #EntrypointExists(KnownAddresses, Addr, FieldAnnot, EntrypointType)
+    => Addr . FieldAnnot  in_keys(KnownAddresses) andBool
+       KnownAddresses[Addr . FieldAnnot] ==K #Name(EntrypointType)
     [macro]
 ```
 
@@ -205,21 +201,10 @@ If all steps are completed, only the LQT specific storage is updated.
  // ------------------------------------------
   rule <k> #runProof(Params)
         => #loadLqtState(Params)
-        ~> #liquidityBakingCode
+        ~> #lqtTokenCode
         ~> #storeLqtState()
         ...
        </k>
-       <myamount> #Mutez(Amount) </myamount>
-       <xtzPool> #Mutez(XtzPool) </xtzPool>
-       <tokenPool> TokenPool </tokenPool>
-       <operations> OpList </operations>
-       <returncode> ReturnCode </returncode>
-    ensures wellTypedParams(Params)
-    andBool #IsLegalMutezValue(Amount)
-    andBool #IsLegalMutezValue(XtzPool)
-    andBool TokenPool >=Int 0
-    andBool OpList ==K .InternalList
-    andBool ReturnCode ==Int 111
 ```
 
 ## Epilogue
