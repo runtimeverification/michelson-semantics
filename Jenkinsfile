@@ -14,8 +14,7 @@ pipeline {
     }
     stage('Build') {
       parallel {
-        stage('K')      { steps { sh 'make build-k      -j8 RELEASE=true' } }
-        stage('Dexter') { steps { sh 'make build-dexter -j8 RELEASE=true' } }
+        stage('K')      { steps { sh 'make build-k -j8 RELEASE=true' } }
       }
     }
     stage('Test') {
@@ -28,8 +27,8 @@ pipeline {
     }
     stage('Integration Proofs') { 
       options { timeout(time: 180, unit: 'MINUTES') }
-      parallel {
-        stage('Dexter Proofs') { steps { sh 'make dexter-prove  -j4' } }
+      stages {
+        stage('Audit Proofs') { steps { sh 'make dexter-prove lb-prove lqt-prove -j4' } }
       }
     }
     stage('Cross Test') {

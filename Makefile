@@ -143,7 +143,7 @@ defn-k:      defn-llvm defn-prove defn-symbolic
 defn-compat: defn-contract-expander defn-extractor defn-input-creator defn-output-compare
 
 build:        build-k build-compat
-build-k:      build-llvm build-prove build-symbolic
+build-k:      build-llvm build-prove build-symbolic build-dexter build-lb build-lqt
 build-compat: build-contract-expander build-extractor build-input-creator build-output-compare
 
 # LLVM
@@ -496,7 +496,8 @@ tests/%.lb_prove: tests/% $(lb_kompiled)
 
 lqt_spec_modules_failing = \
 
-lqt_spec_modules = LQT-TOKEN-SPEC
+lqt_spec_modules = LQT-TOKEN-SPEC \
+                   LQT-TOKEN-GETTOTALSUPPLY-SPEC
 
 lqt_spec_file := tests/proofs/lqt/lqt-spec.md
 
