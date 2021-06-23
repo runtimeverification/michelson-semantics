@@ -114,9 +114,9 @@ as well as operations to serialize and deserialize the parameter.
 ### GetBalance
 
 ```k
-  syntax EntryPointParams ::= GetBalance(Address, Entrypoint)
-  rule wellTypedParams(GetBalance(_Address, _Callback)) => true [simplification, anywhere]
-  rule #loadLqtParams(GetBalance(Address, Callback)) => Left Right Left Pair Address #Contract(Callback, nat)
+  syntax EntryPointParams ::= GetBalanceParams(Address, Entrypoint)
+  rule wellTypedParams(GetBalanceParams(_Address, _Callback)) => true [simplification, anywhere]
+  rule #loadLqtParams(GetBalanceParams(Address, Callback)) => Left Right Left Pair Address #Contract(Callback, nat)
 ```
 
 ## State Abstraction
