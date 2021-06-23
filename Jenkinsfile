@@ -28,7 +28,7 @@ pipeline {
     stage('Integration Proofs') { 
       options { timeout(time: 180, unit: 'MINUTES') }
       stages {
-        stage('Audit Proofs') { steps { sh 'make dexter-prove lb-prove lqt-prove -j4' } }
+        stage('Audit Proofs') { steps { sh 'make dexter-prove lqt-prove -j4' } }
       }
     }
     stage('Cross Test') {
