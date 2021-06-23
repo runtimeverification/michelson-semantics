@@ -1302,6 +1302,15 @@ typing (shared operations use a generic `MapTypeName`).
        <stack> [KT K] ; [option VT None] ; [MT:MapTypeName KT VT M:Map] ; SS => [MT KT VT M[K <- undef]] ; SS </stack>
 ```
 
+We need some simplications for dealing with map lookups:
+
+```symbolic
+  rule _:Map [ K1 <- V1    ][K2] => V1      requires K1 ==K  K2 [simplification]
+  rule _:Map [ K1 <- undef ][K2] => None    requires K1 ==K  K2 [simplification]
+  rule M:Map [ K1 <- _     ][K2] => M[K2]   requires K1 =/=K K2 [simplification]
+  rule M:Map [ K1 <- undef ][K2] => M[K2]   requires K1 =/=K K2 [simplification]
+```
+
 ### Map Specific Operations
 
 ```k
