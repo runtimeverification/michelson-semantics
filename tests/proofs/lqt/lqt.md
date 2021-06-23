@@ -93,20 +93,30 @@ configuration <dexterTop>
 ## Entrypoint Summaries
 
 We define our list of entrypoints below.
-Each entrypoint is given a unique abstract parameter type that we use to simplify our proof structure.
+Each entrypoint is given a unique abstract parameter type that we use to simplify our proof structure,
+as well as operations to serialize and deserialize the parameter.
 
 ```k
   syntax EntryPointParams
 
   syntax Bool ::= wellTypedParams(EntryPointParams) [function, functional]
-  // ---------------------------------------------------------------------
+  syntax Data ::= #loadLqtParams(EntryPointParams)  [function, functional]  
 ```
 
 ### GetTotalSupply
 
 ```k
   syntax EntryPointParams ::= GetTotalSupplyParams(Entrypoint)
-  rule wellTypedParams(GetTotalSupplyParams(_Entrypoint)) => true [simplification, anywhere]
+  rule wellTypedParams(GetTotalSupplyParams(_)) => true [simplification, anywhere]
+  rule #loadLqtParams(GetTotalSupplyParams(Callback)) => Left Right Right Pair Unit #Contract(Callback, nat)
+```
+
+### GetBalance
+
+```k
+  syntax EntryPointParams ::= GetBalance(Address, Entrypoint)
+  rule wellTypedParams(GetBalance(_Address, _Callback)) => true [simplification, anywhere]
+  rule #loadLqtParams(GetBalance(Address, Callback)) => Left Right Left Pair Address #Contract(Callback, nat)
 ```
 
 ## State Abstraction
@@ -119,7 +129,7 @@ We first define functions which build our parameter and our storage types.
   // --------------------------------------------------------------------
   rule #lqtParamType()
     => (or (or (or (pair (address) (nat))
-                  (pair 
+                  (pair
                        (pair (address) (address))
                        (contract nat)))
                (or (pair (address) (contract nat))
@@ -139,10 +149,6 @@ We first define functions which build our parameter and our storage types.
 We also define a functions that serialize and deserialize our abstract parameters and state.
 
 ```k
-  syntax Data ::= #loadLqtParams(EntryPointParams) [function, functional]
-  // --------------------------------------------------------------------------------
-  rule #loadLqtParams(GetTotalSupplyParams(EntryPointParams)) => Left Right Right Pair Unit #Contract(EntryPointParams, nat)
-
   syntax KItem ::= #loadLqtState(EntryPointParams)
   // ---------------------------------------------------------
   rule <k> #loadLqtState(Params) => . ... </k>

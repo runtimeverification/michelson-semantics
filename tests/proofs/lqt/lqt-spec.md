@@ -21,16 +21,42 @@ endmodule
 module LQT-TOKEN-GETTOTALSUPPLY-SPEC
   imports LQT-TOKEN-VERIFICATION
 
-  claim <k> #runProof(GetTotalSupplyParams(Entrypoint)) => .K ... </k>
+  claim <k> #runProof(GetTotalSupplyParams(Callback)) => .K ... </k>
         <stack> .Stack </stack>
-        <tokens> _ </tokens>
-        <allowances> _ </allowances>
-        <adminAddress> _ </adminAddress>
         <totalSupply> TotalSupply </totalSupply>
         <nonce> #Nonce(Nonce => Nonce +Int 1) </nonce>
-        <operations> _ => [ Transfer_tokens TotalSupply #Mutez(0) Entrypoint (Nonce) ] ;; .InternalList </operations>
+        <operations> _ => [ Transfer_tokens TotalSupply #Mutez(0) Callback (Nonce) ] ;; .InternalList </operations>
         <myamount> #Mutez(Amount) </myamount>
     requires Amount ==Int 0
+
+  claim <k> #runProof(GetTotalSupplyParams(_)) => Aborted(?_, ?_, ?_, ?_) ... </k>
+        <stack> .Stack => ?_:FailedStack </stack>
+        <myamount> #Mutez(Amount) </myamount>
+    requires notBool(Amount ==Int 0)
+endmodule
+```
+
+```k
+module LQT-TOKEN-GETBALANCE-SPEC
+  imports LQT-TOKEN-VERIFICATION
+
+  claim <k> #runProof(GetBalance(Address, Callback)) => .K ... </k>
+        <stack> .Stack </stack>
+        <tokens> Tokens </tokens>
+        <nonce> #Nonce(Nonce => Nonce +Int 1) </nonce>
+        <operations> _ => [ Transfer_tokens {Tokens[Address]}:>Int #Mutez(0) Callback (Nonce) ] ;; .InternalList </operations>
+        <myamount> #Mutez(Amount) </myamount>
+    requires Amount ==Int 0
+     andBool Address in_keys(Tokens)
+
+  claim <k> #runProof(GetBalance(Address, Callback)) => .K ... </k>
+        <stack> .Stack </stack>
+        <tokens> Tokens </tokens>
+        <nonce> #Nonce(Nonce => Nonce +Int 1) </nonce>
+        <operations> _ => [ Transfer_tokens 0 #Mutez(0) Callback (Nonce) ] ;; .InternalList </operations>
+        <myamount> #Mutez(Amount) </myamount>
+    requires Amount ==Int 0
+     andBool notBool Address in_keys(Tokens)
 
   claim <k> #runProof(GetTotalSupplyParams(_)) => Aborted(?_, ?_, ?_, ?_) ... </k>
         <stack> .Stack => ?_:FailedStack </stack>
