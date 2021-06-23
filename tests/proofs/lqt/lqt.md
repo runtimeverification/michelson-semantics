@@ -102,6 +102,13 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
   // ---------------------------------------------------------------------
 ```
 
+### GetTotalSupply
+
+```k
+  syntax EntryPointParams ::= GetTotalSupplyParams(Entrypoint)
+  rule wellTypedParams(GetTotalSupplyParams(_Entrypoint)) => true [simplification, anywhere]
+```
+
 ## State Abstraction
 
 We use a few helper routines to convert between our abstract and concrete proof state.
@@ -134,6 +141,7 @@ We also define a functions that serialize and deserialize our abstract parameter
 ```k
   syntax Data ::= #loadLqtParams(EntryPointParams) [function, functional]
   // --------------------------------------------------------------------------------
+  rule #loadLqtParams(GetTotalSupplyParams(EntryPointParams)) => Left Right Right Pair Unit #Contract(EntryPointParams, nat)
 
   syntax KItem ::= #loadLqtState(EntryPointParams)
   // ---------------------------------------------------------
@@ -153,7 +161,7 @@ We also define a functions that serialize and deserialize our abstract parameter
 
   syntax KItem ::= #storeLqtState()
   // ------------------------------------------
-  rule <k> #loadLqtState(Params) => . ... </k>
+  rule <k> #storeLqtState() => . ... </k>
        <stack>  [ pair list operation _
                  Pair OpList
                    Pair TokensMap
