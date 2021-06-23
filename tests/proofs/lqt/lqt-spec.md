@@ -65,3 +65,31 @@ module LQT-TOKEN-GETBALANCE-SPEC
 endmodule
 ```
 
+```k
+module LQT-TOKEN-GETALLOWANCE-SPEC
+  imports LQT-TOKEN-VERIFICATION
+
+  claim <k> #runProof(GetAllowanceParams(Owner, Spender, Callback)) => .K ... </k>
+        <stack> .Stack </stack>
+        <allowances> Allowances </allowances>
+        <nonce> #Nonce(Nonce => Nonce +Int 1) </nonce>
+        <operations> _ => [ Transfer_tokens {Allowances[Pair Owner Spender]}:>Int #Mutez(0) Callback (Nonce) ] ;; .InternalList </operations>
+        <myamount> #Mutez(Amount) </myamount>
+    requires Amount ==Int 0
+     andBool (Pair Owner Spender) in_keys(Allowances)
+
+  claim <k> #runProof(GetAllowanceParams(Owner, Spender, Callback)) => .K ... </k>
+        <stack> .Stack </stack>
+        <allowances> Allowances </allowances>
+        <nonce> #Nonce(Nonce => Nonce +Int 1) </nonce>
+        <operations> _ => [ Transfer_tokens 0 #Mutez(0) Callback (Nonce) ] ;; .InternalList </operations>
+        <myamount> #Mutez(Amount) </myamount>
+    requires Amount ==Int 0
+     andBool notBool (Pair Owner Spender) in_keys(Allowances)
+
+  claim <k> #runProof(GetAllowanceParams(_, _, _)) => Aborted(?_, ?_, ?_, ?_) ... </k>
+        <stack> .Stack => ?_:FailedStack </stack>
+        <myamount> #Mutez(Amount) </myamount>
+    requires notBool(Amount ==Int 0)
+endmodule
+```

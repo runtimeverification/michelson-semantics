@@ -499,6 +499,7 @@ lqt_spec_modules_failing = \
 lqt_spec_modules = LQT-TOKEN-SPEC                                   \
                    LQT-TOKEN-GETBALANCE-SPEC                        \
                    LQT-TOKEN-GETTOTALSUPPLY-SPEC                    \
+                   LQT-TOKEN-GETALLOWANCE-SPEC                      \
 
 lqt_spec_file := tests/proofs/lqt/lqt-spec.md
 

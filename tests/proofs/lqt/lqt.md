@@ -100,13 +100,13 @@ as well as operations to serialize and deserialize the parameter.
   syntax EntryPointParams
 
   syntax Bool ::= wellTypedParams(EntryPointParams) [function, functional]
-  syntax Data ::= #loadLqtParams(EntryPointParams)  [function, functional]  
+  syntax Data ::= #loadLqtParams(EntryPointParams)  [function, functional]
 ```
 
 ### GetTotalSupply
 
 ```k
-  syntax EntryPointParams ::= GetTotalSupplyParams(Entrypoint)
+  syntax EntryPointParams ::= GetTotalSupplyParams(callback: Entrypoint)
   rule wellTypedParams(GetTotalSupplyParams(_)) => true [simplification, anywhere]
   rule #loadLqtParams(GetTotalSupplyParams(Callback)) => Left Right Right Pair Unit #Contract(Callback, nat)
 ```
@@ -114,9 +114,17 @@ as well as operations to serialize and deserialize the parameter.
 ### GetBalance
 
 ```k
-  syntax EntryPointParams ::= GetBalanceParams(Address, Entrypoint)
+  syntax EntryPointParams ::= GetBalanceParams(owner: Address, callback: Entrypoint)
   rule wellTypedParams(GetBalanceParams(_Address, _Callback)) => true [simplification, anywhere]
   rule #loadLqtParams(GetBalanceParams(Address, Callback)) => Left Right Left Pair Address #Contract(Callback, nat)
+```
+
+### GetAllowence
+
+```k
+  syntax EntryPointParams ::= GetAllowanceParams(owner: Address, spender: Address, callback: Entrypoint)
+  rule wellTypedParams(GetAllowanceParams(_Owner, _Spender, _Callback)) => true [simplification, anywhere]
+  rule #loadLqtParams(GetAllowanceParams(Owner, Spender, Callback)) => Left Left Right Pair (Pair Owner Spender) #Contract(Callback, nat)
 ```
 
 ## State Abstraction
