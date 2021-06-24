@@ -124,7 +124,7 @@ module LQT-TOKEN-MINTORBURN-SPEC
      andBool Quantity >=Int 0
      andBool notBool Address in_keys(Tokens)
 
-   claim <k> #runProof(MintOrBurnParams(Quantity, Address)) => Aborted(?_, ?_, ?_, ?_) </k>
+   claim <k> #runProof(MintOrBurnParams(Quantity, Address)) => Aborted(?_, ?_, ?_, ?_) ... </k>
         <stack> .Stack => ?_:FailedStack </stack>
         <tokens> Tokens </tokens>
         <myamount> #Mutez(Amount) </myamount>
@@ -136,7 +136,7 @@ module LQT-TOKEN-MINTORBURN-SPEC
               andBool {Tokens[Address]}:>Int +Int Quantity >=Int 0
                     )
 
-   claim <k> #runProof(MintOrBurnParams(Quantity, Address)) => Aborted(?_, ?_, ?_, ?_) </k>
+   claim <k> #runProof(MintOrBurnParams(Quantity, Address)) => Aborted(?_, ?_, ?_, ?_) ... </k>
         <stack> .Stack => ?_:FailedStack </stack>
         <tokens> Tokens </tokens>
         <myamount> #Mutez(Amount) </myamount>
