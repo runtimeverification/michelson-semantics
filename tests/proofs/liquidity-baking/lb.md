@@ -443,6 +443,13 @@ and so we can't have simplification rules for both.
   syntax Int ::= #XtzBurn(Int)
  // --------------------------
   rule #XtzBurn(Amount) => Amount:Int -Int #mulDiv ( Amount:Int , 999 , 1000 ) [macro]
+
+  syntax Bool ::= #LocalEntrypointExists(Map, FieldAnnotation, Type)
+ // ----------------------------------------------------------------
+  rule #LocalEntrypointExists(LocalEntrypoints, FieldAnnot, EntrypointType)
+    => FieldAnnot in_keys(LocalEntrypoints) andBool
+       LocalEntrypoints[FieldAnnot] ==K #Name(EntrypointType)
+    [macro]
 ```
 
 ### Avoiding Interpreting Functions
