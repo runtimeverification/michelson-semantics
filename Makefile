@@ -498,6 +498,7 @@ tests/%.lb_prove: tests/% $(lb_kompiled)
 lqt_spec_modules_failing = \
 
 lqt_spec_modules = LQT-TOKEN-SPEC                                   \
+                   LQT-TOKEN-APPROVE-SPEC                           \
                    LQT-TOKEN-GETALLOWANCE-SPEC                      \
                    LQT-TOKEN-GETBALANCE-SPEC                        \
                    LQT-TOKEN-GETTOTALSUPPLY-SPEC                    \

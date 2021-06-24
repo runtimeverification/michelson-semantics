@@ -135,6 +135,14 @@ as well as operations to serialize and deserialize the parameter.
   rule #loadLqtParams(MintOrBurnParams(Quantity, Target)) => Right Left Pair Quantity Target
 ```
 
+### Approve
+
+```k
+  syntax EntryPointParams ::= ApproveParams(spender: Address, value: Int)
+  rule wellTypedParams(ApproveParams(_Spender, Value)) => Value >=Int 0 [simplification, anywhere]
+  rule #loadLqtParams(ApproveParams(Spender, Value)) => Left Left Left Pair Spender Value
+```
+
 ## State Abstraction
 
 We use a few helper routines to convert between our abstract and concrete proof state.
@@ -223,6 +231,26 @@ If the contract execution fails, storage is not updated.
        #then Tokens[ Address <- undef ]
        #else Tokens[ Address <- NewValue ]
        #fi [simplification, anywhere]
+```
+
+```k
+
+  syntax Pair ::= #allowanceKey(owner: Address, spender: Address) [function, functional]
+  rule #allowanceKey(Owner, Spender) => (Pair Owner Spender) [simplification, anywhere]
+
+  syntax Map ::= #updateAllowances(Map, owner: Address, spender: Address, newValue: Int) [function, functional]
+  rule #updateAllowances(Allowances, Owner, Spender, NewValue)
+    => #if NewValue ==K 0
+       #then Allowances[ #allowanceKey(Owner, Spender) <- undef ]
+       #else Allowances[ #allowanceKey(Owner, Spender) <- NewValue ]
+       #fi [simplification, anywhere]
+
+  syntax Int ::= #allowanceFor(Map, owner: Address, spender: Address) [function, functional]
+  rule #allowanceFor(Allowances, Owner, Spender)
+    => #if #allowanceKey(Owner, Spender) in_keys(Allowances)
+       #then {Allowances[ #allowanceKey(Owner, Spender) ]}:>Int
+       #else 0
+       #fi
 ```
 
 ## Putting It All Together

@@ -149,3 +149,36 @@ module LQT-TOKEN-MINTORBURN-SPEC
                     )
 endmodule
 ```
+
+```k
+module LQT-TOKEN-APPROVE-SPEC
+  imports LQT-TOKEN-VERIFICATION
+```
+
+```k
+  claim <k> #runProof(ApproveParams(Spender, Value)) => .K ... </k>
+        <stack> .Stack </stack>
+        <allowances> Allowances => #updateAllowances(Allowances, Sender, Spender, Value) </allowances>
+        <myamount> #Mutez(Amount) </myamount>
+        <senderaddr> Sender </senderaddr>
+        <operations> _ => .InternalList </operations>
+    requires Amount ==Int 0
+     andBool #allowanceFor(Allowances, Sender, Spender) >=Int 0
+```
+
+```k
+  claim <k> #runProof(ApproveParams(Spender, Value)) => .K ... </k>
+        <stack> .Stack </stack>
+        <allowances> Allowances => #updateAllowances(Allowances, Sender, Spender, Value) </allowances>
+        <myamount> #Mutez(Amount) </myamount>
+        <senderaddr> Sender </senderaddr>
+        <operations> _ => .InternalList </operations>
+    requires notBool( Amount ==Int 0
+              andBool #allowanceFor(Allowances, Sender, Spender) >=Int 0
+                    )
+```
+
+```k
+endmodule
+```
+
