@@ -127,6 +127,14 @@ as well as operations to serialize and deserialize the parameter.
   rule #loadLqtParams(GetAllowanceParams(Owner, Spender, Callback)) => Left Left Right Pair (Pair Owner Spender) #Contract(Callback, nat)
 ```
 
+### MintOrBurn
+
+```k
+  syntax EntryPointParams ::= MintOrBurnParams(quantity: Int, target: Address)
+  rule wellTypedParams(MintOrBurnParams(_Quantity, _Target)) => true [simplification, anywhere]
+  rule #loadLqtParams(MintOrBurnParams(Quantity, Target)) => Right Left Pair Quantity Target
+```
+
 ## State Abstraction
 
 We use a few helper routines to convert between our abstract and concrete proof state.
@@ -206,6 +214,15 @@ If the contract execution fails, storage is not updated.
     => Addr . FieldAnnot  in_keys(KnownAddresses) andBool
        KnownAddresses[Addr . FieldAnnot] ==K #Name(EntrypointType)
     [macro]
+```
+
+```k
+  syntax Map ::= #updateTokens(Map, Address, newValue: Int) [function, functional]
+  rule #updateTokens(Tokens, Address, NewValue)
+    => #if NewValue ==K 0
+       #then Tokens[ Address <- undef ]
+       #else Tokens[ Address <- NewValue ]
+       #fi [simplification, anywhere]
 ```
 
 ## Putting It All Together
