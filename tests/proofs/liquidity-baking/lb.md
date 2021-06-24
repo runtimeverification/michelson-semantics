@@ -412,22 +412,19 @@ If the contract execution fails, storage is not updated.
   rule #ceildivAux(X, Y) => X /Int Y          requires Y  =/=Int 0 andBool         X %Int Y ==Int 0
   rule #ceildivAux(X, Y) => X /Int Y +Int 1   requires Y  =/=Int 0 andBool notBool X %Int Y ==Int 0
 
-  syntax Int ::= #XtzBought   (Int, Int, Int) [function, functional, smtlib(xtzbought), no-evaluators]
- // --------------------------------------------------------------------------------------------------
-  rule (TokensSold *Int 999 *Int XtzPool) /Int (TokenPool *Int 1000 +Int (TokensSold *Int 999))
-    => #XtzBought(XtzPool, TokenPool, TokensSold)
+  syntax Int ::= #CurrencyBought(Int, Int, Int) [function, functional, smtlib(xtzbought), no-evaluators]
+ // ----------------------------------------------------------------------------------------------------
+  rule (ToSellAmt *Int 999 *Int ToBuyCurrencyTotal) /Int (ToSellCurrencyTotal *Int 1000 +Int (ToSellAmt *Int 999))
+    => #CurrencyBought(ToBuyCurrencyTotal, ToSellCurrencyTotal, ToSellAmt)
     [simplification]
-```
 
-We'd like to additionally define `#TokensBought`, however this has the same structure as `#XtzBought`
-and so we can't have simplification rules for both.
+  syntax Int ::= #XtzNetBurn(Int)
+ // -----------------------------
+  rule #XtzNetBurn(XtzAmount) => #mulDiv( XtzAmount , 999 , 1000 ) [macro]
 
-```k
- // syntax Int ::= #TokensBought(Int, Int, Int) [function, functional, smtlib(tokensbought), no-evaluators]
- // -------------------------------------------------------------------------------------------------------
- // rule (Amount *Int 999 *Int TokenPool) /Int (XtzPool *Int 1000 +Int (Amount *Int 999))
- //   => #TokensBought(XtzPool, TokenPool, XtzSold)
- //   [simplification]
+  syntax Int ::= #XtzBurnAmount(Int)
+ // --------------------------------
+  rule #XtzBurnAmount(XtzAmount) => XtzAmount -Int #XtzNetBurn ( XtzAmount ) [macro]
 ```
 
 ```k
@@ -437,12 +434,6 @@ and so we can't have simplification rules for both.
     => Addr . FieldAnnot  in_keys(KnownAddresses) andBool
        KnownAddresses[Addr . FieldAnnot] ==K #Name(EntrypointType)
     [macro]
-```
-
-```k
-  syntax Int ::= #XtzBurn(Int)
- // --------------------------
-  rule #XtzBurn(Amount) => Amount:Int -Int #mulDiv ( Amount:Int , 999 , 1000 ) [macro]
 
   syntax Bool ::= #LocalEntrypointExists(Map, FieldAnnotation, Type)
  // ----------------------------------------------------------------
