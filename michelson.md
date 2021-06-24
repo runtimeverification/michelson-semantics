@@ -1276,34 +1276,15 @@ For this reason, many map operations share an identical representation upto
 typing (shared operations use a generic `MapTypeName`).
 
 ```k
+  rule <k> GET _A => #AssumeHasType(M[K], VT) ...  </k>
+       <stack> [KT K] ; [_:MapTypeName KT VT M:Map] ; SS => [option VT Some {M[K]}:>Data] ; SS </stack>
+    requires K in_keys(M)
+
   rule <k> GET _A => . ...  </k>
-       <stack> [KT K] ; [_:MapTypeName KT VT M:Map] ; SS => [option VT #lookup(M, K, VT)] ; SS </stack>
-    requires isValue(KT, K)
-```
+       <stack> [KT K] ; [_:MapTypeName KT VT M:Map] ; SS => [option VT None]              ; SS </stack>
+    requires notBool K in_keys(M)
 
-```k
-  syntax OptionData ::= #lookup(Map, Data, TypeName) [function, smtlib(lookup)]
-  // --------------------------------------------------------------------------
-  rule #lookup(M, K, VT) => Some {M[K]}:>Data requires K in_keys(M) andBool         isValue(VT,{M[K]}:>Data)
-  rule #lookup(M, K, _ ) => None              requires notBool K in_keys(M)
-```
-
-This rule is not supported by the LLVM backend, so we only include it in Haskell builds.
-
-```symbolic
-  rule #lookup(M, K, VT) => #Bottom           requires K in_keys(M) andBool notBool isValue(VT,{M[K]}:>Data)
-```
-
-```symbolic
-  rule #lookup(_ [ K1 <- V1    ], K2, VT) => Some {V1}:>Data    requires K1 ==K  K2 andBool         isValue(VT,{V1}:>Data) [simplification]
-  rule #lookup(_ [ K1 <- V1    ], K2, VT) => #Bottom            requires K1 ==K  K2 andBool notBool isValue(VT,{V1}:>Data) [simplification]
-  rule #lookup(_ [ K1 <- undef ], K2, _ ) => None               requires K1 ==K  K2                                        [simplification]
-  rule #lookup(M [ K1 <- _     ], K2, VT) => #lookup(M, K2, VT) requires K1 =/=K K2                                        [simplification]
-  rule #lookup(M [ K1 <- undef ], K2, VT) => #lookup(M, K2, VT) requires K1 =/=K K2                                        [simplification]
-```
-
-```k
-  rule <k> MEM _A => #Assume(isValue(VT, {M[K]}:>Data)) ... </k>
+  rule <k> MEM _A => #AssumeHasType(M[K], VT) ... </k>
        <stack> [KT K] ; [_:MapTypeName KT VT M:Map] ; SS => [bool true] ; SS </stack>
     requires isValue(KT, K)
      andBool K in_keys(M)
@@ -1319,6 +1300,17 @@ This rule is not supported by the LLVM backend, so we only include it in Haskell
 
   rule <k> UPDATE _A => .  ... </k>
        <stack> [KT K] ; [option VT None] ; [MT:MapTypeName KT VT M:Map] ; SS => [MT KT VT M[K <- undef]] ; SS </stack>
+```
+
+We need some simplications for dealing with map lookups:
+
+```symbolic
+  rule _:Map [ K1 <- V1    ][K2] => V1      requires K1 ==K  K2 [simplification]
+  rule _:Map [ K1 <- undef ][K2] => None    requires K1 ==K  K2 [simplification]
+  rule M:Map [ K1 <- _     ][K2] => M[K2]   requires K1 =/=K K2 [simplification]
+  rule M:Map [ K1 <- undef ][K2] => M[K2]   requires K1 =/=K K2 [simplification]
+
+  rule K2 in_keys(M:Map[K1 <- _]) => K1 ==K K2 orBool K2 in_keys(M) [simplification]
 ```
 
 ### Map Specific Operations
