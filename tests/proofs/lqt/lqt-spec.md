@@ -100,7 +100,7 @@ module LQT-TOKEN-MINTORBURN-SPEC
 
   claim <k> #runProof(MintOrBurnParams(Quantity, Address)) => .K ... </k>
         <stack> .Stack </stack>
-        <tokens> Tokens => #updateTokens(Tokens, Address, {Tokens[Address]}:>Int +Int Quantity) </tokens>
+        <tokens> Tokens => #incrementTokens(Tokens, Address, Quantity) </tokens>
         <myamount> #Mutez(Amount) </myamount>
         <adminAddress> Admin </adminAddress>
         <senderaddr> Sender </senderaddr>
@@ -108,21 +108,8 @@ module LQT-TOKEN-MINTORBURN-SPEC
         <operations> _ => .InternalList </operations>
     requires Amount ==Int 0
      andBool Sender ==K Admin
-     andBool {Tokens[Address]}:>Int +Int Quantity >=Int 0
+     andBool #tokensFor(Tokens, Address) +Int Quantity >=Int 0
      andBool Address in_keys(Tokens)
-
-  claim <k> #runProof(MintOrBurnParams(Quantity, Address)) => .K ... </k>
-        <stack> .Stack </stack>
-        <tokens> Tokens => #updateTokens(Tokens, Address, Quantity) </tokens>
-        <myamount> #Mutez(Amount) </myamount>
-        <adminAddress> Admin </adminAddress>
-        <senderaddr> Sender </senderaddr>
-        <totalSupply> TotalSupply => absInt(TotalSupply +Int Quantity) </totalSupply>
-        <operations> _ => .InternalList </operations>
-    requires Amount ==Int 0
-     andBool Sender ==K Admin
-     andBool Quantity >=Int 0
-     andBool notBool Address in_keys(Tokens)
 
    claim <k> #runProof(MintOrBurnParams(Quantity, Address)) => Aborted(?_, ?_, ?_, ?_) ... </k>
         <stack> .Stack => ?_:FailedStack </stack>
@@ -133,19 +120,7 @@ module LQT-TOKEN-MINTORBURN-SPEC
     requires Address in_keys(Tokens)
      andBool notBool( Amount ==Int 0
               andBool Sender ==K Admin
-              andBool {Tokens[Address]}:>Int +Int Quantity >=Int 0
-                    )
-
-   claim <k> #runProof(MintOrBurnParams(Quantity, Address)) => Aborted(?_, ?_, ?_, ?_) ... </k>
-        <stack> .Stack => ?_:FailedStack </stack>
-        <tokens> Tokens </tokens>
-        <myamount> #Mutez(Amount) </myamount>
-        <adminAddress> Admin </adminAddress>
-        <senderaddr> Sender </senderaddr>
-    requires notBool Address in_keys(Tokens)
-     andBool notBool( Amount ==Int 0
-              andBool Sender ==K Admin
-              andBool Quantity >=Int 0
+              andBool #tokensFor(Tokens, Address) +Int Quantity >=Int 0
                     )
 endmodule
 ```

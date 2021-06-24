@@ -225,16 +225,22 @@ If the contract execution fails, storage is not updated.
 ```
 
 ```k
-  syntax Map ::= #updateTokens(Map, Address, newValue: Int) [function, functional]
-  rule #updateTokens(Tokens, Address, NewValue)
-    => #if NewValue ==K 0
+  syntax Map ::= #incrementTokens(Map, Address, quantity: Int) [function, functional]
+  rule #incrementTokens(Tokens, Address, Quantity)
+    => #if #tokensFor(Tokens, Address) +Int Quantity ==Int 0
        #then Tokens[ Address <- undef ]
-       #else Tokens[ Address <- NewValue ]
+       #else Tokens[ Address <- #tokensFor(Tokens, Address) +Int Quantity ]
        #fi [simplification, anywhere]
+
+  syntax Int ::= #tokensFor(Map, owner: Address) [function, functional]
+  rule #tokensFor(Tokens, Owner)
+    => #if Owner in_keys(Tokens)
+       #then {Tokens[Owner]}:>Int
+       #else 0
+       #fi
 ```
 
 ```k
-
   syntax Pair ::= #allowanceKey(owner: Address, spender: Address) [function, functional]
   rule #allowanceKey(Owner, Spender) => (Pair Owner Spender) [simplification, anywhere]
 
