@@ -673,7 +673,7 @@ endmodule
 ### FA1.2
 
 ```k
-module DEXTER-TOKENTOXTZ-FA12-POSITIVE-SPEC // FIXME
+module DEXTER-TOKENTOXTZ-FA12-POSITIVE-SPEC
   imports DEXTER-VERIFICATION
 ```
 
@@ -825,7 +825,7 @@ endmodule
 ### FA2
 
 ```k
-module DEXTER-TOKENTOXTZ-FA2-POSITIVE-SPEC // FIXME
+module DEXTER-TOKENTOXTZ-FA2-POSITIVE-SPEC
   imports DEXTER-VERIFICATION
 ```
 
@@ -895,7 +895,7 @@ endmodule
 ```
 
 ```k
-module DEXTER-TOKENTOXTZ-FA2-NEGATIVE-2-SPEC // FIXME
+module DEXTER-TOKENTOXTZ-FA2-NEGATIVE-2-SPEC
   imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) =>  Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_:FailedStack </stack>
