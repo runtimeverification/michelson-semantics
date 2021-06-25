@@ -585,6 +585,11 @@ If the contract execution fails, storage is not updated.
   rule #TokenBalanceEntrypoint(TokenAddr, false) => TokenAddr . %getBalance
   rule #TokenBalanceEntrypoint(TokenAddr, true ) => TokenAddr . %balance_of
 
+  syntax Type ::= #TokenBalanceEntrypointType(Bool) [function, functional]
+ // ----------------------------------------------------------------------
+  rule #TokenBalanceEntrypointType(false) => #Type(pair address (contract nat))
+  rule #TokenBalanceEntrypointType(true)  => #Type(pair (list (pair address nat)) (contract (list (pair (pair (address) nat) nat))))
+
   syntax Int ::= #ceildiv   (Int, Int) [function]
                | #ceildivAux(Int, Int) [function, functional]
  // ---------------------------------------------------------

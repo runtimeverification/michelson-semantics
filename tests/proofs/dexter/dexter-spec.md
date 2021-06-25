@@ -456,7 +456,7 @@ The contract queries its underlying token contract for its own token balance if 
         <operations> _ => [ Transfer_tokens Pair #UpdateTokenPoolTransferFrom(IsFA2, SelfAddress, TokenId) #Contract(SelfAddress . %updateTokenPoolInternal, #DexterVersionSpecificParamType(IsFA2)) #Mutez(0) #TokenBalanceEntrypoint(TokenAddress, IsFA2) O ] ;; .InternalList </operations>
         <nonce> #Nonce(O) => #Nonce(O +Int 1) </nonce>
     requires Amount ==Int 0
-     andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType(IsFA2))
+     andBool #EntrypointExists(KnownAddresses, TokenAddress, #if IsFA2 #then %balance_of #else %getBalance #fi, #TokenBalanceEntrypointType(IsFA2))
      andBool #LocalEntrypointExists(LocalEntrypoints, %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
      andBool #LocalEntrypointExists(LocalEntrypoints, %default,                 unit)
 ```
@@ -472,12 +472,15 @@ NOTE: The failure conditions are split into two claims with identical configurat
         <myamount> #Mutez(Amount) </myamount>
         <senderaddr> Sender </senderaddr>
         <sourceaddr> Source </sourceaddr>
-        <paramtype> _LocalEntrypoints </paramtype>
+        <paramtype> LocalEntrypoints </paramtype>
         <knownaddrs> KnownAddresses </knownaddrs>
-    requires Amount >Int 0
-     orBool (notBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType(IsFA2)))
-     orBool IsUpdating
-     orBool Sender =/=K Source
+    requires ( Amount >Int 0
+      orBool (notBool #EntrypointExists(KnownAddresses, TokenAddress, #if IsFA2 #then %balance_of #else %getBalance #fi, #TokenBalanceEntrypointType(IsFA2)))
+      orBool IsUpdating
+      orBool Sender =/=K Source
+             )
+     andBool #LocalEntrypointExists(LocalEntrypoints, %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
+     andBool #LocalEntrypointExists(LocalEntrypoints, %default,                 unit)
 ```
 
 ```k
