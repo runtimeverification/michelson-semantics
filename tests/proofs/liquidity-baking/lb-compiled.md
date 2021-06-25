@@ -22,29 +22,17 @@ We have pasted the code verbatim:
 
 Annotations are arbitrary tokens.
 The set of permissible annotations is infinite.
-Since we work with specific code that contains a finite number of annotations, we can represent each and give it a macro for wrapping it in the `#token(...)` production.
+Since we work with specific code that contains a finite number of annotations, we can represent each and give it a `[token]` marker.
 
 ```k
-  syntax FieldAnnotation ::= "%deadline"
-                           | "%default"
-                           | "%minTokensBought"
-                           | "%mintOrBurn"
-                           | "%quantity"
-                           | "%target"
-                           | "%to"
-                           | "%transfer"
-                           | "%xtzToToken"
- // --------------------------------------
-
-  rule %deadline                => #token("%deadline"               , "FieldAnnotation") [macro]
-  rule %default                 => #token("%default"                , "FieldAnnotation") [macro]
-  rule %minTokensBought         => #token("%minTokensBought"        , "FieldAnnotation") [macro]
-  rule %mintOrBurn              => #token("%mintOrBurn"             , "FieldAnnotation") [macro]
-  rule %quantity                => #token("%quantity"               , "FieldAnnotation") [macro]
-  rule %target                  => #token("%target"                 , "FieldAnnotation") [macro]
-  rule %to                      => #token("%to"                     , "FieldAnnotation") [macro]
-  rule %transfer                => #token("%transfer"               , "FieldAnnotation") [macro]
-  rule %xtzToToken              => #token("%xtzToToken"             , "FieldAnnotation") [macro]
+  syntax FieldAnnotation ::= "%deadline"        [token]
+                           | "%minTokensBought" [token]
+                           | "%mintOrBurn"      [token]
+                           | "%quantity"        [token]
+                           | "%target"          [token]
+                           | "%to"              [token]
+                           | "%transfer"        [token]
+                           | "%xtzToToken"      [token]
 ```
 
 Each Tezos account has an address. We make a macro which stores the null address to simplify our proof scripts.
