@@ -143,6 +143,14 @@ as well as operations to serialize and deserialize the parameter.
   rule #loadLqtParams(ApproveParams(Spender, Value)) => Left Left Left Pair Spender Value
 ```
 
+### Transfer
+
+```k
+  syntax EntryPointParams ::= TransferParams(from: Address, to: Address, value: Int)
+  rule wellTypedParams(TransferParams(_From, _To, Value)) => Value >=Int 0 [simplification, anywhere]
+  rule #loadLqtParams(TransferParams(From, To, Value)) => Right Right Pair From Pair To Value
+```
+
 ## State Abstraction
 
 We use a few helper routines to convert between our abstract and concrete proof state.
@@ -237,7 +245,7 @@ If the contract execution fails, storage is not updated.
     => #if Owner in_keys(Tokens)
        #then {Tokens[Owner]}:>Int
        #else 0
-       #fi
+       #fi [simplification, anywhere]
 ```
 
 ```k
@@ -256,7 +264,7 @@ If the contract execution fails, storage is not updated.
     => #if #allowanceKey(Owner, Spender) in_keys(Allowances)
        #then {Allowances[ #allowanceKey(Owner, Spender) ]}:>Int
        #else 0
-       #fi
+       #fi [simplification, anywhere]
 ```
 
 ## Putting It All Together
