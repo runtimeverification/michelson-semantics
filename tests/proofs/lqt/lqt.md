@@ -286,6 +286,7 @@ If all steps are completed, only the LQT specific storage is updated.
         ~> #storeLqtState()
         ...
        </k>
+    ensures wellTypedParams(Params)
 ```
 
 ## Epilogue
