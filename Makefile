@@ -427,10 +427,7 @@ dexter_spec_modules = DEXTER-SPEC                               \
                       DEXTER-SETBAKER-SPEC                      \
                       DEXTER-SETLQTADDRESS-SPEC                 \
                       DEXTER-SETMANAGER-SPEC                    \
-                      DEXTER-TOKENTOXTZ-FA12-NEGATIVE-1-SPEC    \
-                      DEXTER-TOKENTOXTZ-FA12-NEGATIVE-2-SPEC    \
-                      DEXTER-TOKENTOXTZ-FA12-NEGATIVE-3-SPEC    \
-                      DEXTER-TOKENTOXTZ-FA12-NEGATIVE-4-SPEC    \
+                      DEXTER-TOKENTOXTZ-FA12-NEGATIVE-SPEC    \
                       DEXTER-TOKENTOXTZ-FA12-POSITIVE-SPEC      \
                       DEXTER-TOKENTOXTZ-FA2-NEGATIVE-1-SPEC     \
                       DEXTER-TOKENTOXTZ-FA2-NEGATIVE-2-SPEC     \
