@@ -144,9 +144,8 @@ module LQT-TOKEN-APPROVE-SPEC
 ```k
   claim <k> #runProof(ApproveParams(Spender, Value)) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_:FailedStack </stack>
-        <tokens> Tokens </tokens>
+        <allowances> Allowances </allowances>
         <myamount> #Mutez(Amount) </myamount>
-        <adminAddress> Admin </adminAddress>
         <senderaddr> Sender </senderaddr>
     requires notBool( Amount ==Int 0
               andBool (#allowanceFor(Allowances, Sender, Spender) >Int 0 impliesBool Value ==Int 0)
