@@ -37,6 +37,8 @@ module LQT-TOKEN-LEMMAS
 ```k
   rule X /Int 1 => X [simplification]
   rule X *Int 1 => X [simplification]
+
+  rule X +Int (0 -Int Y) => X -Int Y [simplification]
 ```
 
 ```k
@@ -234,37 +236,28 @@ If the contract execution fails, storage is not updated.
 
 ```k
   syntax Map ::= #incrementTokens(Map, Address, quantity: Int) [function, functional]
-  rule #incrementTokens(Tokens, Address, Quantity)
-    => #if #tokensFor(Tokens, Address) +Int Quantity ==Int 0
-       #then Tokens[ Address <- undef ]
-       #else Tokens[ Address <- #tokensFor(Tokens, Address) +Int Quantity ]
-       #fi [simplification, anywhere]
+  rule #incrementTokens(Tokens, Address, Quantity) => Tokens[ Address <- undef ]                                     requires         #tokensFor(Tokens, Address) +Int Quantity ==Int 0 [simplification, anywhere]
+  rule #incrementTokens(Tokens, Address, Quantity) => Tokens[ Address <- #tokensFor(Tokens, Address) +Int Quantity ] requires notBool #tokensFor(Tokens, Address) +Int Quantity ==Int 0 [simplification, anywhere]
 
   syntax Int ::= #tokensFor(Map, owner: Address) [function, functional]
-  rule #tokensFor(Tokens, Owner)
-    => #if Owner in_keys(Tokens)
-       #then {Tokens[Owner]}:>Int
-       #else 0
-       #fi [simplification, anywhere]
+  rule #tokensFor(Tokens, Owner) => {Tokens[Owner]}:>Int requires         Owner in_keys(Tokens) [simplification, anywhere]
+  rule #tokensFor(Tokens, Owner) => 0                    requires notBool Owner in_keys(Tokens) [simplification, anywhere]
 ```
 
 ```k
-  syntax Pair ::= #allowanceKey(owner: Address, spender: Address) [function, functional]
-  rule #allowanceKey(Owner, Spender) => (Pair Owner Spender) [simplification, anywhere]
+  syntax Pair ::= #allowanceKey(owner: Address, spender: Address)
+// -----------------------------------------------------------------
+  rule #allowanceKey(Owner, Spender) => (Pair Owner Spender) [macro]
 
   syntax Map ::= #updateAllowances(Map, owner: Address, spender: Address, newValue: Int) [function, functional]
-  rule #updateAllowances(Allowances, Owner, Spender, NewValue)
-    => #if NewValue ==K 0
-       #then Allowances[ #allowanceKey(Owner, Spender) <- undef ]
-       #else Allowances[ #allowanceKey(Owner, Spender) <- NewValue ]
-       #fi [simplification, anywhere]
+// ------------------------------------------------------------------------------------------------------------
+  rule #updateAllowances(Allowances, Owner, Spender, NewValue) => Allowances[ #allowanceKey(Owner, Spender) <- undef ]    requires         NewValue ==K 0 [simplification, anywhere]
+  rule #updateAllowances(Allowances, Owner, Spender, NewValue) => Allowances[ #allowanceKey(Owner, Spender) <- NewValue ] requires notBool NewValue ==K 0 [simplification, anywhere]
 
   syntax Int ::= #allowanceFor(Map, owner: Address, spender: Address) [function, functional]
-  rule #allowanceFor(Allowances, Owner, Spender)
-    => #if #allowanceKey(Owner, Spender) in_keys(Allowances)
-       #then {Allowances[ #allowanceKey(Owner, Spender) ]}:>Int
-       #else 0
-       #fi [simplification, anywhere]
+// -----------------------------------------------------------------------------------------
+  rule #allowanceFor(Allowances, Owner, Spender) => {Allowances[ #allowanceKey(Owner, Spender) ]}:>Int requires         (Pair Owner Spender) in_keys(Allowances) [simplification, anywhere]
+  rule #allowanceFor(Allowances, Owner, Spender) => 0                                                  requires notBool (Pair Owner Spender) in_keys(Allowances) [simplification, anywhere]
 ```
 
 ## Putting It All Together

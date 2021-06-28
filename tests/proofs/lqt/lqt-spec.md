@@ -170,8 +170,23 @@ module LQT-TOKEN-TRANSFER-SPEC
         <senderaddr> Sender </senderaddr>
         <operations> _ => .InternalList </operations>
     requires Amount ==Int 0
-     andBool Sender ==K From
      andBool #tokensFor(Tokens, From) >=Int Value
+          // Direct spending
+     andBool Sender ==K From
+
+```
+
+```k
+  claim <k> #runProof(TransferParams(From, To, Value)) => Aborted(?_, ?_, ?_, ?_) ... </k>
+        <stack> .Stack => ?_:FailedStack </stack>
+        <tokens> Tokens </tokens>
+        <allowances> Allowances </allowances>
+        <myamount> #Mutez(Amount) </myamount>
+        <senderaddr> Sender </senderaddr>
+    requires Sender ==K From
+     andBool notBool( Amount ==Int 0
+              andBool #tokensFor(Tokens, From) >=Int Value
+                    )
 ```
 
 //```k
@@ -183,24 +198,11 @@ module LQT-TOKEN-TRANSFER-SPEC
 //        <senderaddr> Sender </senderaddr>
 //        <operations> _ => .InternalList </operations>
 //    requires Amount ==Int 0
-//     andBool Sender =/=K From
 //     andBool #tokensFor(Tokens, From) >=Int Value
+//          // Spend via proxy
+//     andBool Sender =/=K From
 //     andBool #allowanceFor(Allowances, From, Spender) >=Int Value
-//```
-
-//```k
-//  claim <k> #runProof(TransferParams(From, To, Value)) => Aborted(?_, ?_, ?_, ?_) ... </k>
-//        <stack> .Stack => ?_:FailedStack </stack>
-//        <tokens> Tokens  </tokens>
-//        <myamount> #Mutez(Amount) </myamount>
-//        <senderaddr> Sender </senderaddr>
-//    requires Sender ==K From
-//     andBool notBool( Amount ==Int 0
-//              andBool #tokensFor(Tokens, From) >=Int Value
-//                    )
-//```
 //
-//```k
 //  claim <k> #runProof(TransferParams(From, To, Value)) => Aborted(?_, ?_, ?_, ?_) ... </k>
 //        <stack> .Stack => ?_:FailedStack </stack>
 //        <tokens> Tokens  </tokens>

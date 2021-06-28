@@ -150,6 +150,7 @@ kompiled_dir=$(find $backend_dir -name '*-kompiled')
 ! $repl || \
 [[ "$backend" == prove ]] || \
 [[ "$backend" == dexter ]] || \
+[[ "$backend" == lqt ]] || \
     fatal 'Option --repl only usable with `--backend prove` or `--backend dexter` !'
 
 # get the run file
