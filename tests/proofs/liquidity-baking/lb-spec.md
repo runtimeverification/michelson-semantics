@@ -287,16 +287,25 @@ A buyer sends tokens to the Liquidity Baking contract and receives a correspondi
 
 1.  the current block time must be less than the deadline
 2.  exactly 0 tez was transferred to this contract when it was invoked
-3.  the amount of tokens sold, when converted into xtz using the current exchange rate, is greater than `minXtzBought`
+3.  the amount of tokens sold, when converted into xtz using the current exchange rate (and less the burn fee), is greater than `minXtzBought`
 4.  the amount of tokens sold, when converted into xtz using the current exchange rate, it is less than or equal to the xtz owned by the Liquidity Baking contract
 
+NOTE: because the burn fee calculation is performed in the mutez type, i.e., because the following calculation:
+
+```
+XtzBought * 999 / 1000
+```
+
+occurs in the mutez type, that means that the contract will revert unless the temporary value `XtzBought * 999` is a legal mutez value;
+even though the final mutez value that is actually used is smaller than or equal to `XtzBought`, i.e., guaranteed to be a valid mutez value.
+
 ```k
-  claim <k> #runProof(TokenToXtz(To, TokensSold, #Mutez(MinXtzBought), #Timestamp(Deadline))) => . </k>
+  claim <k> #runProof(TokenToXtz(To, TokensSold:Int, #Mutez(MinXtzBought), #Timestamp(Deadline))) => . </k>
         <stack> .Stack </stack>
         <myamount> #Mutez(Amount) </myamount>
         <tokenAddress> TokenAddress:Address </tokenAddress>
-        <xtzPool> #Mutez(XtzPool => XtzPool -Int #XtzBought(XtzPool, TokenPool, TokensSold)) </xtzPool>
-        <tokenPool> TokenPool => TokenPool +Int TokensSold </tokenPool>
+        <xtzPool> #Mutez(XtzPool:Int => XtzPool -Int #CurrencyBought(XtzPool, TokenPool, TokensSold)) </xtzPool>
+        <tokenPool> TokenPool:Int => TokenPool +Int TokensSold </tokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <senderaddr> Sender </senderaddr>
         <paramtype> LocalEntrypoints </paramtype>
@@ -304,24 +313,28 @@ A buyer sends tokens to the Liquidity Baking contract and receives a correspondi
         <nonce> #Nonce(N => N +Int 3) </nonce>
         <knownaddrs> KnownAddresses </knownaddrs>
         <operations> _
-                  => [ Transfer_tokens #TokenTransferData(Sender, SelfAddress, TokensSold) #Mutez(0)                                                    TokenAddress . %transfer N        ]
-                  ;; [ Transfer_tokens Unit                                                #Mutez(#XtzBought(XtzPool, TokenPool, TokensSold))           To           . %default (N +Int 1)]
-                  ;; [ Transfer_tokens Unit                                                #Mutez(#XtzBurn(#XtzBought(XtzPool, TokenPool, TokensSold))) null_address . %default (N +Int 2)]
+                  => [ Transfer_tokens #TokenTransferData(Sender, SelfAddress, TokensSold) #Mutez(0)                                                               TokenAddress . %transfer N        ]
+                  ;; [ Transfer_tokens Unit                                                #Mutez(#XtzNetBurn(#CurrencyBought(XtzPool, TokenPool, TokensSold)))    To           . %default (N +Int 1)]
+                  ;; [ Transfer_tokens Unit                                                #Mutez(#XtzBurnAmount(#CurrencyBought(XtzPool, TokenPool, TokensSold))) null_address . %default (N +Int 2)]
                   ;; .InternalList
         </operations>
      requires Amount ==Int 0
       andBool CurrentTime <Int Deadline
       andBool (TokenPool >Int 0 orBool TokensSold >Int 0)
-      andBool (TokenPool >=Int 0) // Type Invariant
-      andBool #XtzBought(XtzPool, TokenPool, TokensSold) >=Int  MinXtzBought
-      andBool #XtzBought(XtzPool, TokenPool, TokensSold) <=Int XtzPool
+
       andBool #IsLegalMutezValue(MinXtzBought)
-      andBool #IsLegalMutezValue(#XtzBought(XtzPool, TokenPool, TokensSold))
-      andBool #IsLegalMutezValue(XtzPool:Int -Int #XtzBought (XtzPool:Int, TokenPool:Int, TokensSold:Int))
+      andBool #IsLegalMutezValue(#CurrencyBought(XtzPool, TokenPool, TokensSold))
+      andBool #IsLegalMutezValue(#CurrencyBought(XtzPool, TokenPool, TokensSold) *Int 999)
+      andBool #IsLegalMutezValue(#XtzNetBurn(#CurrencyBought(XtzPool, TokenPool, TokensSold)))
+      andBool #XtzNetBurn(#CurrencyBought(XtzPool, TokenPool, TokensSold)) >=Int MinXtzBought
+
+      andBool #IsLegalMutezValue(#XtzBurnAmount(#CurrencyBought(XtzPool, TokenPool, TokensSold)))
+      andBool #CurrencyBought(XtzPool, TokenPool, TokensSold) <=Int XtzPool
+      andBool #IsLegalMutezValue(XtzPool -Int #CurrencyBought(XtzPool, TokenPool, TokensSold))
+
       andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType())
       andBool #EntrypointExists(KnownAddresses, To,           %default,  #Type(unit))
       andBool #EntrypointExists(KnownAddresses, null_address, %default,  #Type(unit))
-
       andBool #LocalEntrypointExists(LocalEntrypoints, %default, unit)
 endmodule
 ```
@@ -331,14 +344,21 @@ The following claims prove the negative case:
 ```k
 module LIQUIDITY-BAKING-TOKENTOXTZ-NEGATIVE-1-SPEC
   imports LIQUIDITY-BAKING-VERIFICATION
-  claim <k> #runProof(TokenToXtz(_To, _TokensSold, #Mutez(_MinXtzBought), #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
+  claim <k> #runProof(TokenToXtz(To, _TokensSold, #Mutez(_MinXtzBought), #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_:FailedStack </stack>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <myamount> #Mutez(Amount) </myamount>
-        <tokenAddress> _TokenAddress:Address </tokenAddress>
-        <paramtype> _LocalEntrypoints </paramtype>
-     requires notBool Amount ==Int 0
-         orBool notBool CurrentTime <Int Deadline
+        <tokenAddress> TokenAddress:Address </tokenAddress>
+        <paramtype> LocalEntrypoints </paramtype>
+        <knownaddrs> KnownAddresses </knownaddrs>
+     requires notBool ( Amount ==Int 0
+                andBool CurrentTime <Int Deadline
+                      )
+
+      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType())
+      andBool #EntrypointExists(KnownAddresses, To,           %default,  #Type(unit))
+      andBool #EntrypointExists(KnownAddresses, null_address, %default,  #Type(unit))
+      andBool #LocalEntrypointExists(LocalEntrypoints, %default, unit)
 endmodule
 ```
 
@@ -353,13 +373,15 @@ module LIQUIDITY-BAKING-TOKENTOXTZ-NEGATIVE-2-SPEC
         <xtzPool> #Mutez(_XtzPool) </xtzPool>
         <tokenPool> TokenPool </tokenPool>
         <paramtype> LocalEntrypoints </paramtype>
-     requires notBool Amount ==Int 0
-      andBool notBool CurrentTime <Int Deadline
+        <knownaddrs> KnownAddresses </knownaddrs>
+     requires Amount ==Int 0
+      andBool CurrentTime <Int Deadline
+      andBool TokenPool ==Int 0 andBool TokensSold ==Int 0
+
       andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType())
       andBool #EntrypointExists(KnownAddresses, To,           %default,  #Type(unit))
       andBool #EntrypointExists(KnownAddresses, null_address, %default,  #Type(unit))
-      andBool #LocalEntrypoints(LocalEntrypoints, %default, unit)
-      andBool notBool (TokenPool >Int 0 orBool TokensSold >Int 0)
+      andBool #LocalEntrypointExists(LocalEntrypoints, %default, unit)
 endmodule
 ```
 
@@ -374,15 +396,22 @@ module LIQUIDITY-BAKING-TOKENTOXTZ-NEGATIVE-3-SPEC
         <xtzPool> #Mutez(XtzPool) </xtzPool>
         <tokenPool> TokenPool </tokenPool>
         <paramtype> LocalEntrypoints </paramtype>
-     requires notBool Amount ==Int 0
-      andBool notBool CurrentTime <Int Deadline
+        <knownaddrs> KnownAddresses </knownaddrs>
+        <nonce> #Nonce(_ => ?_) </nonce>
+     requires Amount ==Int 0
+      andBool CurrentTime <Int Deadline
+      andBool ( TokenPool >Int 0 orBool TokensSold >Int 0 )
+      andBool notBool( #IsLegalMutezValue(MinXtzBought)
+               andBool #IsLegalMutezValue(#CurrencyBought(XtzPool, TokenPool, TokensSold))
+               andBool #IsLegalMutezValue(#CurrencyBought(XtzPool, TokenPool, TokensSold) *Int 999)
+               andBool #IsLegalMutezValue(#XtzNetBurn(#CurrencyBought(XtzPool, TokenPool, TokensSold)))
+               andBool #XtzNetBurn(#CurrencyBought(XtzPool, TokenPool, TokensSold)) >=Int MinXtzBought
+                     )
+
       andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType())
       andBool #EntrypointExists(KnownAddresses, To,           %default,  #Type(unit))
       andBool #EntrypointExists(KnownAddresses, null_address, %default,  #Type(unit))
-      andBool #LocalEntrypoints(LocalEntrypoints, %default, unit)
-      andBool notBool( #XtzBought(XtzPool, TokenPool, TokensSold) >=Int  MinXtzBought
-               andBool #IsLegalMutezValue(MinXtzBought)
-                     )
+      andBool #LocalEntrypointExists(LocalEntrypoints, %default, unit)
 endmodule
 ```
 
@@ -397,18 +426,25 @@ module LIQUIDITY-BAKING-TOKENTOXTZ-NEGATIVE-4-SPEC
         <xtzPool> #Mutez(XtzPool) </xtzPool>
         <tokenPool> TokenPool </tokenPool>
         <paramtype> LocalEntrypoints </paramtype>
-     requires notBool Amount ==Int 0
-      andBool notBool CurrentTime <Int Deadline
+        <knownaddrs> KnownAddresses </knownaddrs>
+        <nonce> #Nonce(_ => ?_) </nonce>
+     requires Amount ==Int 0
+      andBool CurrentTime <Int Deadline
+      andBool ( TokenPool >Int 0 orBool TokensSold >Int 0 )
+      andBool #IsLegalMutezValue(MinXtzBought)
+      andBool #IsLegalMutezValue(#CurrencyBought(XtzPool, TokenPool, TokensSold))
+      andBool #IsLegalMutezValue(#CurrencyBought(XtzPool, TokenPool, TokensSold) *Int 999)
+      andBool #IsLegalMutezValue(#XtzNetBurn(#CurrencyBought(XtzPool, TokenPool, TokensSold)))
+      andBool #XtzNetBurn(#CurrencyBought(XtzPool, TokenPool, TokensSold)) >=Int MinXtzBought
+      andBool notBool( #IsLegalMutezValue(#XtzBurnAmount(#CurrencyBought(XtzPool, TokenPool, TokensSold)))
+               andBool #CurrencyBought(XtzPool, TokenPool, TokensSold) <=Int XtzPool
+               andBool #IsLegalMutezValue(XtzPool -Int #CurrencyBought(XtzPool, TokenPool, TokensSold))
+                     )
+
       andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType())
       andBool #EntrypointExists(KnownAddresses, To,           %default,  #Type(unit))
       andBool #EntrypointExists(KnownAddresses, null_address, %default,  #Type(unit))
-      andBool #LocalEntrypoints(LocalEntrypoints, %default, unit)
-      andBool  #XtzBought(XtzPool, TokenPool, TokensSold) >=Int  MinXtzBought
-      andBool #IsLegalMutezValue(MinXtzBought)
-      andBool notBool( #XtzBought(XtzPool, TokenPool, TokensSold) <=Int XtzPool
-               andBool #IsLegalMutezValue(#XtzBought(XtzPool, TokenPool, TokensSold))
-               andBool #IsLegalMutezValue(XtzPool:Int -Int #XtzBought (XtzPool:Int, TokenPool:Int, TokensSold:Int))
-                     )
+      andBool #LocalEntrypointExists(LocalEntrypoints, %default, unit)
 endmodule
 ```
 
