@@ -585,6 +585,11 @@ If the contract execution fails, storage is not updated.
   rule #TokenBalanceEntrypoint(TokenAddr, false) => TokenAddr . %getBalance
   rule #TokenBalanceEntrypoint(TokenAddr, true ) => TokenAddr . %balance_of
 
+  syntax Type ::= #TokenBalanceEntrypointType(Bool) [function, functional]
+ // ----------------------------------------------------------------------
+  rule #TokenBalanceEntrypointType(false) => #Type(pair address (contract nat))
+  rule #TokenBalanceEntrypointType(true)  => #Type(pair (list (pair address nat)) (contract (list (pair (pair (address) nat) nat))))
+
   syntax Int ::= #ceildiv   (Int, Int) [function]
                | #ceildivAux(Int, Int) [function, functional]
  // ---------------------------------------------------------
@@ -593,22 +598,11 @@ If the contract execution fails, storage is not updated.
   rule #ceildivAux(X, Y) => X /Int Y          requires Y  =/=Int 0 andBool         X %Int Y ==Int 0
   rule #ceildivAux(X, Y) => X /Int Y +Int 1   requires Y  =/=Int 0 andBool notBool X %Int Y ==Int 0
 
-  syntax Int ::= #XtzBought   (Int, Int, Int) [function, functional, smtlib(xtzbought), no-evaluators]
- // -----------------------------------------
-  rule (TokensSold *Int 997 *Int XtzPool) /Int (TokenPool *Int 1000 +Int (TokensSold *Int 997))
-    => #XtzBought(XtzPool, TokenPool, TokensSold)
+  syntax Int ::= #CurrencyBought(Int, Int, Int) [function, functional, smtlib(xtzbought), no-evaluators]
+ // ----------------------------------------------------------------------------------------------------
+  rule (ToSellAmt *Int 997 *Int ToBuyCurrencyTotal) /Int (ToSellCurrencyTotal *Int 1000 +Int (ToSellAmt *Int 997))
+    => #CurrencyBought(ToBuyCurrencyTotal, ToSellCurrencyTotal, ToSellAmt)
     [simplification]
-```
-
-We'd like to additionally define `#TokensBought`, however this has the same structure as `#XtzBought`
-and so we can't have simplification rules for both.
-
-```k
- // syntax Int ::= #TokensBought(Int, Int, Int) [function, functional, smtlib(tokensbought), no-evaluators]
- // ----------------------------------------
- // rule (Amount *Int 997 *Int TokenPool) /Int (XtzPool *Int 1000 +Int (Amount *Int 997))
- //   => #TokensBought(XtzPool, TokenPool, XtzSold)
- //   [simplification]
 ```
 
 ```k
@@ -617,6 +611,13 @@ and so we can't have simplification rules for both.
   rule #EntrypointExists(KnownAddresses, Addr, FieldAnnot, EntrypointType)
     => Addr . FieldAnnot  in_keys(KnownAddresses) andBool
        KnownAddresses[Addr . FieldAnnot] ==K #Name(EntrypointType)
+    [macro]
+
+  syntax Bool ::= #LocalEntrypointExists(Map, FieldAnnotation, Type)
+ // ----------------------------------------------------------------
+  rule #LocalEntrypointExists(LocalEntrypoints, FieldAnnot, EntrypointType)
+    => FieldAnnot in_keys(LocalEntrypoints) andBool
+       LocalEntrypoints[FieldAnnot] ==K #Name(EntrypointType)
     [macro]
 ```
 
