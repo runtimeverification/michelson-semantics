@@ -1082,18 +1082,14 @@ The `#DoCompare` function requires additional lemmas for symbolic execution.
   rule X ==String X => true  [simplification]
   rule X  <String X => false [simplification]
 
-  rule #Ceil(#DoCompare(_:Int, _:Int)) => #Top [anywhere, simplification]
-
-  rule #Ceil(#DoCompare(V1, V2)) => #Top
-    requires (isBool(V1)      andBool isBool(V2))
-      orBool (isInt(V1)       andBool isInt(V2))
-      orBool (isString(V1)    andBool isString(V2))
-      orBool (isBytes(V1)     andBool isBytes(V2))
-      orBool (isKeyHash(V1)   andBool isKeyHash(V2))
-      orBool (isMutez(V1)     andBool isMutez(V2))
-      orBool (isTimestamp(V1) andBool isTimestamp(V2))
-      orBool (isAddress(V1)   andBool isAddress(V2))
-    [anywhere, simplification]
+  rule #Ceil(#DoCompare(_:Bool, _:Bool))           => #Top [anywhere, simplification]
+  rule #Ceil(#DoCompare(_:Int, _:Int))             => #Top [anywhere, simplification]
+  rule #Ceil(#DoCompare(_:String, _:String))       => #Top [anywhere, simplification]
+  rule #Ceil(#DoCompare(_:Bytes, _:Bytes))         => #Top [anywhere, simplification]
+  rule #Ceil(#DoCompare(_:KeyHash, _:KeyHash))     => #Top [anywhere, simplification]
+  rule #Ceil(#DoCompare(_:Mutez, _:Mutez))         => #Top [anywhere, simplification]
+  rule #Ceil(#DoCompare(_:Timestamp, _:Timestamp)) => #Top [anywhere, simplification]
+  rule #Ceil(#DoCompare(_:Address, _:Address))     => #Top [anywhere, simplification]
 
   rule X::String ==String Y::String => false
     requires #Not ( { X #Equals Y } )
