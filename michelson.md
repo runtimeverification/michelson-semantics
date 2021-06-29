@@ -1295,8 +1295,6 @@ typing (shared operations use a generic `MapTypeName`).
 
   rule <k> UPDATE _A => .  ... </k>
        <stack> [KT K] ; [option VT Some V] ; [MT:MapTypeName KT VT M:Map] ; SS => [MT KT VT M[K <- V]] ; SS </stack>
-    requires isValue(KT, K)
-     andBool isValue(VT, V)
 
   rule <k> UPDATE _A => .  ... </k>
        <stack> [KT K] ; [option VT None] ; [MT:MapTypeName KT VT M:Map] ; SS => [MT KT VT M[K <- undef]] ; SS </stack>

@@ -93,3 +93,140 @@ module LQT-TOKEN-GETALLOWANCE-SPEC
     requires notBool(Amount ==Int 0)
 endmodule
 ```
+
+```k
+module LQT-TOKEN-MINTORBURN-SPEC
+  imports LQT-TOKEN-VERIFICATION
+
+  claim <k> #runProof(MintOrBurnParams(Quantity, Address)) => .K ... </k>
+        <stack> .Stack </stack>
+        <tokens> Tokens => #incrementTokens(Tokens, Address, Quantity) </tokens>
+        <myamount> #Mutez(Amount) </myamount>
+        <adminAddress> Admin </adminAddress>
+        <senderaddr> Sender </senderaddr>
+        <totalSupply> TotalSupply => absInt(TotalSupply +Int Quantity) </totalSupply>
+        <operations> _ => .InternalList </operations>
+    requires Amount ==Int 0
+     andBool Sender ==K Admin
+     andBool #tokensFor(Tokens, Address) +Int Quantity >=Int 0
+     andBool Address in_keys(Tokens)
+
+   claim <k> #runProof(MintOrBurnParams(Quantity, Address)) => Aborted(?_, ?_, ?_, ?_) ... </k>
+        <stack> .Stack => ?_:FailedStack </stack>
+        <tokens> Tokens </tokens>
+        <myamount> #Mutez(Amount) </myamount>
+        <adminAddress> Admin </adminAddress>
+        <senderaddr> Sender </senderaddr>
+    requires Address in_keys(Tokens)
+     andBool notBool( Amount ==Int 0
+              andBool Sender ==K Admin
+              andBool #tokensFor(Tokens, Address) +Int Quantity >=Int 0
+                    )
+endmodule
+```
+
+```k
+module LQT-TOKEN-APPROVE-SPEC
+  imports LQT-TOKEN-VERIFICATION
+```
+
+```k
+  claim <k> #runProof(ApproveParams(Spender, Value)) => .K ... </k>
+        <stack> .Stack </stack>
+        <allowances> Allowances => #updateAllowances(Allowances, Sender, Spender, Value) </allowances>
+        <myamount> #Mutez(Amount) </myamount>
+        <senderaddr> Sender </senderaddr>
+        <operations> _ => .InternalList </operations>
+    requires Amount ==Int 0
+     andBool (#allowanceFor(Allowances, Sender, Spender) >Int 0 impliesBool Value ==Int 0)
+```
+
+```k
+  claim <k> #runProof(ApproveParams(Spender, Value)) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ?_:FailedStack </stack>
+        <allowances> Allowances </allowances>
+        <myamount> #Mutez(Amount) </myamount>
+        <senderaddr> Sender </senderaddr>
+    requires notBool( Amount ==Int 0
+              andBool (#allowanceFor(Allowances, Sender, Spender) >Int 0 impliesBool Value ==Int 0)
+                    )
+```
+
+```k
+endmodule
+```
+
+
+```k
+module LQT-TOKEN-TRANSFER-DIRECT-SPEC
+  imports LQT-TOKEN-VERIFICATION
+```
+
+```k
+  claim <k> #runProof(TransferParams(From, To, Value)) => .K </k>
+        <stack> .Stack </stack>
+        <tokens> Tokens => #incrementTokens(#incrementTokens(Tokens, From, 0 -Int Value), To, Value)  </tokens>
+        <myamount> #Mutez(Amount) </myamount>
+        <senderaddr> Sender </senderaddr>
+        <operations> _ => .InternalList </operations>
+    requires Amount ==Int 0
+     andBool #tokensFor(Tokens, From) >=Int Value
+          // Direct spending
+     andBool Sender ==K From
+```
+
+```k
+  claim <k> #runProof(TransferParams(From, To, Value)) => Aborted(?_, ?_, ?_, ?_) ... </k>
+        <stack> .Stack => ?_:FailedStack </stack>
+        <tokens> Tokens </tokens>
+        <allowances> Allowances </allowances>
+        <myamount> #Mutez(Amount) </myamount>
+        <senderaddr> Sender </senderaddr>
+    requires Sender ==K From
+     andBool notBool( Amount ==Int 0
+              andBool #tokensFor(Tokens, From) >=Int Value
+                    )
+```
+
+```k
+endmodule
+```
+
+
+```k
+module LQT-TOKEN-TRANSFER-PROXY-SPEC
+  imports LQT-TOKEN-VERIFICATION
+```
+
+
+```k
+  claim <k> #runProof(TransferParams(From, To, Value)) => .K </k>
+        <stack> .Stack </stack>
+        <tokens> Tokens => #incrementTokens(#incrementTokens(Tokens, From, 0 -Int Value), To, Value)  </tokens>
+        <allowances> Allowances => #updateAllowances(Allowances, From, Sender, #allowanceFor(Allowances, From, Sender) -Int Value) </allowances>
+        <myamount> #Mutez(Amount) </myamount>
+        <senderaddr> Sender </senderaddr>
+        <operations> _ => .InternalList </operations>
+    requires Amount ==Int 0
+     andBool #tokensFor(Tokens, From) >=Int Value
+          // Spend via proxy
+     andBool Sender =/=K From
+     andBool #allowanceFor(Allowances, From, Sender) >=Int Value
+
+  claim <k> #runProof(TransferParams(From, To, Value)) => Aborted(?_, ?_, ?_, ?_) ... </k>
+        <stack> .Stack => ?_:FailedStack </stack>
+        <tokens> Tokens  </tokens>
+        <allowances> Allowances </allowances>
+        <myamount> #Mutez(Amount) </myamount>
+        <senderaddr> Sender </senderaddr>
+    requires Sender =/=K From
+     andBool notBool( Amount ==Int 0
+              andBool #tokensFor(Tokens, From) >=Int Value
+              andBool #allowanceFor(Allowances, From, Sender) >=Int Value
+                    )
+```
+
+```k
+endmodule
+```
+

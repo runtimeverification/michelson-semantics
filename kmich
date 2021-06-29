@@ -148,9 +148,10 @@ kompiled_dir=$(find $backend_dir -name '*-kompiled')
 [[ -d "$kompiled_dir" ]] || fatal "Could not find single *-kompiled directory in $backend_dir"
 
 ! $repl || \
-[[ "$backend" == prove  ]] || \
 [[ "$backend" == dexter ]] || \
 [[ "$backend" == lb     ]] || \
+[[ "$backend" == lqt    ]] || \
+[[ "$backend" == prove  ]] || \
     fatal 'Option --repl only usable with `--backend prove` or `--backend dexter` !'
 
 # get the run file

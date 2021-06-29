@@ -37,6 +37,8 @@ module LQT-TOKEN-LEMMAS
 ```k
   rule X /Int 1 => X [simplification]
   rule X *Int 1 => X [simplification]
+
+  rule X +Int (0 -Int Y) => X -Int Y [simplification]
 ```
 
 ```k
@@ -127,6 +129,30 @@ as well as operations to serialize and deserialize the parameter.
   rule #loadLqtParams(GetAllowanceParams(Owner, Spender, Callback)) => Left Left Right Pair (Pair Owner Spender) #Contract(Callback, nat)
 ```
 
+### MintOrBurn
+
+```k
+  syntax EntryPointParams ::= MintOrBurnParams(quantity: Int, target: Address)
+  rule wellTypedParams(MintOrBurnParams(_Quantity, _Target)) => true [simplification, anywhere]
+  rule #loadLqtParams(MintOrBurnParams(Quantity, Target)) => Right Left Pair Quantity Target
+```
+
+### Approve
+
+```k
+  syntax EntryPointParams ::= ApproveParams(spender: Address, value: Int)
+  rule wellTypedParams(ApproveParams(_Spender, Value)) => Value >=Int 0 [simplification, anywhere]
+  rule #loadLqtParams(ApproveParams(Spender, Value)) => Left Left Left Pair Spender Value
+```
+
+### Transfer
+
+```k
+  syntax EntryPointParams ::= TransferParams(from: Address, to: Address, value: Int)
+  rule wellTypedParams(TransferParams(_From, _To, Value)) => Value >=Int 0 [simplification, anywhere]
+  rule #loadLqtParams(TransferParams(From, To, Value)) => Right Right Pair From Pair To Value
+```
+
 ## State Abstraction
 
 We use a few helper routines to convert between our abstract and concrete proof state.
@@ -208,6 +234,32 @@ If the contract execution fails, storage is not updated.
     [macro]
 ```
 
+```k
+  syntax Map ::= #incrementTokens(Map, Address, quantity: Int) [function, functional]
+  rule #incrementTokens(Tokens, Address, Quantity) => Tokens[ Address <- undef ]                                     requires         #tokensFor(Tokens, Address) +Int Quantity ==Int 0 [simplification, anywhere]
+  rule #incrementTokens(Tokens, Address, Quantity) => Tokens[ Address <- #tokensFor(Tokens, Address) +Int Quantity ] requires notBool #tokensFor(Tokens, Address) +Int Quantity ==Int 0 [simplification, anywhere]
+
+  syntax Int ::= #tokensFor(Map, owner: Address) [function, functional]
+  rule #tokensFor(Tokens, Owner) => {Tokens[Owner]}:>Int requires         Owner in_keys(Tokens) [simplification, anywhere]
+  rule #tokensFor(Tokens, Owner) => 0                    requires notBool Owner in_keys(Tokens) [simplification, anywhere]
+```
+
+```k
+  syntax Pair ::= #allowanceKey(owner: Address, spender: Address)
+// -----------------------------------------------------------------
+  rule #allowanceKey(Owner, Spender) => (Pair Owner Spender) [macro]
+
+  syntax Map ::= #updateAllowances(Map, owner: Address, spender: Address, newValue: Int) [function, functional]
+// ------------------------------------------------------------------------------------------------------------
+  rule #updateAllowances(Allowances, Owner, Spender, NewValue) => Allowances[ #allowanceKey(Owner, Spender) <- undef ]    requires         NewValue ==K 0 [simplification, anywhere]
+  rule #updateAllowances(Allowances, Owner, Spender, NewValue) => Allowances[ #allowanceKey(Owner, Spender) <- NewValue ] requires notBool NewValue ==K 0 [simplification, anywhere]
+
+  syntax Int ::= #allowanceFor(Map, owner: Address, spender: Address) [function, functional]
+// -----------------------------------------------------------------------------------------
+  rule #allowanceFor(Allowances, Owner, Spender) => {Allowances[ #allowanceKey(Owner, Spender) ]}:>Int requires         (Pair Owner Spender) in_keys(Allowances) [simplification, anywhere]
+  rule [allowanceForZero] : #allowanceFor(Allowances, Owner, Spender) => 0                                                  requires notBool (Pair Owner Spender) in_keys(Allowances) [simplification, anywhere]
+```
+
 ## Putting It All Together
 
 All contract call specifications have common steps:
@@ -227,6 +279,7 @@ If all steps are completed, only the LQT specific storage is updated.
         ~> #storeLqtState()
         ...
        </k>
+    ensures wellTypedParams(Params)
 ```
 
 ## Epilogue
