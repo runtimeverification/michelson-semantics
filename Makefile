@@ -503,6 +503,8 @@ lqt_spec_modules = LQT-TOKEN-SPEC                                   \
                    LQT-TOKEN-GETBALANCE-SPEC                        \
                    LQT-TOKEN-GETTOTALSUPPLY-SPEC                    \
                    LQT-TOKEN-MINTORBURN-SPEC                        \
+                   LQT-TOKEN-TRANSFER-DIRECT-SPEC                   \
+                   LQT-TOKEN-TRANSFER-PROXY-SPEC                    \
 
 lqt_spec_file := tests/proofs/lqt/lqt-spec.md
 
