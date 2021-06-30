@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="A Michelson semantics for Tezos built using the K Framework."
+/>
+<meta name="keywords" content="runtime, verification, rv, k" />
+<meta name="author" content="Michelson Semantics | Runtime Verification Inc" />
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../../../assets/img/favicon.ico" /> -->
+
+<title>Michelson Semantics | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../../../index.html"> Michelson Semantics </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/michelson-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../../../">Homepage</a>
+      <a class="bd-toc-link" href="../../../../INSTALL">Install</a>
+      <a class="bd-toc-link" href="../../../../USER_GUIDE">User Guide</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-9 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="liquidity-baking-verification">Liquidity Baking Verification</h1>
+<h2 id="prologue">Prologue</h2>
+<p>Our verification subject is the Michelson code corresponding to the LIGO <a href="https://gitlab.com/dexter2tz/dexter2tz/-/tree/liquidity_baking" target="_blank" rel="noopener">Liquidity Baking contract</a> at <a href="https://gitlab.com/dexter2tz/dexter2tz/-/tree/d98643881fe14996803997f1283e84ebd2067e35" target="_blank" rel="noopener">commit id d9864388</a>.</p>
+<p>The goal of this project is to produce:</p>
+<ul>
+<li>a series of proofs which specify that the intended behavior of each individual LIGO function is correct (which implies that the LIGO-to-Michelson compilation process is also correct in this case)</li>
+<li>a series of proofs which demonstate high-level invariants over sequences of contract calls hold (e.g. it is not possible to produce a profit by exploiting rounding errors)</li>
+</ul>
+<p>In this project, we will model the entrypoints in the Liquidity Baking contract code and extract their high-level properties.
+Note that we will base our high-level descriptions of each function of the LIGO contract code, while our verification will be performed at the the level of the compiled Michelson versions.</p>
+<p>We begin start our verification project by opening a new module context in which our verification will be performed.</p>
+<pre class="language-k"><code><span class="token keyword">requires</span> <span class="token string">&quot;../lemmas.md&quot;</span>
+<span class="token keyword">requires</span> <span class="token string">&quot;lb-compiled.md&quot;</span>
+<span class="token keyword">module</span> LIQUIDITY<span class="token operator">-</span>BAKING<span class="token operator">-</span>VERIFICATION<span class="token operator">-</span>SYNTAX
+  <span class="token keyword">imports</span> MICHELSON<span class="token operator">-</span>INTERNAL<span class="token operator">-</span>SYNTAX
+</code></pre>
+<pre class="language-k"><code><span class="token keyword">endmodule</span>
+</code></pre>
+<h2 id="liqudity-baking-lemmas">Liqudity Baking Lemmas</h2>
+<pre class="language-k"><code><span class="token keyword">module</span> LIQUIDITY<span class="token operator">-</span>BAKING<span class="token operator">-</span>LEMMAS
+  <span class="token keyword">imports</span> MICHELSON
+</code></pre>
+<pre class="language-k"><code>  <span class="token keyword">rule</span> X <span class="token operator">/</span><span class="token keyword">Int</span> <span class="token number">1</span> <span class="token operator">=&gt;</span> X <span class="token punctuation">[</span>simplification<span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> X <span class="token operator">*</span><span class="token keyword">Int</span> <span class="token number">1</span> <span class="token operator">=&gt;</span> X <span class="token punctuation">[</span>simplification<span class="token punctuation">]</span>
+</code></pre>
+<pre class="language-k"><code><span class="token keyword">endmodule</span>
+</code></pre>
+<pre class="language-k"><code><span class="token keyword">module</span> LIQUIDITY<span class="token operator">-</span>BAKING<span class="token operator">-</span>VERIFICATION
+  <span class="token keyword">imports</span> LIQUIDITY<span class="token operator">-</span>BAKING<span class="token operator">-</span>COMPILED
+  <span class="token keyword">imports</span> LIQUIDITY<span class="token operator">-</span>BAKING<span class="token operator">-</span>VERIFICATION<span class="token operator">-</span>SYNTAX
+  <span class="token keyword">imports</span> LIQUIDITY<span class="token operator">-</span>BAKING<span class="token operator">-</span>LEMMAS
+</code></pre>
+<h2 id="terminology-prerequisites">Terminology Prerequisites</h2>
+<h3 id="entrypoints">Entrypoints</h3>
+<p>Note that we are slightly abusing language in the preceding sentence because Michelson has no native notion of separate contract function entrypoints.
+Instead, different entrypoints are modelled by making the global contract input parameter a disjoint union of the parameter types for each possible entrypoint, and then dispatching to different code blocks based on which entry of the disjoint union was selected.
+Due to Michelon&apos;s design, this means that each entrypoint can be understood to have the following typing:</p>
+<pre class="language-text"><code>entrypoint_input_type * storage_type -&gt; (operation list) * storage_type
+</code></pre>
+<p>where:</p>
+<ol>
+<li>each <code>entrypoint_input_type</code> is a member of the disjoint union which is the global contract parameter type;</li>
+<li>each <code>operation</code> is a callback to be placed in a FIFO queue of callbacks that are executed once the current contract execution terminates.</li>
+</ol>
+<p>By abuse of notation, we identify an entrypoint&apos;s typing rule with its corresponding <code>entrypoint_input_type</code>, since the other parts of the typing rule are constant.
+We may abbreviate <code>entrypoint_input_type</code> to just <code>input</code> when it is clear from context.</p>
+<h3 id="storage-type">Storage Type</h3>
+<p>In our proofs, we will use the following abstract representation of the Liquidity Baking contract storage state.</p>
+<p>Calling functions produces not only storage changes but also a list of callbacks.
+We serialize these to the <code>&lt;operations&gt;</code> cell for ease of writing specifications.</p>
+<pre class="language-k"><code><span class="token keyword">configuration</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dexterTop</span><span class="token punctuation">&gt;</span></span>
+                <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>michelsonTop</span><span class="token punctuation">/&gt;</span></span>
+                <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>storage</span><span class="token punctuation">&gt;</span></span>
+                  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>tokenPool</span><span class="token punctuation">&gt;</span></span>    <span class="token number">0</span>            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>tokenPool</span><span class="token punctuation">&gt;</span></span>
+                  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>xtzPool</span><span class="token punctuation">&gt;</span></span>      #Mutez<span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span>    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>xtzPool</span><span class="token punctuation">&gt;</span></span>
+                  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>lqtTotal</span><span class="token punctuation">&gt;</span></span>     <span class="token number">0</span>            <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>lqtTotal</span><span class="token punctuation">&gt;</span></span>
+                  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>tokenAddress</span><span class="token punctuation">&gt;</span></span> #Address<span class="token punctuation">(</span><span class="token string">&quot;&quot;</span><span class="token punctuation">)</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>tokenAddress</span><span class="token punctuation">&gt;</span></span>
+                  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>lqtAddress</span><span class="token punctuation">&gt;</span></span>   #Address<span class="token punctuation">(</span><span class="token string">&quot;&quot;</span><span class="token punctuation">)</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>lqtAddress</span><span class="token punctuation">&gt;</span></span>
+                <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>storage</span><span class="token punctuation">&gt;</span></span>
+                <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>operations</span><span class="token punctuation">&gt;</span></span> <span class="token punctuation">.</span>InternalList <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>operations</span><span class="token punctuation">&gt;</span></span>
+              <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dexterTop</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h2 id="entrypoint-summaries">Entrypoint Summaries</h2>
+<p>We define our list of entrypoints below.
+Each entrypoint is given a unique abstract parameter type that we use to simplify our proof structure.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> EntryPointParams
+  <span class="token keyword">syntax</span> <span class="token keyword">Bool</span> <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> wellTypedParams<span class="token punctuation">(</span>EntryPointParams<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">]</span>
+  <span class="token comment">// ---------------------------------------------------------------------</span>
+</code></pre>
+<ol>
+<li>
+<p><a href="https://gitlab.com/dexter2tz/dexter2tz/-/blob/d98643881fe14996803997f1283e84ebd2067e35/dexter.liquidity_baking.mligo.tz" target="_blank" rel="noopener">dexter.liquidity_baking.mligo.tz</a></p>
+<ol>
+<li>
+<p><code>add_liquidity</code>: Allows callers to &quot;mint&quot; liquidity in excahnge for tez.
+Caller gains liquidity equal to <code>tez * storage.lqtTotal / storage.xtzPool</code>.</p>
+<ul>
+<li>
+<p>Input:</p>
+<pre class="language-k"><code><span class="token keyword">syntax</span> EntryPointParams   <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> AddLiquidityParams
+<span class="token keyword">syntax</span> AddLiquidityParams <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> AddLiquidity<span class="token punctuation">(</span>owner              <span class="token punctuation">:</span> Address<span class="token punctuation">,</span>
+                                           minLqtMinted       <span class="token punctuation">:</span> <span class="token keyword">Int</span><span class="token punctuation">,</span>
+                                           maxTokensDeposited <span class="token punctuation">:</span> <span class="token keyword">Int</span><span class="token punctuation">,</span>
+                                           deadline           <span class="token punctuation">:</span> Timestamp<span class="token punctuation">)</span>
+<span class="token keyword">rule</span> wellTypedParams<span class="token punctuation">(</span>AddLiquidity<span class="token punctuation">(</span>_Owner<span class="token punctuation">,</span>
+                                   MinLqtMinted<span class="token punctuation">,</span>
+                                   MaxTokensDeposited<span class="token punctuation">,</span>
+                                   Deadline<span class="token punctuation">)</span><span class="token punctuation">)</span>
+     <span class="token operator">=&gt;</span>         MinLqtMinted       <span class="token operator">&gt;=</span><span class="token keyword">Int</span> <span class="token number">0</span>
+        andBool MaxTokensDeposited <span class="token operator">&gt;=</span><span class="token keyword">Int</span> <span class="token number">0</span>
+        andBool #IsLegalTimestamp<span class="token punctuation">(</span>Deadline<span class="token punctuation">)</span>
+     <span class="token punctuation">[</span>simplification<span class="token punctuation">]</span>
+</code></pre>
+</li>
+</ul>
+</li>
+<li>
+<p><code>remove_liquidity</code></p>
+<ul>
+<li>
+<p>Input:</p>
+<pre class="language-k"><code><span class="token keyword">syntax</span> EntryPointParams      <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> RemoveLiquidityParams
+<span class="token keyword">syntax</span> RemoveLiquidityParams <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> RemoveLiquidity<span class="token punctuation">(</span>to                 <span class="token punctuation">:</span> Address<span class="token punctuation">,</span>
+                                                 lqtBurned          <span class="token punctuation">:</span> <span class="token keyword">Int</span><span class="token punctuation">,</span>
+                                                 minXtzWithdrawn    <span class="token punctuation">:</span> Mutez<span class="token punctuation">,</span>
+                                                 minTokensWithdrawn <span class="token punctuation">:</span> <span class="token keyword">Int</span><span class="token punctuation">,</span>
+                                                 deadline           <span class="token punctuation">:</span> Timestamp<span class="token punctuation">)</span>
+<span class="token keyword">rule</span> wellTypedParams<span class="token punctuation">(</span>RemoveLiquidity<span class="token punctuation">(</span>_To<span class="token punctuation">,</span>
+                                      LqtBurned<span class="token punctuation">,</span>
+                                      MinXtzWithdrawn<span class="token punctuation">,</span>
+                                      MinTokensWithdrawn<span class="token punctuation">,</span>
+                                      Deadline<span class="token punctuation">)</span><span class="token punctuation">)</span>
+      <span class="token operator">=&gt;</span>         LqtBurned <span class="token operator">&gt;=</span><span class="token keyword">Int</span> <span class="token number">0</span>
+         andBool #IsLegalMutezValue<span class="token punctuation">(</span>MinXtzWithdrawn<span class="token punctuation">)</span>
+         andBool MinTokensWithdrawn <span class="token operator">&gt;=</span><span class="token keyword">Int</span> <span class="token number">0</span>
+         andBool #IsLegalTimestamp<span class="token punctuation">(</span>Deadline<span class="token punctuation">)</span>
+         <span class="token punctuation">[</span>simplification<span class="token punctuation">]</span>
+</code></pre>
+</li>
+<li>
+<p>Output:</p>
+<pre class="language-text"><code>( [ Transfer_tokens ( lqtBurned, txn.sender )                0mutez         storage.lqtAddress   %mintOrBurn
+    Transfer_tokens ( self.address, to_, $tokens_withdrawn ) 0mutez         storage.tokenAddress %transfer
+    Transfer_tokens ()                                       $xtz_withdrawn _to
+  ], { storage with tokenPool -= $tokens_withdrawn,
+                    xtzPool   -= $xtz_withdrawn,
+                    lqtTotal  -= lqtBurned} )
+</code></pre>
+<p>where <code>$xtz_withdrawn    = storage.xtzPool *    (lqtBurned / storage.lqtTotal)</code>
+and <code>$tokens_withdrawn = storage.tokenPool *  (lqtBurned / storage.lqtTotal)</code></p>
+</li>
+</ul>
+</li>
+<li>
+<p><code>default_</code></p>
+<ul>
+<li>
+<p>Input:</p>
+<pre class="language-k"><code><span class="token keyword">syntax</span> EntryPointParams <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> DefaultParams
+<span class="token keyword">syntax</span> DefaultParams    <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">&quot;Default&quot;</span>
+<span class="token keyword">rule</span> wellTypedParams<span class="token punctuation">(</span>Default<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token boolean">true</span> <span class="token punctuation">[</span>simplification<span class="token punctuation">]</span>
+</code></pre>
+</li>
+<li>
+<p>Output:</p>
+<pre class="language-text"><code>( [], { storage with xtzPool += txn.amount } )
+</code></pre>
+</li>
+</ul>
+</li>
+<li>
+<p><code>xtz_to_token</code></p>
+<ul>
+<li>Input:</li>
+</ul>
+<pre class="language-k"><code><span class="token keyword">syntax</span> EntryPointParams <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> XtzToTokenParams
+<span class="token keyword">syntax</span> XtzToTokenParams <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> XtzToToken<span class="token punctuation">(</span>to              <span class="token punctuation">:</span> Address<span class="token punctuation">,</span>
+                                       minTokensBought <span class="token punctuation">:</span> <span class="token keyword">Int</span><span class="token punctuation">,</span>
+                                       deadline        <span class="token punctuation">:</span> Timestamp<span class="token punctuation">)</span>
+<span class="token keyword">rule</span> wellTypedParams<span class="token punctuation">(</span>XtzToToken<span class="token punctuation">(</span>_To<span class="token punctuation">,</span> MinTokensBought<span class="token punctuation">,</span> Deadline<span class="token punctuation">)</span><span class="token punctuation">)</span>
+  <span class="token operator">=&gt;</span> MinTokensBought <span class="token operator">&gt;=</span><span class="token keyword">Int</span> <span class="token number">0</span> andBool #IsLegalTimestamp<span class="token punctuation">(</span>Deadline<span class="token punctuation">)</span>
+     <span class="token punctuation">[</span>simplification<span class="token punctuation">]</span>
+</code></pre>
+<ul>
+<li>
+<p>Output:</p>
+<pre class="language-text"><code>( [ Transfer_tokens ( self.address, to_, #TokensBought ) 0xtz storage.tokenAddress %transfer ],
+  { storage with xtzPool += txn.amount ; tokenPool -= #TokensBought } )
+</code></pre>
+<p>where <code>#TokensBought</code> is the current total of tokens exchanged from <code>txn.amount</code> defined by
+the macro given below.</p>
+</li>
+</ul>
+</li>
+<li>
+<p><code>token_to_xtz</code></p>
+<ul>
+<li>Input:</li>
+</ul>
+<pre class="language-k"><code><span class="token keyword">syntax</span> EntryPointParams <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> TokenToXtzParams
+<span class="token keyword">syntax</span> TokenToXtzParams <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> TokenToXtz<span class="token punctuation">(</span>to           <span class="token punctuation">:</span> Address<span class="token punctuation">,</span>
+                                       tokensSold   <span class="token punctuation">:</span> <span class="token keyword">Int</span><span class="token punctuation">,</span>
+                                       minXtzBought <span class="token punctuation">:</span> Mutez<span class="token punctuation">,</span>
+                                       deadline     <span class="token punctuation">:</span> Timestamp<span class="token punctuation">)</span>
+<span class="token keyword">rule</span> wellTypedParams<span class="token punctuation">(</span>TokenToXtz<span class="token punctuation">(</span>_To<span class="token punctuation">,</span> TokensSold<span class="token punctuation">,</span> MinXtzBought<span class="token punctuation">,</span> Deadline<span class="token punctuation">)</span><span class="token punctuation">)</span>
+  <span class="token operator">=&gt;</span>         TokensSold <span class="token operator">&gt;=</span><span class="token keyword">Int</span> <span class="token number">0</span>
+     andBool #IsLegalMutezValue<span class="token punctuation">(</span>MinXtzBought<span class="token punctuation">)</span>
+     andBool #IsLegalTimestamp<span class="token punctuation">(</span>Deadline<span class="token punctuation">)</span>
+     <span class="token punctuation">[</span>simplification<span class="token punctuation">]</span>
+</code></pre>
+<ul>
+<li>
+<p>Output:</p>
+<pre class="language-text"><code>( [ Transfer_tokens ( txn.sender, self.address, tokensSold ) 0xtz self.tokenAddress %transfer ]
+  [ Transfer_tokens () #XtzBought _to ],
+  { storage with xtzPool -= #XtzBought ; tokenPool += tokensSold } )
+</code></pre>
+<p>where <code>#XtzBought</code> is the current total of xtz exchanged from <code>tokensSold</code> by the formula
+defined by the macro below.</p>
+</li>
+</ul>
+</li>
+<li>
+<p><code>token_to_token</code></p>
+<ul>
+<li>Input:</li>
+</ul>
+<pre class="language-k"><code><span class="token keyword">syntax</span> EntryPointParams   <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> TokenToTokenParams
+<span class="token keyword">syntax</span> TokenToTokenParams <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> TokenToToken<span class="token punctuation">(</span>outputDexterContract <span class="token punctuation">:</span> Address<span class="token punctuation">,</span>
+                                           minTokensBought      <span class="token punctuation">:</span> <span class="token keyword">Int</span><span class="token punctuation">,</span>
+                                           to                   <span class="token punctuation">:</span> Address<span class="token punctuation">,</span>
+                                           tokensSold           <span class="token punctuation">:</span> <span class="token keyword">Int</span><span class="token punctuation">,</span>
+                                           deadline             <span class="token punctuation">:</span> Timestamp<span class="token punctuation">)</span>
+<span class="token keyword">rule</span> wellTypedParams<span class="token punctuation">(</span>TokenToToken<span class="token punctuation">(</span>_OutputDexterContract<span class="token punctuation">,</span>
+                                           MinTokensBought<span class="token punctuation">,</span>
+                                          _To<span class="token punctuation">,</span>
+                                           TokensSold<span class="token punctuation">,</span>
+                                           Deadline<span class="token punctuation">)</span><span class="token punctuation">)</span>
+  <span class="token operator">=&gt;</span>         MinTokensBought <span class="token operator">&gt;=</span><span class="token keyword">Int</span> <span class="token number">0</span>
+     andBool TokensSold <span class="token operator">&gt;=</span><span class="token keyword">Int</span> <span class="token number">0</span>
+     andBool #IsLegalTimestamp<span class="token punctuation">(</span>Deadline<span class="token punctuation">)</span>
+     <span class="token punctuation">[</span>simplification<span class="token punctuation">]</span>
+</code></pre>
+<ul>
+<li>
+<p>Output:</p>
+<pre class="language-text"><code>( [ Transfer_tokens ( txn.sender, self.address, tokensSold ) 0xtz self.tokenAddress %transfer     ]
+  [ Transfer_tokens { to_, minTokensBought, deadline } #XtzBought outputDexterContract %xtz_to_token ],
+  { storage with xtzPool -= #XtzBought ; tokenPool += tokensSold } )
+</code></pre>
+<p>where <code>#XtzBought</code> is the current total of xtz exchanged from <code>TokensSold</code> by the formula</p>
+</li>
+</ul>
+</li>
+</ol>
+</li>
+<li>
+<p><a href="https://gitlab.com/dexter2tz/dexter2tz/-/blob/8a5792a56e0143042926c3ca8bff7d7068a541c3/lqt_fa12.mligo.tz" target="_blank" rel="noopener">lqt_fa12.mligo.tz</a></p>
+<p>Note that, in this case, we do not need to verify this implementation in particular; it is sufficient that we can model the behavior of an arbitrary contract which conforms to the FA1.2 standard.
+Such a contract will have the following entry points:</p>
+<ol>
+<li><code>transfer</code></li>
+<li><code>approve</code></li>
+<li><code>mintOrBurn</code></li>
+<li><code>getAllowance</code></li>
+<li><code>getBalance</code></li>
+<li><code>getTotalSupply</code></li>
+</ol>
+</li>
+</ol>
+<p>As reference materials for understanding the contract intent, we will consult:</p>
+<ol>
+<li>The <a href="https://gitlab.com/tzip/tzip/-/blob/master/drafts/current/draft-liquidity_baking.md" target="_blank" rel="noopener">Liquidity Baking TZIP draft</a></li>
+<li>The <a href="https://ligolang.org/docs/intro/introduction" target="_blank" rel="noopener">LIGO documentation</a></li>
+<li>The <a href="http://tezos.gitlab.io/008/michelson.html" target="_blank" rel="noopener">Michelson documentation</a></li>
+<li>The <a href="https://gitlab.com/tzip/tzip/blob/master/proposals/tzip-7/tzip-7.md" target="_blank" rel="noopener">FA 1.2 standard</a></li>
+<li>The <a href="https://github.com/tz-wrapped/tezos-btc/" target="_blank" rel="noopener">Tezos BTC (TZBTC) contract source code</a></li>
+</ol>
+<h2 id="state-abstraction">State Abstraction</h2>
+<p>We use a few helper routines to convert between our abstract and concrete proof state.
+We first define functions which build our parameter and our storage types.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> TypeName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #LiquidityBakingParamType<span class="token punctuation">(</span><span class="token punctuation">)</span>  <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">]</span>
+  <span class="token comment">// --------------------------------------------------------------------</span>
+  <span class="token keyword">rule</span> #LiquidityBakingParamType<span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token operator">=&gt;</span> <span class="token punctuation">(</span>or
+          <span class="token punctuation">(</span>or
+             <span class="token punctuation">(</span>or <span class="token punctuation">(</span>pair address                      <span class="token comment">// addLiquidity</span>
+                    <span class="token punctuation">(</span>pair nat
+                       <span class="token punctuation">(</span>pair nat timestamp<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+                  unit<span class="token punctuation">)</span>                             <span class="token comment">// default</span>
+             <span class="token punctuation">(</span>or <span class="token punctuation">(</span>pair address                      <span class="token comment">// removeLiquidity</span>
+                    <span class="token punctuation">(</span>pair nat
+                       <span class="token punctuation">(</span>pair mutez
+                          <span class="token punctuation">(</span>pair nat timestamp<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+                 <span class="token punctuation">(</span>pair address                      <span class="token comment">// tokenToToken</span>
+                    <span class="token punctuation">(</span>pair nat
+                       <span class="token punctuation">(</span>pair address
+                          <span class="token punctuation">(</span>pair nat timestamp<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+          <span class="token punctuation">(</span>or <span class="token punctuation">(</span>pair address                         <span class="token comment">// tokenToXtz</span>
+                 <span class="token punctuation">(</span>pair nat
+                   <span class="token punctuation">(</span>pair mutez timestamp<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+              <span class="token punctuation">(</span>pair address                         <span class="token comment">// xtzToToken</span>
+                 <span class="token punctuation">(</span>pair nat timestamp<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+
+  <span class="token keyword">syntax</span> TypeName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #LiquidityBakingStorageType<span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">]</span>
+  <span class="token comment">// ---------------------------------------------------------------------</span>
+  <span class="token keyword">rule</span> #LiquidityBakingStorageType<span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token operator">=&gt;</span> <span class="token punctuation">(</span>pair nat
+          <span class="token punctuation">(</span>pair mutez
+             <span class="token punctuation">(</span>pair nat
+               <span class="token punctuation">(</span>pair address
+                 address<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+</code></pre>
+<p>We also define a functions that serialize and deserialize our abstract parameters and state.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> Data <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #LoadLiquidityBakingParams<span class="token punctuation">(</span>EntryPointParams<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">]</span>
+  <span class="token comment">// --------------------------------------------------------------------------------</span>
+  <span class="token keyword">rule</span> #LoadLiquidityBakingParams<span class="token punctuation">(</span>AddLiquidity<span class="token punctuation">(</span>Owner<span class="token punctuation">,</span> MinLqtMinted<span class="token punctuation">,</span> MaxTokensDeposited<span class="token punctuation">,</span> Deadline<span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token operator">=&gt;</span> Left Left Left Pair Owner Pair MinLqtMinted Pair MaxTokensDeposited Deadline
+
+  <span class="token keyword">rule</span> #LoadLiquidityBakingParams<span class="token punctuation">(</span>Default<span class="token punctuation">)</span>
+    <span class="token operator">=&gt;</span> Left Left Right Unit
+
+  <span class="token keyword">rule</span> #LoadLiquidityBakingParams<span class="token punctuation">(</span>RemoveLiquidity<span class="token punctuation">(</span>To<span class="token punctuation">,</span> LqtBurned<span class="token punctuation">,</span> MinXtzWithdrawn<span class="token punctuation">,</span> MinTokensWithdrawn<span class="token punctuation">,</span> Deadline<span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token operator">=&gt;</span> Left Right Left Pair To Pair LqtBurned Pair MinXtzWithdrawn Pair MinTokensWithdrawn Deadline
+
+  <span class="token keyword">rule</span> #LoadLiquidityBakingParams<span class="token punctuation">(</span>TokenToToken<span class="token punctuation">(</span>OutputDexterContract<span class="token punctuation">,</span> MinTokensBought<span class="token punctuation">,</span> To<span class="token punctuation">,</span> TokensSold<span class="token punctuation">,</span> Deadline<span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token operator">=&gt;</span> Left Right Right Pair OutputDexterContract Pair MinTokensBought Pair To Pair TokensSold Deadline
+
+  <span class="token keyword">rule</span> #LoadLiquidityBakingParams<span class="token punctuation">(</span>TokenToXtz<span class="token punctuation">(</span>To<span class="token punctuation">,</span> TokensSold<span class="token punctuation">,</span> MinXtzBought<span class="token punctuation">,</span> Deadline<span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token operator">=&gt;</span> Right Left Pair To Pair TokensSold Pair MinXtzBought Deadline
+
+  <span class="token keyword">rule</span> #LoadLiquidityBakingParams<span class="token punctuation">(</span>XtzToToken<span class="token punctuation">(</span>To<span class="token punctuation">,</span> MinTokensBought<span class="token punctuation">,</span> Deadline<span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token operator">=&gt;</span> Right Right Pair To Pair MinTokensBought Deadline
+
+  <span class="token keyword">syntax</span> KItem <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #loadLiquidityBakingState<span class="token punctuation">(</span>EntryPointParams<span class="token punctuation">)</span>
+  <span class="token comment">// ---------------------------------------------------------</span>
+  <span class="token keyword">rule</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>k</span><span class="token punctuation">&gt;</span></span> #loadLiquidityBakingState<span class="token punctuation">(</span>Params<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token punctuation">.</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>k</span><span class="token punctuation">&gt;</span></span>
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>stack</span><span class="token punctuation">&gt;</span></span> <span class="token punctuation">.</span>Stack
+            <span class="token operator">=&gt;</span> <span class="token punctuation">[</span> pair #LiquidityBakingParamType<span class="token punctuation">(</span><span class="token punctuation">)</span> #LiquidityBakingStorageType<span class="token punctuation">(</span><span class="token punctuation">)</span>
+                 Pair #LoadLiquidityBakingParams<span class="token punctuation">(</span>Params<span class="token punctuation">)</span>
+                   Pair TokenPool
+                     Pair XTZPool
+                       Pair LQTTotal
+                         Pair TokenAddress
+                           LQTAddress <span class="token punctuation">]</span>
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>stack</span><span class="token punctuation">&gt;</span></span>
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>tokenPool</span><span class="token punctuation">&gt;</span></span>    TokenPool    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>tokenPool</span><span class="token punctuation">&gt;</span></span>
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>xtzPool</span><span class="token punctuation">&gt;</span></span>      XTZPool      <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>xtzPool</span><span class="token punctuation">&gt;</span></span>
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>lqtTotal</span><span class="token punctuation">&gt;</span></span>     LQTTotal     <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>lqtTotal</span><span class="token punctuation">&gt;</span></span>
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>tokenAddress</span><span class="token punctuation">&gt;</span></span> TokenAddress <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>tokenAddress</span><span class="token punctuation">&gt;</span></span>
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>lqtAddress</span><span class="token punctuation">&gt;</span></span>   LQTAddress   <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>lqtAddress</span><span class="token punctuation">&gt;</span></span>
+
+  <span class="token keyword">syntax</span> KItem <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #storeLiquidityBakingState<span class="token punctuation">(</span><span class="token punctuation">)</span>
+  <span class="token comment">// ------------------------------------------</span>
+  <span class="token keyword">rule</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>k</span><span class="token punctuation">&gt;</span></span> #storeLiquidityBakingState<span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token punctuation">.</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>k</span><span class="token punctuation">&gt;</span></span>
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>stack</span><span class="token punctuation">&gt;</span></span> <span class="token punctuation">[</span> pair list operation StorageType<span class="token punctuation">:</span>TypeName
+                 Pair OpList
+                   Pair TokenPool
+                     Pair XTZPool
+                       Pair LQTTotal
+                         Pair TokenContract
+                           LQTAddress <span class="token punctuation">]</span>
+            <span class="token operator">=&gt;</span> <span class="token punctuation">.</span>Stack
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>stack</span><span class="token punctuation">&gt;</span></span>
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>tokenPool</span><span class="token punctuation">&gt;</span></span>     _ <span class="token operator">=&gt;</span> TokenPool     <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>tokenPool</span><span class="token punctuation">&gt;</span></span>
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>xtzPool</span><span class="token punctuation">&gt;</span></span>       _ <span class="token operator">=&gt;</span> XTZPool       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>xtzPool</span><span class="token punctuation">&gt;</span></span>
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>lqtTotal</span><span class="token punctuation">&gt;</span></span>      _ <span class="token operator">=&gt;</span> LQTTotal      <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>lqtTotal</span><span class="token punctuation">&gt;</span></span>
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>tokenAddress</span><span class="token punctuation">&gt;</span></span>  _ <span class="token operator">=&gt;</span> TokenContract <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>tokenAddress</span><span class="token punctuation">&gt;</span></span>
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>operations</span><span class="token punctuation">&gt;</span></span>    _ <span class="token operator">=&gt;</span> OpList        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>operations</span><span class="token punctuation">&gt;</span></span>
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>lqtAddress</span><span class="token punctuation">&gt;</span></span>    _ <span class="token operator">=&gt;</span> LQTAddress    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>lqtAddress</span><span class="token punctuation">&gt;</span></span>
+
+    <span class="token keyword">requires</span> StorageType <span class="token operator">==</span>K #LiquidityBakingStorageType<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+</code></pre>
+<p>If the contract execution fails, storage is not updated.</p>
+<pre class="language-k"><code>  <span class="token keyword">rule</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>k</span><span class="token punctuation">&gt;</span></span> Aborted<span class="token punctuation">(</span>_<span class="token punctuation">,</span> _<span class="token punctuation">,</span> _<span class="token punctuation">,</span> _<span class="token punctuation">)</span> <span class="token operator">~&gt;</span> <span class="token punctuation">(</span>#storeLiquidityBakingState<span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token punctuation">.</span><span class="token punctuation">)</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>k</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h2 id="proof-helper-functions">Proof Helper Functions</h2>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> Type <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #TokenContractType<span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">]</span>
+ <span class="token comment">// ---------------------------------------------------------</span>
+  <span class="token keyword">rule</span> #TokenContractType<span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #Type<span class="token punctuation">(</span>pair address <span class="token punctuation">(</span>contract pair address pair address nat<span class="token punctuation">)</span><span class="token punctuation">)</span>  <span class="token punctuation">[</span>simplification<span class="token punctuation">]</span>
+
+  <span class="token keyword">syntax</span> Type <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #TokenTransferType<span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">]</span>
+ <span class="token comment">// ---------------------------------------------------------</span>
+  <span class="token keyword">rule</span> #TokenTransferType<span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #Type<span class="token punctuation">(</span>pair address pair address nat<span class="token punctuation">)</span> <span class="token punctuation">[</span>simplification<span class="token punctuation">]</span>
+
+  <span class="token keyword">syntax</span> Data <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #TokenTransferData<span class="token punctuation">(</span>Address<span class="token punctuation">,</span> Address<span class="token punctuation">,</span> <span class="token keyword">Int</span><span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">]</span>
+ <span class="token comment">// ------------------------------------------------------------------------------</span>
+  <span class="token keyword">rule</span> #TokenTransferData<span class="token punctuation">(</span>From<span class="token punctuation">,</span> To<span class="token punctuation">,</span> TokenAmt<span class="token punctuation">)</span> <span class="token operator">=&gt;</span>  Pair From Pair To TokenAmt <span class="token punctuation">[</span>simplification<span class="token punctuation">]</span>
+
+  <span class="token keyword">syntax</span> <span class="token keyword">Int</span> <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #ceildiv   <span class="token punctuation">(</span><span class="token keyword">Int</span><span class="token punctuation">,</span> <span class="token keyword">Int</span><span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">]</span>
+               <span class="token operator">|</span> #ceildivAux<span class="token punctuation">(</span><span class="token keyword">Int</span><span class="token punctuation">,</span> <span class="token keyword">Int</span><span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">]</span>
+ <span class="token comment">// ---------------------------------------------------------</span>
+  <span class="token keyword">rule</span> #ceildiv   <span class="token punctuation">(</span>X<span class="token punctuation">,</span> Y<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #ceildivAux<span class="token punctuation">(</span>X<span class="token punctuation">,</span> Y<span class="token punctuation">)</span> <span class="token keyword">requires</span> Y <span class="token operator">=</span><span class="token operator">/</span><span class="token operator">=</span><span class="token keyword">Int</span> <span class="token number">0</span>
+  <span class="token keyword">rule</span> #ceildivAux<span class="token punctuation">(</span>_<span class="token punctuation">,</span> Y<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token number">0</span>                 <span class="token keyword">requires</span> Y  <span class="token operator">==</span><span class="token keyword">Int</span> <span class="token number">0</span>
+  <span class="token keyword">rule</span> #ceildivAux<span class="token punctuation">(</span>X<span class="token punctuation">,</span> Y<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> X <span class="token operator">/</span><span class="token keyword">Int</span> Y          <span class="token keyword">requires</span> Y  <span class="token operator">=</span><span class="token operator">/</span><span class="token operator">=</span><span class="token keyword">Int</span> <span class="token number">0</span> andBool         X <span class="token operator">%</span><span class="token keyword">Int</span> Y <span class="token operator">==</span><span class="token keyword">Int</span> <span class="token number">0</span>
+  <span class="token keyword">rule</span> #ceildivAux<span class="token punctuation">(</span>X<span class="token punctuation">,</span> Y<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> X <span class="token operator">/</span><span class="token keyword">Int</span> Y <span class="token operator">+</span><span class="token keyword">Int</span> <span class="token number">1</span>   <span class="token keyword">requires</span> Y  <span class="token operator">=</span><span class="token operator">/</span><span class="token operator">=</span><span class="token keyword">Int</span> <span class="token number">0</span> andBool notBool X <span class="token operator">%</span><span class="token keyword">Int</span> Y <span class="token operator">==</span><span class="token keyword">Int</span> <span class="token number">0</span>
+
+  <span class="token keyword">syntax</span> <span class="token keyword">Int</span> <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #CurrencyBought<span class="token punctuation">(</span><span class="token keyword">Int</span><span class="token punctuation">,</span> <span class="token keyword">Int</span><span class="token punctuation">,</span> <span class="token keyword">Int</span><span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">,</span> smtlib<span class="token punctuation">(</span>xtzbought<span class="token punctuation">)</span><span class="token punctuation">,</span> no<span class="token operator">-</span>evaluators<span class="token punctuation">]</span>
+ <span class="token comment">// ----------------------------------------------------------------------------------------------------</span>
+  <span class="token keyword">rule</span> <span class="token punctuation">(</span>ToSellAmt <span class="token operator">*</span><span class="token keyword">Int</span> <span class="token number">999</span> <span class="token operator">*</span><span class="token keyword">Int</span> ToBuyCurrencyTotal<span class="token punctuation">)</span> <span class="token operator">/</span><span class="token keyword">Int</span> <span class="token punctuation">(</span>ToSellCurrencyTotal <span class="token operator">*</span><span class="token keyword">Int</span> <span class="token number">1000</span> <span class="token operator">+</span><span class="token keyword">Int</span> <span class="token punctuation">(</span>ToSellAmt <span class="token operator">*</span><span class="token keyword">Int</span> <span class="token number">999</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token operator">=&gt;</span> #CurrencyBought<span class="token punctuation">(</span>ToBuyCurrencyTotal<span class="token punctuation">,</span> ToSellCurrencyTotal<span class="token punctuation">,</span> ToSellAmt<span class="token punctuation">)</span>
+    <span class="token punctuation">[</span>simplification<span class="token punctuation">]</span>
+
+  <span class="token keyword">syntax</span> <span class="token keyword">Int</span> <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #XtzNetBurn<span class="token punctuation">(</span><span class="token keyword">Int</span><span class="token punctuation">)</span>
+ <span class="token comment">// -----------------------------</span>
+  <span class="token keyword">rule</span> #XtzNetBurn<span class="token punctuation">(</span>XtzAmount<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #mulDiv<span class="token punctuation">(</span> XtzAmount <span class="token punctuation">,</span> <span class="token number">999</span> <span class="token punctuation">,</span> <span class="token number">1000</span> <span class="token punctuation">)</span> <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+
+  <span class="token keyword">syntax</span> <span class="token keyword">Int</span> <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #XtzBurnAmount<span class="token punctuation">(</span><span class="token keyword">Int</span><span class="token punctuation">)</span>
+ <span class="token comment">// --------------------------------</span>
+  <span class="token keyword">rule</span> #XtzBurnAmount<span class="token punctuation">(</span>XtzAmount<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> XtzAmount <span class="token operator">-</span><span class="token keyword">Int</span> #XtzNetBurn <span class="token punctuation">(</span> XtzAmount <span class="token punctuation">)</span> <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+</code></pre>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> <span class="token keyword">Bool</span> <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #EntrypointExists<span class="token punctuation">(</span>Map<span class="token punctuation">,</span> Address<span class="token punctuation">,</span> FieldAnnotation<span class="token punctuation">,</span> Type<span class="token punctuation">)</span>
+ <span class="token comment">// --------------------------------------------------------------------</span>
+  <span class="token keyword">rule</span> #EntrypointExists<span class="token punctuation">(</span>KnownAddresses<span class="token punctuation">,</span> Addr<span class="token punctuation">,</span> FieldAnnot<span class="token punctuation">,</span> EntrypointType<span class="token punctuation">)</span>
+    <span class="token operator">=&gt;</span> Addr <span class="token punctuation">.</span> FieldAnnot  in_keys<span class="token punctuation">(</span>KnownAddresses<span class="token punctuation">)</span> andBool
+       KnownAddresses<span class="token punctuation">[</span>Addr <span class="token punctuation">.</span> FieldAnnot<span class="token punctuation">]</span> <span class="token operator">==</span>K #Name<span class="token punctuation">(</span>EntrypointType<span class="token punctuation">)</span>
+    <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+
+  <span class="token keyword">syntax</span> <span class="token keyword">Bool</span> <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #LocalEntrypointExists<span class="token punctuation">(</span>Map<span class="token punctuation">,</span> FieldAnnotation<span class="token punctuation">,</span> Type<span class="token punctuation">)</span>
+ <span class="token comment">// ----------------------------------------------------------------</span>
+  <span class="token keyword">rule</span> #LocalEntrypointExists<span class="token punctuation">(</span>LocalEntrypoints<span class="token punctuation">,</span> FieldAnnot<span class="token punctuation">,</span> EntrypointType<span class="token punctuation">)</span>
+    <span class="token operator">=&gt;</span> FieldAnnot in_keys<span class="token punctuation">(</span>LocalEntrypoints<span class="token punctuation">)</span> andBool
+       LocalEntrypoints<span class="token punctuation">[</span>FieldAnnot<span class="token punctuation">]</span> <span class="token operator">==</span>K #Name<span class="token punctuation">(</span>EntrypointType<span class="token punctuation">)</span>
+    <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+</code></pre>
+<h3 id="avoiding-interpreting-functions">Avoiding Interpreting Functions</h3>
+<p>If a function value does not play well with the prover or SMT solver, it can be rewritten to <code>#uninterpreted</code>.
+This function has no evaluation rules, so the prover can make no assumptions about it -- it will be assumed it can take on any value.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> <span class="token keyword">Int</span> <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #mulMod<span class="token punctuation">(</span><span class="token keyword">Int</span><span class="token punctuation">,</span> <span class="token keyword">Int</span><span class="token punctuation">,</span> <span class="token keyword">Int</span><span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">,</span> smtlib<span class="token punctuation">(</span>mulMod<span class="token punctuation">)</span><span class="token punctuation">,</span> no<span class="token operator">-</span>evaluators<span class="token punctuation">]</span>
+               <span class="token operator">|</span> #mulDiv<span class="token punctuation">(</span><span class="token keyword">Int</span><span class="token punctuation">,</span> <span class="token keyword">Int</span><span class="token punctuation">,</span> <span class="token keyword">Int</span><span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">,</span> smtlib<span class="token punctuation">(</span>mulDiv<span class="token punctuation">)</span><span class="token punctuation">,</span> no<span class="token operator">-</span>evaluators<span class="token punctuation">]</span>
+ <span class="token comment">// -----------------------------------------------------------------------------------------</span>
+  <span class="token keyword">rule</span> <span class="token punctuation">(</span>X <span class="token operator">*</span><span class="token keyword">Int</span> Y<span class="token punctuation">)</span> <span class="token operator">%</span><span class="token keyword">Int</span> Z <span class="token operator">=&gt;</span> #mulMod<span class="token punctuation">(</span>X<span class="token punctuation">,</span> Y<span class="token punctuation">,</span> Z<span class="token punctuation">)</span> <span class="token punctuation">[</span>simplification<span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> <span class="token punctuation">(</span>X <span class="token operator">*</span><span class="token keyword">Int</span> Y<span class="token punctuation">)</span> <span class="token operator">/</span><span class="token keyword">Int</span> Z <span class="token operator">=&gt;</span> #mulDiv<span class="token punctuation">(</span>X<span class="token punctuation">,</span> Y<span class="token punctuation">,</span> Z<span class="token punctuation">)</span> <span class="token punctuation">[</span>simplification<span class="token punctuation">]</span>
+</code></pre>
+<h2 id="putting-it-all-together">Putting It All Together</h2>
+<p>All contract call specifications have common steps:</p>
+<ol>
+<li>Load parameters and storage onto the stack.</li>
+<li>Execute the Liquidity Baking contract code.</li>
+<li>Save the resulting storage.</li>
+</ol>
+<p>If all steps are completed, only the Liquidity Baking specific storage is updated.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> KItem <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #runProof<span class="token punctuation">(</span>EntryPointParams<span class="token punctuation">)</span>
+ <span class="token comment">// ------------------------------------------</span>
+  <span class="token keyword">rule</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>k</span><span class="token punctuation">&gt;</span></span> #runProof<span class="token punctuation">(</span>Params<span class="token punctuation">)</span>
+        <span class="token operator">=&gt;</span> #loadLiquidityBakingState<span class="token punctuation">(</span>Params<span class="token punctuation">)</span>
+        <span class="token operator">~&gt;</span> #liquidityBakingCode
+        <span class="token operator">~&gt;</span> #storeLiquidityBakingState<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>k</span><span class="token punctuation">&gt;</span></span>
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>myamount</span><span class="token punctuation">&gt;</span></span> #Mutez<span class="token punctuation">(</span>Amount<span class="token punctuation">)</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>myamount</span><span class="token punctuation">&gt;</span></span>
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>xtzPool</span><span class="token punctuation">&gt;</span></span> #Mutez<span class="token punctuation">(</span>XtzPool<span class="token punctuation">)</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>xtzPool</span><span class="token punctuation">&gt;</span></span>
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>tokenPool</span><span class="token punctuation">&gt;</span></span> TokenPool <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>tokenPool</span><span class="token punctuation">&gt;</span></span>
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>operations</span><span class="token punctuation">&gt;</span></span> OpList <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>operations</span><span class="token punctuation">&gt;</span></span>
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>returncode</span><span class="token punctuation">&gt;</span></span> ReturnCode <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>returncode</span><span class="token punctuation">&gt;</span></span>
+    ensures wellTypedParams<span class="token punctuation">(</span>Params<span class="token punctuation">)</span>
+    andBool #IsLegalMutezValue<span class="token punctuation">(</span>Amount<span class="token punctuation">)</span>
+    andBool #IsLegalMutezValue<span class="token punctuation">(</span>XtzPool<span class="token punctuation">)</span>
+    andBool TokenPool <span class="token operator">&gt;=</span><span class="token keyword">Int</span> <span class="token number">0</span>
+    andBool OpList <span class="token operator">==</span>K <span class="token punctuation">.</span>InternalList
+    andBool ReturnCode <span class="token operator">==</span><span class="token keyword">Int</span> <span class="token number">111</span>
+</code></pre>
+<h2 id="epilogue">Epilogue</h2>
+<p>We close out our module context now, which contains all of the information necessary to complete our proof.</p>
+<pre class="language-k"><code><span class="token keyword">endmodule</span>
+</code></pre>
+</body></html></div>
+        </main>
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Typist/1.2/typist.min.js"></script>
+    <script src="../../../../assets/js/index.js"></script>
+  </body>
+</html>
