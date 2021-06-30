@@ -464,27 +464,30 @@ module LIQUIDITY-BAKING-XTZTOTOKEN-POSITIVE-SPEC
         <paramtype> LocalEntrypoints </paramtype>
         <myamount> #Mutez(Amount) </myamount>
         <tokenAddress> TokenAddress </tokenAddress>
-        <xtzPool> #Mutez(XtzPool => XtzPool +Int Amount) </xtzPool>
-        <tokenPool> TokenPool => TokenPool -Int #XtzBought(TokenPool, XtzPool, Amount) </tokenPool>
+        <xtzPool> #Mutez(XtzPool => XtzPool +Int #XtzNetBurn(Amount)) </xtzPool>
+        <tokenPool> TokenPool => TokenPool -Int #CurrencyBought(TokenPool, XtzPool, #XtzNetBurn(Amount)) </tokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <myaddr> SelfAddress </myaddr>
-        <nonce> #Nonce(N => N +Int 1) </nonce>
+        <nonce> #Nonce(N => N +Int 2) </nonce>
         <knownaddrs> KnownAddresses </knownaddrs>
         <operations> _
-                  => [ Transfer_tokens #TokenTransferData(SelfAddress, To, #XtzBought(TokenPool, XtzPool, Amount)) #Mutez(0)                                                TokenAddress . %transfer N        ]
-                  ;; [ Transfer_tokens Unit                                                                        #Mutez(#XtzBurn(#XtzBought(TokenPool, XtzPool, Amount))) null_address . %default (N +Int 2)]
+                  => [ Transfer_tokens #TokenTransferData(SelfAddress, To, #CurrencyBought(TokenPool, XtzPool, #XtzNetBurn(Amount))) #Mutez(0)                      TokenAddress . %transfer N        ]
+                  ;; [ Transfer_tokens Unit                                                                                          #Mutez(#XtzBurnAmount(Amount)) null_address . %default (N +Int 1)]
                   ;; .InternalList
         </operations>
     requires CurrentTime <Int Deadline
-     andBool (XtzPool >Int 0 orBool Amount >Int 0)
-     andBool #XtzBought(TokenPool, XtzPool, Amount) >=Int MinTokensBought
-     andBool #XtzBought(TokenPool, XtzPool, Amount) <=Int TokenPool
-     andBool TokenPool -Int #XtzBought ( TokenPool , XtzPool , Amount ) >=Int 0
-     andBool #IsLegalMutezValue(XtzPool +Int Amount)
+     andBool XtzPool *Int 1000 +Int #mulDiv ( Amount , 999 , 1000 ) *Int 999 =/=Int 0
+     andBool #CurrencyBought(TokenPool, XtzPool, #XtzNetBurn(Amount)) >=Int MinTokensBought
+     andBool #CurrencyBought(TokenPool, XtzPool, #XtzNetBurn(Amount)) <=Int TokenPool
+     andBool TokenPool -Int #CurrencyBought ( TokenPool , XtzPool , #XtzNetBurn(Amount) ) >=Int 0
+     andBool #IsLegalMutezValue(#CurrencyBought(TokenPool, XtzPool, #XtzNetBurn(Amount)))
+     andBool #IsLegalMutezValue(XtzPool +Int #XtzNetBurn(Amount))
+     andBool #IsLegalMutezValue(#XtzNetBurn(Amount))
+     andBool #IsLegalMutezValue(#XtzBurnAmount(Amount))
 
      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType())
      andBool #EntrypointExists(KnownAddresses, null_address, %default,  #Type(unit))
-     andBool #LocalEntrypoints(LocalEntrypoints, %default, unit)
+     andBool #LocalEntrypointExists(LocalEntrypoints, %default, unit)
 endmodule
 ```
 
