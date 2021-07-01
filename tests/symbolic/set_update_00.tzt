@@ -1,3 +1,0 @@
-code { UPDATE } ;
-input { Stack_elt int $V1 ; Stack_elt bool $B ; Stack_elt (set int) $S1 } ;
-output { Stack_elt (set int) $S2 }
