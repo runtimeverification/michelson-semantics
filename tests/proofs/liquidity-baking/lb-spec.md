@@ -156,7 +156,7 @@ module LIQUIDITY-BAKING-REMOVELIQUIDITY-POSITIVE-SPEC
         <senderaddr> Sender </senderaddr>
         <nonce> #Nonce(Nonce => Nonce +Int 3) </nonce>
         <knownaddrs> KnownAddresses </knownaddrs>
-        <paramtype> LocalEntrypoints </paramtype> // 1027
+        <paramtype> LocalEntrypoints </paramtype>
         <operations> _
                   => [ Transfer_tokens (Pair (0 -Int LqtBurned) Sender)                                              #Mutez(0)                                      LqtAddress . %mintOrBurn  Nonce         ] ;;
                      [ Transfer_tokens #TokenTransferData(SelfAddress, To, (LqtBurned *Int TokenAmount) /Int OldLqt) #Mutez(0)                                      TokenAddress . %transfer (Nonce +Int 1) ] ;;
@@ -168,15 +168,14 @@ module LIQUIDITY-BAKING-REMOVELIQUIDITY-POSITIVE-SPEC
      andBool OldLqt >=Int LqtBurned
      andBool MinXtzWithdrawn <=Int (LqtBurned *Int XtzAmount) /Int OldLqt
      andBool MinTokensWithdrawn <=Int (LqtBurned *Int TokenAmount) /Int OldLqt
+     andBool #IsLegalMutezValue((LqtBurned *Int XtzAmount) /Int OldLqt)
+     andBool TokenAmount -Int (LqtBurned *Int TokenAmount) /Int OldLqt >=Int 0
+     andBool #IsLegalMutezValue(XtzAmount   -Int (LqtBurned *Int   XtzAmount) /Int OldLqt)
+
      andBool #EntrypointExists(KnownAddresses, TokenAddress,   %transfer, #TokenTransferType())
      andBool #EntrypointExists(KnownAddresses,   LqtAddress, %mintOrBurn, pair int %quantity .AnnotationList address %target .AnnotationList)
      andBool #EntrypointExists(KnownAddresses,           To,    %default, #Type(unit))
-     andBool #LocalEntrypoints(LocalEntrypoints, %default, unit)
-
-     andBool #IsLegalMutezValue(XtzAmount)
-     andBool #IsLegalMutezValue((LqtBurned *Int XtzAmount) /Int OldLqt)
-     andBool TokenAmount >=Int (LqtBurned *Int TokenAmount) /Int OldLqt
-     andBool XtzAmount   >=Int (LqtBurned *Int   XtzAmount) /Int OldLqt
+     andBool #LocalEntrypointExists(LocalEntrypoints, %default, unit)
 ```
 
 ```k
@@ -187,28 +186,34 @@ endmodule
 module LIQUIDITY-BAKING-REMOVELIQUIDITY-NEGATIVE-SPEC
   imports LIQUIDITY-BAKING-VERIFICATION
 
-  claim <k> #runProof(RemoveLiquidity(_, _, _, _, _)) => Aborted(?_, ?_, ?_, ?_) </k>
-        <stack> .Stack => ( Failed ?_ ) </stack>
-        <myamount> #Mutez(Amount) </myamount>
-    requires Amount >Int 0
-
-  claim <k> #runProof(RemoveLiquidity(_, _, _, _, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
-        <stack> .Stack => ( Failed ?_ ) </stack>
+  claim <k> #runProof(RemoveLiquidity(To, LqtBurned, #Mutez(MinXtzWithdrawn), MinTokensWithdrawn, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ?_:FailedStack </stack>
         <mynow> #Timestamp(CurrentTime) </mynow>
-    requires CurrentTime >=Int Deadline
-
-  claim <k> #runProof(RemoveLiquidity(_, LqtBurned, _, _, _)) => Aborted(?_, ?_, ?_, ?_) </k>
-        <stack> .Stack => ?_:FailedStack </stack>
-        <lqtTotal> OldLqt </lqtTotal>
-    requires OldLqt ==Int 0
-      orBool OldLqt <Int LqtBurned
-
-  claim <k> #runProof(RemoveLiquidity(_, LqtBurned, #Mutez(MinXtzWithdrawn), _, _)) => Aborted(?_, ?_, ?_, ?_) </k>
-        <stack> .Stack => ?_:FailedStack </stack>
+        <myamount> #Mutez(0) </myamount>
+        <myaddr> SelfAddress </myaddr>
         <lqtTotal> OldLqt </lqtTotal>
         <xtzPool> #Mutez(XtzAmount) </xtzPool>
-    requires MinXtzWithdrawn >Int (LqtBurned *Int XtzAmount) /Int OldLqt
+        <tokenPool> TokenAmount </tokenPool>
+        <tokenAddress> TokenAddress:Address </tokenAddress>
+        <lqtAddress> LqtAddress:Address </lqtAddress>
+        <senderaddr> Sender </senderaddr>
+        <knownaddrs> KnownAddresses </knownaddrs>
+        <paramtype> LocalEntrypoints </paramtype>
+        <nonce> _ => ?_ </nonce>
+    requires notBool( CurrentTime <Int Deadline
+              andBool OldLqt >Int 0
+              andBool OldLqt >=Int LqtBurned
+              andBool MinXtzWithdrawn <=Int (LqtBurned *Int XtzAmount) /Int OldLqt
+              andBool MinTokensWithdrawn <=Int (LqtBurned *Int TokenAmount) /Int OldLqt
+              andBool #IsLegalMutezValue((LqtBurned *Int XtzAmount) /Int OldLqt)
+              andBool TokenAmount -Int (LqtBurned *Int TokenAmount) /Int OldLqt >=Int 0
+              andBool #IsLegalMutezValue(XtzAmount   -Int (LqtBurned *Int   XtzAmount) /Int OldLqt)
+                    )
 
+     andBool #EntrypointExists(KnownAddresses, TokenAddress,   %transfer, #TokenTransferType())
+     andBool #EntrypointExists(KnownAddresses,   LqtAddress, %mintOrBurn, pair int %quantity .AnnotationList address %target .AnnotationList)
+     andBool #EntrypointExists(KnownAddresses,           To,    %default, #Type(unit))
+     andBool #LocalEntrypointExists(LocalEntrypoints, %default, unit)
 endmodule
 ```
 
