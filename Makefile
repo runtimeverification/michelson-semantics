@@ -467,8 +467,6 @@ lb_spec_modules_failing = \
                       LIQUIDITY-BAKING-DEFAULT-SPEC                  \
                       LIQUIDITY-BAKING-REMOVELIQUIDITY-NEGATIVE-SPEC \
                       LIQUIDITY-BAKING-REMOVELIQUIDITY-POSITIVE-SPEC \
-                      LIQUIDITY-BAKING-XTZTOTOKEN-NEGATIVE-SPEC      \
-                      LIQUIDITY-BAKING-XTZTOTOKEN-POSITIVE-SPEC
 
 lb_spec_modules = LIQUIDITY-BAKING-SPEC                          \
                   LIQUIDITY-BAKING-TOKENTOTOKEN-NEGATIVE-SPEC    \
@@ -477,7 +475,9 @@ lb_spec_modules = LIQUIDITY-BAKING-SPEC                          \
                   LIQUIDITY-BAKING-TOKENTOXTZ-NEGATIVE-2-SPEC    \
                   LIQUIDITY-BAKING-TOKENTOXTZ-NEGATIVE-3-SPEC    \
                   LIQUIDITY-BAKING-TOKENTOXTZ-NEGATIVE-4-SPEC    \
-                  LIQUIDITY-BAKING-TOKENTOXTZ-POSITIVE-SPEC
+                  LIQUIDITY-BAKING-TOKENTOXTZ-POSITIVE-SPEC      \
+                  LIQUIDITY-BAKING-XTZTOTOKEN-NEGATIVE-SPEC      \
+                  LIQUIDITY-BAKING-XTZTOTOKEN-POSITIVE-SPEC
 
 lb_spec_file := tests/proofs/liquidity-baking/lb-spec.md
 
