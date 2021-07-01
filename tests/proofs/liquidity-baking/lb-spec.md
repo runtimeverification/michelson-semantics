@@ -80,44 +80,12 @@ We have one case for when `#ceildiv` results in an upwards rounding, and one for
     requires CurrentTime <Int Deadline
      andBool XtzAmount   >Int 0
      andBool #ceildiv(Amount *Int TokenAmount, XtzAmount) <=Int MaxTokensDeposited
-     andBool (Amount *Int TokenAmount) %Int XtzAmount ==Int 0
      andBool MinLqtMinted <=Int (Amount *Int OldLqt) /Int XtzAmount
      andBool #IsLegalMutezValue(Amount +Int XtzAmount)
 
      andBool #EntrypointExists(KnownAddresses, TokenAddress,   %transfer, #TokenTransferType())
      andBool #EntrypointExists(KnownAddresses,   LqtAddress, %mintOrBurn, pair int %quantity .AnnotationList address %target .AnnotationList)
-     andBool #LocalEntrypoints(LocalEntrypoints, %default, unit)
-```
-
-```k
-  claim <k> #runProof(AddLiquidity(Owner, MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => . </k>
-        <stack> .Stack </stack>
-        <mynow> #Timestamp(CurrentTime) </mynow>
-        <myamount> #Mutez(Amount) </myamount>
-        <myaddr> SelfAddress </myaddr>
-        <lqtTotal> OldLqt => OldLqt +Int (Amount *Int OldLqt) /Int XtzAmount </lqtTotal>
-        <xtzPool> #Mutez(XtzAmount => XtzAmount +Int Amount) </xtzPool>
-        <tokenPool> TokenAmount => TokenAmount +Int #ceildiv(Amount *Int TokenAmount, XtzAmount) </tokenPool>
-        <tokenAddress> TokenAddress:Address </tokenAddress>
-        <lqtAddress> LqtAddress:Address </lqtAddress>
-        <senderaddr> Sender </senderaddr>
-        <nonce> #Nonce(Nonce => Nonce +Int 2) </nonce>
-        <knownaddrs> KnownAddresses </knownaddrs>
-        <paramtype> LocalEntrypoints </paramtype>
-        <operations> _
-                  => [ Transfer_tokens #TokenTransferData(Sender, SelfAddress, #ceildiv(Amount *Int TokenAmount, XtzAmount)) #Mutez(0) TokenAddress . %transfer    Nonce ] ;;
-                     [ Transfer_tokens Pair ((Amount *Int OldLqt) /Int XtzAmount) Owner                                      #Mutez(0) LqtAddress   . %mintOrBurn (Nonce +Int 1) ] ;;
-                     .InternalList
-        </operations>
-    requires CurrentTime <Int Deadline
-     andBool #ceildiv(Amount *Int TokenAmount, XtzAmount) <=Int MaxTokensDeposited
-     andBool #IsLegalMutezValue(Amount +Int XtzAmount)
-     andBool MinLqtMinted <=Int (Amount *Int OldLqt) /Int XtzAmount
-     andBool XtzAmount   >Int 0
-     andBool (Amount *Int TokenAmount) %Int XtzAmount =/=Int 0
-     andBool #EntrypointExists(KnownAddresses, TokenAddress,   %transfer, #TokenTransferType())
-     andBool #EntrypointExists(KnownAddresses,   LqtAddress, %mintOrBurn, pair int %quantity .AnnotationList address %target .AnnotationList)
-     andBool #LocalEntrypoints(LocalEntrypoints, %default, unit)
+     andBool #LocalEntrypointExists(LocalEntrypoints, %default, unit)
 ```
 
 ```k
@@ -145,11 +113,12 @@ module LIQUIDITY-BAKING-ADDLIQUIDITY-NEGATIVE-SPEC
         <lqtTotal> OldLqt </lqtTotal>
         <xtzPool> #Mutez(XtzAmount) </xtzPool>
         <tokenPool> TokenAmount </tokenPool>
-    requires CurrentTime >=Int Deadline
-        orBool #ceildiv(Amount *Int TokenAmount, XtzAmount) >Int MaxTokensDeposited
-        orBool notBool #IsLegalMutezValue(Amount +Int XtzAmount)
-        orBool XtzAmount ==Int 0
-        orBool MinLqtMinted >Int (Amount *Int OldLqt) /Int XtzAmount
+    requires notBool( CurrentTime <Int Deadline
+              andBool XtzAmount   >Int 0
+              andBool #ceildiv(Amount *Int TokenAmount, XtzAmount) <=Int MaxTokensDeposited
+              andBool MinLqtMinted <=Int (Amount *Int OldLqt) /Int XtzAmount
+              andBool #IsLegalMutezValue(Amount +Int XtzAmount)
+                    )
 ```
 
 TODO: Deal with the case when the token contract or the liquidity token contract don't exist or have the wrong type.
