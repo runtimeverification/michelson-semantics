@@ -471,8 +471,8 @@ module LIQUIDITY-BAKING-XTZTOTOKEN-POSITIVE-SPEC
         <nonce> #Nonce(N => N +Int 2) </nonce>
         <knownaddrs> KnownAddresses </knownaddrs>
         <operations> _
-                  => [ Transfer_tokens #TokenTransferData(SelfAddress, To, #CurrencyBought(TokenPool, XtzPool, #XtzNetBurn(Amount))) #Mutez(0)                      TokenAddress . %transfer N        ]
-                  ;; [ Transfer_tokens Unit                                                                                          #Mutez(#XtzBurnAmount(Amount)) null_address . %default (N +Int 1)]
+                  => [ Transfer_tokens #TokenTransferData(SelfAddress, To, #CurrencyBought(TokenPool, XtzPool, #XtzNetBurn(Amount))) #Mutez(0)                              TokenAddress . %transfer N        ]
+                  ;; [ Transfer_tokens Unit                                                                                          #Mutez(absInt(#XtzBurnAmount(Amount))) null_address . %default (N +Int 1)]
                   ;; .InternalList
         </operations>
     requires CurrentTime <Int Deadline
@@ -480,10 +480,9 @@ module LIQUIDITY-BAKING-XTZTOTOKEN-POSITIVE-SPEC
      andBool #CurrencyBought(TokenPool, XtzPool, #XtzNetBurn(Amount)) >=Int MinTokensBought
      andBool #CurrencyBought(TokenPool, XtzPool, #XtzNetBurn(Amount)) <=Int TokenPool
      andBool TokenPool -Int #CurrencyBought ( TokenPool , XtzPool , #XtzNetBurn(Amount) ) >=Int 0
-     andBool #IsLegalMutezValue(#CurrencyBought(TokenPool, XtzPool, #XtzNetBurn(Amount)))
      andBool #IsLegalMutezValue(XtzPool +Int #XtzNetBurn(Amount))
      andBool #IsLegalMutezValue(#XtzNetBurn(Amount))
-     andBool #IsLegalMutezValue(#XtzBurnAmount(Amount))
+     // andBool #IsLegalMutezValue(#XtzBurnAmount(Amount)) // this check can be inferred by the SMT solver so we don't explicitly need it
 
      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType())
      andBool #EntrypointExists(KnownAddresses, null_address, %default,  #Type(unit))
@@ -510,10 +509,9 @@ module LIQUIDITY-BAKING-XTZTOTOKEN-NEGATIVE-SPEC
                andBool #CurrencyBought(TokenPool, XtzPool, #XtzNetBurn(Amount)) >=Int MinTokensBought
                andBool #CurrencyBought(TokenPool, XtzPool, #XtzNetBurn(Amount)) <=Int TokenPool
                andBool TokenPool -Int #CurrencyBought ( TokenPool , XtzPool , #XtzNetBurn(Amount) ) >=Int 0
-               andBool #IsLegalMutezValue(#CurrencyBought(TokenPool, XtzPool, #XtzNetBurn(Amount)))
                andBool #IsLegalMutezValue(XtzPool +Int #XtzNetBurn(Amount))
                andBool #IsLegalMutezValue(#XtzNetBurn(Amount))
-               andBool #IsLegalMutezValue(#XtzBurnAmount(Amount))
+               // andBool #IsLegalMutezValue(#XtzBurnAmount(Amount))
                      )
 
      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType())
