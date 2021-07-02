@@ -462,13 +462,13 @@ tests/%.dexter_prove: tests/% $(dexter_kompiled)
 # Liquidity baking proofs
 
 lb_spec_modules_failing = \
-                      LIQUIDITY-BAKING-ADDLIQUIDITY-NEGATIVE-SPEC    \
-                      LIQUIDITY-BAKING-ADDLIQUIDITY-POSITIVE-SPEC    \
                       LIQUIDITY-BAKING-DEFAULT-SPEC                  \
-                      LIQUIDITY-BAKING-REMOVELIQUIDITY-NEGATIVE-SPEC \
-                      LIQUIDITY-BAKING-REMOVELIQUIDITY-POSITIVE-SPEC \
 
 lb_spec_modules = LIQUIDITY-BAKING-SPEC                          \
+                  LIQUIDITY-BAKING-ADDLIQUIDITY-NEGATIVE-SPEC    \
+                  LIQUIDITY-BAKING-ADDLIQUIDITY-POSITIVE-SPEC    \
+                  LIQUIDITY-BAKING-REMOVELIQUIDITY-NEGATIVE-SPEC \
+                  LIQUIDITY-BAKING-REMOVELIQUIDITY-POSITIVE-SPEC \
                   LIQUIDITY-BAKING-TOKENTOTOKEN-NEGATIVE-SPEC    \
                   LIQUIDITY-BAKING-TOKENTOTOKEN-POSITIVE-SPEC    \
                   LIQUIDITY-BAKING-TOKENTOXTZ-NEGATIVE-1-SPEC    \
