@@ -40,12 +40,20 @@ the interpreter state so that we can execute Michelson code. We will see it's
 definition later.
 
 ```k
-syntax KItem ::= "#Init"
+  syntax KItem ::= "#PreInit" |  "#Init"
 ```
 
 Here we declare our K-Michelson state configuration. We separate it into type
 (1)-(3) configuration cells as listed above. By convention, we nest all state
 cells inside a topmost cell, which we call `<michelsonTop>`.
+
+```k
+  syntax AccountState ::= #Account(entrypoints  : Map,
+                                   storagetype  : MaybeType,
+                                   storagevalue : MaybeData,
+                                   balance      : Mutez,
+                                   script       : MaybeData)
+```
 
 ```k
   configuration
@@ -60,18 +68,12 @@ The values of many of these cells are accessible via Michelson instructions.
 ```k
         <mynow> #Timestamp(0) </mynow>
         <mychainid> #ChainId(.Bytes) </mychainid>
-        <knownaddrs> .Map </knownaddrs>
         <bigmaps> .Map </bigmaps>
 
-        <myaddr> #Address("InvalidMyAddr") </myaddr>
-        <paramtype> .Map </paramtype>
-        <storagetype> .Type </storagetype>
-        <script> .Data </script>
+        <contracts> .Map </contracts>
 
-        <storagevalue> .Data </storagevalue>
-        <mybalance> #Mutez(0) </mybalance>
+        <currentContract> #Address("TestContract") </currentContract>
         <nonce> #Nonce(0) </nonce>
-
         <paramvalue> .Data </paramvalue>
         <myamount> #Mutez(0) </myamount>
         <sourceaddr> #Address("InvalidSourceAddr") </sourceaddr>
@@ -96,7 +98,7 @@ These cells are used to initialize the test context.
 These cells store the Michelson interpreter runtime state.
 
 ```k
-      <k> $PGM:Pgm ~> #Init </k>
+      <k> #PreInit ~> $PGM:Pgm ~> #Init </k>
       <stack> (.Stack):InternalStack </stack>
       <returncode exit=""> 111 </returncode>
       <assumeFailed> false </assumeFailed>
@@ -132,7 +134,7 @@ interpreter.
                  | "#LoadContext"
   // ----------------------------
   rule <k> #SwapContext(NewCtxtName, NewCont) ~> Cont:K
-        => NewCont ~> #Init ~> #LoadContext
+        => #PreInit ~> NewCont ~> #Init ~> #LoadContext
        </k>
        <savedContext>
            NoContext
@@ -177,6 +179,15 @@ module MICHELSON
 Semantics Initialization
 ------------------------
 
+`#PreInit` fires before the program is loaded to prep the configuration structure for state loading.
+
+```k
+  rule <k> #PreInit
+        => #InitContractMap
+           ...
+       </k>
+```
+
 `#Init` takes care of initialization.
 
 ```k
@@ -193,6 +204,17 @@ Semantics Initialization
        </k>
 ```
 
+### Initialize Contract Map
+
+```k
+  syntax KItem ::= "#InitContractMap"
+  rule <k> #InitContractMap => . ... </k>
+       <contracts>
+         .Map => A |-> #Account(.Map, .Type, .Data, #Mutez(0), .Data)
+       </contracts>
+       <currentContract> A </currentContract>
+```
+
 ### Group Loading
 
 Below are the rules for loading specific groups.
@@ -201,16 +223,32 @@ Below are the rules for loading specific groups.
 
 ```k
   rule <k> parameter T:Type => .K ... </k>
-       <paramtype> .Map => #BuildAnnotationMap(.FieldAnnotation, T) </paramtype>
+       <currentContract> A </currentContract>
+       <contracts>
+         A |-> #Account(... entrypoints : .Map => #BuildAnnotationMap(.FieldAnnotation, T))
+         ...
+       </contracts>
 
   rule <k> parameter FA:FieldAnnotation T:Type => .K ... </k>
-       <paramtype> .Map => #BuildAnnotationMap(FA, T) </paramtype>
+       <currentContract> A </currentContract>
+       <contracts>
+         A |-> #Account(... entrypoints : .Map => #BuildAnnotationMap(FA, T))
+         ...
+       </contracts>
 
   rule <k> storage T => .K ... </k>
-       <storagetype> .Type => T </storagetype>
+       <currentContract> A </currentContract>
+       <contracts>
+         A |-> #Account(... storagetype : .Type => T)
+         ...
+       </contracts>
 
   rule <k> code C => .K ... </k>
-       <script> .Data => C </script>
+       <currentContract> A </currentContract>
+       <contracts>
+         A |-> #Account(... script : .Data => C)
+         ...
+       </contracts>
 
   rule <k> G:Group ; Gs:Groups => G:Group ~> Gs ... </k>
 ```
@@ -230,19 +268,37 @@ Below are the rules for loading specific groups.
   rule <k> chain_id M => .K ... </k>
        <mychainid> #ChainId(_ => M) </mychainid>
 
-  rule <k> self A => .K ... </k>
-       <myaddr> #Address("InvalidMyAddr" => A) </myaddr>
-
   rule <k> amount I => .K ... </k>
        <myamount> #Mutez(0 => I) </myamount>
     requires #IsLegalMutezValue(I)
 
   rule <k> balance I => .K ... </k>
-       <mybalance> #Mutez(0 => I) </mybalance>
+       <currentContract> A </currentContract>
+       <contracts>
+         A |-> #Account(... balance : #Mutez(0 => I))
+         ...
+       </contracts>
     requires #IsLegalMutezValue(I)
 
-  rule <k> other_contracts { M } => .K ... </k>
-       <knownaddrs> .Map => #OtherContractsMapToKMap(M) </knownaddrs>
+  // NOTE: This rule does not check whether a contract keyed by NewAddr already exists in the map
+  rule <k> self NewAddr => .K ... </k>
+       <currentContract> OldAddr => #Address(NewAddr) </currentContract>
+       <contracts>
+           (OldAddr |-> A:AccountState) => #Address(NewAddr) |-> A
+           ...
+       </contracts>
+
+  // NOTE: These rules do not check whether a contract keyed by A already exists in the map
+  rule <k> other_contracts { Contract A T ; OtherContracts }
+        => other_contracts {                OtherContracts }
+           ...
+       </k>
+       <contracts>
+         (.Map => #Address(A) |-> #Account(#BuildAnnotationMap(.FieldAnnotation, T), .Type, .Data, #Mutez(0), .Data))
+         ...
+       </contracts>
+
+  rule <k> other_contracts { .OtherContractsMapEntryList } => . ... </k>
 
   rule <k> big_maps { M } => .K ... </k>
        <bigmaps> .Map => #BigMapsEntryListToKMap(M) </bigmaps>
@@ -315,7 +371,11 @@ The following unit test groups are not supported by the symbolic interpreter.
 ```k
   syntax KItem ::= "#EnsureLocalEntrypointsInitialized"
   rule <k> #EnsureLocalEntrypointsInitialized => .K ... </k>
-       <paramtype> LocalEntrypointMap => #AddDefaultEntry(LocalEntrypointMap, #Type(unit)) </paramtype>
+       <currentContract> CurrentContract </currentContract>
+       <contracts>
+         CurrentContract |-> #Account(... entrypoints : E => #AddDefaultEntry(E, #Type(unit)))
+         ...
+       </contracts>
 ```
 
 ```k
@@ -333,8 +393,12 @@ The following unit test groups are not supported by the symbolic interpreter.
 ```k
   syntax KItem ::= "#ConvertParamToNative"
   rule <k> #ConvertParamToNative => .K ... </k>
-       <paramvalue> D:Data => #MichelineToNative(D, #Type({ LocalEntrypoints [ %default ] }:>TypeName), .Map, BigMaps) </paramvalue>
-       <paramtype> LocalEntrypoints </paramtype>
+       <currentContract> CurrentContract </currentContract>
+       <contracts>
+         CurrentContract |-> #Account(... entrypoints : E)
+         ...
+       </contracts>
+       <paramvalue> D:Data => #MichelineToNative(D, #Type({ E [ %default ] }:>TypeName), .Map, BigMaps) </paramvalue>
        <bigmaps> BigMaps </bigmaps>
 
   rule <k> #ConvertParamToNative => .K ... </k>
@@ -342,13 +406,20 @@ The following unit test groups are not supported by the symbolic interpreter.
 
   syntax KItem ::= "#ConvertStorageToNative"
   rule <k> #ConvertStorageToNative => .K ... </k>
-       <storagevalue> D:Data => #MichelineToNative(D, #ConvertToType(T), .Map, BigMaps) </storagevalue>
-       <storagetype>  T      => #ConvertToType(T)                                       </storagetype>
+       <currentContract> CurrentContract </currentContract>
+       <contracts>
+         CurrentContract |-> #Account(... storagetype  : T      => #ConvertToType(T),
+                                          storagevalue : D:Data => #MichelineToNative(D, #ConvertToType(T), .Map, BigMaps))
+         ...
+       </contracts>
        <bigmaps> BigMaps </bigmaps>
 
   rule <k> #ConvertStorageToNative => .K ... </k>
-       <storagevalue> .Data                </storagevalue>
-       <storagetype>  T => #ConvertToType(T) </storagetype>
+       <currentContract> CurrentContract </currentContract>
+       <contracts>
+         CurrentContract |-> #Account(... storagetype : T => #ConvertToType(T), storagevalue : .Data)
+         ...
+       </contracts>
 
   syntax Type ::= #ConvertToType(MaybeType) [function]
   rule #ConvertToType(.Type)   => unit .AnnotationList
@@ -426,15 +497,22 @@ version.
   syntax KItem ::= #StackToNative(StackElementList, Stack)
   // -----------------------------------------------------
   rule <k> #StackToNative(Stack_elt T D ; Stack, Stack')
-        => #StackToNative(Stack, [ #Name(T) #MichelineToNative(D, T, Addrs, BigMaps) ] ; Stack')
+        => #StackToNative(Stack, [ #Name(T) #MichelineToNative(D, T, #AccountStatesToEntrypoints(Contracts, .Map), BigMaps) ] ; Stack')
            ...
        </k>
-       <knownaddrs> Addrs </knownaddrs>
+       <contracts> Contracts </contracts>
        <bigmaps> BigMaps </bigmaps>
     requires notBool isSymbolicData(D)
 
   rule <k> #StackToNative(.StackElementList, Stack) => .K ... </k>
        <stack> _ => reverseStack(Stack) </stack>
+
+  syntax Map ::= #AccountStatesToEntrypoints(accountStates : Map, entrypoints : Map) [function, functional]
+  // -------------------------------------------------------------------------------------------------
+  rule #AccountStatesToEntrypoints(A |-> #Account(... entrypoints : E) AccountStates, Entrypoints)
+    => #AccountStatesToEntrypoints(AccountStates, (A |-> E) Entrypoints)
+
+  rule #AccountStatesToEntrypoints(.Map, Entrypoints) => Entrypoints
 ```
 
 ```internalized-rl
@@ -473,7 +551,11 @@ version.
         => #if Script ==K .Data #then {} #else Script #fi
            ...
        </k>
-       <script> Script </script>
+       <currentContract> CurrentContract </currentContract>
+       <contracts>
+         CurrentContract |-> #Account(... script : Script)
+         ...
+       </contracts>
 ```
 
 Execution Semantics
@@ -1591,20 +1673,28 @@ These instructions push fresh `contract` literals on the stack corresponding
 to the given addresses/key hashes.
 
 ```k
-  syntax Instruction ::= CONTRACT(FieldAnnotation, TypeName)
-  rule <k> CONTRACT AL:AnnotationList T:Type => CONTRACT(#GetFieldAnnot(AL), #Name(T)) ... </k>
+  syntax Map ::= #GetEntrypoints(Address, Map) [function, functional]
+  // --------------------------------------------------------------------------
+  rule #GetEntrypoints( A, A |-> #Account(... entrypoints : EntrypointMap) _:Map) => EntrypointMap
+  rule #GetEntrypoints(_A, _) => .Map [owise]
+```
 
-  rule <k> CONTRACT(FA, T) => . ... </k>
-       <stack> [address A:Address]                            ; SS
-            => [option contract T Some #Contract(A . FA, T) ] ; SS
+```k
+  syntax Instruction ::= CONTRACT(FieldAnnotation, TypeName, Map)
+  rule <k> CONTRACT AL:AnnotationList T:Type => CONTRACT(#GetFieldAnnot(AL), #Name(T), #GetEntrypoints(A, ContractMap)) ... </k>
+       <stack> [address A:Address] ; _SS </stack>
+       <contracts> ContractMap </contracts>
+
+  rule <k> CONTRACT(FA, T, Entrypoints) => . ... </k>
+       <stack> [address A:Address]
+             ; SS
+            => [option contract T
+                  #if FA in_keys(Entrypoints) andBool Entrypoints [ FA ] ==K T
+                    #then Some #Contract(A . FA, T)
+                    #else None
+                  #fi ]
+             ; SS
        </stack>
-       <knownaddrs> ContractMap </knownaddrs>
-    requires A . FA in_keys(ContractMap)
-     andBool ContractMap [ A . FA ] ==K T
-
-  rule <k> CONTRACT(_FA, T) => . ... </k>
-       <stack> [address _] ; SS => [option contract T None] ; SS </stack>
-       <knownaddrs> _ </knownaddrs> [owise]
 
   rule <k> IMPLICIT_ACCOUNT _AL => . ... </k>
        <stack> [key_hash #KeyHash(A)] ; SS
@@ -1617,7 +1707,11 @@ These instructions push blockchain state on the stack.
 ```k
   rule <k> BALANCE _A => . ... </k>
        <stack> SS => [mutez B] ; SS </stack>
-       <mybalance> B </mybalance>
+       <currentContract> ADDR </currentContract>
+       <contracts>
+         ADDR |-> #Account(... balance : B)
+         ...
+       </contracts>
 
   rule <k> ADDRESS _AL => . ... </k>
        <stack> [contract T #Contract(A . _, T)] ; SS => [address A] ; SS </stack>
@@ -1639,8 +1733,11 @@ These instructions push blockchain state on the stack.
                 #Contract(A . FA, {LocalEntrypointMap [ FA ]}:>TypeName)]
              ; SS
        </stack>
-       <paramtype> LocalEntrypointMap </paramtype>
-       <myaddr> A </myaddr>
+       <currentContract> A </currentContract>
+       <contracts>
+         A |-> #Account(...  entrypoints : LocalEntrypointMap)
+         ...
+       </contracts>
     ensures FA in_keys( LocalEntrypointMap )
     andBool isTypeName(LocalEntrypointMap [ FA ])
 
@@ -2002,16 +2099,16 @@ abstract out pieces of the stack which are non-invariant during loop execution.
                 )
            ...
        </k>
-       <knownaddrs> KnownAddrs </knownaddrs>
+       <contracts> Contracts </contracts>
        <bigmaps> BigMaps </bigmaps>
-    requires #ConcreteMatch(ED, T, KnownAddrs, BigMaps, AD)
+    requires #ConcreteMatch(ED, T, #AccountStatesToEntrypoints(Contracts, .Map), BigMaps, AD)
      andBool TN ==K #Name(T)
 
   // NOTE: this function protects against unification errors
   syntax Bool ::= #ConcreteMatch(Data, Type, Map, Map, Data) [function]
   rule #ConcreteMatch(_:SymbolicData, _, _, _, _) => false
   rule #ConcreteMatch(ED, T, Addrs, BigMaps, AD) => #Matches(#MichelineToNative(ED,T,Addrs,BigMaps),AD)
-    requires notBool isSymbolicData(ED)
+   requires notBool isSymbolicData(ED)
 ```
 
 ```k

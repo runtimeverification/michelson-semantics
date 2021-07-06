@@ -334,29 +334,7 @@ eleven 'anywhere' rules here.
 Michelson Internal Representation Conversion
 --------------------------------------------
 
-This function converts the `other_contracts` field into its internal
-represetation.
-
-```k
-  syntax Map ::= #OtherContractsMapToKMap(OtherContractsMapEntryList)              [function]
-               | #OtherContractsMapToKMap(String, Map, OtherContractsMapEntryList) [function]
-  // ----------------------------------------------------------------------------------------
-  rule #OtherContractsMapToKMap( .OtherContractsMapEntryList ) => .Map
-  rule #OtherContractsMapToKMap( Contract A T ; Rs )
-    => #OtherContractsMapToKMap(A, #BuildAnnotationMap(.FieldAnnotation, T), Rs)
-
-  rule #OtherContractsMapToKMap(A, TypeMap, Rs) =>
-       #BuildOtherContractsMap(#Address(A), TypeMap) #OtherContractsMapToKMap(Rs)
-
-  syntax Map ::= #BuildOtherContractsMap(Address, Map) [function]
-  // ------------------------------------------------------------
-  rule #BuildOtherContractsMap(A, FA:FieldAnnotation |-> T:TypeName TypeMap:Map)
-    => A . FA |-> T #BuildOtherContractsMap(A, TypeMap)
-
-  rule #BuildOtherContractsMap(_, .Map) => .Map
-```
-
-This function converts all other datatypes into their internal represenations.
+This function converts datatypes into their internal represenations.
 
 ```k
   syntax DataOrSeq ::= Data | DataList | MapEntryList // Can't subsort DataList to Data, as that would form a cycle.
@@ -597,7 +575,7 @@ a contract lookup.
           => Transfer_tokens
               #MichelineToNative(
                   P,
-                  #Type({KnownAddrs [ #ParseEntrypoint(A) ]}:>TypeName),
+                  #Type(#LookupEntrypoint(KnownAddrs, #ParseEntrypoint(A))),
                   KnownAddrs,
                   BigMaps
               )
@@ -605,8 +583,11 @@ a contract lookup.
               #ParseEntrypoint(A)
               N
        requires (isWildcard(N) orBool isInt(N))
-        andBool #ParseEntrypoint(A) in_keys(KnownAddrs)
         andBool #IsLegalMutezValue(M)
+
+  syntax TypeName ::= #LookupEntrypoint(Map, Entrypoint) [function]
+  // --------------------------------------------------------------
+  rule #LookupEntrypoint(Entrypoints, A . FA) => { { Entrypoints [ A ] }:>Map [ FA ] }:>TypeName
 ```
 
 We extract a `big_map` by index from the bigmaps map. Note that these have

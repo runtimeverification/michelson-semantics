@@ -820,5 +820,22 @@ module OUTPUT-COMPARE
        <knownaddrs> _ => #OtherContractsMapToKMap(M) </knownaddrs>
 
   rule <k> real_output AOS ; output EOS => #CheckOutput(EOS, AOS) ... </k>
+
+  syntax Map ::= #OtherContractsMapToKMap(OtherContractsMapEntryList)              [function]
+               | #OtherContractsMapToKMap(String, Map, OtherContractsMapEntryList) [function]
+  // ----------------------------------------------------------------------------------------
+  rule #OtherContractsMapToKMap( .OtherContractsMapEntryList ) => .Map
+  rule #OtherContractsMapToKMap( Contract A T ; Rs )
+    => #OtherContractsMapToKMap(A, #BuildAnnotationMap(.FieldAnnotation, T), Rs)
+
+  rule #OtherContractsMapToKMap(A, TypeMap, Rs) =>
+       #BuildOtherContractsMap(#Address(A), TypeMap) #OtherContractsMapToKMap(Rs)
+
+  syntax Map ::= #BuildOtherContractsMap(Address, Map) [function]
+  // ------------------------------------------------------------
+  rule #BuildOtherContractsMap(_, .Map) => .Map
+  rule #BuildOtherContractsMap(A, FA:FieldAnnotation |-> T:TypeName TypeMap:Map)
+    => A . FA |-> T #BuildOtherContractsMap(A, TypeMap)
+
 endmodule
 ```
