@@ -107,7 +107,7 @@ The claims that we make have the following structure:
 ```
 claim <k> InitialSourceFragment => FinalSourceFragment </k>
       <stack> InitialStack => FinalStack </stack>
-      <paramtype> %default |-> ContractParameterType </paramtype>
+      <entrypoints> %default |-> ContractParameterType </entrypoints>
       <myamount> AmountPassedToContract </myamount>
       requires Preconditions
       ensures Postconditions
@@ -124,7 +124,7 @@ that satisfies the preconditions, i.e., an instance of the following:
 ```
 <k> InitialSourceFragment </k>
 <stack> InitialStack  </stack>
-<paramtype> %default |-> ContractParameterType </paramtype>
+<entrypoints> %default |-> ContractParameterType </entrypoints>
 <myamount> AmountPassedToContract </myamount>
 ```
 
@@ -134,7 +134,7 @@ which is an instance of:
 ```
 <k> FinalSourceFragment </k>
 <stack> FinalStack </stack>
-<paramtype> %default |-> ContractParameterType </paramtype>
+<entrypoints> %default |-> ContractParameterType </entrypoints>
 <myamount> AmountPassedToContract </myamount>
 ```
 
@@ -288,13 +288,16 @@ The side conditions are defined as follows (and marked in the claim below):
          => [ pair ( list operation ) pair nat pair nat list key Pair uninterpreted ( Id , Unit ) Pair Count +Int 1 Pair Threshold KeyList:InternalList ] ; .Stack
     </stack>
     <myamount> #Mutez(Amount:Int) </myamount>
-    <paramtype> %default |-> (or .AnnotationList unit .AnnotationList
-                   pair .AnnotationList (pair .AnnotationList nat .AnnotationList
-                              (or .AnnotationList (lambda .AnnotationList unit .AnnotationList (list .AnnotationList operation .AnnotationList ))
-                                  pair .AnnotationList nat .AnnotationList
-                                       (list .AnnotationList key .AnnotationList )))
-                        (list .AnnotationList (option .AnnotationList signature .AnnotationList )))
-    </paramtype>
+    <currentContract> MYADDR </currentContract>
+    <contracts>
+        MYADDR |-> #Account(... entrypoints : %default |-> (or .AnnotationList unit .AnnotationList
+                                               pair .AnnotationList (pair .AnnotationList nat .AnnotationList
+                                                          (or .AnnotationList (lambda .AnnotationList unit .AnnotationList (list .AnnotationList operation .AnnotationList ))
+                                                              pair .AnnotationList nat .AnnotationList
+                                                                   (list .AnnotationList key .AnnotationList )))
+                                                    (list .AnnotationList (option .AnnotationList signature .AnnotationList ))))
+        ...
+    </contracts>
     requires Amount ==Int 0  // --------------------------------------------------------------------------------------------------- (a)
      andBool size(SigList) ==Int size(KeyList)  // -------------------------------------------------------------------------------- (b)
      andBool numValidSigs(SigList, KeyList) >=Int Threshold // -------------------------------------------------------------------- (c)
@@ -386,6 +389,16 @@ for symbolic reasoning.
               ; .Stack
         </stack>
         <myamount> #Mutez(Amount:Int) </myamount>
+        <currentContract> MYADDR </currentContract>
+        <contracts>
+            MYADDR |-> #Account(... entrypoints : %default |-> (or .AnnotationList unit .AnnotationList
+                                                   pair .AnnotationList (pair .AnnotationList nat .AnnotationList
+                                                              (or .AnnotationList (lambda .AnnotationList unit .AnnotationList (list .AnnotationList operation .AnnotationList ))
+                                                                  pair .AnnotationList nat .AnnotationList
+                                                                       (list .AnnotationList key .AnnotationList )))
+                                                        (list .AnnotationList (option .AnnotationList signature .AnnotationList ))))
+            ...
+        </contracts>
     requires Amount ==Int 0
      andBool size(SigList) ==Int size(KeyList)
      andBool VerifiedKeys >=Int 0
