@@ -198,11 +198,6 @@ module LQT-TOKEN-TRANSFER-PROXY-SPEC
   imports LQT-TOKEN-VERIFICATION
 ```
 
-The positive case here is split up into three different cases:
-
-1.  the case where the value transferred is 0 --- in this case, the contract always succeeds because the minimum allowance is 0
-2.  the case where the value transferred is greater than 0 _and_ where the receiver has a zero balance (i.e. the receiver account doesn't exist)
-3.  the case where the value transferred is greater than 0 _and_ where the receiver has a non-zero balance (i.e. the receiver account exists)
 
 ```k
   claim <k> #runProof(TransferParams(From, To, Value)) => .K </k>
@@ -217,50 +212,7 @@ The positive case here is split up into three different cases:
           // Spend via proxy
      andBool Sender =/=K From
      andBool #allowanceFor(Allowances, From, Sender) >=Int Value
-     andBool Value ==Int 0
-```
 
-```k
-  claim <k> #runProof(TransferParams(From, To, Value)) => .K </k>
-        <stack> .Stack </stack>
-        <tokens> Tokens => #incrementTokens(#incrementTokens(Tokens, From, 0 -Int Value), To, Value)  </tokens>
-        <allowances> Allowances => #updateAllowances(Allowances, From, Sender, #allowanceFor(Allowances, From, Sender) -Int Value) </allowances>
-        <myamount> #Mutez(Amount) </myamount>
-        <senderaddr> Sender </senderaddr>
-        <operations> _ => .InternalList </operations>
-    requires Amount ==Int 0
-     andBool #tokensFor(Tokens, From) >=Int Value
-     andBool notBool To in_keys(Tokens)
-     andBool #tokensFor(Tokens, To) ==Int 0
-          // Spend via proxy
-     andBool Sender =/=K From
-     andBool #allowanceFor(Allowances, From, Sender) >=Int Value
-     andBool #allowanceKey(From, Sender) in_keys(Allowances)
-     andBool Value >Int 0
-```
-
-```k
-  claim <k> #runProof(TransferParams(From, To, Value)) => .K </k>
-        <stack> .Stack </stack>
-        <tokens> Tokens => #incrementTokens(#incrementTokens(Tokens, From, 0 -Int Value), To, Value)  </tokens>
-        <allowances> Allowances => #updateAllowances(Allowances, From, Sender, #allowanceFor(Allowances, From, Sender) -Int Value) </allowances>
-        <myamount> #Mutez(Amount) </myamount>
-        <senderaddr> Sender </senderaddr>
-        <operations> _ => .InternalList </operations>
-    requires Amount ==Int 0
-     andBool #tokensFor(Tokens, From) >=Int Value
-     andBool To in_keys(Tokens)
-     andBool #tokensFor(Tokens, To) >Int 0
-          // Spend via proxy
-     andBool Sender =/=K From
-     andBool #allowanceFor(Allowances, From, Sender) >=Int Value
-     andBool #allowanceKey(From, Sender) in_keys(Allowances)
-     andBool Value >Int 0
-```
-
-We need only a single negative case to complete our proof.
-
-```k
   claim <k> #runProof(TransferParams(From, To, Value)) => Aborted(?_, ?_, ?_, ?_) ... </k>
         <stack> .Stack => ?_:FailedStack </stack>
         <tokens> Tokens  </tokens>
