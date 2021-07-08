@@ -14,5 +14,9 @@ requires "michelson.md"
 module LEMMAS
   imports MICHELSON
 
+  rule X /Int 1          => X        [simplification]
+  rule X *Int 1          => X        [simplification]
+  rule X +Int (0 -Int Y) => X -Int Y [simplification]
+
 endmodule
 ```

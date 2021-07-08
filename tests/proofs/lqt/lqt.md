@@ -30,26 +30,10 @@ endmodule
 ## LQT Token Lemmas
 
 ```k
-module LQT-TOKEN-LEMMAS
-  imports MICHELSON
-```
-
-```k
-  rule X /Int 1 => X [simplification]
-  rule X *Int 1 => X [simplification]
-
-  rule X +Int (0 -Int Y) => X -Int Y [simplification]
-```
-
-```k
-endmodule
-```
-
-```k
 module LQT-TOKEN-VERIFICATION
   imports LQT-TOKEN-COMPILED
   imports LQT-TOKEN-VERIFICATION-SYNTAX
-  imports LQT-TOKEN-LEMMAS
+  imports LEMMAS
 ```
 
 ## Terminology Prerequisites

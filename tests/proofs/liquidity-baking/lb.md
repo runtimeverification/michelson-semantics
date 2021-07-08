@@ -25,27 +25,11 @@ module LIQUIDITY-BAKING-VERIFICATION-SYNTAX
 endmodule
 ```
 
-## Liqudity Baking Lemmas
-
-```k
-module LIQUIDITY-BAKING-LEMMAS
-  imports MICHELSON
-```
-
-```k
-  rule X /Int 1 => X [simplification]
-  rule X *Int 1 => X [simplification]
-```
-
-```k
-endmodule
-```
-
 ```k
 module LIQUIDITY-BAKING-VERIFICATION
   imports LIQUIDITY-BAKING-COMPILED
   imports LIQUIDITY-BAKING-VERIFICATION-SYNTAX
-  imports LIQUIDITY-BAKING-LEMMAS
+  imports LEMMAS
 ```
 
 ## Terminology Prerequisites

@@ -25,27 +25,11 @@ module DEXTER-VERIFICATION-SYNTAX
 endmodule
 ```
 
-## Dexter Lemmas
-
-```k
-module DEXTER-LEMMAS
-  imports MICHELSON
-```
-
-```k
-  rule X /Int 1 => X [simplification]
-  rule X *Int 1 => X [simplification]
-```
-
-```k
-endmodule
-```
-
 ```k
 module DEXTER-VERIFICATION
   imports DEXTER-COMPILED
   imports DEXTER-VERIFICATION-SYNTAX
-  imports DEXTER-LEMMAS
+  imports LEMMAS
 ```
 
 ## Terminology Prerequisites
