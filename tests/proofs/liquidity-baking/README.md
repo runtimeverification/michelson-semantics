@@ -32,7 +32,7 @@ Some time later, the exchange will *apply* their operations.
 In this example, suppose Alice submits operation *o₁* first and then Bob submits operation *o₂*.
 The exchange may apply *o₁* first; on the other hand, it is just as likely that it will apply *o₂* first.
 It all depends on network conditions.
-For this reason, we use the notation *{o₁, o₂, ..., oₖ}* to represent the pending set of *submitted* operations.
+For this reason, we use the notation *{o₁, o₂ ... oₖ}* to represent the pending set of *submitted* operations.
 We let *...* represent a (possibly empty) subset of a set.
 Let *valid(oₖ)* be a predicate that defines the set of valid operations.
 
@@ -44,10 +44,10 @@ Now we can describe CPMMs as a state machine starting from state `init` with the
 ```
 1. rule init => (X, Y)[0]{ } requires X > 0 ∧ Y > 0
 2. rule (X, Y)[T]{ ... } => (X, Y)[T + 1]{ ... }
-3. rule (X, Y)[T]{ ... } => (X, Y)[T]{ ..., o } requires valid(o)
-4. rule (X, Y)[T]{ ..., sell-A(x), ... } => (X + x, Y - E(x,X,Y))[T]{ ..., ... } requires x <= X
-5. rule (X, Y)[T]{ ..., sell-B(y), ... } => (X - E(y,Y,X), Y + y)[T]{ ..., ... } requires y <= Y
-6. rule (X, Y)[T]{ ..., redeem,    ... } => (0, 0)               [T]{ ..., ... }
+3. rule (X, Y)[T]{ ... } => (X, Y)[T]{ ... o } requires valid(o)
+4. rule (X, Y)[T]{ ... sell-A(x) ... } => (X + x, Y - E(x,X,Y))[T]{ ... } requires x <= X
+5. rule (X, Y)[T]{ ... sell-B(y) ... } => (X - E(y,Y,X), Y + y)[T]{ ... } requires y <= Y
+6. rule (X, Y)[T]{ ... redeem    ... } => (0, 0)               [T]{ ... }
 ```
 
 We give a brief description of each rule:
@@ -112,11 +112,11 @@ Now we refine our previous CPMM state machine model:
 ```
 1.  rule init => (l, p, x, y)[0]{ } requires l > 0 ∧ p ∈ [0,1] ∧ x > 0 ∧ y > 0
 2.  rule (X, Y)[T]{ ... } => (X, Y)[T + 1]{ ... }
-3.  rule (L, P, X, Y)[T]{ ... } => (L, P, X, Y)[T]{ ..., o } requires valid(o)
-4.  rule (L, P, X, Y)[T]{ ..., sell-A(x), ... } => (L, P, X + x, Y - E(x,P,X,Y)) [T]{ ..., ... } requires x <= X
-5.  rule (L, P, X, Y)[T]{ ..., sell-B(y), ... } => (L, P, X - E(y,P,Y,X), Y + y) [T]{ ..., ... } requires y <= Y
-6.  rule (L, P, X, Y)[T]{ ..., redeem(n), ... } => (L - L*n, P, X - X*n, Y - Y*n)[T]{ ..., ... } requires 0 < n <= 1
-7.  rule (L, P, X, Y)[T]{ ..., add(n),    ... } => (L + L*n, P, X + X*n, Y + Y*n)[T]{ ..., ... } requires 0 < n
+3.  rule (L, P, X, Y)[T]{ ... } => (L, P, X, Y)[T]{ ... o } requires valid(o)
+4.  rule (L, P, X, Y)[T]{ ... sell-A(x) ... } => (L, P, X + x, Y - E(x,P,X,Y)) [T]{ ... } requires x <= X
+5.  rule (L, P, X, Y)[T]{ ... sell-B(y) ... } => (L, P, X - E(y,P,Y,X), Y + y) [T]{ ... } requires y <= Y
+6.  rule (L, P, X, Y)[T]{ ... redeem(n) ... } => (L - L*n, P, X - X*n, Y - Y*n)[T]{ ... } requires 0 < n <= 1
+7.  rule (L, P, X, Y)[T]{ ... add(n)    ... } => (L + L*n, P, X + X*n, Y + Y*n)[T]{ ... } requires 0 < n
 ```
 
 These rules are very similar to our original rules, with a few distinctions:
@@ -195,10 +195,10 @@ We can formalize this notion by introducing revising our trade and liquidity red
 
 **Revised Rules:**
 ```
-4.  rule (L, P, X, Y){ ..., sell-A(d,e,x),   ... } => (L, P, X + x, Y - E(x,P,X,Y)) { ..., ... } requires x <= X     ∧ T <= d ∧ E(x,P,X,Y) >= x*e
-5.  rule (L, P, X, Y){ ..., sell-B(d,e,y),   ... } => (L, P, X - E(y,P,Y,X), Y + y) { ..., ... } requires y <= Y     ∧ T <= d ∧ E(y,P,Y,X) >= y*e
-6.  rule (L, P, X, Y){ ..., redeem(d,a,b,n), ... } => (L - L*n, P, X - X*n, Y - Y*n){ ..., ... } requires 0 < n <= 1 ∧ T <= d ∧ X*n >= a ∧ Y*n >= b
-7.  rule (L, P, X, Y){ ..., add(d,a,b,n),    ... } => (L + L*n, P, X + X*n, Y + Y*n){ ..., ... } requires 0 < n      ∧ T <= d ∧ X*n <= a ∧ Y*n <= b
+4.  rule (L, P, X, Y){ ... sell-A(d,e,x)   ... } => (L, P, X + x, Y - E(x,P,X,Y)) { ... } requires x <= X     ∧ T <= d ∧ E(x,P,X,Y) >= x*e
+5.  rule (L, P, X, Y){ ... sell-B(d,e,y)   ... } => (L, P, X - E(y,P,Y,X), Y + y) { ... } requires y <= Y     ∧ T <= d ∧ E(y,P,Y,X) >= y*e
+6.  rule (L, P, X, Y){ ... redeem(d,a,b,n) ... } => (L - L*n, P, X - X*n, Y - Y*n){ ... } requires 0 < n <= 1 ∧ T <= d ∧ X*n >= a ∧ Y*n >= b
+7.  rule (L, P, X, Y){ ... add(d,a,b,n)    ... } => (L + L*n, P, X + X*n, Y + Y*n){ ... } requires 0 < n      ∧ T <= d ∧ X*n <= a ∧ Y*n <= b
 ```
 
 These revised operations are identical to their former counterparts except:
