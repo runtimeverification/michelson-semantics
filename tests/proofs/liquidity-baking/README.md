@@ -1,12 +1,12 @@
 # Liquidity Baking Contract Verification
 
 The liquidity baking (LB) smart contract is a Uniswap-style constant product market maker (CPMM) for two assets: Tez and wrapped Bitcoin (tzBTC).
-In this report, we verify two important safety properties of the LB smart contract which we first state informally below:
+In this report, we use the K Framework and K Michelson semantics to verify two important safety properties of the LB smart contract which we first state informally below:
 
 1.  *Safety for liquidity providers (LPs)* - LP shares never decrease in redemption value
 2.  *Safety for traders* - trades on the CPMM have a bounded exchange rate
 
-Before we formally define these properties, we describe how CPMMs work.
+Before we formally define these properties, we describe how CPMMs work using a simple state machine model.
 
 ## Constant Product Market Makers in Theory
 
@@ -31,47 +31,29 @@ In this example, suppose Alice submits operation *o₁* first and then Bob submi
 The exchange may apply *o₁* first; on the other hand, it is just as likely that it will apply *o₂* first.
 It all depends on network conditions.
 For this reason, we use the notation *{o₁, o₂, ..., oₖ}* to represent the pending set of *submitted* operations.
+We let `...` represent a (possibly empty) subset of a set.
+Let `valid(oₖ)` be a predicate that defines the set of valid operations.
 
 **Model:**
-Now we can describe CPMMs as a state machine starting from state _init_ with the following rules:
+Now we can describe CPMMs as a state machine starting from state `init` with the following rules:
 
-1.  The `create(X,Y)` rule has the form:
+1.  `rule init => (X, Y){ } requires X > 0 ∧ Y > 0`
+2.  `rule (X, Y){ ... } => (X, Y){ ..., o } requires valid(o)`
+3.  `rule (X, Y){ ..., sell-A(x), ... } => (X + x, Y - E(x,X,Y)){ ..., ... } requires x <= X`
+4.  `rule (X, Y){ ..., sell-B(y), ... } => (X - E(y,Y,X), Y + y){ ..., ... } requires y <= Y`
+5.  `rule (X, Y){ ..., redeem,    ... } => (0, 0)               { ..., ... }`
 
-    `init => (X, Y){ }`
+We give a brief description of each rule:
 
-    with `X > 0` and `Y > 0`.
-    This rule describes how a liquidity provider (LP) can use their assets to create a CPMM with an initially empty operation set.
+1.  This rule describes how a liquidity provider (LP) can use their assets to create a CPMM with an initially empty operation set.
+2.  The rule describes how a network participant may *submit* a valid operation to the CPMM.
+3.  This rule describes how the exchange applies a trade operation selling asset *A* to obtain *B*.
+4.  This rule describes, symmetrically, how the exchange applies a trade operation selling asset *B* to obtain *A*.
+5.  This rules describes how the exchange applies an LP redemption operation, i.e., the LP redeems their stored assets and shuts down the CPMM exchange.
+    At this point, all applicable trades are zero-valued and effectively no-ops.
 
-2.  The `submit(o)` rule has the form:
-
-    `(X, Y){ ... } => (X, Y){ ..., o }`
-
-    with `o` a valid operation (i.e., either a `sell-A(x)`, `sell-B(y)`, or `redeem`) and `...` representing the rest of the (possibly empty) operation set.
-    The rule describes how a network participant may *submit* an operation to the CPMM.
-
-3.  The `sell-A(x)` rule has the form:
-
-    `(X, Y){ ..., sell-A(x), ... } => (X + x, Y - E(x,X,Y)){ ..., ... }`
-
-    with `x <= X`.
-    This rule describes how the exchange applies a trade operation selling asset *A* to obtain *B*.
-
-4.  The `sell-B(y)` rule has the form:
-
-    `(X, Y){ ..., sell-B(y), ... } => (X - E(y,Y,X), Y + y){ ..., ... }`
-
-    with `y <= Y`.
-    This rule describes, symmetrically, how the exchange applies a trade operation selling asset *B* to obtain *A*.
-
-5.  The `redeem` rule has the form:
-
-    `(X, Y){ ..., redeem, ... } => (0, 0){ ..., ... }`
-
-    This rules describes how the exchange applies an LP redemption operation.
-    This represents the LP redeeming their stored assets and shutting down the CPMM exchange.
-    At this point, all applicable trades are zero-valued and thus useless.
-
-Note that the exchange function is designed so that trades preserve the constant product, i.e., for the `sell-A(x)` rule we have:
+**Invariant Analysis:**
+Note that the exchange function is designed so that trades preserve the constant product, i.e., for the `sell-A(x)` operation we have:
 
 ```
 X * Y = [X + x] * [Y - E(x,X,Y)]
@@ -83,13 +65,13 @@ X * Y = [X + x] * [Y - E(x,X,Y)]
 
 The case for the `sell-B(y)` follows by a symmetric calculation.
 
-**Conclusions:**
-So, the above model, while theoretically convenient, has some important problems:
+**Remarks:**
+Our theoretical model is convenient and illustrates the sense in which CPMMs have a *constant* product.
+Of course, the model above is missing many features that would be needed by real implementations, e.g., authorization logic, machine arithmetic support, and error handling.
+Aside from missing features, the model has a few more serious problems:
 
 1.  (viability) there is no immediate incentive to provide assets (i.e. liquidity) to the exchange, limiting CPMM creation and operation
 2.  (scalability) the entire amount of liquidity must be provided by one party, limiting the growth of the exchange reserves
-
-Note also that the theoretical model above does not contain any authorization logic that would be needed for a real implementation.
 
 ## Constant Product Market Makers in Practice
 
@@ -116,64 +98,35 @@ E(w,P,U,V) =  ---------
               U + w * P
 ```
 
-Now we refine our previous CPMMs as a state machine model:
+**Model:**
+Now we refine our previous CPMM state machine model:
 
-1.  The `create(l,p,x,y)` rule has the form:
+1.  `rule init => (l, p, x, y){ } requires l > 0 ∧ p ∈ [0,1] ∧ x > 0 ∧ y > 0`
+2.  `rule (L, P, X, Y){ ... } => (L, P, X, Y){ ..., o } requires valid(o)`
+3.  `rule (L, P, X, Y){ ..., sell-A(x), ... } => (L, P, X + x, Y - E(x,P,X,Y)) { ..., ... } requires x <= X`
+4.  `rule (L, P, X, Y){ ..., sell-B(y), ... } => (L, P, X - E(y,P,Y,X), Y + y) { ..., ... } requires y <= Y`
+5.  `rule (L, P, X, Y){ ..., redeem(n), ... } => (L - L*n, P, X - X*n, Y - Y*n){ ..., ... } requires 0 < n <= 1`
+6.  `rule (L, P, X, Y){ ..., add(n),    ... } => (L + L*n, P, X + X*n, Y + Y*n){ ..., ... } requires 0 < n`
 
-    `init => (l, p, x, y){ }`
+These rules are very similar to our original rules, with a few distinctions:
 
-    with `l > 0` and `p ∈ [0,1]` and `x > 0` and `y > 0`.
-    This rule describes how an initial liquidity provider (LP) can use their assets to create a CPMM.
-
-2.  The `submit(o)` rule has the form:
-
-    `(L, P, X, Y){ ... } => (L, P, X, Y){ ..., o }`
-
-    with `o` a valid operation (i.e., either a `sell-A(x)`, `sell-B(y)`, `redeem(n)`, or `add(n)`) and `...` representing the rest of the (possibly empty) operation set.
-    The rule describes how a network participant may *submit* an operation to the CPMM.
-
-3.  The `sell-A(x)` rule has the form:
-
-    `(L, P, X, Y){ ..., sell-A(x), ... } => (L, P, X + x, Y - E(x,X,Y)){ ..., ... }`
-
-    with `x <= X`.
-    This rule describes how the exchange applies a trade operation selling asset *A* to obtain *B*.
-
-4.  The `sell-B(y)` rule has the form:
-
-    `(L, P, X, Y){ ..., sell-B(y), ... } => (L, P, X - E(y,Y,X), Y + y){ ..., ... }`
-
-    with `y <= Y`.
-    This rule describes, symmetrically, how the exchange applies a trade operation selling asset *B* to obtain *A*.
-
-4.  The `redeem(n)` rule has the form:
-
-    `(L, P, X, Y){ ..., redeem(n), ... } => (L - L*n, P, X - X*n, Y - Y*n){ ..., ... }`
-
-    with `0 < n <= 1`.
-    This rules describes how the exchange applies an LP liquidity share redemption operation, where liquidity shares are _redeemed_ for stored assets.
-    When `n = 1`, this is equivalent to shutting down the CPMM exchange, i.e., the last LP removed their remaining liquidity.
-
-5.  The `add(n)` rule has the form:
-
-    `(L, P, X, Y){ ..., add(n), ... } => (L + L*n, P, X + X*n, Y + Y*n){ ..., ... }`
-
-    with `0 < n`.
-    This rules describes how the exchange applies an LP liquidity share minting operation, where liquidity shares are _minted_ by storing assets.
-    This rules describes how a LP can _mint_ liquidity shares by storing assets.
+-   The `init` rule now creates a 4-tuple CPMM.
+-   The `sell-A(x)` and `sell-B(y)` operations now compute exchange rates using a fee.
+-   The `redeem` operation is parametric on the amount of liquidity shares redeemed.
+    When `n = 1`, this is equivalent to shutting down the exchange, i.e., the last LP removed their remaining liquidity; afterwards, all applicable trades and liquidity redemptions/additions are no-ops.
+-   The new `add(n)` rule describes how an LP can mint new liquidity shares by storing assets in the reserves in exchange for new shares.
 
 The above model is equivalent to our original model under the following conditions:
 
-1.  The `create(l,p,x,y)` rule is only applied when *P = 1*;
-2.  The `redeem(n)` rule is only applied when *n = 1*;
-3.  The `add(n)` rule is *never* applied.
+1.  When initializing a new exchange, the only allowed trade scaling factor is *P = 1*;
+2.  The `redeem(n)` operation is only applied when *n = 1*;
+3.  The `add(n)` operation is *never* applied.
 
-### CPMM Invariant Analysis
-
+**Invariant Analysis:**
 Recall that our theoretical CPMM model without fees satisfied the _constant product_ invariant after trades.
 In case of CPMMs with fees, is the the product of the pre-trade assets always equal to the product of the post-trade assets?
 Suppose we started off in a state `(L, P, X, Y)` with product _k = X * Y_.
-Then suppose the `sell-B(b)` rule was applied to obtain the resulting state:
+Then suppose the `sell-B(b)` operation was applied to obtain the resulting state:
 
 `(L, P, X - E(b,P,Y,X), Y + b)`
 
@@ -212,7 +165,7 @@ Thus, we see that the answer to our question is:
 -   if *P = 1*, then the product is constant in both states.
 -   if *P < 1*, then the product _increases_, since `b * P < b`.
 
-A symmetric calculations shows that the same rule applies in the case of rule `sell-A`.
+A symmetric calculations shows that the same rule applies in the case of the `sell-A(a)` operation.
 In either case, this derivation shows us by applying trades, the redemeption value of liquidity shares _never decreases_.
 
 ## Safety Property Formalization
