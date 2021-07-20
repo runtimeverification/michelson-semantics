@@ -182,3 +182,35 @@ Thus, we see that the answer to our question is:
 
 A symmetric calculations shows that the same rule applies in the case of rule `sell-A`.
 In either case, this derivation shows us by applying trades, the redemeption value of liquidity shares _never decreases_.
+
+## Safety Property Formalization
+
+We now come back to our two safety properties that we state informally in the beginning of our document:
+
+1.  *Safety for liquidity providers (LPs)* - LP shares never decrease in redemption value
+2.  *Safety for traders* - trades on the CPMM have a bounded exchange rate
+
+We can now formalize these properties using our model.
+Consider an arbitrary CPMM in the form `(L, P, X, Y)`.
+
+1.  *Safety for liquidity providers (LPs)*
+
+    If `(L, P, X, Y) ->* (L', P, X', Y')` and *L' > 0*, then:
+
+    _X' * Y' / X * Y >= L'^2 / L^2_
+
+2.  *Safety for traders*
+
+    If a trader selects an exchange rate `e`, then a state transition `(L, P, X, Y) -> (L', P, X', Y')` via `sell-A(x)` or `sell-B(y)` will only apply if:
+
+    -    _x * e >= E(x,P,X,Y)_ when applying `sell-A(x)`
+    -    _y * e >= E(y,P,Y,X)_ when applying `sell-B(y)`
+
+Note that property (1) follows directly from our simplified model, but property (2) is not provable (and indeed) does not make in our simplified model.
+The reason is that property (2) is needed because, in real implementations, there is a difference between when:
+
+-   the time _t₀_ when a trader decides he wants to make a trade; and
+-   the time _t₁_ when the trade is actually performed on the CPMM exchange.
+
+The problem arises in that the exchange rate that the CPMM provides at time t₁ may be _different_ from the rate available at time t₀.
+The bounded exchange rate property ensures that a trader will only perform trades that match his desired level of risk/reward.
