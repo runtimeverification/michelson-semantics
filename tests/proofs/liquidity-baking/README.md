@@ -206,7 +206,7 @@ Consider an arbitrary CPMM in the form `(L, P, X, Y)`.
     -    _x * e >= E(x,P,X,Y)_ when applying `sell-A(x)`
     -    _y * e >= E(y,P,Y,X)_ when applying `sell-B(y)`
 
-Note that property (1) follows directly from our simplified model, but property (2) is not provable (and indeed) does not make in our simplified model.
+Note that property (1) follows directly from our simplified model, but property (2) is not provable (and indeed) does not make sense in our simplified model.
 The reason is that property (2) is needed because, in real implementations, there is a difference between when:
 
 -   the time _t₀_ when a trader decides he wants to make a trade; and
