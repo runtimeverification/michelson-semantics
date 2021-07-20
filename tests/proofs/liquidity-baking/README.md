@@ -7,6 +7,8 @@ In this report, we use the K Framework and K Michelson semantics to verify two i
 2.  *Safety for traders* - trades on the CPMM have a bounded exchange rate
 
 Before we formally define these properties, we describe how CPMMs work using a simple state machine model.
+This simple state machine model is _not_ equivalent to any smart contract.
+Instead, it provides an intuition which ideally helps lay people and experts understand why the safety properties above are sufficient.
 
 ## Constant Product Market Makers in Theory
 
@@ -31,25 +33,31 @@ In this example, suppose Alice submits operation *o₁* first and then Bob submi
 The exchange may apply *o₁* first; on the other hand, it is just as likely that it will apply *o₂* first.
 It all depends on network conditions.
 For this reason, we use the notation *{o₁, o₂, ..., oₖ}* to represent the pending set of *submitted* operations.
-We let `...` represent a (possibly empty) subset of a set.
-Let `valid(oₖ)` be a predicate that defines the set of valid operations.
+We let *...* represent a (possibly empty) subset of a set.
+Let *valid(oₖ)* be a predicate that defines the set of valid operations.
+
+Finally, to properly model asynchronous operations, our exchange is equipped with a clock *[T]* where *T* is a natural number which represents the current exchange time.
 
 **Model:**
 Now we can describe CPMMs as a state machine starting from state `init` with the following rules:
 
-1.  `rule init => (X, Y){ } requires X > 0 ∧ Y > 0`
-2.  `rule (X, Y){ ... } => (X, Y){ ..., o } requires valid(o)`
-3.  `rule (X, Y){ ..., sell-A(x), ... } => (X + x, Y - E(x,X,Y)){ ..., ... } requires x <= X`
-4.  `rule (X, Y){ ..., sell-B(y), ... } => (X - E(y,Y,X), Y + y){ ..., ... } requires y <= Y`
-5.  `rule (X, Y){ ..., redeem,    ... } => (0, 0)               { ..., ... }`
+```
+1. rule init => (X, Y)[0]{ } requires X > 0 ∧ Y > 0
+2. rule (X, Y)[T]{ ... } => (X, Y)[T + 1]{ ... }
+3. rule (X, Y)[T]{ ... } => (X, Y)[T]{ ..., o } requires valid(o)
+4. rule (X, Y)[T]{ ..., sell-A(x), ... } => (X + x, Y - E(x,X,Y))[T]{ ..., ... } requires x <= X
+5. rule (X, Y)[T]{ ..., sell-B(y), ... } => (X - E(y,Y,X), Y + y)[T]{ ..., ... } requires y <= Y
+6. rule (X, Y)[T]{ ..., redeem,    ... } => (0, 0)               [T]{ ..., ... }
+```
 
 We give a brief description of each rule:
 
-1.  This rule describes how a liquidity provider (LP) can use their assets to create a CPMM with an initially empty operation set.
-2.  The rule describes how a network participant may *submit* a valid operation to the CPMM.
-3.  This rule describes how the exchange applies a trade operation selling asset *A* to obtain *B*.
-4.  This rule describes, symmetrically, how the exchange applies a trade operation selling asset *B* to obtain *A*.
-5.  This rules describes how the exchange applies an LP redemption operation, i.e., the LP redeems their stored assets and shuts down the CPMM exchange.
+1.  A liquidity provider (LP) may use their assets to create a CPMM with an initially empty operation set.
+2.  The system clock may tick forward.
+3.  A network participant may *submit* a valid operation to the CPMM.
+4.  The exchange may apply a trade operation selling asset *A* to obtain *B*.
+5.  Symmetrically, the exchange may apply a trade operation selling asset *B* to obtain *A*.
+6.  The exchange may apply an LP redemption operation, i.e., the LP redeems their stored assets and shuts down the CPMM exchange.
     At this point, all applicable trades are zero-valued and effectively no-ops.
 
 **Invariant Analysis:**
@@ -101,18 +109,21 @@ E(w,P,U,V) =  ---------
 **Model:**
 Now we refine our previous CPMM state machine model:
 
-1.  `rule init => (l, p, x, y){ } requires l > 0 ∧ p ∈ [0,1] ∧ x > 0 ∧ y > 0`
-2.  `rule (L, P, X, Y){ ... } => (L, P, X, Y){ ..., o } requires valid(o)`
-3.  `rule (L, P, X, Y){ ..., sell-A(x), ... } => (L, P, X + x, Y - E(x,P,X,Y)) { ..., ... } requires x <= X`
-4.  `rule (L, P, X, Y){ ..., sell-B(y), ... } => (L, P, X - E(y,P,Y,X), Y + y) { ..., ... } requires y <= Y`
-5.  `rule (L, P, X, Y){ ..., redeem(n), ... } => (L - L*n, P, X - X*n, Y - Y*n){ ..., ... } requires 0 < n <= 1`
-6.  `rule (L, P, X, Y){ ..., add(n),    ... } => (L + L*n, P, X + X*n, Y + Y*n){ ..., ... } requires 0 < n`
+```
+1.  rule init => (l, p, x, y)[0]{ } requires l > 0 ∧ p ∈ [0,1] ∧ x > 0 ∧ y > 0
+2.  rule (X, Y)[T]{ ... } => (X, Y)[T + 1]{ ... }
+3.  rule (L, P, X, Y)[T]{ ... } => (L, P, X, Y)[T]{ ..., o } requires valid(o)
+4.  rule (L, P, X, Y)[T]{ ..., sell-A(x), ... } => (L, P, X + x, Y - E(x,P,X,Y)) [T]{ ..., ... } requires x <= X
+5.  rule (L, P, X, Y)[T]{ ..., sell-B(y), ... } => (L, P, X - E(y,P,Y,X), Y + y) [T]{ ..., ... } requires y <= Y
+6.  rule (L, P, X, Y)[T]{ ..., redeem(n), ... } => (L - L*n, P, X - X*n, Y - Y*n)[T]{ ..., ... } requires 0 < n <= 1
+7.  rule (L, P, X, Y)[T]{ ..., add(n),    ... } => (L + L*n, P, X + X*n, Y + Y*n)[T]{ ..., ... } requires 0 < n
+```
 
 These rules are very similar to our original rules, with a few distinctions:
 
 -   The `init` rule now creates a 4-tuple CPMM.
 -   The `sell-A(x)` and `sell-B(y)` operations now compute exchange rates using a fee.
--   The `redeem` operation is parametric on the amount of liquidity shares redeemed.
+-   The `redeem(n)` operation is parametric on the amount `n` of liquidity shares redeemed.
     When `n = 1`, this is equivalent to shutting down the exchange, i.e., the last LP removed their remaining liquidity; afterwards, all applicable trades and liquidity redemptions/additions are no-ops.
 -   The new `add(n)` rule describes how an LP can mint new liquidity shares by storing assets in the reserves in exchange for new shares.
 
@@ -167,6 +178,35 @@ Thus, we see that the answer to our question is:
 
 A symmetric calculations shows that the same rule applies in the case of the `sell-A(a)` operation.
 In either case, this derivation shows us by applying trades, the redemeption value of liquidity shares _never decreases_.
+
+**Remarks:**
+The new model is clearly an improvement over the previous model because it addressed the incentive and scalability issues.
+However, it still has non-trivial and non-obvious issues which relate to the asynchronous nature of operations:
+
+-   (slippage) in the time between trade/redeem/add operation submission and application, exchange rates may vary, making such operations incredibly risky
+-   (time-unboundedness) after an operation is submitted, it may be applied at *any* time in the future, even when that makes no sense for the submitter
+
+To counteract this risk of price variance, practical implementations allow operations to inlcude both:
+
+-   minimum or maximum exchange rates
+-   operation application deadlines
+
+We can formalize this notion by introducing revising our trade and liquidity redemption/addition operations to include explicit bounds.
+
+**Revised Rules:**
+```
+4.  rule (L, P, X, Y){ ..., sell-A(d,e,x),   ... } => (L, P, X + x, Y - E(x,P,X,Y)) { ..., ... } requires x <= X     ∧ T <= d ∧ E(x,P,X,Y) >= x*e
+5.  rule (L, P, X, Y){ ..., sell-B(d,e,y),   ... } => (L, P, X - E(y,P,Y,X), Y + y) { ..., ... } requires y <= Y     ∧ T <= d ∧ E(y,P,Y,X) >= y*e
+6.  rule (L, P, X, Y){ ..., redeem(d,a,b,n), ... } => (L - L*n, P, X - X*n, Y - Y*n){ ..., ... } requires 0 < n <= 1 ∧ T <= d ∧ X*n >= a ∧ Y*n >= b
+7.  rule (L, P, X, Y){ ..., add(d,a,b,n),    ... } => (L + L*n, P, X + X*n, Y + Y*n){ ..., ... } requires 0 < n      ∧ T <= d ∧ X*n <= a ∧ Y*n <= b
+```
+
+These revised operations are identical to their former counterparts except:
+
+-   all operations now include an explicit deadline, denoted by variable `d`
+-   the `sell-A(d,e,x)` and `sell-B(d,e,y)` operations now include a minimum exchange rate parameter `e` 
+-   the `redeem(d,a,b,n)` operation now includes parameters `a` and `b`, the *minimum* redeemed units of asset *A* and *B* respectively
+-   the `add(d,a,b,n)` operation now includes parameters `a` and `b`, the *maximum* stored units of asset *A* and *B* respectively
 
 ## Safety Property Formalization
 
