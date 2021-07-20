@@ -197,10 +197,10 @@ To counteract this risk of price variance, practical implementations allow opera
 We can formalize this notion by revising our trade and liquidity redemption/addition operations to include explicit bounds.
 
 ```
-4. rule (L, P, X, Y){ sell-A(d,e,x)   ... } => (L, P, X + x, Y - E(x,P,X,Y)) { ... } requires x <= X     ∧ T <= d ∧ E(x,P,X,Y) >= x*e
-5. rule (L, P, X, Y){ sell-B(d,e,y)   ... } => (L, P, X - E(y,P,Y,X), Y + y) { ... } requires y <= Y     ∧ T <= d ∧ E(y,P,Y,X) >= y*e
-6. rule (L, P, X, Y){ redeem(d,a,b,n) ... } => (L - L*n, P, X - X*n, Y - Y*n){ ... } requires 0 < n <= 1 ∧ T <= d ∧ X*n >= a ∧ Y*n >= b
-7. rule (L, P, X, Y){ add(d,a,b,n)    ... } => (L + L*n, P, X + X*n, Y + Y*n){ ... } requires 0 < n      ∧ T <= d ∧ X*n <= a ∧ Y*n <= b
+4. rule (L, P, X, Y)[T]{ sell-A(d,e,x)   ... } => (L, P, X + x, Y - E(x,P,X,Y)) [T]{ ... } requires x <= X     ∧ T <= d ∧ E(x,P,X,Y) >= x*e
+5. rule (L, P, X, Y)[T]{ sell-B(d,e,y)   ... } => (L, P, X - E(y,P,Y,X), Y + y) [T]{ ... } requires y <= Y     ∧ T <= d ∧ E(y,P,Y,X) >= y*e
+6. rule (L, P, X, Y)[T]{ redeem(d,a,b,n) ... } => (L - L*n, P, X - X*n, Y - Y*n)[T]{ ... } requires 0 < n <= 1 ∧ T <= d ∧ X*n >= a ∧ Y*n >= b
+7. rule (L, P, X, Y)[T]{ add(d,a,b,n)    ... } => (L + L*n, P, X + X*n, Y + Y*n)[T]{ ... } requires 0 < n      ∧ T <= d ∧ X*n <= a ∧ Y*n <= b
 ```
 
 These revised operations are identical to their former counterparts except:
