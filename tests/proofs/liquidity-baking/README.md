@@ -70,13 +70,13 @@ Our theoretical model is convenient and illustrates the sense in which CPMMs hav
 Of course, the model above is missing many features that would be needed by real implementations, e.g., authorization logic, machine arithmetic support, and error handling.
 Aside from missing features, the model has a few more serious problems:
 
-1.  (viability) there is no immediate incentive to provide assets (i.e. liquidity) to the exchange, limiting CPMM creation and operation
+1.  (incentive) there is no immediate incentive to provide assets (i.e. liquidity) to the exchange, limiting CPMM creation and operation
 2.  (scalability) the entire amount of liquidity must be provided by one party, limiting the growth of the exchange reserves
 
 ## Constant Product Market Makers in Practice
 
 **Introduction:**
-To counteract the viability and scalability issues, pratical CPMMs make two slight adjustments to the theoretical model:
+To counteract the incentive and scalability issues, pratical CPMMs make two slight adjustments to the theoretical model:
 
 1.  fees are assessed on every transaction (i.e. a percentage of the amount sold in terms of either asset *A* or *B*) and added to the exchange reserves
 2.  a system of shares is created that allows multiple parties to:
