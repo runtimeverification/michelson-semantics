@@ -192,9 +192,10 @@ To counteract this risk of price variance, practical implementations allow opera
 -   minimum or maximum exchange rates
 -   operation application deadlines
 
-We can formalize this notion by introducing revising our trade and liquidity redemption/addition operations to include explicit bounds.
 
 **Revised Rules:**
+We can formalize this notion by revising our trade and liquidity redemption/addition operations to include explicit bounds.
+
 ```
 4. rule (L, P, X, Y){ sell-A(d,e,x)   ... } => (L, P, X + x, Y - E(x,P,X,Y)) { ... } requires x <= X     ∧ T <= d ∧ E(x,P,X,Y) >= x*e
 5. rule (L, P, X, Y){ sell-B(d,e,y)   ... } => (L, P, X - E(y,P,Y,X), Y + y) { ... } requires y <= Y     ∧ T <= d ∧ E(y,P,Y,X) >= y*e
