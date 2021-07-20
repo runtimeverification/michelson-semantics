@@ -3,8 +3,8 @@
 The liquidity baking (LB) smart contract is a Uniswap-style constant product market maker (CPMM) for two assets: Tez and wrapped Bitcoin (tzBTC).
 In this report, we use the K Framework and K Michelson semantics to verify two important safety properties of the LB smart contract which we first state informally below:
 
-1.  *Safety for liquidity providers (LPs)* - LP shares never decrease in redemption value
-2.  *Safety for traders* - trades on the CPMM have a bounded exchange rate
+1.  *Liquidity share value security* - LP shares never decrease in *redemption value* (note this is *different* from *monetary value*, see below)
+2.  *Operation safety* - all trades and liquidity redemptions/deposits have a bounded exchange rate and time in which they are applicable.
 
 Before we formally define these properties, we describe how CPMMs work using a simple state machine model.
 This simple state machine model is _not_ equivalent to any smart contract.
@@ -211,30 +211,35 @@ These revised operations are identical to their former counterparts except:
 
 We now come back to our two safety properties that we state informally in the beginning of our document:
 
-1.  *Safety for liquidity providers (LPs)* - LP shares never decrease in redemption value
-2.  *Safety for traders* - trades on the CPMM have a bounded exchange rate
+1.  *Liquidity share value security* - LP shares never decrease in *redemption value*
+2.  *Operation safety* - all trades and liquidity redemptions/deposits have a bounded exchange rate and time in which they are applicable.
 
 We can now formalize these properties using our model.
 Consider an arbitrary CPMM in the form `(L, P, X, Y)`.
 
-1.  *Safety for liquidity providers (LPs)*
+1.  *Liquidity share value security*
 
-    If `(L, P, X, Y) =>* (L', P, X', Y')` and *L' > 0*, then:
+    If `(L, P, X, Y)[T]{ ... } =>* (L', P, X', Y')[T']{ ... }` then:
 
     _X' * Y' / X * Y >= L'^2 / L^2_
 
-2.  *Safety for traders*
+2.  *Operation safety*
 
-    If a trader selects an exchange rate `e`, then a state transition `(L, P, X, Y) => (L', P, X', Y')` via `sell-A(x)` or `sell-B(y)` will only apply if:
+    All operations have bounded exchange rates and application deadlines.
+    In other words:
 
-    -    _x * e >= E(x,P,X,Y)_ when applying `sell-A(x)`
-    -    _y * e >= E(y,P,Y,X)_ when applying `sell-B(y)`
+    If `(L, P, X, Y)[T]{ o ... } => (L', P, X', Y')[T]{ ... }` then:
 
-Note that property (1) follows directly from our simplified model, but property (2) is not provable (and indeed) does not make sense in our simplified model.
-The reason is that property (2) is needed because, in real implementations, there is a difference between when:
+    _T <= deadline(o) ∧ bounded-exchange(P,X,Y,o)_
 
--   the time _t₀_ when a trader decides he wants to make a trade; and
--   the time _t₁_ when the trade is actually performed on the CPMM exchange.
+    where `deadline(o)` projects the deadline from an operation and `bounded-exchange(P,X,Y,o)` is defined as:
 
-The problem arises in that the exchange rate that the CPMM provides at time t₁ may be _different_ from the rate available at time t₀.
-The bounded exchange rate property ensures that a trader will only perform trades that match his desired level of risk/reward.
+    ```
+    bounded-exchange(P,X,Y,sell-A(d,e,x))   = E(x,P,X,Y) >= x*e
+    bounded-exchange(P,X,Y,sell-B(d,e,y))   = E(y,P,Y,X) >= y*e
+    bounded-exchange(P,X,Y,redeem(d,a,b,n)) = X*n >= a ∧ Y*n >= b
+    bounded-exchange(P,X,Y,add(d,a,b,n))    = X*n <= a ∧ Y*n <= b
+    ```
+
+Both properties are satisfied by our simplified model.
+Property (1) follows by an induction argument while property (2) follows by definition.
