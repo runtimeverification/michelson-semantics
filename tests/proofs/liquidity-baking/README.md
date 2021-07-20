@@ -10,9 +10,9 @@ Before we formally define these properties, we describe how CPMMs work.
 
 ## Constant Product Market Makers in Theory
 
+**Introduction:**
 A constant product market maker (CPMM) is an exchange for two assets *A* and *B* that holds a varying amount of both assets, as long as both amounts have a constant product.
 Let the ordered 2-tuple *(X,Y)* denote a CPMM where naturals *X* and *Y* represent the exchange-held reserves of assets *A* and *B* respectively.
-Let *A* and *B* refer to the two projection functions *A(X,Y)=Y* and *B(X,Y)=Y*.
 We also have the exchange function *E* which is defined as follows:
 
 ```
@@ -21,34 +21,55 @@ E(w,U,V) =  -----
             U + w
 ```
 
+where *U* and *V* are the amounts of assets *A* or *B*.
+
+Network participants interact with the CPMM in a two-step, asynchronous, and unordered manner.
+For example, suppose both Alice and Bob wish to perform trades on the exchange.
+They will both need to *submit* their trade operations to the exchange operation pool.
+Some time later, the exchange will *apply* their operations.
+In this example, suppose Alice submits operation *o₁* first and then Bob submits operation *o₂*.
+The exchange may apply *o₁* first; on the other hand, it is just as likely that it will apply *o₂* first.
+It all depends on network conditions.
+For this reason, we use the notation *{o₁, o₂, ..., oₖ}* to represent the pending set of *submitted* operations.
+
+**Model:**
 Now we can describe CPMMs as a state machine starting from state _init_ with the following rules:
 
 1.  The `create(X,Y)` rule has the form:
 
-    `init -> (X, Y)`
+    `init => (X, Y){ }`
 
     with `X > 0` and `Y > 0`.
-    This rule describes how a liquidity provider (LP) can use their assets to create a CPMM.
+    This rule describes how a liquidity provider (LP) can use their assets to create a CPMM with an initially empty operation set.
 
-2.  The `sell-A(x)` rule has the form:
+2.  The `submit(o)` rule has the form:
 
-    `(X, Y) -> (X + x, Y - E(x,X,Y))`
+    `(X, Y){ ... } => (X, Y){ ..., o }`
+
+    with `o` a valid operation (i.e., either a `sell-A(x)`, `sell-B(y)`, or `redeem`) and `...` representing the rest of the (possibly empty) operation set.
+    The rule describes how a network participant may *submit* an operation to the CPMM.
+
+3.  The `sell-A(x)` rule has the form:
+
+    `(X, Y){ ..., sell-A(x), ... } => (X + x, Y - E(x,X,Y)){ ..., ... }`
 
     with `x <= X`.
-    This rule describes how a trader can sell asset *A* to obtain *B*.
+    This rule describes how the exchange applies a trade operation selling asset *A* to obtain *B*.
 
-3.  The `sell-B(y)` rule has the form:
+4.  The `sell-B(y)` rule has the form:
 
-    `(X, Y) -> (X - E(y,Y,X), Y + y)`
+    `(X, Y){ ..., sell-B(y), ... } => (X - E(y,Y,X), Y + y){ ..., ... }`
 
     with `y <= Y`.
-    This rule describes, symmetrically, how a trader can sell asset *B* to obtain *A*.
+    This rule describes, symmetrically, how the exchange applies a trade operation selling asset *B* to obtain *A*.
 
-4.   The `redeem` rule has the form:
+5.  The `redeem` rule has the form:
 
-     `(X, Y) -> (0, 0)`
+    `(X, Y){ ..., redeem, ... } => (0, 0){ ..., ... }`
 
-     This rules describes how a LP can redeem their stored assets and shutdown the CPMM exchange, i.e., at this point, all trades are zero-valued and thus useless.
+    This rules describes how the exchange applies an LP redemption operation.
+    This represents the LP redeeming their stored assets and shutting down the CPMM exchange.
+    At this point, all applicable trades are zero-valued and thus useless.
 
 Note that the exchange function is designed so that trades preserve the constant product, i.e., for the `sell-A(x)` rule we have:
 
@@ -61,15 +82,18 @@ X * Y = [X + x] * [Y - E(x,X,Y)]
 ```
 
 The case for the `sell-B(y)` follows by a symmetric calculation.
-Note also that the theoretical model above does not contain any authorization logic that would be needed for a real implementation of the `redeem` rule.
 
-So, the above model, while theoretically convenient, has two important problems:
+**Conclusions:**
+So, the above model, while theoretically convenient, has some important problems:
 
 1.  (viability) there is no immediate incentive to provide assets (i.e. liquidity) to the exchange, limiting CPMM creation and operation
 2.  (scalability) the entire amount of liquidity must be provided by one party, limiting the growth of the exchange reserves
 
+Note also that the theoretical model above does not contain any authorization logic that would be needed for a real implementation.
+
 ## Constant Product Market Makers in Practice
 
+**Introduction:**
 To counteract the viability and scalability issues, pratical CPMMs make two slight adjustments to the theoretical model:
 
 1.  fees are assessed on every transaction (i.e. a percentage of the amount sold in terms of either asset *A* or *B*) and added to the exchange reserves
@@ -96,39 +120,47 @@ Now we refine our previous CPMMs as a state machine model:
 
 1.  The `create(l,p,x,y)` rule has the form:
 
-    `init -> (l, p, x, y)`
+    `init => (l, p, x, y){ }`
 
     with `l > 0` and `p ∈ [0,1]` and `x > 0` and `y > 0`.
     This rule describes how an initial liquidity provider (LP) can use their assets to create a CPMM.
 
-2.  The `sell-A(x)` rule has the form:
+2.  The `submit(o)` rule has the form:
 
-    `(L, P, X, Y) -> (L, P, X + x, Y - E(x,P,X,Y))`
+    `(L, P, X, Y){ ... } => (L, P, X, Y){ ..., o }`
+
+    with `o` a valid operation (i.e., either a `sell-A(x)`, `sell-B(y)`, `redeem(n)`, or `add(n)`) and `...` representing the rest of the (possibly empty) operation set.
+    The rule describes how a network participant may *submit* an operation to the CPMM.
+
+3.  The `sell-A(x)` rule has the form:
+
+    `(L, P, X, Y){ ..., sell-A(x), ... } => (L, P, X + x, Y - E(x,X,Y)){ ..., ... }`
 
     with `x <= X`.
-    This rule describes how a trader can sell asset *A* to obtain *B*.
+    This rule describes how the exchange applies a trade operation selling asset *A* to obtain *B*.
 
-3.  The `sell-B(y)` rule has the form:
+4.  The `sell-B(y)` rule has the form:
 
-    `(L, P, X, Y) -> (L, P, X - E(y,P,Y,X), Y + y)`
+    `(L, P, X, Y){ ..., sell-B(y), ... } => (L, P, X - E(y,Y,X), Y + y){ ..., ... }`
 
     with `y <= Y`.
-    This rule describes, symmetrically, how a trader can sell asset *B* to obtain *A*.
+    This rule describes, symmetrically, how the exchange applies a trade operation selling asset *B* to obtain *A*.
 
-4.   The `redeem(n)` rule has the form:
+4.  The `redeem(n)` rule has the form:
 
-     `(L, P, X, Y) -> (L - L*n, P, X - X*n, Y - Y*n)`
+    `(L, P, X, Y){ ..., redeem(n), ... } => (L - L*n, P, X - X*n, Y - Y*n){ ..., ... }`
 
-     with `0 < n <= 1`.
-     This rules describes how a LP can _redeem_ liquidity shares to obtain stored assets.
-     WHen `n = 1`, this is equivalent to shutting down the CPMM exchange, i.e., the last LP removed their remaining liquidity.
+    with `0 < n <= 1`.
+    This rules describes how the exchange applies an LP liquidity share redemption operation, where liquidity shares are _redeemed_ for stored assets.
+    When `n = 1`, this is equivalent to shutting down the CPMM exchange, i.e., the last LP removed their remaining liquidity.
 
-5.   The `add(n)` rule has the form:
+5.  The `add(n)` rule has the form:
 
-     `(L, P, X, Y) -> (L + L*n, P, X + X*n, Y + Y*n)`
+    `(L, P, X, Y){ ..., add(n), ... } => (L + L*n, P, X + X*n, Y + Y*n){ ..., ... }`
 
-     with `0 < n`.
-     This rules describes how a LP can _mint_ liquidity shares by storing assets.
+    with `0 < n`.
+    This rules describes how the exchange applies an LP liquidity share minting operation, where liquidity shares are _minted_ by storing assets.
+    This rules describes how a LP can _mint_ liquidity shares by storing assets.
 
 The above model is equivalent to our original model under the following conditions:
 
@@ -195,13 +227,13 @@ Consider an arbitrary CPMM in the form `(L, P, X, Y)`.
 
 1.  *Safety for liquidity providers (LPs)*
 
-    If `(L, P, X, Y) ->* (L', P, X', Y')` and *L' > 0*, then:
+    If `(L, P, X, Y) =>* (L', P, X', Y')` and *L' > 0*, then:
 
     _X' * Y' / X * Y >= L'^2 / L^2_
 
 2.  *Safety for traders*
 
-    If a trader selects an exchange rate `e`, then a state transition `(L, P, X, Y) -> (L', P, X', Y')` via `sell-A(x)` or `sell-B(y)` will only apply if:
+    If a trader selects an exchange rate `e`, then a state transition `(L, P, X, Y) => (L', P, X', Y')` via `sell-A(x)` or `sell-B(y)` will only apply if:
 
     -    _x * e >= E(x,P,X,Y)_ when applying `sell-A(x)`
     -    _y * e >= E(y,P,Y,X)_ when applying `sell-B(y)`
