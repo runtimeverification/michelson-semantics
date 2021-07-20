@@ -184,14 +184,10 @@ In either case, this derivation shows us by applying trades, the redemeption val
 The new model is clearly an improvement over the previous model because it addressed the incentive and scalability issues.
 However, it still has non-trivial and non-obvious issues which relate to the asynchronous nature of operations:
 
--   (slippage) in the time between trade/redeem/add operation submission and application, exchange rates may vary, making such operations incredibly risky
--   (time-unboundedness) after an operation is submitted, it may be applied at *any* time in the future, even when that makes no sense for the submitter
+1.  (slippage) in the time between trade/redeem/add operation submission and application, exchange rates may vary, making such operations incredibly risky
+2.  (time-unboundedness) after an operation is submitted, it may be applied at *any* time in the future, even when that makes no sense for the submitter
 
-To counteract this risk of price variance, practical implementations allow operations to inlcude both:
-
--   minimum or maximum exchange rates
--   operation application deadlines
-
+To counteract this risk of price variance, practical implementations allow operations to inlcude both: exchange rates and time bounds.
 
 **Revised Rules:**
 We can formalize this notion by revising our trade and liquidity redemption/addition operations to include explicit bounds.
