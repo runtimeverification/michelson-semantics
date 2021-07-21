@@ -1268,9 +1268,9 @@ When `TokensSold == TokenPool`, we get the minimum fee of:
 min_free_charged  =      2 * 999 * 999
                      1 - -------------
                          1999 * 1000
-                 
+
                   = 0.00149974987
-                 
+
                  ~= 0.15%
 ```
 
@@ -1288,4 +1288,46 @@ max  =      999 * 999 * (0 + TokenPool)
      = 0.001999
 
      = 0.1999%
+```
+
+### XTZ to Tokens
+
+Similarly, when exchanging tokens for XTZ,
+one-thousandth of the amount is burnt before charging a fee.
+
+```
+tokens_received  =  (Amount * 999 / 1000) * 999 * TokenPool
+                    -----------------------------------------------
+                    (XtzPool * 1000) + (Amount * 999  / 1000) * 999
+
+                 =  999 * 999 * Amount * TokenPool
+                    ------------------------------------------
+                    XtzPool * 1000 * 1000 + Amount * 999 * 999
+```
+
+While, in an ideal CPMM a user would expect:
+
+```
+tokens_expected  =  Amount * TokenPool
+                    ------------------
+                    XtzPool + Amount
+```
+
+The fee charged is thus:
+
+```
+fee = Amount * TokenPool     999 * 999 * Amount * TokenPool
+      ------------------  -  ------------------------------------------
+      XtzPool + Amount       XtzPool * 1000 * 1000 + Amount * 999 * 999
+```
+
+As a percentage, this becomes:
+
+```
+fee =       999 * 999 * Amount * TokenPool               XtzPool + Amount
+      1  -  ------------------------------------------ * ------------------
+            XtzPool * 1000 * 1000 + Amount * 999 * 999   Amount * TokenPool
+    =       999 * 999 * (XtzPool + Amount)
+      1  -  ------------------------------------------
+            XtzPool * 1000 * 1000 + Amount * 999 * 999
 ```
