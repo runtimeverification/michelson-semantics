@@ -9,6 +9,7 @@ In this report, we use the K Framework and K Michelson semantics to verify two i
 Before we formally define these properties, we describe how CPMMs work using a simple state machine model.
 This simple state machine model is _not_ equivalent to any smart contract.
 Instead, it provides an intuition which ideally helps lay people and experts understand why the safety properties above are sufficient.
+We conclude this section by discussing where to go from here.
 
 ## Constant Product Market Makers in Theory
 
@@ -75,9 +76,7 @@ X * Y = [X + x] * [Y - E(x,X,Y)]
 The case for the `sell-B(y)` follows by a symmetric calculation.
 
 **Remarks:**
-Our theoretical model is convenient and illustrates the sense in which CPMMs have a *constant* product.
-Of course, the model above is missing many features that would be needed by real implementations, e.g., authorization logic, machine arithmetic support, and error handling.
-Aside from missing features, the model has a few more serious problems:
+While our theoretical model is convenient and illustrates the sense in which CPMMs have a *constant* product, it has a few serious drawbacks:
 
 1.  (incentive) there is no immediate incentive to provide assets (i.e. liquidity) to the exchange, limiting CPMM creation and operation
 2.  (scalability) the entire amount of liquidity must be provided by one party, limiting the growth of the exchange reserves
@@ -275,3 +274,15 @@ Consider an arbitrary CPMM in the form `(L, P, X, Y)`.
 
 Both properties are satisfied by our simplified model.
 Property (1) follows by an induction argument while property (2) follows by definition.
+
+## Next Steps
+
+The simplified models in this section ignore critical features needed in real implementations such as:
+
+-   authorization logic for performing various actions
+-   logic for maintaining an account's balance in assets *A* and *B*
+-   means of integrating the CPMM with the underlying assets (which are either blockchain primitives or smart contracts)
+-   logic to programmatically issue transactions to interact with other smart contracts (if necessary)
+-   etc...
+
+Our functional specification proofs in K and hand-proofs cover these additional details (and more) needed to provide a complete proof of our two safety properties list above.
