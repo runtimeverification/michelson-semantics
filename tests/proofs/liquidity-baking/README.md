@@ -116,8 +116,8 @@ rule (X, Y)[T]{ ... } => (X, Y)[T + 1]{ ... }
 rule (L, P, X, Y)[T]{ ... } => (L, P, X, Y)[T]{ ... o } requires valid(o)
 rule (L, P, X, Y)[T]{ sell-A(x) ... } => (L, P, X + x, Y - E(x,P,X,Y)) [T]{ ... } requires x <= X
 rule (L, P, X, Y)[T]{ sell-B(y) ... } => (L, P, X - E(y,P,Y,X), Y + y) [T]{ ... } requires y <= Y
-rule (L, P, X, Y)[T]{ redeem(n) ... } => (L - L*n, P, X - X*n, Y - Y*n)[T]{ ... } requires 0 < n <= 1
-rule (L, P, X, Y)[T]{ add(n)    ... } => (L + L*n, P, X + X*n, Y + Y*n)[T]{ ... } requires 0 < n
+rule (L, P, X, Y)[T]{ redeem(n) ... } => (L - L*n, P, X - X*n, Y - Y*n)[T]{ ... } requires 0 <= n <= 1
+rule (L, P, X, Y)[T]{ add(n)    ... } => (L + L*n, P, X + X*n, Y + Y*n)[T]{ ... } requires 0 <= n
 ```
 
 These rules are very similar to our original rules, with a few distinctions:
@@ -180,6 +180,38 @@ Thus, we see that the answer to our question is:
 A symmetric calculations shows that the same rule applies in the case of the `sell-A(a)` operation.
 In either case, this derivation shows us by applying trades, the redemeption value of liquidity shares _never decreases_.
 
+**Liquidity Shares vs. Exchange Reserves Analysis:**
+If our CPMM state is `(L, P, X, Y)`, during `redeem` or `add` operations, how do liquidity shares *L* scale with respect to the product of our exchange reserves _X*Y_?
+Let us consider the `redeem` and `add` operations in turn.
+
+First suppose we apply a `redeem(n)` operation.
+Then our updated state tuple is:
+
+`(L - L*n, P, X - X*n, Y - Y*n) = (L * (1 - n), P, X * (1 - n), Y * (1 - n))`.
+
+In other words, we update *L*, *X*, and *Y* by the constant factor *q = 1 - n* such that *0 <= n <= 1* which gives *0 <= q <= 1*.
+Now suppose we apply an `add(n)` operation.
+Then our updated state tuple is:
+
+`(L + L*n, P, X + X*n, Y + Y*n) = (L * (1 + n), P, X * (1 + n), Y * (1 + n))`.
+
+Symmetrically, this means we update *L*, *X*, and *Y* by the constant factor *q = 1 + n* such that *0 <= n* which gives *1 <= q*.
+By this reasoning, we see that the disjunction of these two rules is equivalent to the rule below:
+
+_(*)_ `rule (L, P, X, Y) => (L * q, P, X * q, Y * q) requires 0 <= q`.
+
+Thus, as `L` scales to `L*q`, we see that the product of our exchange reserves `X*Y` scales to `(X*q)*(Y*q)` or `(X*Y)*q^2`.
+Thus, `L` scales proportionally with `sqrt(X*Y)`, i.e., the *geoemtric mean of X and Y*.
+
+If the reader is unconvinced, we can carry our a simple calculation to verify our intuition.
+Let us assume `L * m = sqrt(X*Y)`.
+Now, scale both sides as indicated by rule `(*)` above.
+We want to show that `L*q * m = sqrt((X*q)*(Y*q))`.
+By arithmetic, we have `L*q * m = sqrt((X*q)*(Y*q)) = sqrt(X*Y*q^2) = q*sqrt(X*Y)`.
+Finally, we divide both sides by `q` to obtain the equality we already assumed: `L* m = sqrt(X*Y)`.
+
+In words, our answer is *liquidity scales proportionally with the geometric mean of X and Y*.
+
 **Remarks:**
 The new model is clearly an improvement over the previous model because it addressed the incentive and scalability issues.
 However, it still has non-trivial and non-obvious issues which relate to the asynchronous nature of operations:
@@ -194,10 +226,10 @@ We can formalize this notion by revising our trade and liquidity redemption/addi
 These four rules will then replace the last four rules of the former model.
 
 ```
-rule (L, P, X, Y)[T]{ sell-A(d,e,x)   ... } => (L, P, X + x, Y - E(x,P,X,Y)) [T]{ ... } requires x <= X     ∧ T <= d ∧ E(x,P,X,Y) >= x*e
-rule (L, P, X, Y)[T]{ sell-B(d,e,y)   ... } => (L, P, X - E(y,P,Y,X), Y + y) [T]{ ... } requires y <= Y     ∧ T <= d ∧ E(y,P,Y,X) >= y*e
-rule (L, P, X, Y)[T]{ redeem(d,a,b,n) ... } => (L - L*n, P, X - X*n, Y - Y*n)[T]{ ... } requires 0 < n <= 1 ∧ T <= d ∧ X*n >= a ∧ Y*n >= b
-rule (L, P, X, Y)[T]{ add(d,a,b,n)    ... } => (L + L*n, P, X + X*n, Y + Y*n)[T]{ ... } requires 0 < n      ∧ T <= d ∧ X*n <= a ∧ Y*n <= b
+rule (L, P, X, Y)[T]{ sell-A(d,e,x)   ... } => (L, P, X + x, Y - E(x,P,X,Y)) [T]{ ... } requires x <= X      ∧ T <= d ∧ E(x,P,X,Y) >= x*e
+rule (L, P, X, Y)[T]{ sell-B(d,e,y)   ... } => (L, P, X - E(y,P,Y,X), Y + y) [T]{ ... } requires y <= Y      ∧ T <= d ∧ E(y,P,Y,X) >= y*e
+rule (L, P, X, Y)[T]{ redeem(d,a,b,n) ... } => (L - L*n, P, X - X*n, Y - Y*n)[T]{ ... } requires 0 <= n <= 1 ∧ T <= d ∧ X*n >= a ∧ Y*n >= b
+rule (L, P, X, Y)[T]{ add(d,a,b,n)    ... } => (L + L*n, P, X + X*n, Y + Y*n)[T]{ ... } requires 0 <= n      ∧ T <= d ∧ X*n <= a ∧ Y*n <= b
 ```
 
 These revised operations are identical to their former counterparts except:
