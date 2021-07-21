@@ -1313,3 +1313,87 @@ proof [pool]:
     - (X' *Int T') /Real (X *Int T) ==Real 1 by X' == X and T' == T
                                     ==Real (L' /Real L) ^Real 2 by L' == L
 ```
+
+## Bounds on fees
+
+Note that the calculations in this section discount rouding due to integer division.
+
+### Tokens to XTZ
+
+When converting from XTZ to Tokens and vice-verca two fees are charges,
+the first is sent to the liquity pool increasing the value of each share;
+the second is destroyed by sending it to the null address.
+
+Ideally, in a CPMM a user would expect the following exchange rate for selling tokens:
+
+```
+expected_xtz_recieved = (TokensSold * XtzPool)
+                        ------------------------
+                        (TokensSold + TokenPool)
+```
+
+However, an amount dependant on the size of the token and xtz pools is kept with
+the contract:
+
+```
+currency_bought = (TokensSold * 999 * XtzPool)
+                  ---------------------------------------
+                  (TokenPool * 1000 + (TokensSold * 999))
+```
+
+A further 0.1% of this amount is burnt by sending it to the null address, and the user receives:
+
+```
+xtz_recieved = (TokensSold * 999 * XtzPool)          *  999
+               -----------------------------------------------------
+               (TokensSold * 999 + TokenPool * 1000) * 1000
+```
+
+The total fee charged is given by this expression:
+
+```
+fee =  (TokensSold * XtzPool)     (TokensSold * 999 * XtzPool)          *  999
+       ------------------------ - --------------------------------------------
+       (TokensSold + TokenPool)   (TokensSold * 999 + TokenPool * 1000) * 1000
+```
+
+As fraction of the expected xtz this becomes:
+
+```
+xtz_fee_percent =      (TokensSold * 999 * XtzPool)          *  999       (TokensSold + TokenPool)
+                   1 - --------------------------------------------   *   ------------------------
+                       (TokensSold * 999 + TokenPool * 1000) * 1000       (TokensSold * XtzPool)
+
+                =      999 * 999 * (TokensSold + TokenPool)
+                   1 - --------------------------------------------
+                       (TokensSold * 999 + TokenPool * 1000) * 1000
+```
+
+The fee as a ratio thus depends on the relative values of `TokensSold` and `TokenPool`.
+When `TokensSold == TokenPool`, we get the minimum fee of:
+
+```
+min_free_charged  =      2 * 999 * 999
+                     1 - -------------
+                         1999 * 1000
+                 
+                  = 0.00149974987
+                 
+                 ~= 0.15%
+```
+
+As the size of the token pool increases, this fee increases asymptotically to:
+
+```
+max  =      999 * 999 * (0 + TokenPool)
+        1 - ------------------------------
+            ( 0 + TokenPool * 1000) * 1000
+
+     =      999 * 999
+        1 - -----------
+            1000 * 1000
+
+     = 0.001999
+
+     = 0.1999%
+```
