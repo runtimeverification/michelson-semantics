@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="A Michelson semantics for Tezos built using the K Framework."
+/>
+<meta name="keywords" content="runtime, verification, rv, k" />
+<meta name="author" content="Michelson Semantics | Runtime Verification Inc" />
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../assets/img/favicon.ico" /> -->
+
+<title>Michelson Semantics | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../index.html"> Michelson Semantics </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/michelson-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../">Homepage</a>
+      <a class="bd-toc-link" href="../../INSTALL">Install</a>
+      <a class="bd-toc-link" href="../../USER_GUIDE">User Guide</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><p>In this file, we implement a utility that replaces <code>krun</code> for symbolic Michelson
+tests. We use the low-level K plumbing such as <code>kore-exec</code> and <code>llvm-run</code>
+directly.</p>
+<h1 id="rule-based-io">Rule based IO</h1>
+<p>The following module implements a wrapper around <code>K-IO</code>.
+It uses strictness to allow convenient sequential composition of variable IO functions implemented there.</p>
+<pre class="language-k"><code><span class="token keyword">module</span> IO<span class="token operator">-</span>NONFUNCTIONAL
+    <span class="token keyword">imports</span> K<span class="token operator">-</span>IO
+    <span class="token keyword">imports</span> STRING
+    <span class="token keyword">imports</span> INT
+</code></pre>
+<pre class="language-k"><code>    <span class="token keyword">syntax</span> KResult <span class="token comment">// Unused: TODO: Bug report</span>
+    <span class="token keyword">syntax</span> PreString <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token keyword">String</span>
+    <span class="token keyword">syntax</span> PreInt    <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token keyword">Int</span>
+</code></pre>
+<h3 id="open"><code>open</code></h3>
+<pre class="language-k"><code>    <span class="token keyword">syntax</span> PreInt <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> open<span class="token punctuation">(</span>filename<span class="token punctuation">:</span> PreString<span class="token punctuation">,</span> mode<span class="token punctuation">:</span> <span class="token keyword">String</span><span class="token punctuation">)</span> <span class="token punctuation">[</span><span class="token class-name">seqstrict</span><span class="token punctuation">,</span> result<span class="token punctuation">(</span><span class="token keyword">String</span><span class="token punctuation">)</span><span class="token punctuation">]</span>
+    <span class="token keyword">rule</span> open<span class="token punctuation">(</span>File<span class="token punctuation">,</span> Mode<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #open<span class="token punctuation">(</span>File<span class="token punctuation">,</span> Mode<span class="token punctuation">)</span>
+</code></pre>
+<h3 id="close"><code>close</code></h3>
+<p>Returns <code>.K</code> on success</p>
+<pre class="language-k"><code>    <span class="token keyword">syntax</span> KItem <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> close<span class="token punctuation">(</span><span class="token keyword">Int</span><span class="token punctuation">)</span>
+    <span class="token keyword">rule</span> close<span class="token punctuation">(</span>Fd<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #close<span class="token punctuation">(</span>Fd<span class="token punctuation">)</span>
+</code></pre>
+<h3 id="read"><code>read</code></h3>
+<pre class="language-k"><code>    <span class="token keyword">syntax</span> PreString <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> read<span class="token punctuation">(</span>filename<span class="token punctuation">:</span> PreString<span class="token punctuation">)</span>
+                       <span class="token operator">|</span> read<span class="token punctuation">(</span>fd<span class="token punctuation">:</span> PreInt<span class="token punctuation">,</span> length<span class="token punctuation">:</span> <span class="token keyword">Int</span><span class="token punctuation">)</span> <span class="token punctuation">[</span><span class="token class-name">seqstrict</span><span class="token punctuation">,</span> result<span class="token punctuation">(</span><span class="token keyword">Int</span><span class="token punctuation">)</span><span class="token punctuation">]</span>
+    <span class="token keyword">rule</span> read<span class="token punctuation">(</span>File<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> read<span class="token punctuation">(</span>open<span class="token punctuation">(</span>File<span class="token punctuation">,</span> <span class="token string">&quot;r&quot;</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token number">99999</span><span class="token punctuation">)</span> <span class="token comment">// TODO: read until end of file instead of hard-coding a number</span>
+    <span class="token keyword">rule</span> read<span class="token punctuation">(</span>Fd<span class="token punctuation">:</span><span class="token keyword">Int</span><span class="token punctuation">,</span> Length<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #read<span class="token punctuation">(</span>Fd<span class="token punctuation">,</span> Length<span class="token punctuation">)</span>
+</code></pre>
+<h3 id="write"><code>write</code></h3>
+<p>Returns <code>.K</code> or fails with <code>IOError</code>.</p>
+<pre class="language-k"><code>    <span class="token keyword">syntax</span> KItem <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> write<span class="token punctuation">(</span>fd<span class="token punctuation">:</span> IOInt<span class="token punctuation">,</span> contents<span class="token punctuation">:</span> <span class="token keyword">String</span><span class="token punctuation">)</span>
+    <span class="token keyword">rule</span> write<span class="token punctuation">(</span>Fd<span class="token punctuation">,</span> Content<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #write<span class="token punctuation">(</span>Fd<span class="token punctuation">,</span> Content<span class="token punctuation">)</span>
+</code></pre>
+<h3 id="createtempfile"><code>createTempFile</code></h3>
+<p>Returns <code>#tempFile(fileName, Fd)</code></p>
+<pre class="language-k"><code>    <span class="token keyword">syntax</span> PreTempFile <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> IOFile
+    <span class="token keyword">syntax</span> PreTempFile <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> createTempFile<span class="token punctuation">(</span>template<span class="token punctuation">:</span> <span class="token keyword">String</span><span class="token punctuation">)</span>
+    <span class="token keyword">rule</span> createTempFile<span class="token punctuation">(</span>Template<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #mkstemp<span class="token punctuation">(</span>Template<span class="token punctuation">)</span>
+</code></pre>
+<h3 id="writetempfile"><code>writeTempFile</code></h3>
+<p>Creates a temp file, writes contents to it, and returns the filename.</p>
+<pre class="language-k"><code>    <span class="token keyword">syntax</span> PreString <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> writeTempFile<span class="token punctuation">(</span>contents<span class="token punctuation">:</span> PreString<span class="token punctuation">)</span> <span class="token punctuation">[</span><span class="token class-name">seqstrict</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">,</span> result<span class="token punctuation">(</span><span class="token keyword">String</span><span class="token punctuation">)</span><span class="token punctuation">]</span>
+                       <span class="token operator">|</span> writeTempFile<span class="token punctuation">(</span>PreTempFile<span class="token punctuation">,</span> contents<span class="token punctuation">:</span> <span class="token keyword">String</span><span class="token punctuation">)</span> <span class="token punctuation">[</span><span class="token class-name">seqstrict</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">,</span> result<span class="token punctuation">(</span>IOFile<span class="token punctuation">)</span><span class="token punctuation">]</span>
+    <span class="token keyword">rule</span> writeTempFile<span class="token punctuation">(</span>Contents<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> writeTempFile<span class="token punctuation">(</span>createTempFile<span class="token punctuation">(</span><span class="token string">&quot;/tmp/kmichelson-XXXXXX&quot;</span><span class="token punctuation">)</span><span class="token punctuation">,</span> Contents<span class="token punctuation">)</span>
+    <span class="token keyword">rule</span> writeTempFile<span class="token punctuation">(</span>#tempFile<span class="token punctuation">(</span>Filename<span class="token punctuation">,</span> Fd<span class="token punctuation">)</span><span class="token punctuation">,</span> Content<span class="token punctuation">)</span>
+      <span class="token operator">=&gt;</span> write<span class="token punctuation">(</span>Fd<span class="token punctuation">,</span> Content<span class="token punctuation">)</span> <span class="token operator">~&gt;</span> close<span class="token punctuation">(</span>Fd<span class="token punctuation">)</span> <span class="token operator">~&gt;</span> Filename
+</code></pre>
+<h3 id="system"><code>system</code></h3>
+<pre class="language-k"><code>    <span class="token keyword">syntax</span> PreString <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> system<span class="token punctuation">(</span>command<span class="token punctuation">:</span> <span class="token keyword">String</span><span class="token punctuation">)</span>
+    <span class="token keyword">rule</span> system<span class="token punctuation">(</span>Command<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #system<span class="token punctuation">(</span>Command<span class="token punctuation">)</span>
+</code></pre>
+<p>TODO: We&apos;d like <code>#systemResult</code> to be of a more specific sort so we could apply
+strictness instead of the following hack:</p>
+<pre class="language-k"><code>    <span class="token keyword">rule</span> #systemResult<span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span>   StdOut<span class="token punctuation">,</span> _<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> StdOut
+    <span class="token keyword">rule</span> #systemResult<span class="token punctuation">(</span><span class="token number">111</span><span class="token punctuation">,</span> StdOut<span class="token punctuation">,</span> _<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> StdOut <span class="token comment">// krun failures indicate that exit code is non-zero</span>
+</code></pre>
+<pre class="language-k"><code><span class="token keyword">endmodule</span>
+</code></pre>
+<h1 id="kore"><code>KORE</code></h1>
+<p>This module defines the syntax of kore, a language used for communication
+between the various K utilities.</p>
+<pre class="language-k"><code><span class="token keyword">module</span> KORE
+    <span class="token keyword">imports</span> STRING<span class="token operator">-</span>SYNTAX
+
+    <span class="token keyword">syntax</span> KoreName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> r<span class="token string">&quot;[A-Za-z&apos;-][A-Za-z&apos;0-9-]*&quot;</span> <span class="token punctuation">[</span><span class="token class-name">token</span><span class="token punctuation">]</span>
+    <span class="token keyword">syntax</span> Sort <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> KoreName <span class="token string">&quot;{&quot;</span> <span class="token string">&quot;}&quot;</span>
+    <span class="token keyword">syntax</span> Symbol <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> KoreName <span class="token string">&quot;{&quot;</span> Sorts <span class="token string">&quot;}&quot;</span>
+    <span class="token keyword">syntax</span> Pattern <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">&quot;\\dv&quot;</span> <span class="token string">&quot;{&quot;</span> Sort <span class="token string">&quot;}&quot;</span> <span class="token string">&quot;(&quot;</span> <span class="token keyword">String</span> <span class="token string">&quot;)&quot;</span>                           <span class="token punctuation">[</span><span class="token class-name">klabel</span><span class="token punctuation">(</span>\dv<span class="token punctuation">)</span><span class="token punctuation">]</span>
+                     <span class="token operator">|</span> KoreName <span class="token string">&quot;:&quot;</span> Sort                                            <span class="token punctuation">[</span><span class="token class-name">klabel</span><span class="token punctuation">(</span>variable<span class="token punctuation">)</span><span class="token punctuation">]</span>
+                     <span class="token operator">|</span> Symbol <span class="token string">&quot;(&quot;</span> Patterns <span class="token string">&quot;)&quot;</span>                                      <span class="token punctuation">[</span><span class="token class-name">klabel</span><span class="token punctuation">(</span>application<span class="token punctuation">)</span><span class="token punctuation">]</span>
+                     <span class="token operator">|</span> <span class="token string">&quot;\\not&quot;</span> <span class="token string">&quot;{&quot;</span> Sort <span class="token string">&quot;}&quot;</span> <span class="token string">&quot;(&quot;</span> Pattern <span class="token string">&quot;)&quot;</span>                         <span class="token punctuation">[</span><span class="token class-name">klabel</span><span class="token punctuation">(</span>\not<span class="token punctuation">)</span><span class="token punctuation">]</span>
+                     <span class="token operator">|</span> <span class="token string">&quot;inj&quot;</span> <span class="token string">&quot;{&quot;</span> Sort <span class="token string">&quot;,&quot;</span> Sort <span class="token string">&quot;}&quot;</span> <span class="token string">&quot;(&quot;</span> Pattern <span class="token string">&quot;)&quot;</span>                  <span class="token punctuation">[</span><span class="token class-name">klabel</span><span class="token punctuation">(</span>inj<span class="token punctuation">)</span><span class="token punctuation">]</span>
+                     <span class="token operator">|</span> <span class="token string">&quot;\\ceil&quot;</span> <span class="token string">&quot;{&quot;</span> Sort <span class="token string">&quot;,&quot;</span> Sort <span class="token string">&quot;}&quot;</span> <span class="token string">&quot;(&quot;</span> Pattern  <span class="token string">&quot;)&quot;</span>              <span class="token punctuation">[</span><span class="token class-name">klabel</span><span class="token punctuation">(</span>\ceil<span class="token punctuation">)</span><span class="token punctuation">]</span>
+                     <span class="token operator">|</span> <span class="token string">&quot;\\equals&quot;</span> <span class="token string">&quot;{&quot;</span> Sort <span class="token string">&quot;,&quot;</span> Sort <span class="token string">&quot;}&quot;</span> <span class="token string">&quot;(&quot;</span> Pattern <span class="token string">&quot;,&quot;</span> Pattern <span class="token string">&quot;)&quot;</span> <span class="token punctuation">[</span><span class="token class-name">klabel</span><span class="token punctuation">(</span>\equals<span class="token punctuation">)</span><span class="token punctuation">]</span>
+                     <span class="token operator">|</span> <span class="token string">&quot;\\and&quot;</span> <span class="token string">&quot;{&quot;</span> Sort <span class="token string">&quot;}&quot;</span> <span class="token string">&quot;(&quot;</span> Pattern <span class="token string">&quot;,&quot;</span> Pattern <span class="token string">&quot;)&quot;</span>             <span class="token punctuation">[</span><span class="token class-name">klabel</span><span class="token punctuation">(</span>\and<span class="token punctuation">)</span><span class="token punctuation">]</span>
+                     <span class="token operator">|</span> <span class="token string">&quot;\\or&quot;</span> <span class="token string">&quot;{&quot;</span> Sort <span class="token string">&quot;}&quot;</span> <span class="token string">&quot;(&quot;</span> Pattern <span class="token string">&quot;,&quot;</span> Pattern <span class="token string">&quot;)&quot;</span>              <span class="token punctuation">[</span><span class="token class-name">klabel</span><span class="token punctuation">(</span>\or<span class="token punctuation">)</span><span class="token punctuation">]</span>
+                     <span class="token operator">|</span> <span class="token string">&quot;\\top&quot;</span> <span class="token string">&quot;{&quot;</span> Sort <span class="token string">&quot;}&quot;</span> <span class="token string">&quot;(&quot;</span> <span class="token string">&quot;)&quot;</span>                                 <span class="token punctuation">[</span><span class="token class-name">klabel</span><span class="token punctuation">(</span>\top<span class="token punctuation">)</span><span class="token punctuation">]</span>
+                     <span class="token operator">|</span> <span class="token string">&quot;\\bottom&quot;</span> <span class="token string">&quot;{&quot;</span> Sort <span class="token string">&quot;}&quot;</span> <span class="token string">&quot;(&quot;</span> <span class="token string">&quot;)&quot;</span>                              <span class="token punctuation">[</span><span class="token class-name">klabel</span><span class="token punctuation">(</span>\bottom<span class="token punctuation">)</span><span class="token punctuation">]</span>
+                     <span class="token operator">|</span> <span class="token string">&quot;\\forall&quot;</span> <span class="token string">&quot;{&quot;</span> Sort <span class="token string">&quot;}&quot;</span> <span class="token string">&quot;(&quot;</span> Pattern <span class="token string">&quot;,&quot;</span> Pattern <span class="token string">&quot;)&quot;</span>          <span class="token punctuation">[</span><span class="token class-name">klabel</span><span class="token punctuation">(</span>\forall<span class="token punctuation">)</span><span class="token punctuation">]</span>
+                     <span class="token operator">|</span> <span class="token string">&quot;\\exists&quot;</span> <span class="token string">&quot;{&quot;</span> Sort <span class="token string">&quot;}&quot;</span> <span class="token string">&quot;(&quot;</span> Pattern <span class="token string">&quot;,&quot;</span> Pattern <span class="token string">&quot;)&quot;</span>          <span class="token punctuation">[</span><span class="token class-name">klabel</span><span class="token punctuation">(</span>\exists<span class="token punctuation">)</span><span class="token punctuation">]</span>
+
+    <span class="token keyword">syntax</span> Patterns <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> List<span class="token punctuation">{</span>Pattern<span class="token punctuation">,</span> <span class="token string">&quot;,&quot;</span><span class="token punctuation">}</span> <span class="token punctuation">[</span><span class="token class-name">klabel</span><span class="token punctuation">(</span>Patterns<span class="token punctuation">)</span><span class="token punctuation">]</span>
+    <span class="token keyword">syntax</span> Sorts <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> List<span class="token punctuation">{</span>Sort<span class="token punctuation">,</span> <span class="token string">&quot;,&quot;</span><span class="token punctuation">}</span>       <span class="token punctuation">[</span><span class="token class-name">klabel</span><span class="token punctuation">(</span>Sorts<span class="token punctuation">)</span><span class="token punctuation">]</span>
+<span class="token keyword">endmodule</span>
+</code></pre>
+<h1 id="kore-unparse"><code>KORE-UNPARSE</code></h1>
+<pre class="language-k"><code><span class="token keyword">module</span> KORE<span class="token operator">-</span>UNPARSE
+    <span class="token keyword">imports</span> KORE
+    <span class="token keyword">imports</span> STRING
+
+    <span class="token keyword">syntax</span> <span class="token keyword">String</span> <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> unparsePattern<span class="token punctuation">(</span>Pattern<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">]</span>
+    <span class="token keyword">rule</span> unparsePattern<span class="token punctuation">(</span>\equals <span class="token punctuation">{</span> S1 <span class="token punctuation">,</span> S2 <span class="token punctuation">}</span> <span class="token punctuation">(</span>P1<span class="token punctuation">,</span> P2<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token string">&quot;\\equals{&quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> unparseSort<span class="token punctuation">(</span>S1<span class="token punctuation">)</span> <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot;,&quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> unparseSort<span class="token punctuation">(</span>S2<span class="token punctuation">)</span>  <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot;} (&quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> unparsePattern<span class="token punctuation">(</span>P1<span class="token punctuation">)</span> <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot; , &quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> unparsePattern<span class="token punctuation">(</span>P2<span class="token punctuation">)</span> <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot;)&quot;</span>
+    <span class="token keyword">rule</span> unparsePattern<span class="token punctuation">(</span>Var <span class="token punctuation">:</span> Sort<span class="token punctuation">)</span>                   <span class="token operator">=&gt;</span> KoreNameToString<span class="token punctuation">(</span>Var<span class="token punctuation">)</span> <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot;:&quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> unparseSort<span class="token punctuation">(</span>Sort<span class="token punctuation">)</span>
+    <span class="token keyword">rule</span> unparsePattern<span class="token punctuation">(</span>\dv <span class="token punctuation">{</span> S <span class="token punctuation">}</span> <span class="token punctuation">(</span>Value<span class="token punctuation">)</span><span class="token punctuation">)</span>            <span class="token operator">=&gt;</span> <span class="token string">&quot;\\dv{&quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> unparseSort<span class="token punctuation">(</span>S<span class="token punctuation">)</span>  <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot;} (\&quot;&quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> Value <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot;\&quot;)&quot;</span>
+    <span class="token keyword">rule</span> unparsePattern<span class="token punctuation">(</span>\top <span class="token punctuation">{</span> S <span class="token punctuation">}</span> <span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>                <span class="token operator">=&gt;</span> <span class="token string">&quot;\\top{&quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> unparseSort<span class="token punctuation">(</span>S<span class="token punctuation">)</span>  <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot;} ()&quot;</span>
+    <span class="token keyword">rule</span> unparsePattern<span class="token punctuation">(</span>\bottom <span class="token punctuation">{</span> S <span class="token punctuation">}</span> <span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span>             <span class="token operator">=&gt;</span> <span class="token string">&quot;\\bottom{&quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> unparseSort<span class="token punctuation">(</span>S<span class="token punctuation">)</span>  <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot;} ()&quot;</span>
+    <span class="token keyword">rule</span> unparsePattern<span class="token punctuation">(</span>inj <span class="token punctuation">{</span> S1 <span class="token punctuation">,</span> S2 <span class="token punctuation">}</span> <span class="token punctuation">(</span>P1<span class="token punctuation">)</span><span class="token punctuation">)</span>         <span class="token operator">=&gt;</span> <span class="token string">&quot;inj{&quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> unparseSort<span class="token punctuation">(</span>S1<span class="token punctuation">)</span> <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot;,&quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> unparseSort<span class="token punctuation">(</span>S2<span class="token punctuation">)</span>  <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot;} (&quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> unparsePattern<span class="token punctuation">(</span>P1<span class="token punctuation">)</span> <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot;)&quot;</span>
+    <span class="token keyword">rule</span> unparsePattern<span class="token punctuation">(</span>\ceil <span class="token punctuation">{</span> S1 <span class="token punctuation">,</span> S2 <span class="token punctuation">}</span> <span class="token punctuation">(</span>P1<span class="token punctuation">)</span><span class="token punctuation">)</span>       <span class="token operator">=&gt;</span> <span class="token string">&quot;\\ceil{&quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> unparseSort<span class="token punctuation">(</span>S1<span class="token punctuation">)</span> <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot;,&quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> unparseSort<span class="token punctuation">(</span>S2<span class="token punctuation">)</span>  <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot;} (&quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> unparsePattern<span class="token punctuation">(</span>P1<span class="token punctuation">)</span> <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot;)&quot;</span>
+    <span class="token keyword">rule</span> unparsePattern<span class="token punctuation">(</span>\not <span class="token punctuation">{</span> S1 <span class="token punctuation">}</span> <span class="token punctuation">(</span>P1<span class="token punctuation">)</span><span class="token punctuation">)</span>             <span class="token operator">=&gt;</span> <span class="token string">&quot;\\not{&quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> unparseSort<span class="token punctuation">(</span>S1<span class="token punctuation">)</span> <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot;} (&quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> unparsePattern<span class="token punctuation">(</span>P1<span class="token punctuation">)</span> <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot;)&quot;</span>
+    <span class="token keyword">rule</span> unparsePattern<span class="token punctuation">(</span>S<span class="token punctuation">(</span>Args<span class="token punctuation">:</span>Patterns<span class="token punctuation">)</span><span class="token punctuation">)</span>             <span class="token operator">=&gt;</span> unparseSymbol<span class="token punctuation">(</span>S<span class="token punctuation">)</span> <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot;(&quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> unparsePatterns<span class="token punctuation">(</span>Args<span class="token punctuation">)</span> <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot;)&quot;</span>
+    <span class="token keyword">rule</span> unparsePattern<span class="token punctuation">(</span>\and <span class="token punctuation">{</span> S1 <span class="token punctuation">}</span> <span class="token punctuation">(</span>P1<span class="token punctuation">,</span> P2<span class="token punctuation">)</span><span class="token punctuation">)</span>
+      <span class="token operator">=&gt;</span> <span class="token string">&quot;\\and{&quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> unparseSort<span class="token punctuation">(</span>S1<span class="token punctuation">)</span> <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot;} (&quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> unparsePatterns<span class="token punctuation">(</span>P1<span class="token punctuation">)</span> <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot;,&quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> unparsePatterns<span class="token punctuation">(</span>P2<span class="token punctuation">)</span> <span class="token operator">+</span><span class="token keyword">String</span>  <span class="token string">&quot;)&quot;</span>
+    <span class="token keyword">rule</span> unparsePattern<span class="token punctuation">(</span>\or <span class="token punctuation">{</span> S1 <span class="token punctuation">}</span> <span class="token punctuation">(</span>P1<span class="token punctuation">,</span> P2<span class="token punctuation">)</span><span class="token punctuation">)</span>
+      <span class="token operator">=&gt;</span> <span class="token string">&quot;\\or{&quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> unparseSort<span class="token punctuation">(</span>S1<span class="token punctuation">)</span> <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot;} (&quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> unparsePatterns<span class="token punctuation">(</span>P1<span class="token punctuation">)</span> <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot;,&quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> unparsePatterns<span class="token punctuation">(</span>P2<span class="token punctuation">)</span> <span class="token operator">+</span><span class="token keyword">String</span>  <span class="token string">&quot;)&quot;</span>
+    <span class="token keyword">rule</span> unparsePattern<span class="token punctuation">(</span>\forall  <span class="token punctuation">{</span> S1 <span class="token punctuation">}</span> <span class="token punctuation">(</span>P1<span class="token punctuation">,</span> P2<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token string">&quot;\\forall {&quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> unparseSort<span class="token punctuation">(</span>S1<span class="token punctuation">)</span> <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot;} (&quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> unparsePattern<span class="token punctuation">(</span>P1<span class="token punctuation">)</span> <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot; , &quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> unparsePattern<span class="token punctuation">(</span>P2<span class="token punctuation">)</span> <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot;)&quot;</span>
+    <span class="token keyword">rule</span> unparsePattern<span class="token punctuation">(</span>\exists  <span class="token punctuation">{</span> S1 <span class="token punctuation">}</span> <span class="token punctuation">(</span>P1<span class="token punctuation">,</span> P2<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token string">&quot;\\exists {&quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> unparseSort<span class="token punctuation">(</span>S1<span class="token punctuation">)</span> <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot;} (&quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> unparsePattern<span class="token punctuation">(</span>P1<span class="token punctuation">)</span> <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot; , &quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> unparsePattern<span class="token punctuation">(</span>P2<span class="token punctuation">)</span> <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot;)&quot;</span>
+
+    <span class="token keyword">syntax</span> <span class="token keyword">String</span> <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> KoreNameToString<span class="token punctuation">(</span>KoreName<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">,</span> hook<span class="token punctuation">(</span>STRING<span class="token punctuation">.</span>token2string<span class="token punctuation">)</span><span class="token punctuation">]</span>
+
+    <span class="token keyword">syntax</span> <span class="token keyword">String</span> <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> unparseSort<span class="token punctuation">(</span>Sort<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">]</span>
+    <span class="token keyword">rule</span> unparseSort<span class="token punctuation">(</span>KoreName <span class="token punctuation">{</span><span class="token punctuation">}</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> KoreNameToString<span class="token punctuation">(</span>KoreName<span class="token punctuation">)</span> <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot;{}&quot;</span>
+
+    <span class="token keyword">syntax</span> <span class="token keyword">String</span> <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> unparseSymbol<span class="token punctuation">(</span>Symbol<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">]</span>
+    <span class="token keyword">rule</span> unparseSymbol<span class="token punctuation">(</span>KoreName <span class="token punctuation">{</span>Sorts<span class="token punctuation">}</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> KoreNameToString<span class="token punctuation">(</span>KoreName<span class="token punctuation">)</span> <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot;{&quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> unparseSorts<span class="token punctuation">(</span>Sorts<span class="token punctuation">)</span> <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot;}&quot;</span>
+
+    <span class="token keyword">syntax</span> <span class="token keyword">String</span> <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> unparsePatterns<span class="token punctuation">(</span>Patterns<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">]</span>
+    <span class="token keyword">rule</span> unparsePatterns<span class="token punctuation">(</span>P<span class="token punctuation">,</span> Ps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> unparsePattern<span class="token punctuation">(</span>P<span class="token punctuation">)</span> <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot;,&quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> unparsePatterns<span class="token punctuation">(</span>Ps<span class="token punctuation">)</span> <span class="token keyword">requires</span> notBool Ps <span class="token operator">==</span>K <span class="token punctuation">.</span>Patterns
+    <span class="token keyword">rule</span> unparsePatterns<span class="token punctuation">(</span>P<span class="token punctuation">,</span> <span class="token punctuation">.</span>Patterns<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> unparsePattern<span class="token punctuation">(</span>P<span class="token punctuation">)</span>
+    <span class="token keyword">rule</span> unparsePatterns<span class="token punctuation">(</span><span class="token punctuation">.</span>Patterns<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token string">&quot;&quot;</span>
+
+    <span class="token keyword">syntax</span> <span class="token keyword">String</span> <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> unparseSorts<span class="token punctuation">(</span>Sorts<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">]</span>
+    <span class="token keyword">rule</span> unparseSorts<span class="token punctuation">(</span>S<span class="token punctuation">,</span> Ss<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> unparseSort<span class="token punctuation">(</span>S<span class="token punctuation">)</span> <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot;,&quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> unparseSorts<span class="token punctuation">(</span>Ss<span class="token punctuation">)</span> <span class="token keyword">requires</span> notBool Ss <span class="token operator">==</span>K <span class="token punctuation">.</span>Sorts
+    <span class="token keyword">rule</span> unparseSorts<span class="token punctuation">(</span>S<span class="token punctuation">,</span> <span class="token punctuation">.</span>Sorts<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> unparseSort<span class="token punctuation">(</span>S<span class="token punctuation">)</span>
+    <span class="token keyword">rule</span> unparseSorts<span class="token punctuation">(</span><span class="token punctuation">.</span>Sorts<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token string">&quot;&quot;</span>
+<span class="token keyword">endmodule</span>
+</code></pre>
+<h1 id="kore-parse"><code>KORE-PARSE</code></h1>
+<pre class="language-k"><code><span class="token keyword">module</span> KORE<span class="token operator">-</span>PARSE
+    <span class="token keyword">imports</span> IO<span class="token operator">-</span>NONFUNCTIONAL
+    <span class="token keyword">imports</span> KORE
+    <span class="token keyword">imports</span> K<span class="token operator">-</span>REFLECTION
+
+    <span class="token keyword">syntax</span> PrePattern <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> Pattern
+
+    <span class="token keyword">syntax</span> PrePattern <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> parse<span class="token punctuation">(</span>input<span class="token punctuation">:</span> PreString<span class="token punctuation">,</span> parser<span class="token punctuation">:</span> <span class="token keyword">String</span><span class="token punctuation">)</span>
+                        <span class="token operator">|</span> parseFile<span class="token punctuation">(</span>filename<span class="token punctuation">:</span> PreString<span class="token punctuation">,</span> parser<span class="token punctuation">:</span> <span class="token keyword">String</span><span class="token punctuation">)</span> <span class="token punctuation">[</span><span class="token class-name">seqstrict</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">,</span> result<span class="token punctuation">(</span><span class="token keyword">String</span><span class="token punctuation">)</span><span class="token punctuation">]</span>
+    <span class="token keyword">rule</span> parse<span class="token punctuation">(</span>Program<span class="token punctuation">,</span> Parser<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> parseFile<span class="token punctuation">(</span>writeTempFile<span class="token punctuation">(</span>Program<span class="token punctuation">)</span><span class="token punctuation">,</span> Parser<span class="token punctuation">)</span>
+    <span class="token keyword">rule</span> parseFile<span class="token punctuation">(</span>File<span class="token punctuation">,</span> Parser<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> parseKore<span class="token punctuation">(</span>system<span class="token punctuation">(</span>Parser <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot; &quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> File<span class="token punctuation">)</span><span class="token punctuation">)</span>
+
+    <span class="token keyword">syntax</span> PrePattern <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> parseKore<span class="token punctuation">(</span>PreString<span class="token punctuation">)</span> <span class="token punctuation">[</span><span class="token class-name">seqstrict</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">,</span> result<span class="token punctuation">(</span><span class="token keyword">String</span><span class="token punctuation">)</span><span class="token punctuation">]</span>
+    <span class="token keyword">rule</span> parseKore<span class="token punctuation">(</span><span class="token keyword">String</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #parseKORE<span class="token punctuation">(</span><span class="token keyword">String</span><span class="token punctuation">)</span><span class="token punctuation">:</span>Pattern
+
+<span class="token keyword">endmodule</span>
+</code></pre>
+<h1 id="kore-helpers"><code>KORE-HELPERS</code></h1>
+<p>Various generic library functions over kore.</p>
+<pre class="language-k"><code><span class="token keyword">module</span> KORE<span class="token operator">-</span>UTILITIES
+    <span class="token keyword">imports</span> KORE
+    <span class="token keyword">imports</span> K<span class="token operator">-</span>EQUAL
+
+    <span class="token keyword">syntax</span> Patterns <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> Patterns <span class="token string">&quot;+Patterns&quot;</span> Patterns <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">,</span> <span class="token class-name">left</span><span class="token punctuation">]</span>
+    <span class="token keyword">rule</span> <span class="token punctuation">(</span>P1<span class="token punctuation">,</span> P1s<span class="token punctuation">)</span> <span class="token operator">+</span>Patterns P2s <span class="token operator">=&gt;</span> P1<span class="token punctuation">,</span> <span class="token punctuation">(</span>P1s <span class="token operator">+</span>Patterns P2s<span class="token punctuation">)</span>
+    <span class="token keyword">rule</span> <span class="token punctuation">.</span>Patterns <span class="token operator">+</span>Patterns P2s <span class="token operator">=&gt;</span>                    P2s
+
+    <span class="token comment">// TODO: consider adding cases for other ML operators</span>
+    <span class="token keyword">syntax</span> Patterns <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> findSubTermsByConstructor<span class="token punctuation">(</span>KoreName<span class="token punctuation">,</span> Pattern<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">]</span>
+    <span class="token keyword">rule</span> findSubTermsByConstructor<span class="token punctuation">(</span>Ctor<span class="token punctuation">,</span> Ctor <span class="token punctuation">{</span> <span class="token punctuation">.</span>Sorts <span class="token punctuation">}</span> <span class="token punctuation">(</span> Arg<span class="token punctuation">,</span> <span class="token punctuation">.</span>Patterns <span class="token punctuation">)</span> <span class="token punctuation">)</span> <span class="token operator">=&gt;</span> Arg<span class="token punctuation">,</span> <span class="token punctuation">.</span>Patterns
+    <span class="token keyword">rule</span> findSubTermsByConstructor<span class="token punctuation">(</span>Ctor<span class="token punctuation">,</span> S <span class="token punctuation">{</span> _ <span class="token punctuation">}</span> <span class="token punctuation">(</span> Args <span class="token punctuation">)</span> <span class="token punctuation">)</span> <span class="token operator">=&gt;</span> findSubTermsByConstructorPs<span class="token punctuation">(</span>Ctor<span class="token punctuation">,</span> Args<span class="token punctuation">)</span> <span class="token keyword">requires</span> S <span class="token operator">=</span><span class="token operator">/</span><span class="token operator">=</span>K Ctor
+    <span class="token keyword">rule</span> findSubTermsByConstructor<span class="token punctuation">(</span>Ctor<span class="token punctuation">,</span> inj<span class="token punctuation">{</span> _<span class="token punctuation">,</span> _ <span class="token punctuation">}</span> <span class="token punctuation">(</span>P<span class="token punctuation">)</span> <span class="token punctuation">)</span> <span class="token operator">=&gt;</span> findSubTermsByConstructor<span class="token punctuation">(</span>Ctor<span class="token punctuation">,</span> P<span class="token punctuation">)</span>
+    <span class="token keyword">rule</span> findSubTermsByConstructor<span class="token punctuation">(</span>Ctor<span class="token punctuation">,</span> \not<span class="token punctuation">{</span> _ <span class="token punctuation">}</span> <span class="token punctuation">(</span>P<span class="token punctuation">)</span> <span class="token punctuation">)</span> <span class="token operator">=&gt;</span> findSubTermsByConstructor<span class="token punctuation">(</span>Ctor<span class="token punctuation">,</span> P<span class="token punctuation">)</span>
+    <span class="token keyword">rule</span> findSubTermsByConstructor<span class="token punctuation">(</span>  _ <span class="token punctuation">,</span> \dv<span class="token punctuation">{</span> _ <span class="token punctuation">}</span> <span class="token punctuation">(</span>_<span class="token punctuation">)</span> <span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token punctuation">.</span>Patterns
+    <span class="token keyword">rule</span> findSubTermsByConstructor<span class="token punctuation">(</span>  _ <span class="token punctuation">,</span> _ <span class="token punctuation">:</span> _<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token punctuation">.</span>Patterns
+
+    <span class="token keyword">syntax</span> Patterns <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> findSubTermsByConstructorPs<span class="token punctuation">(</span>KoreName<span class="token punctuation">,</span> Patterns<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">]</span>
+    <span class="token keyword">rule</span> findSubTermsByConstructorPs<span class="token punctuation">(</span>Ctor<span class="token punctuation">,</span> P<span class="token punctuation">,</span> Ps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> findSubTermsByConstructor<span class="token punctuation">(</span>Ctor<span class="token punctuation">,</span> P<span class="token punctuation">)</span> <span class="token operator">+</span>Patterns findSubTermsByConstructorPs<span class="token punctuation">(</span>Ctor<span class="token punctuation">,</span> Ps<span class="token punctuation">)</span>
+    <span class="token keyword">rule</span> findSubTermsByConstructorPs<span class="token punctuation">(</span>   _<span class="token punctuation">,</span> <span class="token punctuation">.</span>Patterns<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token punctuation">.</span>Patterns
+<span class="token keyword">endmodule</span>
+</code></pre>
+<h1 id="driver"><code>DRIVER</code></h1>
+<pre class="language-k"><code><span class="token keyword">module</span> DRIVER
+    <span class="token keyword">imports</span> KORE<span class="token operator">-</span>PARSE
+    <span class="token keyword">imports</span> KORE<span class="token operator">-</span>UNPARSE
+    <span class="token keyword">imports</span> KORE<span class="token operator">-</span>UTILITIES
+    <span class="token keyword">imports</span> LIST
+</code></pre>
+<h2 id="kore-exec"><code>kore-exec</code></h2>
+<pre class="language-k"><code>    <span class="token keyword">syntax</span> PrePattern <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> koreExec<span class="token punctuation">(</span>config<span class="token punctuation">:</span> PrePattern<span class="token punctuation">)</span> <span class="token punctuation">[</span><span class="token class-name">seqstrict</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">,</span> result<span class="token punctuation">(</span>Pattern<span class="token punctuation">)</span><span class="token punctuation">]</span>
+                        <span class="token operator">|</span> koreExec<span class="token punctuation">(</span>file<span class="token punctuation">:</span>   PreString<span class="token punctuation">)</span>  <span class="token punctuation">[</span><span class="token class-name">seqstrict</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">,</span> result<span class="token punctuation">(</span><span class="token keyword">String</span><span class="token punctuation">)</span><span class="token punctuation">]</span>
+    <span class="token keyword">rule</span> koreExec<span class="token punctuation">(</span>Configuration<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> koreExec<span class="token punctuation">(</span>writeTempFile<span class="token punctuation">(</span>unparsePattern<span class="token punctuation">(</span>Configuration<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token keyword">rule</span> koreExec<span class="token punctuation">(</span>File<span class="token punctuation">)</span>
+      <span class="token operator">=&gt;</span> parse<span class="token punctuation">(</span> system<span class="token punctuation">(</span><span class="token string">&quot;kore-exec &quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> michelsonDefinition<span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot;/michelson-kompiled/definition.kore&quot;</span> <span class="token operator">+</span><span class="token keyword">String</span>
+                           <span class="token string">&quot; --strategy all&quot;</span> <span class="token operator">+</span><span class="token keyword">String</span>
+                           <span class="token string">&quot; --module MICHELSON&quot;</span> <span class="token operator">+</span><span class="token keyword">String</span>
+                           <span class="token string">&quot; --pattern &quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> File
+                      <span class="token punctuation">)</span>
+              <span class="token punctuation">)</span>
+</code></pre>
+<h2 id="pretty-print">Pretty print</h2>
+<pre class="language-k"><code>    <span class="token keyword">syntax</span> KItem <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> prettyPrint<span class="token punctuation">(</span>config<span class="token punctuation">:</span> PrePattern<span class="token punctuation">)</span> <span class="token punctuation">[</span><span class="token class-name">seqstrict</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">,</span> result<span class="token punctuation">(</span>Pattern<span class="token punctuation">)</span><span class="token punctuation">]</span>
+                   <span class="token operator">|</span> prettyPrint<span class="token punctuation">(</span>file<span class="token punctuation">:</span>   PreString<span class="token punctuation">)</span>  <span class="token punctuation">[</span><span class="token class-name">seqstrict</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">,</span> result<span class="token punctuation">(</span><span class="token keyword">String</span><span class="token punctuation">)</span><span class="token punctuation">]</span>
+    <span class="token keyword">rule</span> prettyPrint<span class="token punctuation">(</span>Configuration<span class="token punctuation">)</span>
+      <span class="token operator">=&gt;</span> prettyPrint<span class="token punctuation">(</span>writeTempFile<span class="token punctuation">(</span>unparsePattern<span class="token punctuation">(</span>Configuration<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token keyword">rule</span> prettyPrint<span class="token punctuation">(</span>File<span class="token punctuation">)</span>
+      <span class="token operator">=&gt;</span> print<span class="token punctuation">(</span>system<span class="token punctuation">(</span><span class="token string">&quot;kprint &quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> michelsonDefinition<span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot;/michelson-kompiled/ &quot;</span> <span class="token operator">+</span><span class="token keyword">String</span>
+                    <span class="token string">&quot; &quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> File <span class="token operator">+</span><span class="token keyword">String</span>
+                    <span class="token string">&quot; true true&quot;</span>
+               <span class="token punctuation">)</span><span class="token punctuation">)</span>
+</code></pre>
+<pre class="language-k"><code>    <span class="token keyword">syntax</span> KItem <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> print<span class="token punctuation">(</span>PreString<span class="token punctuation">)</span> <span class="token punctuation">[</span><span class="token class-name">seqstrict</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">,</span> result<span class="token punctuation">(</span><span class="token keyword">String</span><span class="token punctuation">)</span><span class="token punctuation">]</span>
+    <span class="token keyword">rule</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>k</span><span class="token punctuation">&gt;</span></span> print<span class="token punctuation">(</span>Str<span class="token punctuation">:</span><span class="token keyword">String</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token punctuation">.</span>K <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>k</span><span class="token punctuation">&gt;</span></span>
+         <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>out</span><span class="token punctuation">&gt;</span></span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token punctuation">.</span>List <span class="token operator">=&gt;</span> ListItem<span class="token punctuation">(</span>Str<span class="token punctuation">)</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>out</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h2 id="utilities-instatiated-for-kmichelson">Utilities instatiated for KMichelson</h2>
+<pre class="language-k"><code>    <span class="token keyword">syntax</span>  KoreName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">&quot;Lbl&apos;-LT-&apos;k&apos;-GT-&apos;&quot;</span> <span class="token punctuation">[</span><span class="token class-name">token</span><span class="token punctuation">]</span>
+    <span class="token keyword">syntax</span> Patterns <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> getKCell<span class="token punctuation">(</span>Pattern<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">]</span>
+    <span class="token keyword">rule</span> getKCell<span class="token punctuation">(</span>Term<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> findSubTermsByConstructor<span class="token punctuation">(</span>Lbl<span class="token string">&apos;-LT-&apos;</span>k<span class="token string">&apos;-GT-&apos;</span><span class="token punctuation">,</span> Term<span class="token punctuation">)</span>
+
+    <span class="token keyword">syntax</span>  KoreName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">&quot;Lbl&apos;-LT-&apos;returncode&apos;-GT-&apos;&quot;</span> <span class="token punctuation">[</span><span class="token class-name">token</span><span class="token punctuation">]</span>
+    <span class="token keyword">syntax</span> Patterns <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> getReturncodeCell<span class="token punctuation">(</span>Pattern<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">]</span>
+    <span class="token keyword">rule</span> getReturncodeCell<span class="token punctuation">(</span>Term<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> findSubTermsByConstructor<span class="token punctuation">(</span>Lbl<span class="token string">&apos;-LT-&apos;</span>returncode<span class="token string">&apos;-GT-&apos;</span><span class="token punctuation">,</span> Term<span class="token punctuation">)</span>
+
+    <span class="token keyword">syntax</span> PrePattern <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> parse<span class="token punctuation">(</span>input<span class="token punctuation">:</span> PreString<span class="token punctuation">)</span>
+    <span class="token keyword">rule</span> parse<span class="token punctuation">(</span>Input<span class="token punctuation">)</span> <span class="token operator">=&gt;</span>  parse<span class="token punctuation">(</span>Input<span class="token punctuation">,</span> driverDefiniton<span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot;/driver-kompiled/parser_Pattern&quot;</span><span class="token punctuation">)</span>
+
+    <span class="token keyword">syntax</span> <span class="token keyword">String</span> <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> michelsonDefinition<span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">]</span>
+    <span class="token keyword">rule</span> <span class="token punctuation">[</span><span class="token punctuation">[</span> michelsonDefinition<span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> DefnDir <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot;/symbolic/&quot;</span> <span class="token punctuation">]</span><span class="token punctuation">]</span>
+         <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>defnDir</span><span class="token punctuation">&gt;</span></span> DefnDir <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>defnDir</span><span class="token punctuation">&gt;</span></span>
+
+    <span class="token keyword">syntax</span> <span class="token keyword">String</span> <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> driverDefiniton<span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">]</span>
+    <span class="token keyword">rule</span> <span class="token punctuation">[</span><span class="token punctuation">[</span> driverDefiniton<span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> DefnDir <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot;/driver/&quot;</span> <span class="token punctuation">]</span><span class="token punctuation">]</span>
+         <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>defnDir</span><span class="token punctuation">&gt;</span></span> DefnDir <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>defnDir</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h2 id="main">Main</h2>
+<p>We initialize the configuration with the input filename.</p>
+<pre class="language-k"><code>    <span class="token keyword">configuration</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>k</span><span class="token punctuation">&gt;</span></span> init<span class="token punctuation">(</span>$InputFilename<span class="token punctuation">)</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>k</span><span class="token punctuation">&gt;</span></span>
+                  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>success</span><span class="token punctuation">&gt;</span></span>  <span class="token number">0</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>success</span><span class="token punctuation">&gt;</span></span>               <span class="token comment">// Number of successful branches</span>
+                  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>failures</span><span class="token punctuation">&gt;</span></span> <span class="token number">0</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>failures</span><span class="token punctuation">&gt;</span></span>              <span class="token comment">// Number of failing    branches</span>
+                  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>stucks</span><span class="token punctuation">&gt;</span></span>   <span class="token number">0</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>stucks</span><span class="token punctuation">&gt;</span></span>                <span class="token comment">// Number of stuck      branches</span>
+                  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>defnDir</span><span class="token punctuation">&gt;</span></span> $DefnDir<span class="token punctuation">:</span><span class="token keyword">String</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>defnDir</span><span class="token punctuation">&gt;</span></span>  <span class="token comment">// Path to kompiled definitions</span>
+                  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>out</span> <span class="token attr-name">stream</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">&quot;</span>stdout<span class="token punctuation">&quot;</span></span><span class="token punctuation">&gt;</span></span> <span class="token punctuation">.</span>List <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>out</span><span class="token punctuation">&gt;</span></span>
+                  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>exitcode</span> <span class="token attr-name">exit</span><span class="token attr-value"><span class="token punctuation attr-equals">=</span><span class="token punctuation">&quot;</span>0<span class="token punctuation">&quot;</span></span><span class="token punctuation">&gt;</span></span> <span class="token operator">-</span><span class="token number">1</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>exitcode</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h3 id="initialization">Initialization</h3>
+<p>We then parse the program syntax into kore using <code>llvm-krun</code>, and then parse the kore string into a <code>Pattern</code> we then exuecute this pattern with <code>kore-exec</code>.</p>
+<pre class="language-k"><code>    <span class="token keyword">syntax</span> KItem <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> init<span class="token punctuation">(</span>filename<span class="token punctuation">:</span> <span class="token keyword">String</span><span class="token punctuation">)</span>
+    <span class="token keyword">rule</span>  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>k</span><span class="token punctuation">&gt;</span></span> init<span class="token punctuation">(</span>ProgramFile<span class="token punctuation">)</span>
+           <span class="token operator">=&gt;</span> koreExec<span class="token punctuation">(</span>initialConfiguration<span class="token punctuation">(</span>ProgramFile<span class="token punctuation">,</span> michelsonDefinition<span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot;/michelson-kompiled/&quot;</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+              <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+          <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>k</span><span class="token punctuation">&gt;</span></span>
+
+    <span class="token keyword">syntax</span> PrePattern <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> initialConfiguration<span class="token punctuation">(</span>filename<span class="token punctuation">:</span> PreString<span class="token punctuation">,</span> definition<span class="token punctuation">:</span> <span class="token keyword">String</span><span class="token punctuation">)</span> <span class="token punctuation">[</span><span class="token class-name">seqstrict</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">,</span> result<span class="token punctuation">(</span><span class="token keyword">String</span><span class="token punctuation">)</span><span class="token punctuation">]</span>
+    <span class="token keyword">rule</span> initialConfiguration<span class="token punctuation">(</span>Filename<span class="token punctuation">,</span> Definition<span class="token punctuation">)</span>
+      <span class="token operator">=&gt;</span> parse<span class="token punctuation">(</span> system<span class="token punctuation">(</span> <span class="token string">&quot;llvm-krun --dry-run --directory &quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> Definition
+                        <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot; -c PGM &quot;</span> <span class="token operator">+</span><span class="token keyword">String</span> Filename <span class="token operator">+</span><span class="token keyword">String</span> <span class="token string">&quot; Pgm prettyfile&quot;</span><span class="token punctuation">)</span>
+              <span class="token punctuation">)</span>
+</code></pre>
+<h3 id="normalization">Normalization</h3>
+<p>The resulting configuration is a disjunction of constrained configurations. We handle each of these in turn.</p>
+<pre class="language-k"><code>    <span class="token keyword">rule</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>k</span><span class="token punctuation">&gt;</span></span> \or <span class="token punctuation">{</span> SortGeneratedTopCell <span class="token punctuation">{</span> <span class="token punctuation">}</span> <span class="token punctuation">}</span> <span class="token punctuation">(</span>P1<span class="token punctuation">,</span> P2<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> P1 <span class="token operator">~&gt;</span> P2 <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>k</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<p>We normalize this configuration so that it is in the form of a constrained term.</p>
+<pre class="language-k"><code>    <span class="token keyword">syntax</span> KoreName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">&quot;SortGeneratedTopCell&quot;</span> <span class="token punctuation">[</span><span class="token class-name">token</span><span class="token punctuation">]</span>
+    <span class="token keyword">rule</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>k</span><span class="token punctuation">&gt;</span></span> Lbl<span class="token string">&apos;-LT-&apos;</span>generatedTop<span class="token string">&apos;-GT-&apos;</span> <span class="token punctuation">{</span> <span class="token punctuation">.</span>Sorts <span class="token punctuation">}</span> <span class="token punctuation">(</span> _ <span class="token punctuation">)</span> #as Pgm <span class="token operator">=&gt;</span> \and <span class="token punctuation">{</span> SortGeneratedTopCell <span class="token punctuation">{</span> <span class="token punctuation">}</span> <span class="token punctuation">}</span> <span class="token punctuation">(</span>Pgm<span class="token punctuation">,</span> \top <span class="token punctuation">{</span>SortGeneratedTopCell <span class="token punctuation">{</span> <span class="token punctuation">}</span><span class="token punctuation">}</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>k</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<p>We also apply associativity laws for <code>\and</code>.</p>
+<pre class="language-k"><code>    <span class="token keyword">rule</span> \and <span class="token punctuation">{</span> S <span class="token punctuation">}</span><span class="token punctuation">(</span>\and <span class="token punctuation">{</span> S <span class="token punctuation">}</span> <span class="token punctuation">(</span>P1<span class="token punctuation">,</span> P2<span class="token punctuation">)</span><span class="token punctuation">,</span> P3<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> \and <span class="token punctuation">{</span> S <span class="token punctuation">}</span><span class="token punctuation">(</span>P1<span class="token punctuation">,</span> \and <span class="token punctuation">{</span> S <span class="token punctuation">}</span> <span class="token punctuation">(</span>P2<span class="token punctuation">,</span> P3<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">[</span>anywhere<span class="token punctuation">]</span>
+</code></pre>
+<h3 id="triaging">Triaging</h3>
+<p>We then triage each branch according to the contents of its <code>&lt;k&gt;</code> and <code>&lt;returncode&gt;</code> cell.</p>
+<pre class="language-k"><code>    <span class="token keyword">syntax</span> KoreName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">&quot;Lbl&apos;-LT-&apos;generatedTop&apos;-GT-&apos;&quot;</span> <span class="token punctuation">[</span><span class="token class-name">token</span><span class="token punctuation">]</span>
+    <span class="token keyword">syntax</span> KItem <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> triage<span class="token punctuation">(</span>kcell<span class="token punctuation">:</span> Patterns<span class="token punctuation">,</span> returncode<span class="token punctuation">:</span> Patterns<span class="token punctuation">,</span> config<span class="token punctuation">:</span> Pattern<span class="token punctuation">)</span>
+    <span class="token keyword">rule</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>k</span><span class="token punctuation">&gt;</span></span> \and <span class="token punctuation">{</span> SortGeneratedTopCell <span class="token punctuation">{</span> <span class="token punctuation">}</span> <span class="token punctuation">}</span><span class="token punctuation">(</span>Lbl<span class="token string">&apos;-LT-&apos;</span>generatedTop<span class="token string">&apos;-GT-&apos;</span> <span class="token punctuation">{</span> <span class="token punctuation">.</span>Sorts <span class="token punctuation">}</span> <span class="token punctuation">(</span>_<span class="token punctuation">)</span> #as Config<span class="token punctuation">,</span> _Constraints<span class="token punctuation">)</span> #as ConstrainedConfiguration
+          <span class="token operator">=&gt;</span> triage<span class="token punctuation">(</span>getKCell<span class="token punctuation">(</span>Config<span class="token punctuation">)</span><span class="token punctuation">,</span> getReturncodeCell<span class="token punctuation">(</span>Config<span class="token punctuation">)</span><span class="token punctuation">,</span> ConstrainedConfiguration<span class="token punctuation">)</span>
+             <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+         <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>k</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<pre class="language-k"><code>    <span class="token keyword">syntax</span> KoreName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">&quot;SortInt&quot;</span> <span class="token punctuation">[</span><span class="token class-name">token</span><span class="token punctuation">]</span>
+    <span class="token keyword">rule</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>k</span><span class="token punctuation">&gt;</span></span> triage<span class="token punctuation">(</span> _<span class="token punctuation">,</span> \dv <span class="token punctuation">{</span> SortInt <span class="token punctuation">{</span> <span class="token punctuation">}</span> <span class="token punctuation">}</span> <span class="token punctuation">(</span> <span class="token string">&quot;0&quot;</span> <span class="token punctuation">)</span><span class="token punctuation">,</span> _<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token punctuation">.</span>K <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>k</span><span class="token punctuation">&gt;</span></span>
+         <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>success</span><span class="token punctuation">&gt;</span></span> N <span class="token operator">=&gt;</span> N <span class="token operator">+</span><span class="token keyword">Int</span> <span class="token number">1</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>success</span><span class="token punctuation">&gt;</span></span>
+
+    <span class="token keyword">syntax</span> KoreName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">&quot;Lbl&apos;Hash&apos;AssertFailed&quot;</span> <span class="token punctuation">[</span><span class="token class-name">token</span><span class="token punctuation">]</span> <span class="token operator">|</span> <span class="token string">&quot;kseq&quot;</span> <span class="token punctuation">[</span><span class="token class-name">token</span><span class="token punctuation">]</span>
+    <span class="token keyword">rule</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>k</span><span class="token punctuation">&gt;</span></span> triage<span class="token punctuation">(</span> kseq <span class="token punctuation">{</span> <span class="token punctuation">.</span>Sorts <span class="token punctuation">}</span> <span class="token punctuation">(</span>Lbl<span class="token string">&apos;Hash&apos;</span>AssertFailed <span class="token punctuation">{</span><span class="token punctuation">.</span>Sorts <span class="token punctuation">}</span> <span class="token punctuation">(</span><span class="token punctuation">.</span>Patterns<span class="token punctuation">)</span><span class="token punctuation">,</span> _ <span class="token punctuation">)</span> <span class="token punctuation">,</span> _<span class="token punctuation">,</span> Config<span class="token punctuation">)</span>
+          <span class="token operator">=&gt;</span> print<span class="token punctuation">(</span><span class="token string">&quot;Failure:\n&quot;</span><span class="token punctuation">)</span> <span class="token operator">~&gt;</span> prettyPrint<span class="token punctuation">(</span>Config<span class="token punctuation">)</span>
+             <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+         <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>k</span><span class="token punctuation">&gt;</span></span>
+         <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>failures</span><span class="token punctuation">&gt;</span></span> N <span class="token operator">=&gt;</span> N <span class="token operator">+</span><span class="token keyword">Int</span> <span class="token number">1</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>failures</span><span class="token punctuation">&gt;</span></span>
+    <span class="token keyword">syntax</span> KoreName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">&quot;Lbl&apos;Hash&apos;AssertFailed&quot;</span> <span class="token punctuation">[</span><span class="token class-name">token</span><span class="token punctuation">]</span> <span class="token operator">|</span> <span class="token string">&quot;kseq&quot;</span> <span class="token punctuation">[</span><span class="token class-name">token</span><span class="token punctuation">]</span>
+
+    <span class="token keyword">rule</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>k</span><span class="token punctuation">&gt;</span></span> triage<span class="token punctuation">(</span> kseq <span class="token punctuation">{</span> <span class="token punctuation">.</span>Sorts <span class="token punctuation">}</span> <span class="token punctuation">(</span>KHead<span class="token punctuation">,</span> _ <span class="token punctuation">)</span><span class="token punctuation">,</span> \dv <span class="token punctuation">{</span> SortInt <span class="token punctuation">{</span> <span class="token punctuation">}</span> <span class="token punctuation">}</span> <span class="token punctuation">(</span> ExitCode <span class="token punctuation">)</span> <span class="token punctuation">,</span> Config<span class="token punctuation">)</span>
+          <span class="token operator">=&gt;</span> print<span class="token punctuation">(</span><span class="token string">&quot;Stuck configuration:\n&quot;</span><span class="token punctuation">)</span> <span class="token operator">~&gt;</span> prettyPrint<span class="token punctuation">(</span>Config<span class="token punctuation">)</span>
+             <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+         <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>k</span><span class="token punctuation">&gt;</span></span>
+         <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>stucks</span><span class="token punctuation">&gt;</span></span> N <span class="token operator">=&gt;</span> N <span class="token operator">+</span><span class="token keyword">Int</span> <span class="token number">1</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>stucks</span><span class="token punctuation">&gt;</span></span>
+      <span class="token keyword">requires</span> ExitCode <span class="token operator">=</span><span class="token operator">/</span><span class="token operator">=</span>K <span class="token string">&quot;0&quot;</span> andBool KHead <span class="token operator">=</span><span class="token operator">/</span><span class="token operator">=</span>K Lbl<span class="token string">&apos;Hash&apos;</span>AssertFailed <span class="token punctuation">{</span><span class="token punctuation">.</span>Sorts <span class="token punctuation">}</span> <span class="token punctuation">(</span><span class="token punctuation">.</span>Patterns<span class="token punctuation">)</span>
+</code></pre>
+<h3 id="finalization">Finalization</h3>
+<p>Finally, we print the total number of sucessful and failed branches.</p>
+<pre class="language-k"><code>    <span class="token keyword">rule</span>  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>k</span><span class="token punctuation">&gt;</span></span> <span class="token punctuation">.</span>K <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>k</span><span class="token punctuation">&gt;</span></span>
+          <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>out</span><span class="token punctuation">&gt;</span></span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token punctuation">.</span>List
+             <span class="token operator">=&gt;</span> ListItem<span class="token punctuation">(</span>Int2String<span class="token punctuation">(</span>Successes<span class="token punctuation">)</span><span class="token punctuation">)</span> ListItem<span class="token punctuation">(</span><span class="token string">&quot; branch(es) succeeded; &quot;</span><span class="token punctuation">)</span>
+                ListItem<span class="token punctuation">(</span>Int2String<span class="token punctuation">(</span>Failures<span class="token punctuation">)</span><span class="token punctuation">)</span>  ListItem<span class="token punctuation">(</span><span class="token string">&quot; branch(es) failed.\n&quot;</span><span class="token punctuation">)</span>
+          <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>out</span><span class="token punctuation">&gt;</span></span>
+          <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>success</span><span class="token punctuation">&gt;</span></span> Successes <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>success</span><span class="token punctuation">&gt;</span></span>
+          <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>failures</span><span class="token punctuation">&gt;</span></span> Failures <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>failures</span><span class="token punctuation">&gt;</span></span>
+          <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>stucks</span><span class="token punctuation">&gt;</span></span> Stucks <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>stucks</span><span class="token punctuation">&gt;</span></span>
+          <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>exitcode</span><span class="token punctuation">&gt;</span></span> <span class="token operator">-</span><span class="token number">1</span>
+                  <span class="token operator">=&gt;</span>       #if Stucks   <span class="token operator">=</span><span class="token operator">/</span><span class="token operator">=</span><span class="token keyword">Int</span> <span class="token number">0</span>    #then <span class="token number">2</span>
+                     #else #if Failures <span class="token operator">=</span><span class="token operator">/</span><span class="token operator">=</span><span class="token keyword">Int</span> <span class="token number">0</span>    #then <span class="token number">1</span>
+                     #else                                <span class="token number">0</span>
+                     #fi #fi
+          <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>exitcode</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<pre class="language-k"><code><span class="token keyword">endmodule</span>
+</code></pre>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#rule-based-io"
+                class="bd-toc-link"
+                style="padding-left: 0px;;"
+              >
+                Rule based IO
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#kore"
+                class="bd-toc-link"
+                style="padding-left: 0px;;"
+              >
+                <code>KORE</code>
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#kore-unparse"
+                class="bd-toc-link"
+                style="padding-left: 0px;;"
+              >
+                <code>KORE-UNPARSE</code>
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#kore-parse"
+                class="bd-toc-link"
+                style="padding-left: 0px;;"
+              >
+                <code>KORE-PARSE</code>
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#kore-helpers"
+                class="bd-toc-link"
+                style="padding-left: 0px;;"
+              >
+                <code>KORE-HELPERS</code>
+              </a></div><details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#driver" class="bd-toc-link"><code>DRIVER</code></a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#kore-exec"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                <code>kore-exec</code>
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#pretty-print"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Pretty print
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#utilities-instatiated-for-kmichelson"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Utilities instatiated for KMichelson
+              </a></div><details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#main" class="bd-toc-link">Main</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#initialization"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Initialization
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#normalization"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Normalization
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#triaging"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Triaging
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#finalization"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Finalization
+              </a></div>
+            </div>
+          </details>
+        
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Typist/1.2/typist.min.js"></script>
+    <script src="../../assets/js/index.js"></script>
+  </body>
+</html>

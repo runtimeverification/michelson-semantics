@@ -1,3 +1,0 @@
-code { DROP } ; 
-input { Stack_elt big_map int int { } } ;
-output {  } 
