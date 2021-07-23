@@ -142,6 +142,69 @@ rule TopLevelOps([ Transaction Sender _ _ _ ] ;; _, Source) => false requires Se
 rule TopLevelOps(.List, _) => true
 ```
 
+## Assumptions for External Contracts
+
+We make assumptions on the behaviors of external contracts, especially the token and liquidity contracts.  _**These assumptions are required for the proof of the invariant, and thus it is important to verify that these are satisfied by the given implementation of the token and liquidity contracts.**_  If some of these assumptions are not satisfied for good reasons, then the proof needs to be revisited.
+
+We assume that _only_ Dexter can spend its own token, and no others can.  Specifically, for example, there must _not_ exist any authorized users who are permitted to spend (some of) Dexter-owned tokens (in any certain cases).  For another example, there must _not_ exist a way to (even temporarily) borrow tokens from Dexter.
+
+We also assume that the token transfer operation must update the balance before emitting continuation operations.  For example, the token contract must _not_ implement the so-called "pull pattern" where the transfer operation does not immediately update the balance but only allows the receiver to claim the transferred amount later as a separate transaction.
+
+These assumptions are formulated in the following proposition `[token-transfer]`.
+
+```
+rule [token-transfer]:
+<operations> ( [ Transaction Sender TOKEN Amount Transfer(From, To, Value) ] => Ops' ) ;; Ops </operations>
+<tokenDexter> D => D' </tokenDexter>
+assert   Amount ==Int 0
+ andBool From ==K DEXTER impliesBool Sender ==K DEXTER
+ensures  ( From  ==K DEXTER andBool To =/=K DEXTER ) impliesBool D' ==Int D -Int Value
+ andBool ( From =/=K DEXTER andBool To  ==K DEXTER ) impliesBool D' ==Int D +Int Value
+ andBool ( From  ==K DEXTER andBool To  ==K DEXTER ) impliesBool D' ==Int D
+ andBool ( From =/=K DEXTER andBool To =/=K DEXTER ) impliesBool D' ==Int D
+```
+
+Moreover, we assume that the only way to alter the token balance of Dexter is the Transfer() function call.  No other functions can affect the token balance of Dexter.  The following proposition formulates that.
+
+```
+proposition [only-token-transfer]:
+<operations> (Op => _) ;; _ </operations>
+<tokenDexter> D => D' </tokenDexter>
+ensures  D' <Int D impliesBool ( Op ==K Transaction DEXTER TOKEN 0 Transfer(DEXTER, To, Value) andBool To =/=K DEXTER andBool Value >Int 0 )
+ andBool D' >Int D impliesBool Op ==K Transaction _ TOKEN 0 Transfer(_, DEXTER, _)
+```
+
+Regarding the liquidity contract, we assume that:
+
+1.  only MintOrBurn() can update the total liquidity supply
+2.  the MintOrBurn() entrypoint does not emit any operations
+3.  only Dexter is permitted to call this entrypoint
+
+```
+rule [lqt-mint-burn]:
+<operations> ( [ Transaction Sender LQT Amount MintOrBurn(_, Value) ] => .List ) ;; _ </operations>
+<lqtSupply> S => S +Int Value </lqtSupply>
+assert   Sender ==K DEXTER
+ andBool Amount ==Int 0
+```
+
+```
+proposition [only-lqt-mint-burn]:
+<operations> (Op => _) ;; _ </operations>
+<lqtSupply> S => S' </lqtSupply>
+ensures  S' =/=Int S impliesBool ( Op ==K Transaction DEXTER LQT 0 MintOrBurn(_, Value) andBool S' ==Int S +Int Value )
+```
+
+For the other unknown external contract calls, the only functions Dexter can call are Default() and XtzToToken().  We assume that such external calls can affect only the XTZ balance of Dexter (even if the target contract is the token or liquidity contract).  The following rule `[send]` formulates that.
+
+```
+rule [send]:
+<operations> ( [ Transaction DEXTER Target Amount CallParams ] => Ops' ) ;; _ </operations>
+<xtzDexter> #Mutez(B => B -Int Amount) </xtzDexter>
+requires Target =/=K DEXTER
+ andBool ( CallParams ==K Default() orBool CallParams ==K (XtzToToken _) )
+```
+
 
 ## State Variable Faithfulness
 
@@ -845,69 +908,6 @@ proof [inv-lqt-mint-burn]:
      ==Int (S' -Int Value) +Int MintBurns(Op ;; Ops) by S'
      ==Int (S' -Int Value) +Int (MintBurns(Ops) +Int Value) by MintBurns
      ==Int S' +Int MintBurns(Ops) by simp
-```
-
-### Assumptions for External Contracts
-
-We make assumptions on the behaviors of external contracts, especially the token and liquidity contracts.  _**These assumptions are required for the proof of the invariant, and thus it is important to verify that these are satisfied by the given implementation of the token and liquidity contracts.**_  If some of these assumptions are not satisfied for good reasons, then the proof needs to be revisited.
-
-We assume that _only_ Dexter can spend its own token, and no others can.  Specifically, for example, there must _not_ exist any authorized users who are permitted to spend (some of) Dexter-owned tokens (in any certain cases).  For another example, there must _not_ exist a way to (even temporarily) borrow tokens from Dexter.
-
-We also assume that the token transfer operation must update the balance before emitting continuation operations.  For example, the token contract must _not_ implement the so-called "pull pattern" where the transfer operation does not immediately update the balance but only allows the receiver to claim the transferred amount later as a separate transaction.
-
-These assumptions are formulated in the following proposition `[token-transfer]`.
-
-```
-rule [token-transfer]:
-<operations> ( [ Transaction Sender TOKEN Amount Transfer(From, To, Value) ] => Ops' ) ;; Ops </operations>
-<tokenDexter> D => D' </tokenDexter>
-assert   Amount ==Int 0
- andBool From ==K DEXTER impliesBool Sender ==K DEXTER
-ensures  ( From  ==K DEXTER andBool To =/=K DEXTER ) impliesBool D' ==Int D -Int Value
- andBool ( From =/=K DEXTER andBool To  ==K DEXTER ) impliesBool D' ==Int D +Int Value
- andBool ( From  ==K DEXTER andBool To  ==K DEXTER ) impliesBool D' ==Int D
- andBool ( From =/=K DEXTER andBool To =/=K DEXTER ) impliesBool D' ==Int D
-```
-
-Moreover, we assume that the only way to alter the token balance of Dexter is the Transfer() function call.  No other functions can affect the token balance of Dexter.  The following proposition formulates that.
-
-```
-proposition [only-token-transfer]:
-<operations> (Op => _) ;; _ </operations>
-<tokenDexter> D => D' </tokenDexter>
-ensures  D' <Int D impliesBool ( Op ==K Transaction DEXTER TOKEN 0 Transfer(DEXTER, To, Value) andBool To =/=K DEXTER andBool Value >Int 0 )
- andBool D' >Int D impliesBool Op ==K Transaction _ TOKEN 0 Transfer(_, DEXTER, _)
-```
-
-Regarding the liquidity contract, we assume that:
-
-1.  only MintOrBurn() can update the total liquidity supply
-2.  the MintOrBurn() entrypoint does not emit any operations
-3.  only Dexter is permitted to call this entrypoint
-
-```
-rule [lqt-mint-burn]:
-<operations> ( [ Transaction Sender LQT Amount MintOrBurn(_, Value) ] => .List ) ;; _ </operations>
-<lqtSupply> S => S +Int Value </lqtSupply>
-assert   Sender ==K DEXTER
- andBool Amount ==Int 0
-```
-
-```
-proposition [only-lqt-mint-burn]:
-<operations> (Op => _) ;; _ </operations>
-<lqtSupply> S => S' </lqtSupply>
-ensures  S' =/=Int S impliesBool ( Op ==K Transaction DEXTER LQT 0 MintOrBurn(_, Value) andBool S' ==Int S +Int Value )
-```
-
-For the other unknown external contract calls, the only functions Dexter can call are Default() and XtzToToken().  We assume that such external calls can affect only the XTZ balance of Dexter (even if the target contract is the token or liquidity contract).  The following rule `[send]` formulates that.
-
-```
-rule [send]:
-<operations> ( [ Transaction DEXTER Target Amount CallParams ] => Ops' ) ;; _ </operations>
-<xtzDexter> #Mutez(B => B -Int Amount) </xtzDexter>
-requires Target =/=K DEXTER
- andBool ( CallParams ==K Default() orBool CallParams ==K (XtzToToken _) )
 ```
 
 ### Abstract Behaviors of Dexter Entrypoints
