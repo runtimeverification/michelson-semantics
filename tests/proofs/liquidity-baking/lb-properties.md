@@ -518,7 +518,7 @@ proof [inv-xtz-to-token]:
 - unify RHS
   - Ops' == [ Transaction DEXTER TOKEN 0 Transfer(DEXTER, To, TokensBought) ]
   - X' == X +Int XtzSold
-  - T' == T -Int ( 997 *Int XtzSold *Int T /Int (1000 *Int X +Int 997 *Int XtzSold) #as TokensBought )
+  - T' == T -Int ( 999 *Int XtzSold *Int T /Int (1000 *Int X +Int 999 *Int XtzSold) #as TokensBought )
   - L' == L
   - B' == B +Int XtzSold
   - D' == D
@@ -578,7 +578,7 @@ proof [inv-token-to-xtz]:
 - unify RHS
   - Ops' == ( [ Transaction DEXTER TOKEN 0         Transfer(Sender, DEXTER, TokensSold) ] #as Op1 )
          ;; ( [ Transaction DEXTER To    XtzBought Default() ] #as Op2 )
-  - X' == X -Int ( 997 *Int TokensSold *Int X /Int (1000 *Int T +Int 997 *Int TokensSold) #as XtzBought )
+  - X' == X -Int ( 999 *Int TokensSold *Int X /Int (1000 *Int T +Int 999 *Int TokensSold) #as XtzBought )
   - T' == T +Int TokensSold
   - L' == L
   - B' == B
@@ -636,7 +636,7 @@ proof [inv-token-to-token]:
 - unify RHS
   - Ops' == ( [ Transaction DEXTER TOKEN                0         Transfer(Sender, DEXTER, TokensSold) ] #as Op1 )
          ;; ( [ Transaction DEXTER OutputDexterContract XtzBought XtzToToken(To, MinTokensBought, Deadline) ] #as Op2 )
-  - X' == X -Int ( 997 *Int TokensSold *Int X /Int (1000 *Int T +Int 997 *Int TokensSold) #as XtzBought )
+  - X' == X -Int ( 999 *Int TokensSold *Int X /Int (1000 *Int T +Int 999 *Int TokensSold) #as XtzBought )
   - T' == T +Int TokensSold
   - L' == L
   - B' == B
@@ -1006,16 +1006,19 @@ ensures  XtzWithdrawn    ==Int LqtBurned *Int X /Int L
 ```
 rule [xtz-to-token]:
 <operations>  ( [ Transaction Sender DEXTER XtzSold XtzToToken(To, MinTokensBought, Deadline) ] => OpsEmitted ) ;; _ </operations>
-<xtzPool>     #Mutez(X => X +Int XtzSold)       </xtzPool>
-<tokenPool>          T => T -Int TokensBought   </tokenPool>
-<lqtTotal>           L                          </lqtTotal>
-<xtzDexter>   #Mutez(B => B')                   </xtzDexter>
-<tokenDexter>        D                          </tokenDexter>
-<lqtSupply>          S                          </lqtSupply>
+<xtzPool>     #Mutez(X => X +Int XtzSoldNetBurn) </xtzPool>
+<tokenPool>          T => T -Int TokensBought    </tokenPool>
+<lqtTotal>           L                           </lqtTotal>
+<xtzDexter>   #Mutez(B => B')                    </xtzDexter>
+<tokenDexter>        D                           </tokenDexter>
+<lqtSupply>          S                           </lqtSupply>
 assert   IS_VALID(Deadline)
  andBool TokensBought >=Int MinTokensBought
-ensures  TokensBought ==Int 997 *Int XtzSold *Int T /Int (1000 *Int X +Int 997 *Int XtzSold)
- andBool OpsEmitted ==K [ Transaction DEXTER TOKEN 0 Transfer(DEXTER, To, TokensBought) ]
+ensures  XtzSoldNetBurn ==Int XtzSold *Int 999 /Int 1000
+ andBool BurnAmount ==Int XtzSold -Int XtzSoldNetBurn
+ andBool TokensBought ==Int 999 *Int XtzSoldNetBurn *Int T /Int (1000 *Int X +Int 999 *Int XtzSoldNetBurn)
+ andBool OpsEmitted ==K [ Transaction DEXTER TOKEN 0          Transfer(DEXTER, To, TokensBought) ]
+                     ;; [ Transaction DEXTER NULL  BurnAmount Default() ]
  andBool Sender =/=K DEXTER impliesBool B' ==Int B +Int XtzSold
  andBool Sender  ==K DEXTER impliesBool B' ==Int B
 ```
@@ -1034,9 +1037,12 @@ rule [token-to-xtz]:
 assert   IS_VALID(Deadline)
  andBool Amount ==Int 0
  andBool XtzBought >=Int MinXtzBought
-ensures  XtzBought ==Int 997 *Int TokensSold *Int X /Int (1000 *Int T +Int 997 *Int TokensSold)
- andBool OpsEmitted ==K [ Transaction DEXTER TOKEN 0         Transfer(Sender, DEXTER, TokensSold) ]
-                     ;; [ Transaction DEXTER To    XtzBought Default() ]
+ensures  XtzBought ==Int 999 *Int TokensSold *Int X /Int (1000 *Int T +Int 999 *Int TokensSold)
+ andBool XtzBoughtNetBurn ==Int XtzBought *Int 999 /Int 1000
+ andBool BurnAmount ==Int XtzBought - XtzBoughtNetBurn
+ andBool OpsEmitted ==K [ Transaction DEXTER TOKEN 0                Transfer(Sender, DEXTER, TokensSold) ]
+                     ;; [ Transaction DEXTER To    XtzBoughtNetBurn Default() ]
+                     ;; [ Transaction DEXTER NULL  BurnAmount       Default() ]
 ```
 
 #### TokenToToken(OutputDexterContract, MinTokensBought, To, TokensSold, Deadline)
@@ -1056,7 +1062,7 @@ rule [token-to-token]:
 <lqtSupply>          S                          </lqtSupply>
 assert   IS_VALID(Deadline)
  andBool Amount ==Int 0
-ensures  XtzBought ==Int 997 *Int TokensSold *Int X /Int (1000 *Int T +Int 997 *Int TokensSold)
+ensures  XtzBought ==Int 999 *Int TokensSold *Int X /Int (1000 *Int T +Int 999 *Int TokensSold)
  andBool OpsEmitted ==K [ Transaction DEXTER TOKEN                0         Transfer(Sender, DEXTER, TokensSold) ]
                      ;; [ Transaction DEXTER OutputDexterContract XtzBought XtzToToken(To, MinTokensBought, Deadline) ]
 ```
@@ -1158,12 +1164,12 @@ proof [pool]:
           - T' == T -Int TokensBought
           - L' == L
           - XtzSold == Amount
-          - TokensBought == 997 *Int XtzSold *Int T /Int (1000 *Int X +Int 997 *Int XtzSold)
-        - let TokensBoughtReal = 997 *Int XtzSold *Int T /Real (1000 *Int X +Int 997 *Int XtzSold)
+          - TokensBought == 999 *Int XtzSold *Int T /Int (1000 *Int X +Int 999 *Int XtzSold)
+        - let TokensBoughtReal = 999 *Int XtzSold *Int T /Real (1000 *Int X +Int 999 *Int XtzSold)
         - TokensBought <=Real TokensBoughtReal
         - (X' *Int T') /Real (X *Int T) ==Real ((X +Int XtzSold) *Int  (T -Int  TokensBought    )) /Real (X *Int T) by X' and T'
                                         >=Real ((X +Int XtzSold) *Real (T -Real TokensBoughtReal)) /Real (X *Int T) by TokensBought <=Real TokensBoughtReal
-                                        ==Real (X +Real XtzSold) /Real (X +Real 0.997 *Real XtzSold) by simp(Real)
+                                        ==Real (X +Real XtzSold) /Real (X +Real 0.999 *Real XtzSold) by simp(Real)
                                         >=Real 1 by simp(Real)
                                         ==Real (L' /Real L) ^Real 2 by L' == L
       - case CallParams == TokenToXtz(_, TokensSold, _, _) | CallParams == TokenToToken(_, _, _, TokensSold, _)
@@ -1172,12 +1178,12 @@ proof [pool]:
           - X' == X -Int XtzBought
           - T' == T +Int TokensSold
           - L' == L
-          - XtzBought == 997 *Int TokensSold *Int X /Int (1000 *Int T +Int 997 *Int TokensSold)
-        - let XtzBoughtReal = 997 *Int TokensSold *Int X /Real (1000 *Int T +Int 997 *Int TokensSold)
+          - XtzBought == 999 *Int TokensSold *Int X /Int (1000 *Int T +Int 999 *Int TokensSold)
+        - let XtzBoughtReal = 999 *Int TokensSold *Int X /Real (1000 *Int T +Int 999 *Int TokensSold)
         - XtzBought <=Real XtzBoughtReal
         - (X' *Int T') /Real (X *Int T) ==Real ((X -Int  XtzBought    ) *Int  (T +Int TokensSold)) /Real (X *Int T) by X' and T'
                                         >=Real ((X -Real XtzBoughtReal) *Real (T +Int TokensSold)) /Real (X *Int T) by XtzBought <=Real XtzBoughtReal
-                                        ==Real (T +Real TokensSold) /Real (T +Real 0.997 *Real TokensSold) by simp(Real)
+                                        ==Real (T +Real TokensSold) /Real (T +Real 0.999 *Real TokensSold) by simp(Real)
                                         >=Real 1 by simp(Real)
                                         ==Real (L' /Real L) ^Real 2 by L' == L
       - case CallParams == Default _
