@@ -789,7 +789,7 @@ proof [inv-send]:
      ==Int S' +Int MintBurns(Ops' ;; Ops) by Ops' and [only-dexter]
 ```
 
-#### Token Transfers and Balance Lookups
+#### Token Transfers
 
 The following claim is for the token contract call Transfer().
 
