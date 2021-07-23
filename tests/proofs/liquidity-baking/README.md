@@ -1,7 +1,22 @@
 # Liquidity Baking Contract Verification
 
-The liquidity baking (LB) smart contract is a Uniswap-style constant product market maker (CPMM) for two assets: Tez and wrapped Bitcoin (tzBTC).
-In this report, we use the K Framework and K Michelson semantics to verify two important safety properties of the LB smart contract which we first state informally below:
+The liquidity baking (LB) system is a Uniswap-style constant product market maker (CPMM) for two assets: Tez and wrapped Bitcoin (tzBTC) where arbitary users can decide to become a liquidity provider (LP) and obtain liquidity share tokens by providing reserves of each asset to the CPMM.
+The system actually consists of three separate smart contracts which work together in concert:
+
+```
+      [Dexter]
+         │
+[LQT]────┴────[tzBTC]
+```
+
+-   the main contract *Dexter* is responsible for:
+    -    all system entrypoints (i.e. users interacting with the system should *only* need to interact with this contract)
+    -    the CPMM logic
+    -    managing the Tez asset reserves
+-   the *LQT* contract is a _FA1.2_ contract (with an additional `%mintOrBurn` entrypoint) responsible for managing the liquidity share tokens (as far as we can tell, *LQT* stands for liquidity token)
+-   the *tzBTC* contract is a _FA1.2_ contract responsible for managing the tzBTC asset reserves
+
+In this report, we use the K Framework and K Michelson semantics to verify two important safety properties of LB which we first state informally below:
 
 1.  *Liquidity share value security* - LP shares never decrease in *redemption value* (note this is *different* from *monetary value*, see below)
 2.  *Operation safety* - all trades and liquidity redemptions/deposits have a bounded exchange rate and time in which they are applicable.
