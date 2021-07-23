@@ -1,9 +1,66 @@
-# Liquidity Baking Contract Verification
+# Liquidity Baking Safety Property Proofs
 
-## Introduction
+This document is all about proving two safety properties for the liquidity baking (LB) system which includes three separate smart contracts that we refer to as *Dexter*, *LQT*, and *tzBTC*.
+We assume that the reader is familiar with Uniswap-style CPMMs and the basic LB system structure.
+See the [README](./README.md) for an overview of relevant background material, including a description of the safety properties we wish to prove.
+For convenience, we restate our desired safety properties here:
 
-The Liquidity Baking (LB) contract is a constant product market maker (CPMM) smart contract.
-See the [README](./README.md) for an overview of CPMMs and the safety properties we wish to prove.
+-   *Liquidity share value security* - LP shares never decrease in *redemption value* (note this is *different* from *monetary value*, see below)
+-   *Operation safety* - all trades and liquidity redemptions/deposits have a bounded exchange rate and time in which they are applicable.
+
+Our proof occurs in several parts.
+
+*(a)* The first part is a mechanized proof that high-level K specifications are consistent with the low-level Michelson code of the *Dexter* and *LQT* smart contracts.
+      The proof scripts are contained in the [lb.md](./lb.md) and [lb-spec.md](./lb-spec) and [lqt.md](../lqt/lqt.md) and [lqt-spec.md](../lqt/lqt-spec.md) files.
+      Note that do not provide similar mechanized proofs for the *tzBTC* contract since it is an *upgradeable* contract whose logic may vary over time.
+      Instead, we axiomatize how we expect this contract to behave in our assumptions section below, such that our proofs will hold if the *tzBTC* satisfies the required assumptions.
+
+*(b)* The second part contains by-hand proofs for safety properties (1)-(2) based on the results from part *(a)*.
+      Before diving into the details, see the proof sketch below.
+
+## Proof Sketch
+
+The proof of the *operation safety* property is more straightforward.
+It follows from the K specification definitions and the assumptions about external smart contracts listed below.
+On the other hand, the proof of the *liquidity share value security* property is non-trivial.
+This proof occurs in two steps:
+
+-   we prove a *state variable faithfulness* invariant, i.e., *Dexter* contract variables are consistent with particular balances/storage values in the *Dexter*, *LQT*, and *tzBTC* contracts;
+-   we use this lemma to prove the *liquidity share value security* property
+
+There are many other lemmas used along the way that we will mention as needed.
+Before diving into our proof, we start with the needed notation and assumptions.
+
+## Notation
+
+To simplify our description of entrypoint behavior, we write entrypoint names like functions which take arguments.
+Given that each contract has a fixed number of important entrypoints, we list them all here for reference:
+
+*LB* Entrypoints:
+
+-   `AddLiquidity(owner : Address, minLqtMinted : Nat, maxTokensDeposited : Nat, deadline : Timestamp)`
+-   `RemoveLiquidity(to : Address, lqtBurned : Nat, minXtzWithdrawn : Mutez, minTokensWithdrawn : Nat, deadline : Timestamp)`
+-   `Default`
+-   `XtzToToken(to : Address, minTokensBought : Nat, deadline : Timestamp)`
+-   `TokenToXtz(to : Address, tokensSold : Nat, minXtzBought : Mutez, deadline : Timestamp)`
+-   `TokenToToken(outputDexterContract : Address, minTokensBought : Nat, to : Address, tokensSold : Natt, deadline : Timestamp)`
+
+*LQT* Entrypoints (includes the FA1.2 entrypoints as well as `MintOrBurn`):
+
+-   `GetTotalSupply(callback: Entrypoint)`
+-   `GetBalance(owner: Address, callback: Entrypoint)`
+-   `GetAllowance(owner: Address, spender: Address, callback: Entrypoint)`
+-   `Approve(spender: Address, value: Nat)`
+-   `Transfer(from: Address, to: Address, value: Nat)`
+-   `MintOrBurn(quantity: Int, target: Address)`
+
+*tzBTC* Entrypoints (since this contract is FA1.2 compliant, it should include at least these entrypoints):
+
+-   `GetTotalSupply(callback: Entrypoint)`
+-   `GetBalance(owner: Address, callback: Entrypoint)`
+-   `GetAllowance(owner: Address, spender: Address, callback: Entrypoint)`
+-   `Approve(spender: Address, value: Nat)`
+-   `Transfer(from: Address, to: Address, value: Nat)`
 
 ## Assumptions for Tezos Execution Environment
 
@@ -86,9 +143,9 @@ rule TopLevelOps(.List, _) => true
 ```
 
 
-## Faithfulness of State Variables
+## State Variable Faithfulness
 
-In the Dexter contract, the token exchange rate and the liquidity share price are determined by the three state variables (XtzPool, TokenPool, LqtTotal) which keep track of the XTZ reserve, the token reserve, and the total liquidity token supply, respectively.
+In the Dexter contract, the token exchange rate and the liquidity share price are determined by the three state variables (XtzPool, TokenPool, LqtTotal) which keep track of the XTZ reserve, the token (tzBTC) reserve, and the total liquidity token supply, respectively.
 
 The first invariant we consider is that the Dexter state variables faithfully represent the actual pool reserves and liquidity supply.  That is, XtzPool and TokenPool must be equal to the actual XTZ and token reserves, and LqtTotal must be equal to the actual total liquidity supply. We show this holds inductively, i.e. we assume that the invariant is satisfied, and then show that no sequence of transactions can cause it to be violated.
 
