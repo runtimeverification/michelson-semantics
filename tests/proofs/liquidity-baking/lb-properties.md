@@ -36,7 +36,6 @@ The following proposition `[dexter-emitted-ops]` enumerates all possible Dexter-
 proposition [dexter-emitted-ops]:
 [[ (
           ( Target ==K TOKEN andBool Amount ==Int 0 andBool CallParams ==K (Transfer _) )
-   orBool ( Target ==K TOKEN andBool Amount ==Int 0 andBool CallParams ==K BalanceOf(DEXTER, UpdateTokenPoolInternal) )
    orBool ( Target ==K LQT   andBool Amount ==Int 0 andBool CallParams ==K (MintBurn _) )
    orBool (                                                 CallParams ==K Default() )
    orBool (                                                 CallParams ==K (XtzToToken _) )
@@ -185,8 +184,7 @@ rule Transfers(_ ;; Ops) => Transfers(Ops) [owise]
 rule Transfers(.List) => 0
 
 syntax Int ::= MintBurns(OpList) [function]
-rule MintBurns([ Transaction DEXTER LQT 0 Mint(_, L) ] ;; Ops) => MintBurns(Ops) +Int L
-rule MintBurns([ Transaction DEXTER LQT 0 Burn(_, L) ] ;; Ops) => MintBurns(Ops) -Int L
+rule MintBurns([ Transaction DEXTER LQT 0 MintOrBurn(_, L) ] ;; Ops) => MintBurns(Ops) +Int L
 rule MintBurns(_ ;; Ops) => MintBurns(Ops) [owise]
 rule MintBurns(.List) => 0
 ```
@@ -210,10 +208,6 @@ proof [inv]:
         - apply [inv-token-to-xtz]
       - case CallParams == TokenToToken _
         - apply [inv-token-to-token]
-      - case CallParams == UpdateTokenPool _
-        - apply [inv-update-token-pool]
-      - case CallParams == UpdateTokenPoolInternal _
-        - apply [inv-update-token-pool-internal]
       - case CallParams == Default _
         - apply [inv-default]
   - case Sender == DEXTER and Target == DEXTER
@@ -228,12 +222,8 @@ proof [inv]:
     - split Op
       - case Op == Transaction DEXTER TOKEN 0 (Transfer _)
         - apply [inv-token-transfer]
-      - case Op == Transaction DEXTER TOKEN 0 BalanceOf(DEXTER, UpdateTokenPoolInternal) ]
-        - apply [inv-token-balance-of]
-      - case Op == Transaction DEXTER LQT 0 (Mint _)
-        - apply [inv-lqt-mint]
-      - case Op == Transaction DEXTER LQT 0 (Burn _)
-        - apply [inv-lqt-burn]
+      - case Op == Transaction DEXTER LQT 0 (MintOrBurn _)
+        - apply [inv-lqt-mint-burn]
       - case Op == Transaction DEXTER _ _ Default()
         - apply [inv-send]
       - case Op == Transaction DEXTER _ _ (XtzToToken _)
@@ -291,7 +281,7 @@ proof [inv-add-liquidity]:
 - apply [add-liquidity]
 - unify RHS
   - Ops' == ( [ Transaction DEXTER TOKEN 0 Transfer(Sender, DEXTER, TokensDeposited) ] #as Op1 )
-         ;; ( [ Transaction DEXTER LQT 0 Mint(Owner, LqtMinted) ] #as Op2 )
+         ;; ( [ Transaction DEXTER LQT 0 MintOrBurn(Owner, LqtMinted) ] #as Op2 )
   - X' == X +Int XtzDeposited
   - T' == T +Int ( XtzDeposited *Int T up/Int X #as TokensDeposited )
   - L' == L +Int ( XtzDeposited *Int L   /Int X #as LqtMinted )
@@ -347,7 +337,7 @@ proof [inv-remove-liquidity]:
   - Amount ==Int 0 by assert
   - LqtBurned <Int L by assert
 - unify RHS
-  - Ops' == ( [ Transaction DEXTER LQT   0            Burn(Sender, LqtBurned) ] #as Op1 )
+  - Ops' == ( [ Transaction DEXTER LQT   0            MintOrBurn(Sender, LqtBurned) ] #as Op1 )
          ;; ( [ Transaction DEXTER TOKEN 0            Transfer(DEXTER, To, TokensWithdrawn) ] #as Op2 )
          ;; ( [ Transaction DEXTER To    XtzWithdrawn Default() ] #as Op3 )
   - X' == X -Int ( LqtBurned *Int X /Int L #as XtzWithdrawn )
@@ -624,8 +614,8 @@ Since external contracts are unknown and arbitrary, we need to make certain assu
 There exist different types of external calls made by Dexter as follows:
 - Simply send XTZ to others
 - Call another Dexter contract's XtzToToken()
-- Call the token contract's Transfer() or BalanceOf()
-- Call the liquidity contract's Mint() or Burn()
+- Call the token contract's Transfer()
+- Call the liquidity contract's MintOrBurn()
 
 #### XTZ Transfers
 
@@ -681,7 +671,7 @@ proof [inv-send]:
 
 #### Token Transfers and Balance Lookups
 
-The following two claims are for the token contract calls, Transfer() and BalanceOf().
+The following claim is for the token contract call Transfer().
 
 ```
 claim [inv-token-transfer]:
@@ -751,106 +741,13 @@ proof [inv-token-transfer]:
          ==Int D' +Int Transfers(Ops' ;; Ops) by Ops' and [only-dexter]
 ```
 
-```
-claim [inv-token-balance-of]:
-<operations>  ( [ Transaction DEXTER TOKEN Amount BalanceOf(DEXTER, UpdateTokenPoolInternal) ] #as Op => Ops' ) ;; Ops </operations>
-<xtzPool>     #Mutez(X => X')   </xtzPool>
-<tokenPool>          T => T'    </tokenPool>
-<lqtTotal>           L => L'    </lqtTotal>
-<xtzDexter>   #Mutez(B => B')   </xtzDexter>
-<tokenDexter>        D => D'    </tokenDexter>
-<lqtSupply>          S => S'    </lqtSupply>
-requires 0 <Int X  andBool X  ==Int B  +Int Sends(Op ;; Ops)
- andBool 0 <Int T  andBool T  <=Int D  +Int Transfers(Op ;; Ops)
- andBool 0 <Int L  andBool L  ==Int S  +Int MintBurns(Op ;; Ops)
-ensures  0 <Int X' andBool X' ==Int B' +Int Sends(Ops' ;; Ops)
- andBool 0 <Int T' andBool T' <=Int D' +Int Transfers(Ops' ;; Ops)
- andBool 0 <Int L' andBool L' ==Int S' +Int MintBurns(Ops' ;; Ops)
-
-proof [inv-token-balance-of]:
-- apply [token-balance-of]
-  - Amount ==Int 0 by assert
-- unify RHS
-  - Ops' == OpsPre ;; [ Transaction TOKEN DEXTER 0 UpdateTokenPoolInternal(D) ] ;; OpsPost
-  - X' == X
-  - T' == T
-  - L' == L
-  - B' == B
-  - D' == D
-  - S' == S
-- X' >Int 0 by X >Int 0
-- T' >Int 0 by T >Int 0
-- L' >Int 0 by L >Int 0
-- X' ==Int X
-     ==Int B +Int Sends(Op ;; Ops) by premise
-     ==Int B' +Int Sends(Op ;; Ops) by B'
-     ==Int B' +Int Sends(Ops) by Sends and Amount ==Int 0
-     ==Int B' +Int Sends(Ops' ;; Ops) by Ops' and [only-dexter]
-- T' ==Int T
-     <=Int D +Int Transfers(Op ;; Ops) by premise
-     ==Int D' +Int Transfers(Op ;; Ops) by D'
-     ==Int D' +Int Transfers(Ops) by Transfers
-     ==Int D' +Int Transfers(Ops' ;; Ops) by Ops' and [only-dexter]
-- L' ==Int L
-     ==Int S +Int MintBurns(Op ;; Ops) by premise
-     ==Int S' +Int MintBurns(Op ;; Ops) by S'
-     ==Int S' +Int MintBurns(Ops) by MintBurns
-     ==Int S' +Int MintBurns(Ops' ;; Ops) by Ops' and [only-dexter]
-```
-
 #### Liquidity Mints and Burns
 
-The following two claims are for the liquidity contract calls, Mint() and Burn().
+The following claim is for the liquidity token contract call MintorBurn().
 
 ```
-claim [inv-lqt-mint]:
-<operations>  ( [ Transaction Sender LQT Amount Mint(_, Value) ] #as Op => Ops' ) ;; Ops </operations>
-<xtzPool>     #Mutez(X => X')   </xtzPool>
-<tokenPool>          T => T'    </tokenPool>
-<lqtTotal>           L => L'    </lqtTotal>
-<xtzDexter>   #Mutez(B => B')   </xtzDexter>
-<tokenDexter>        D => D'    </tokenDexter>
-<lqtSupply>          S => S'    </lqtSupply>
-requires 0 <Int X  andBool X  ==Int B  +Int Sends(Op ;; Ops)
- andBool 0 <Int T  andBool T  <=Int D  +Int Transfers(Op ;; Ops)
- andBool 0 <Int L  andBool L  ==Int S  +Int MintBurns(Op ;; Ops)
-ensures  0 <Int X' andBool X' ==Int B' +Int Sends(Ops' ;; Ops)
- andBool 0 <Int T' andBool T' <=Int D' +Int Transfers(Ops' ;; Ops)
- andBool 0 <Int L' andBool L' ==Int S' +Int MintBurns(Ops' ;; Ops)
-
-proof [inv-lqt-mint]:
-- apply [lqt-mint]
-  - Sender ==K DEXTER by assert
-  - Amount ==Int 0 by assert
-- unify RHS
-  - X' == X
-  - T' == T
-  - L' == L
-  - B' == B
-  - D' == D
-  - S' == S +Int Value
-- X' >Int 0 by X >Int 0
-- T' >Int 0 by T >Int 0
-- L' >Int 0 by L >Int 0
-- X' ==Int X
-     ==Int B +Int Sends(Op ;; Ops) by premise
-     ==Int B' +Int Sends(Op ;; Ops) by B'
-     ==Int B' +Int Sends(Ops) by Sends and Amount ==Int 0
-     ==Int B' +Int Sends(Ops' ;; Ops) by Ops' and [only-dexter]
-- T' ==Int T
-     <=Int D +Int Transfers(Op ;; Ops) by premise
-     ==Int D' +Int Transfers(Op ;; Ops) by D'
-     ==Int D' +Int Transfers(Ops) by Transfers
-     ==Int D' +Int Transfers(Ops' ;; Ops) by Ops' and [only-dexter]
-- L' ==Int L
-     ==Int S +Int MintBurns(Op ;; Ops) by premise
-     ==Int (S' -Int Value) +Int MintBurns(Op ;; Ops) by S'
-     ==Int (S' -Int Value) +Int (MintBurns(Ops) +Int Value) by MintBurns
-     ==Int S' +Int MintBurns(Ops) by simp
-     ==Int S' +Int MintBurns(Ops' ;; Ops) by Ops' and [only-dexter]
-
-claim [inv-lqt-burn]:
-<operations>  ( [ Transaction Sender LQT Amount Burn(_, Value) ] #as Op => Ops' ) ;; Ops </operations>
+claim [inv-lqt-mint-burn]:
+<operations>  ( [ Transaction Sender LQT Amount MintOrBurn(_, Value) ] #as Op => .List ) ;; Ops </operations>
 <xtzPool>     #Mutez(X => X')   </xtzPool>
 <tokenPool>          T => T'    </tokenPool>
 <lqtTotal>           L => L'    </lqtTotal>
@@ -874,7 +771,7 @@ proof [inv-lqt-mint-burn]:
   - L' == L
   - B' == B
   - D' == D
-  - S' == S -Int Value
+  - S' == S +Int Value
 - X' >Int 0 by X >Int 0
 - T' >Int 0 by T >Int 0
 - L' >Int 0 by L >Int 0
@@ -882,18 +779,15 @@ proof [inv-lqt-mint-burn]:
      ==Int B +Int Sends(Op ;; Ops) by premise
      ==Int B' +Int Sends(Op ;; Ops) by B'
      ==Int B' +Int Sends(Ops) by Sends and Amount ==Int 0
-     ==Int B' +Int Sends(Ops' ;; Ops) by Ops' and [only-dexter]
 - T' ==Int T
      <=Int D +Int Transfers(Op ;; Ops) by premise
      ==Int D' +Int Transfers(Op ;; Ops) by D'
      ==Int D' +Int Transfers(Ops) by Transfers
-     ==Int D' +Int Transfers(Ops' ;; Ops) by Ops' and [only-dexter]
 - L' ==Int L
      ==Int S +Int MintBurns(Op ;; Ops) by premise
-     ==Int (S' +Int Value) +Int MintBurns(Op ;; Ops) by S'
-     ==Int (S' +Int Value) +Int (MintBurns(Ops) -Int Value) by MintBurns
+     ==Int (S' -Int Value) +Int MintBurns(Op ;; Ops) by S'
+     ==Int (S' -Int Value) +Int (MintBurns(Ops) +Int Value) by MintBurns
      ==Int S' +Int MintBurns(Ops) by simp
-     ==Int S' +Int MintBurns(Ops' ;; Ops) by Ops' and [only-dexter]
 ```
 
 ### Assumptions for External Contracts
@@ -902,7 +796,7 @@ We make assumptions on the behaviors of external contracts, especially the token
 
 We assume that _only_ Dexter can spend its own token, and no others can.  Specifically, for example, there must _not_ exist any authorized users who are permitted to spend (some of) Dexter-owned tokens (in any certain cases).  For another example, there must _not_ exist a way to (even temporarily) borrow tokens from Dexter.
 
-We also assume that the token transfer operation must update the balance before emitting continuation operations.  For example, the token contract must _not_ implement the so-called "pull pattern" where the transfer operation does not immediately update the balance but only allows the receiver to claim the transferred amount later as a separate transaction.  Note that such a delayed update of balance may lead to an exploit.  For example, a malicious user calls XtzToToken() and then calls UpdateTokenPool() before claiming the bought tokens.  Later he claims the tokens, which makes TokenPool to be larger than the actual token reserve, and distorts the token exchange price.  (The delayed balance update may not conform to the FA2 standard due to the violation of the atomicity requirement, but it is unclear whether it violates the FA1.2 standard or not.)
+We also assume that the token transfer operation must update the balance before emitting continuation operations.  For example, the token contract must _not_ implement the so-called "pull pattern" where the transfer operation does not immediately update the balance but only allows the receiver to claim the transferred amount later as a separate transaction.
 
 These assumptions are formulated in the following proposition `[token-transfer]`.
 
@@ -928,30 +822,16 @@ ensures  D' <Int D impliesBool ( Op ==K Transaction DEXTER TOKEN 0 Transfer(DEXT
  andBool D' >Int D impliesBool Op ==K Transaction _ TOKEN 0 Transfer(_, DEXTER, _)
 ```
 
-Regarding the BalanceOf() function, we assume the behavior only for the specific usage with Dexter.  The UpdateTokenPool() function emits an internal transaction to the token contract that calls BalanceOf() with the UpdateTokenPoolInternal() callback.  We assume that, upon receipt of such a call, BalanceOf() emits a transaction that calls to the given callback function with the current token balance of Dexter.  Obviously, the token balance must _not_ be altered.  This assumption is formulated in the following rule `[token-balance-of]`.
+Regarding the liquidity contract, we assume that:
 
-Note that, to admit more general behaviors, we assume that BalanceOf() can emit other operations that can be placed before and/or after the callback operation (denoted by OpsPre and OpsPost in the following rule).  Note that the additional operations placed before the callback can be arbitrary but cannot succeed in execution if they call any Dexter entrypoint, because of the SelfIsUpdatingTokenPool lock.  Also, if they somehow unlock SelfIsUpdatingTokenPool, then the callback will fail which will revert the entire operations.  Note that they cannot relock after unlocking it, because locking is permitted only for a top-level transaction to UpdateTokenPool() but no top-level transactions can be generated internally.
-
-```
-rule [token-balance-of]:
-<operations> ( [ Transaction DEXTER TOKEN Amount BalanceOf(DEXTER, UpdateTokenPoolInternal) ] => Ops' ) ;; Ops </operations>
-<tokenDexter> D </tokenDexter>
-assert   Amount ==Int 0
-ensures  Ops' ==K OpsPre ;; [ Transaction TOKEN DEXTER 0 UpdateTokenPoolInternal(D) ] ;; OpsPost
-```
-
-Regarding the liquidity contract, we assume that only Mint() and Burn() can update the total liquidity supply, and only Dexter is permitted to call them.
+1.  only MintOrBurn() can update the total liquidity supply
+2.  the MintOrBurn() entrypoint does not emit any operations
+3.  only Dexter is permitted to call this entrypoint
 
 ```
-rule [lqt-mint]:
-<operations> ( [ Transaction Sender LQT Amount Mint(_, Value) ] => Ops' ) ;; _ </operations>
+rule [lqt-mint-burn]:
+<operations> ( [ Transaction Sender LQT Amount MintOrBurn(_, Value) ] => .List ) ;; _ </operations>
 <lqtSupply> S => S +Int Value </lqtSupply>
-assert   Sender ==K DEXTER
- andBool Amount ==Int 0
-
-rule [lqt-burn]:
-<operations> ( [ Transaction Sender LQT Amount Burn(_, Value) ] => Ops' ) ;; _ </operations>
-<lqtSupply> S => S -Int Value </lqtSupply>
 assert   Sender ==K DEXTER
  andBool Amount ==Int 0
 ```
@@ -960,8 +840,7 @@ assert   Sender ==K DEXTER
 proposition [only-lqt-mint-burn]:
 <operations> (Op => _) ;; _ </operations>
 <lqtSupply> S => S' </lqtSupply>
-ensures  S' >Int S impliesBool ( Op ==K Transaction DEXTER LQT 0 Mint(_, Value) andBool Value >Int 0 )
- andBool S' <Int S impliesBool ( Op ==K Transaction DEXTER LQT 0 Burn(_, Value) andBool Value >Int 0 )
+ensures  S' =/=Int S impliesBool ( Op ==K Transaction DEXTER LQT 0 MintOrBurn(_, Value) andBool S' ==Int S +Int Value )
 ```
 
 For the other unknown external contract calls, the only functions Dexter can call are Default() and XtzToToken().  We assume that such external calls can affect only the XTZ balance of Dexter (even if the target contract is the token or liquidity contract).  The following rule `[send]` formulates that.
@@ -989,7 +868,6 @@ The abstract configuration consists of the following components (called "cells" 
 - `<tokenDexter>`: the token balance of Dexter (stored in the token contract storage)
 - `<lqtSupply>`: the total liquidity supply (stored in the liquidity contract storage)
 - `<sourceaddr>`: the source of the current operation
-- `<selfIsUpdatingTokenPool>`: the SelfIsUpdatingTokenPool lock
 - `<manager>`: the manager account address
 - `<lqtAddress>`: the liquidity contract address
 - `<freezeBaker>`: the FreezeBaker lock
@@ -1011,8 +889,7 @@ rule [[ LQT => Lqt ]] <lqtAddress> Lqt </lqtAddress>
 ```
 syntax Bool ::= IS_VALID(Int) [macro]
 rule [is-valid]:
-[[ IS_VALID(Deadline) => IsUpdatingTokenPool ==K false andBool Now <Int Deadline ]]
-<selfIsUpdatingTokenPool> IsUpdatingTokenPool </selfIsUpdatingTokenPool>
+[[ IS_VALID(Deadline) => Now <Int Deadline ]]
 <mynow> #Timestamp(Now) </mynow>
 ```
 
@@ -1035,7 +912,7 @@ assert   IS_VALID(Deadline)
 ensures  TokensDeposited ==Int XtzDeposited *Int T up/Int X
  andBool LqtMinted       ==Int XtzDeposited *Int L   /Int X
  andBool OpsEmitted ==K [ Transaction DEXTER TOKEN 0 Transfer(Sender, DEXTER, TokensDeposited) ]
-                     ;; [ Transaction DEXTER LQT   0 Mint(Owner, LqtMinted) ]
+                     ;; [ Transaction DEXTER LQT   0 MintOrBurn(Owner, LqtMinted) ]
  andBool Sender =/=K DEXTER impliesBool B' ==Int B +Int XtzDeposited
  andBool Sender  ==K DEXTER impliesBool B' ==Int B
 ```
@@ -1062,7 +939,7 @@ assert   IS_VALID(Deadline)
  andBool TokensWithdrawn >=Int MinTokensWithdrawn
 ensures  XtzWithdrawn    ==Int LqtBurned *Int X /Int L
  andBool TokensWithdrawn ==Int LqtBurned *Int T /Int L
- andBool OpsEmitted ==K [ Transaction DEXTER LQT   0            Burn(Sender, LqtBurned) ]
+ andBool OpsEmitted ==K [ Transaction DEXTER LQT   0            MintOrBurn(Sender, LqtBurned) ]
                      ;; [ Transaction DEXTER TOKEN 0            Transfer(DEXTER, To, TokensWithdrawn) ]
                      ;; [ Transaction DEXTER To    XtzWithdrawn Default() ]
 ```
@@ -1127,38 +1004,6 @@ ensures  XtzBought ==Int 997 *Int TokensSold *Int X /Int (1000 *Int T +Int 997 *
                      ;; [ Transaction DEXTER OutputDexterContract XtzBought XtzToToken(To, MinTokensBought, Deadline) ]
 ```
 
-#### UpdateTokenPool()
-
-```
-rule [update-token-pool]:
-<operations>  ( [ Transaction Sender DEXTER Amount UpdateTokenPool() ] => OpsEmitted ) ;; _ </operations>
-<xtzPool>     #Mutez(X) </xtzPool>
-<tokenPool>          T  </tokenPool>
-<lqtTotal>           L  </lqtTotal>
-<xtzDexter>   #Mutez(B) </xtzDexter>
-<tokenDexter>        D  </tokenDexter>
-<lqtSupply>          S  </lqtSupply>
-<sourceaddr>  Source    </sourceaddr>
-<selfIsUpdatingTokenPool> IsUpdatingTokenPool => true </selfIsUpdatingTokenPool>
-assert   IsUpdatingTokenPool ==K false
- andBool Amount ==Int 0
- andBool Sender ==K Source
-ensures  OpsEmitted ==K [ Transaction DEXTER TOKEN 0 BalanceOf(DEXTER, UpdateTokenPoolInternal) ]
-
-rule [update-token-pool-internal]:
-<operations>  ( [ Transaction Sender DEXTER Amount UpdateTokenPoolInternal(TokenPool) ] => .List ) ;; _ </operations>
-<xtzPool>     #Mutez(X)             </xtzPool>
-<tokenPool>          T => TokenPool </tokenPool>
-<lqtTotal>           L              </lqtTotal>
-<xtzDexter>   #Mutez(B)             </xtzDexter>
-<tokenDexter>        D              </tokenDexter>
-<lqtSupply>          S              </lqtSupply>
-<selfIsUpdatingTokenPool> IsUpdatingTokenPool => false </selfIsUpdatingTokenPool>
-assert   IsUpdatingTokenPool ==K true
- andBool Amount ==Int 0
- andBool Sender ==K TOKEN
-```
-
 #### Default()
 
 ```
@@ -1170,8 +1015,6 @@ rule [default]:
 <xtzDexter>   #Mutez(B => B')               </xtzDexter>
 <tokenDexter>        D                      </tokenDexter>
 <lqtSupply>          S                      </lqtSupply>
-<selfIsUpdatingTokenPool> IsUpdatingTokenPool </selfIsUpdatingTokenPool>
-assert   IsUpdatingTokenPool ==K false
 ensures  Sender =/=K DEXTER impliesBool B' ==Int B +Int Amount
  andBool Sender  ==K DEXTER impliesBool B' ==Int B
 ```
@@ -1192,7 +1035,6 @@ Note that the above property (together with the `[inv]` property) says that the 
 - When adding liquidity, users _cannot_ mint more liquidity shares than they should.
 - When removing liquidity, users _cannot_ redeem more assets than they should.
 - When exchanging tokens, users _cannot_ receive more XTZ or tokens than they should.
-- Updating the token pool _cannot_ be exploited despite the non-atomicity.
 
 (Note that, however, this property has _nothing_ to do with the _USD value_ of the liquidity share.  Indeed, the USD value of the liquidity share could decrease due to the so-called "Impermanent Loss" problem.)
 
@@ -1280,24 +1122,6 @@ proof [pool]:
                                         >=Real ((X -Real XtzBoughtReal) *Real (T +Int TokensSold)) /Real (X *Int T) by XtzBought <=Real XtzBoughtReal
                                         ==Real (T +Real TokensSold) /Real (T +Real 0.997 *Real TokensSold) by simp(Real)
                                         >=Real 1 by simp(Real)
-                                        ==Real (L' /Real L) ^Real 2 by L' == L
-      - case CallParams == UpdateTokenPool _
-        - apply [update-token-pool]
-        - unify RHS
-          - X' == X
-          - T' == T
-          - L' == L
-        - (X' *Int T') /Real (X *Int T) ==Real 1 by X' == X and T' == T
-                                        ==Real (L' /Real L) ^Real 2 by L' == L
-      - case CallParams == UpdateTokenPoolInternal(TokenPool)
-        - apply [update-token-pool-internal]
-        - unify RHS
-          - X' == X
-          - T' == TokenPool
-          - L' == L
-        - T <=Int TokenPool by [lemma-update-token-pool-internal]
-        - (X' *Int T') /Real (X *Int T) ==Real (X *Int TokenPool) /Real (X *Int T) by X' and T'
-                                        >=Real 1 by T <=Int TokenPool
                                         ==Real (L' /Real L) ^Real 2 by L' == L
       - case CallParams == Default _
         - apply [default]
