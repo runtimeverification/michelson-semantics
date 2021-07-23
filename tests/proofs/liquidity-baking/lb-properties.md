@@ -366,7 +366,7 @@ proof [inv]:
       - case Target == LQT
         - (X', T', L', B') == (X, T, L, B) by [only-dexter]
         - D' == D by [only-token-transfer]
-        - CallParams <> (Mint _) and CallParams <> (Burn _) by [lqt-mint] and [lqt-burn]
+        - CallParams <> (MintOrBurn _) by [lqt-mint-burn]
           - S' == S
       - case Target <> TOKEN and Target <> LQT
         - (X', T', L', B') == (X, T, L, B) by [only-dexter]
