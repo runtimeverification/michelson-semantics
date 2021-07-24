@@ -121,22 +121,6 @@ E(w,P,U,V) =  ---------
               U + w * P
 ```
 
-To make this operation usable under integer arithmetic, we can rewrite the exchange function as follows (which, under real arithmetic, is provably equal, as show below):
-
-```
-                       V * w * J         V * w * J       (1 / K)    V * w * J/K   V * w * P
-E(w,P = J/K,U,V) =  --------------- = --------------- * --------- = ----------- = ---------
-                    (U * K) + w * J   (U * K) + w * J    (1 / K)    U + w * J/K   U + w * P
-```
-
-The above formulation helps because, when using integer arithmetic, it is impossible to represent a non-integer directly; one must use fractions.
-Of course, we cannot even compute the fraction `J/K < 1` directly, since the result will always be 0 (with some remainder) which is useless for further calcuation.
-Instead, we must use algebra to re-formulate our function so that such fractions are embedded in a larger calculation (as was done above).
-Apart from that, it is advisable to minimize the number of integer divisions which occur, since:
-
-1.  division is more computationally expensive than addition, subtraction, and multiplication;
-2.  each division with a non-zero remainder introduces a rounding error which compounds as it propogates.
-
 **Model:**
 Now we refine our previous CPMM state machine model:
 
@@ -305,6 +289,85 @@ Consider an arbitrary CPMM in the form `(L, P, X, Y)`.
 
 Both properties are satisfied by our simplified model.
 Property (1) follows by an induction argument while property (2) follows by definition.
+
+## Integer Arithmetic Considerations
+
+In computer programs, we do not have access to infinite precision numbers (i.e. real numbers).
+We typically either use fixed-width or arbitrary width integers (with rounding or truncation) or floating point numbers.
+In this section, we discuss which of the properties that we proved above hold when we restrict ourselves to arbitrary width integer arithmetic with truncation.
+
+**Invariant Analysis without Fees:**:
+Recall that our original exchange rate function:
+
+```
+            V * w
+E(w,U,V) =  -----
+            U + w
+```
+
+was chosen so that:
+
+`[ X - E(y,Y,X) ] * [ Y + y ] == X * Y`
+
+However, in the world of integer arithmetic, the above equality no longer holds, becase integer division is not exact.
+As a counter example, suppose our exchange has two assets with reserves of asset A and B set to _10_ and _10_ respectively.
+Now suppose we wish to by as many units of asset A as possible for _5_ units of asset B.
+When we plug these values into our formula, we obtain:
+
+```
+[ 10 - E(5,10,10) ] * [ 10 + 5 ] = [ 10 - ( 10 * 5 / 10 + 15 ) ] * 15
+                                 = [ 10 - ( 50 / 15 ) ] * 15
+                                 = [ 10 - ( 10 / 3 ) ] * 15
+                                 = [ 10 - 3.333... ] * 15
+                                 = [ 10 - 3 ] * 15
+                                 = 7 * 15
+                                 = 105
+                                 > 100
+                                 = 10 * 10
+```
+
+The crucial problem arises because we must truncate the division _10 / 3_, which gives us _3_ instead of the infinite decimal expansion _3.333..._
+In fact, because we are truncating a number that is subtracted, the end result is that, in case of arbitrary-width integer arithmetic with truncation, even *without a fee*, the product of our asset reserves *never decreases, but may increase*.
+
+**Exchange-rate Calculation with Fees:**:
+Recall that our exchange rate function with fees was:
+
+```
+              V * w * P
+E(w,P,U,V) =  ---------
+              U + w * P
+```
+
+where *P* is a scaling factor in the range *[0,1]*.
+This function is unusable for us because the number *P* is not representable in integer arithmetic.
+What can we do?
+To make this operation usable under integer arithmetic, we can rewrite the exchange function as follows (which, under real arithmetic, is provably equal, as shown below):
+
+```
+                       V * w * J         V * w * J       (1 / K)    V * w * J/K   V * w * P
+E(w,P = J/K,U,V) =  --------------- = --------------- * --------- = ----------- = ---------
+                    (U * K) + w * J   (U * K) + w * J    (1 / K)    U + w * J/K   U + w * P
+```
+
+The above formulation helps because, when using integer arithmetic, it is impossible to represent a non-integer directly; one must use fractions.
+Of course, as noted above, we cannot even compute the fraction `J/K < 1` directly, since the result will always be 0 (with some remainder) which is useless for further calcuation.
+Instead, we must use algebra to re-formulate our function so that such fractions are embedded in a larger calculation (as was done above).
+Apart from that, it is advisable to minimize the number of integer divisions which occur, since:
+
+1.  division is more computationally expensive than addition, subtraction, and multiplication;
+2.  each division with a non-zero remainder introduces a truncation error which compounds as it propogates.
+
+**Invariant Analysis with Fees:**
+Let us perform our invariant analysis, again, but with fees and using arbitrary-width integer arithmetic with truncation.
+When performing an trade, we use the following computation:
+
+```
+                                     ┌  X         X * b * J     ┐   ┌       ┐
+[ X - E(b,P=J/K,Y,X) ] * [ Y + b ] = │  -  -  ----------------- │ * │ Y + b │
+                                     └  1     (Y * K) + (b * J) ┘   └       ┘
+```
+
+**TODO:** Finish this.
 
 ## Next Steps
 
