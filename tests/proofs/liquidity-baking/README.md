@@ -121,6 +121,22 @@ E(w,P,U,V) =  ---------
               U + w * P
 ```
 
+To make this operation usable under integer arithmetic, we can rewrite the exchange function as follows (which, under real arithmetic, is provably equal, as show below):
+
+```
+                       V * w * J         V * w * J       (1 / K)    V * w * J/K   V * w * P
+E(w,P = J/K,U,V) =  --------------- = --------------- * --------- = ----------- = ---------
+                    (U * K) + w * J   (U * K) + w * J    (1 / K)    U + w * J/K   U + w * P
+```
+
+The above formulation helps because, when using integer arithmetic, it is impossible to represent a non-integer directly; one must use fractions.
+Of course, we cannot even compute the fraction `J/K < 1` directly, since the result will always be 0 (with some remainder) which is useless for further calcuation.
+Instead, we must use algebra to re-formulate our function so that such fractions are embedded in a larger calculation (as was done above).
+Apart from that, it is advisable to minimize the number of integer divisions which occur, since:
+
+1.  division is more computationally expensive than addition, subtraction, and multiplication;
+2.  each division with a non-zero remainder introduces a rounding error which compounds as it propogates.
+
 **Model:**
 Now we refine our previous CPMM state machine model:
 
