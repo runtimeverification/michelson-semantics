@@ -525,7 +525,7 @@ proof [inv-xtz-to-token]:
   - D' == D
   - S' == S
 - X' >Int 0 by X >Int 0 and XtzSoldNetBurn >=Int 0
-- TokensBought <Int T by T >Int 0 and X >Int 0 and XtzSoldNetBurn >=Int 0 // TODO: double-check
+- TokensBought <Int T by X >Int 0 and XtzSoldNetBurn >=Int 0
 - T' >Int 0 by TokensBought <Int T
 - L' >Int 0 by L >Int 0
 - split Sender
@@ -576,10 +576,14 @@ proof [inv-token-to-xtz]:
 - Sender =/=K DEXTER by [sender-is-not-dexter]
 - apply [token-to-xtz]
   - Amount ==Int 0 by assert
+- let XtzBought        = 999 *Int TokensSold *Int X /Int (1000 *Int T +Int 999 *Int TokensSold)
+      BurnAmount       = XtzBought * 999 / 1000
+      XtzBoughtNetBurn = XtzBought - BurnAmount
 - unify RHS
-  - Ops' == ( [ Transaction DEXTER TOKEN 0         Transfer(Sender, DEXTER, TokensSold) ] #as Op1 )
-         ;; ( [ Transaction DEXTER To    XtzBought Default() ] #as Op2 )
-  - X' == X -Int ( 999 *Int TokensSold *Int X /Int (1000 *Int T +Int 999 *Int TokensSold) #as XtzBought )
+  - Ops' == ( [ Transaction DEXTER TOKEN 0                Transfer(Sender, DEXTER, TokensSold) ] #as Op1 )
+         ;; ( [ Transaction DEXTER To    XtzBoughtNetBurn Default() ] #as Op2 )
+         ;; ( [ Transaction DEXTER NULL  BurnAmount       Default() ] #as Op3 )
+  - X' == X -Int XtzBought
   - T' == T +Int TokensSold
   - L' == L
   - B' == B
