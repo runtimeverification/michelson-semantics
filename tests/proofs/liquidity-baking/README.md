@@ -385,6 +385,26 @@ This happens for two reasons:
 1.  as noted above, the scaling factor `P` makes `Z = Ei(b,P,Y,X)` smaller;
 1.  the division operation in `Z = Ei(b,P,Y,X)` truncates, making its value even smaller under integer arithmetic than real arithmetic.
 
+**Exchange Reserves Non-negativity Analysis:**
+After trades, are the exhange reserves always non-negative?
+The answer to this is: yes.
+It can be shown by examining the exchange function directly, but there is an easier proof.
+We have already shown that product of our exchange reserves can _never decrease_.
+That is, if our exchange currently has asset reserves _X_ and _Y_ and a series of trades is performed producing reserves _X'_ and _Y'_, we know that _X * Y <= X' * Y'_.
+Since our exchange reserves are assumed to be non-negative integers, this means that we know:
+
+`0 <= X * Y <= [ X - Ei(y,P,Y,X) ] * [ Y + y ]`.
+
+By _Y_ and _y_ being non-negative, we also know:
+
+`Y + y > 0`.
+
+If `X - Ei(y,P,Y,X)` could be negative, then we would have the contradiction:
+
+`0 <= X * Y <= [ X - Ei(y,P,Y,X) ] * [ Y + y ] < 0`.
+
+Thus, our exchange function to convert asset _B_ into asset _A_ can never exceed the total units of asset _A_.
+
 ## Next Steps
 
 The simplified models in this section ignore critical features needed in real implementations such as:
