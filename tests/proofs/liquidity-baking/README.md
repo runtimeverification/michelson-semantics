@@ -159,25 +159,29 @@ Then suppose the `sell-B(b)` operation was applied to obtain the resulting state
 In resulting state, we have the product:
 
 ```
-                                 ┌  X     X * b * P ┐   ┌       ┐
-[ X - E(b,P,Y,X) ] * [ Y + b ] = │  -  -  --------- │ * │ Y + b │
-                                 └  1     Y + b * P ┘   └       ┘
+                                 ┌       X * b * P ┐   ┌       ┐
+[ X - E(b,P,Y,X) ] * [ Y + b ] = │ X  -  --------- │ * │ Y + b │
+                                 └       Y + b * P ┘   └       ┘
 
-                                 ┌ X * [ Y + b * P ] - [ X * b * P ] ┐   ┌       ┐
-                               = │ ----------------------------------│ * │ Y + b │
-                                 └             Y + b * P             ┘   └       ┘
+                                     ┌         b * P     ┐   ┌       ┐
+                               = X * │ 1 - ------------- │ * │ Y + b │
+                                     └     Y + (b * P)   ┘   └       ┘
 
-                                 ┌ X * Y + X * b * P - X * b * P ┐   ┌       ┐
-                               = │ ------------------------------│ * │ Y + b │
-                                 └            Y + b * P          ┘   └       ┘
+                                     ┌ Y + (b * P) - (b * P) ┐   ┌       ┐
+                               = X * │ --------------------- │ * │ Y + b │
+                                     └       Y + (b * P)     ┘   └       ┘
 
-                                 ┌   X * Y   ┐   ┌ Y + b ┐
-                               = │ --------- │ * │ ----- │
-                                 └ Y + b * P ┘   └   1   ┘
+                                     ┌       Y      ┐   ┌       ┐
+                               = X * │ ------------ │ * │ Y + b │
+                                     └  Y + (b * P) ┘   └       ┘
 
-                                 ┌       ┐   ┌   Y + b   ┐
-                               = │ X * Y │ * │ --------- │
-                                 └       ┘   └ Y + b * P ┘
+                                 ┌    X * Y     ┐   ┌       ┐
+                               = │ ------------ │ * │ Y + b │
+                                 └  Y + (b * P) ┘   └       ┘
+
+                                 ┌      k       ┐   ┌       ┐
+                               = │ ------------ │ * │ Y + b │
+                                 └  Y + (b * P) ┘   └       ┘
 
                                      ┌   Y + b   ┐
                                = k * │ --------- │
@@ -344,47 +348,41 @@ What can we do?
 To make this operation usable under integer arithmetic, we can rewrite the exchange function as follows (which, under real arithmetic, is provably equal, as shown below):
 
 ```
-                       V * w * J         V * w * J       (1 / K)    V * w * J/K   V * w * P
-E(w,P = J/K,U,V) =  --------------- = --------------- * --------- = ----------- = ---------
-                    (U * K) + w * J   (U * K) + w * J    (1 / K)    U + w * J/K   U + w * P
+                        V * w * Q         V * w * Q       (1 / R)    V * w * Q/R   V * w * P
+Ei(w,P = Q/R,U,V) =  --------------- = --------------- * --------- = ----------- = --------- = E(w,P = Q/R,U,V)
+                     (U * R) + w * Q   (U * R) + w * Q    (1 / R)    U + w * Q/R   U + w * P
 ```
 
 The above formulation helps because, when using integer arithmetic, it is impossible to represent a non-integer directly; one must use fractions.
-Of course, as noted above, we cannot even compute the fraction `J/K < 1` directly, since the result will always be 0 (with some remainder) which is useless for further calcuation.
+Of course, as noted above, we cannot even compute the fraction `Q/R < 1` directly, since the result will always be 0 (with some remainder) which is useless for further calcuation.
 Instead, we must use algebra to re-formulate our function so that such fractions are embedded in a larger calculation (as was done above).
 Apart from that, it is advisable to minimize the number of integer divisions which occur, since:
 
 1.  division is more computationally expensive than addition, subtraction, and multiplication;
 2.  each division with a non-zero remainder introduces a truncation error which compounds as it propogates.
 
+We also want to understand how the exchange rate function varies as the trade scaling factor _P_ grows or shrinks.
+To do that, we use another chain of equivalences:
+
+```
+                       V * w * Q         V * w * Q      (1 / Q)       V * w
+Ei(w,P = Q/R,U,V) = --------------- = --------------- * ------- = -------------
+                    (U * R) + w * Q   (U * R) + w * Q   (1 / Q)   (U * R/Q) + w
+```
+
+Note that, as the value of _P = Q/R_ grows smaller, the denominator term _(U * R/Q)_ grows larger.
+Thus, the value of the function `Ei()` shrink as `P` shrinks.
+
 **Invariant Analysis with Fees:**
-Let us perform our invariant analysis, again, but with fees and using arbitrary-width integer arithmetic with truncation.
-When performing an trade, we use the following computation:
+Given the above analysis, we know the value of:
 
-```
-                                     ┌ X         X * b * J     ┐   ┌       ┐
-[ X - E(b,P=J/K,Y,X) ] * [ Y + b ] = │ -  -  ----------------- │ * │ Y + b │
-                                     └ 1     (Y * K) + (b * J) ┘   └       ┘
+`[ X - Ei(b,P,Y,X) ] * [ Y + b ]`
 
-                                     ┌ X          X * b    ┐   ┌       ┐
-                                   = │ -  -  ------------- │ * │ Y + b │
-                                     └ 1     (Y * K/J) + b ┘   └       ┘
+grows as `P` shrinks.
+This happens for two reasons:
 
-                                         ┌            b      ┐   ┌       ┐
-                                   = X * │ 1 - ------------- │ * │ Y + b │
-                                         └     (Y * K/J) + b ┘   └       ┘
-```
-
-Since `J/K < 1`, we have `K/J > 1`, which means that:
-
-```
-       b          b
-------------- < -----
-(Y * K/J) + b   Y + b
-```
-
-whenever `Y > 0`.
-This means that adding the fee _decreases_ the amount subtracted from from the asset *A* reserves, which _increases_ the product _[ X - E(b,P=J/K,Y,X) ] * [ Y + b ]_.
+1.  the division operation in `Ei()` truncates, making it even smaller than what its real value should be;
+2.  the scaling factor `P` makes the value of `Ei()` smaller.
 
 ## Next Steps
 
