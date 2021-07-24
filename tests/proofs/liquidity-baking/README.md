@@ -362,12 +362,29 @@ Let us perform our invariant analysis, again, but with fees and using arbitrary-
 When performing an trade, we use the following computation:
 
 ```
-                                     ┌  X         X * b * J     ┐   ┌       ┐
-[ X - E(b,P=J/K,Y,X) ] * [ Y + b ] = │  -  -  ----------------- │ * │ Y + b │
-                                     └  1     (Y * K) + (b * J) ┘   └       ┘
+                                     ┌ X         X * b * J     ┐   ┌       ┐
+[ X - E(b,P=J/K,Y,X) ] * [ Y + b ] = │ -  -  ----------------- │ * │ Y + b │
+                                     └ 1     (Y * K) + (b * J) ┘   └       ┘
+
+                                     ┌ X          X * b    ┐   ┌       ┐
+                                   = │ -  -  ------------- │ * │ Y + b │
+                                     └ 1     (Y * K/J) + b ┘   └       ┘
+
+                                         ┌            b      ┐   ┌       ┐
+                                   = X * │ 1 - ------------- │ * │ Y + b │
+                                         └     (Y * K/J) + b ┘   └       ┘
 ```
 
-**TODO:** Finish this.
+Since `J/K < 1`, we have `K/J > 1`, which means that:
+
+```
+       b          b
+------------- < -----
+(Y * K/J) + b   Y + b
+```
+
+whenever `Y > 0`.
+This means that adding the fee _decreases_ the amount subtracted from from the asset *A* reserves, which _increases_ the product _[ X - E(b,P=J/K,Y,X) ] * [ Y + b ]_.
 
 ## Next Steps
 
