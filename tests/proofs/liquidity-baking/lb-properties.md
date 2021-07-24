@@ -516,15 +516,16 @@ ensures  0 <Int X' andBool X' ==Int B' +Int Sends(Ops' ;; Ops)
 proof [inv-xtz-to-token]:
 - apply [xtz-to-token]
 - unify RHS
-  - Ops' == [ Transaction DEXTER TOKEN 0 Transfer(DEXTER, To, TokensBought) ]
-  - X' == X +Int XtzSold
-  - T' == T -Int ( 999 *Int XtzSold *Int T /Int (1000 *Int X +Int 999 *Int XtzSold) #as TokensBought )
+  - Ops' == [ Transaction DEXTER TOKEN 0                           Transfer(DEXTER, To, TokensBought) ]
+         ;; [ Transaction DEXTER Null  XtzSold -Int XtzSoldNetBurn Default ]
+  - X' == X +Int (XtzSold *Int 999 /Int 1000 #as XtzSoldNetBurn)
+  - T' == T -Int ( 999 *Int XtzSoldNetBurn *Int T /Int (1000 *Int X +Int 999 *Int XtzSoldNetBurn) #as TokensBought )
   - L' == L
-  - B' == B +Int XtzSold
+  - B' == B +Int XtzSoldNetBurn
   - D' == D
   - S' == S
-- X' >Int 0 by X >Int 0 and XtzSold >=Int 0
-- TokensBought <Int T by T >Int 0 and X >Int 0 and XtzSold >=Int 0 // TODO: double-check
+- X' >Int 0 by X >Int 0 and XtzSoldNetBurn >=Int 0
+- TokensBought <Int T by T >Int 0 and X >Int 0 and XtzSoldNetBurn >=Int 0 // TODO: double-check
 - T' >Int 0 by TokensBought <Int T
 - L' >Int 0 by L >Int 0
 - split Sender
