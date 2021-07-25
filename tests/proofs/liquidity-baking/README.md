@@ -371,18 +371,19 @@ Ei(w,P = Q/R,U,V) = --------------- = --------------- * ------- = -------------
 ```
 
 Note that, as the value of _P = Q/R_ grows smaller, the denominator term _(U * R/Q)_ grows larger.
-Thus, the value of the function `Ei()` shrink as `P` shrinks.
+Thus, the value of the function _Ei(b,P,U,V)_ shrink as _P_ shrinks _as long as U is non-zero_, which should not happen unless the last liquidity provider removes their liquidity which is equivalent to shutting down the entire system.
 
 **Invariant Analysis with Fees:**
-Given the above analysis, we know the value of:
+Given the above analysis, we know the value of _Z = Ei(b,P,Y,X)_ shrinks as the value of _P_ shrinks.
+Thus, we can infer, as we did in our above invariant analysis in the real case that:
 
-`[ X - Ei(b,P,Y,X) ] * [ Y + b ]`
+`[ X - Z ] * [ Y + b ]`
 
-grows as `P` shrinks.
+grows as `P` shrinks, because the term _X - Z_ grows larger.
 This happens for two reasons:
 
-1.  the division operation in `Ei()` truncates, making it even smaller than what its real value should be;
-2.  the scaling factor `P` makes the value of `Ei()` smaller.
+1.  as noted above, the scaling factor `P` makes `Z = Ei(b,P,Y,X)` smaller;
+1.  the division operation in `Z = Ei(b,P,Y,X)` truncates, making its value even smaller under integer arithmetic than real arithmetic.
 
 ## Next Steps
 
