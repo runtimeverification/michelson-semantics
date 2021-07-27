@@ -838,6 +838,7 @@ proof [inv-token-transfer]:
      ==Int S' +Int MintBurns(Ops' ;; Ops) by Ops' and [only-dexter]
 - split From, To
   - case From == DEXTER and To <> DEXTER
+    - D' == D -Int Value
     - T' ==Int T
          <=Int D +Int Transfers(Op ;; Ops) by premise
          ==Int (D' +Int Value) +Int Transfers(Op ;; Ops) by D'
@@ -845,6 +846,7 @@ proof [inv-token-transfer]:
          ==Int D' +Int Transfers(Ops) by simp
          ==Int D' +Int Transfers(Ops' ;; Ops) by Ops' and [only-dexter]
   - case From <> DEXTER and To == DEXTER
+    - D' == D +Int Value
     - T' ==Int T
          <=Int D +Int Transfers(Op ;; Ops) by premise
          ==Int (D' -Int Value) +Int Transfers(Op ;; Ops) by D'
@@ -852,6 +854,7 @@ proof [inv-token-transfer]:
          ==Int D' +Int Transfers(Ops) by simp
          ==Int D' +Int Transfers(Ops' ;; Ops) by Ops' and [only-dexter]
   - case From == DEXTER and To == DEXTER
+    - D' == D
     - T' ==Int T
          <=Int D +Int Transfers(Op ;; Ops) by premise
          ==Int D' +Int Transfers(Op ;; Ops) by D'
@@ -859,6 +862,7 @@ proof [inv-token-transfer]:
          <=Int D' +Int Transfers(Ops) by simp
          ==Int D' +Int Transfers(Ops' ;; Ops) by Ops' and [only-dexter]
   - case From <> DEXTER and To <> DEXTER
+    - D' == D
     - T' ==Int T
          <=Int D +Int Transfers(Op ;; Ops) by premise
          ==Int D' +Int Transfers(Op ;; Ops) by D'
