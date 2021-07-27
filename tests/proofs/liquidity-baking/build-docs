@@ -5,4 +5,5 @@ cd "$(dirname $0)"
 pandoc --to latex -o lb-report.pdf      \
        --pdf-engine=xelatex             \
        -V geometry:margin=2cm           \
+       --table-of-contents              \
        README.md lb-properties.md
