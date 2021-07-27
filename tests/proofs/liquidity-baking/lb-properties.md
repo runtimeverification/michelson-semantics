@@ -517,32 +517,35 @@ ensures  0 <Int X' andBool X' ==Int B' +Int Sends(Ops' ;; Ops)
 proof [inv-xtz-to-token]:
 - apply [xtz-to-token]
 - unify RHS
-  - Ops' == [ Transaction DEXTER TOKEN 0                           Transfer(DEXTER, To, TokensBought) ]
-         ;; [ Transaction DEXTER Null  XtzSold -Int XtzSoldNetBurn Default ]
+  - Ops' == ( [ Transaction DEXTER TOKEN 0                           Transfer(DEXTER, To, TokensBought) ] #as Op1 )
+         ;; ( [ Transaction DEXTER Null  XtzSold -Int XtzSoldNetBurn Default ] #as Op2 )
   - X' == X +Int (XtzSold *Int 999 /Int 1000 #as XtzSoldNetBurn)
   - T' == T -Int ( 999 *Int XtzSoldNetBurn *Int T /Int (1000 *Int X +Int 999 *Int XtzSoldNetBurn) #as TokensBought )
   - L' == L
-  - B' == B +Int XtzSoldNetBurn
+  - B' == #if Sender == Dexter #then B +Int XtzSold #else B #fi
   - D' == D
   - S' == S
 - X' >Int 0 by X >Int 0 and XtzSoldNetBurn >=Int 0
-- TokensBought <Int T by X >Int 0 and XtzSoldNetBurn >=Int 0
+- TokensBought <Int T by simp
 - T' >Int 0 by TokensBought <Int T
 - L' >Int 0 by L >Int 0
 - split Sender
   - case Sender <> DEXTER
-    - X' ==Int X +Int XtzSold
-         ==Int B +Int Sends(Op ;; Ops) +Int XtzSold by premise
-         ==Int B' +Int Sends(Op ;; Ops) by B'
-         ==Int B' +Int Sends(Ops) by Sends
-         ==Int B' +Int Sends(Ops' ;; Ops) by Sends
+    - X' ==Int X +Int XtzSoldNetBurn
+         ==Int B +Int Sends(Op ;; Ops) +Int XtzSoldNetBurn by premise
+         ==Int B +Int Sends(Ops) +Int XtzSoldNetBurn by Sends
+         ==Int B' -Int XtzSold +Int Sends(Ops) +Int XtzSoldNetBurn by B'
+         ==Int B' +Int Sends(Op2 ;; Ops) by Sends
+         ==Int B' +Int Sends(Op1 ;; Op2 ;; Ops) by Sends
+         ==Int B' +Int Sends(Ops' ;; Ops) by Ops'
   - case Sender == DEXTER
-    - X' ==Int X +Int XtzSold
-         ==Int B +Int Sends(Op ;; Ops) +Int XtzSold by premise
-         ==Int B' +Int Sends(Op ;; Ops) +Int XtzSold by B'
-         ==Int B' +Int (Sends(Ops) -Int XtzSold) +Int XtzSold by Sends
-         ==Int B' +Int Sends(Ops) by simp
-         ==Int B' +Int Sends(Ops' ;; Ops) by Sends
+    - X' ==Int X +Int XtzSoldNetBurn
+         ==Int B +Int Sends(Op ;; Ops) +Int XtzSoldNetBurn by premise
+         ==Int B +Int Sends(Ops) -Int XtzSold +Int XtzSoldNetBurn by Sends
+         ==Int B' +Int Sends(Ops) -Int XtzSold +Int XtzSoldNetBurn by B'
+         ==Int B' +Int Sends(Op2 ;; Ops) by Sends
+         ==Int B' +Int Sends(Op1 ;; Op2 ;; Ops) by Sends
+         ==Int B' +Int Sends(Ops' ;; Ops) by Ops'
 - T' ==Int T -Int TokensBought
      <=Int D +Int Transfers(Op ;; Ops) -Int TokensBought by premise
      ==Int D' +Int Transfers(Op ;; Ops) -Int TokensBought by D'
