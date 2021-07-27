@@ -53,16 +53,29 @@ proof:
   - split CallParams
       - case CallParams == TransferParams(From, To, Value)
           - case From == Sender
+              - unify RHS
               - apply [LQT-TOKEN-TRANSFER-DIRECT-SPEC]
-                apply [sum-of-increment]
-                apply [sum-of-increment]
+                - case Aborted:
+                  We have TotalSupply == TotalSupply'
+                      and Allowances  == Allowances'
+                - else:
+                    apply [sum-of-increment]
+                    apply [sum-of-increment]
           - case From <> Sender
               - apply [LQT-TOKEN-TRANSFER-PROXY-SPEC]
-                apply [sum-of-increment]
-                apply [sum-of-increment]
+                - case Aborted:
+                    We have TotalSupply == TotalSupply'
+                        and Allowances  == Allowances'
+                - else:
+                    apply [sum-of-increment]
+                    apply [sum-of-increment]
       - case CallParams == MintOrBurn(Quantity, Address)
           - apply [LQT-TOKEN-MINTORBURN-SPEC]
-            apply [sum-of-increment]
+            - case Aborted:
+                We have TotalSupply == TotalSupply'
+                    and Allowances  == Allowances'
+            - else:
+                apply [sum-of-increment]
       - else:
           - We have TotalSupply == TotalSupply'
                 and Allowances  == Allowances'
