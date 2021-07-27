@@ -1265,7 +1265,7 @@ The fee as a ratio thus depends on the relative values of `TokensSold` and `Toke
 When `TokensSold == TokenPool`, we get the minimum fee of:
 
 ```
-min_free_charged  =      2 * 999 * 999
+min_fee_charged  =      2 * 999 * 999
                      1 - -------------
                          1999 * 1000
 
@@ -1293,7 +1293,7 @@ max  =      999 * 999 * (0 + TokenPool)
 ### XTZ to Tokens
 
 Similarly, when exchanging tokens for XTZ,
-one-thousandth of the amount is burnt before charging a fee.
+one-thousandth of the amount is burnt before charging a fee:
 
 ```
 tokens_received  =  (Amount * 999 / 1000) * 999 * TokenPool
@@ -1305,7 +1305,7 @@ tokens_received  =  (Amount * 999 / 1000) * 999 * TokenPool
                     XtzPool * 1000 * 1000 + Amount * 999 * 999
 ```
 
-While, in an ideal CPMM a user would expect:
+while, in an ideal CPMM a user would expect:
 
 ```
 tokens_expected  =  Amount * TokenPool
@@ -1324,10 +1324,32 @@ fee = Amount * TokenPool     999 * 999 * Amount * TokenPool
 As a percentage, this becomes:
 
 ```
-fee =       999 * 999 * Amount * TokenPool               XtzPool + Amount
-      1  -  ------------------------------------------ * ------------------
-            XtzPool * 1000 * 1000 + Amount * 999 * 999   Amount * TokenPool
-    =       999 * 999 * (XtzPool + Amount)
-      1  -  ------------------------------------------
-            XtzPool * 1000 * 1000 + Amount * 999 * 999
+fee =        999 * 999 * Amount * TokenPool               XtzPool + Amount
+       1  -  ------------------------------------------ * ------------------
+             XtzPool * 1000 * 1000 + Amount * 999 * 999   Amount * TokenPool
+
+    =        999 * 999 * (XtzPool + Amount)
+       1  -  ------------------------------------------
+             XtzPool * 1000 * 1000 + Amount * 999 * 999
+```
+
+The fee depends on the ratio of `XtzPool` to `Amount`
+The fee tends to 0 when the limit of `XtzPool` is 0 -- i.e. when `Amount` is large compared to `XtzPool`.
+
+```
+min_fee_charged =        999 * 999 * Amount
+                   1  -  ------------------
+                         Amount * 999 * 999
+
+                = 0
+```
+
+The fee increases as `Amount` becomes large compared to `XtzPool` with the limit becoming 0.1% in the limiting case:
+
+```
+min_fee_charged =        999 * 999 * XtzPool
+                   1  -  ------------------
+                         XtzPool * 1000 * 1000
+
+                =  0.1%
 ```
