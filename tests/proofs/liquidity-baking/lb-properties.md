@@ -641,19 +641,22 @@ ensures  0 <Int X' andBool X' ==Int B' +Int Sends(Ops' ;; Ops)
  andBool 0 <Int L' andBool L' ==Int S' +Int MintBurns(Ops' ;; Ops)
 
 proof [inv-token-to-token]:
+- let XtzBought        = 999 *Int TokensSold *Int X /Int (1000 *Int T +Int 999 *Int TokensSold)
+      XtzBoughtNetBurn = XtzBought * 999 / 1000
 - Sender =/=K DEXTER by [sender-is-not-dexter]
 - apply [token-to-token]
   - Amount ==Int 0 by assert
 - unify RHS
-  - Ops' == ( [ Transaction DEXTER TOKEN                0         Transfer(Sender, DEXTER, TokensSold) ] #as Op1 )
-         ;; ( [ Transaction DEXTER OutputDexterContract XtzBought XtzToToken(To, MinTokensBought, Deadline) ] #as Op2 )
-  - X' == X -Int ( 999 *Int TokensSold *Int X /Int (1000 *Int T +Int 999 *Int TokensSold) #as XtzBought )
+  - Ops' == ( [ Transaction DEXTER TOKEN                0                            Transfer(Sender, DEXTER, TokensSold) ] #as Op1 )
+         ;; ( [ Transaction DEXTER OutputDexterContract XtzBoughtNetBurn             XtzToToken(To, MinTokensBought, Deadline) ] #as Op2 )
+         ;; ( [ Transaction DEXTER NULL                 XtzBought - XtzBoughtNetBurn Default() ] #as Op3 )
+  - X' == X -Int XtzBought
   - T' == T +Int TokensSold
   - L' == L
   - B' == B
   - D' == D
   - S' == S
-- XtzBought <Int X by X >Int 0 and T >Int 0 and TokensSold >=Int 0 // TODO: double-check
+- XtzBought <Int X by simp
 - X' >Int 0 by XtzBought <Int X
 - T' >Int 0 by T >Int 0 and TokensSold >=Int 0
 - L' >Int 0 by L >Int 0
@@ -661,22 +664,25 @@ proof [inv-token-to-token]:
      ==Int B +Int Sends(Op ;; Ops) -Int XtzBought by premise
      ==Int B' +Int Sends(Op ;; Ops) -Int XtzBought by B'
      ==Int B' +Int Sends(Ops) -Int XtzBought by Sends and Amount ==Int 0
-     ==Int B' +Int Sends(Op2 ;; Ops) by Sends
-     ==Int B' +Int Sends(Op1 ;; Op2 ;; Ops) by Sends
+     ==Int B' +Int Sends(Op3 ;; Ops) -Int XtzBoughtNetBurn  by Sends
+     ==Int B' +Int Sends(Op2 ;; Op3 ;; Ops) by Sends
+     ==Int B' +Int Sends(Op1 ;; Op2 ;; Op3 ;; Ops) by Sends
      ==Int B' +Int Sends(Ops' ;; Ops) by Ops'
 - T' ==Int T +Int TokensSold
      <=Int D +Int Transfers(Op ;; Ops) +Int TokensSold by premise
      ==Int D' +Int Transfers(Op ;; Ops) +Int TokensSold by D'
      ==Int D' +Int Transfers(Ops) +Int TokensSold by Transfers
-     ==Int D' +Int Transfers(Op2 ;; Ops) +Int TokensSold by Transfers
-     ==Int D' +Int Transfers(Op1 ;; Op2 ;; Ops) by Transfers and Sender =/=K DEXTER
+     ==Int D' +Int Transfers(Op3 ;; Ops) +Int TokensSold by Transfers
+     ==Int D' +Int Transfers(Op2 ;; Op3 ;; Ops) +Int TokensSold by Transfers
+     ==Int D' +Int Transfers(Op1 ;; Op2 ;; Op3 ;; Ops) by Transfers and Sender =/=K DEXTER
      ==Int D' +Int Transfers(Ops' ;; Ops) by Ops'
 - L' ==Int L
      ==Int S +Int MintBurns(Op ;; Ops) by premise
      ==Int S' +Int MintBurns(Op ;; Ops) by S'
      ==Int S' +Int MintBurns(Ops) by MintBurns
-     ==Int S' +Int MintBurns(Op2 ;; Ops) by MintBurns
-     ==Int S' +Int MintBurns(Op1 ;; Op2 ;; Ops) by MintBurns
+     ==Int S' +Int MintBurns(Op3 ;; Ops) by MintBurns
+     ==Int S' +Int MintBurns(Op2 ;; Op3 ;; Ops) by MintBurns
+     ==Int S' +Int MintBurns(Op1 ;; Op2 ;; Op3 ;; Ops) by MintBurns
      ==Int S' +Int MintBurns(Ops' ;; Ops) by Ops'
 ```
 
@@ -1077,8 +1083,10 @@ rule [token-to-token]:
 assert   IS_VALID(Deadline)
  andBool Amount ==Int 0
 ensures  XtzBought ==Int 999 *Int TokensSold *Int X /Int (1000 *Int T +Int 999 *Int TokensSold)
- andBool OpsEmitted ==K [ Transaction DEXTER TOKEN                0         Transfer(Sender, DEXTER, TokensSold) ]
-                     ;; [ Transaction DEXTER OutputDexterContract XtzBought XtzToToken(To, MinTokensBought, Deadline) ]
+ andBool XtzBoughtNetBurn ==Int XtzBought *Int 999 /Int 1000
+ andBool OpsEmitted ==K [ Transaction DEXTER TOKEN                0                            Transfer(Sender, DEXTER, TokensSold) ]
+                     ;; [ Transaction DEXTER OutputDexterContract XtzBoughtNetBurn             XtzToToken(To, MinTokensBought, Deadline) ]
+                     ;; [ Transaction DEXTER NULL                 XtzBought - XtzBoughtNetBurn Default() ]
 ```
 
 #### Default()
