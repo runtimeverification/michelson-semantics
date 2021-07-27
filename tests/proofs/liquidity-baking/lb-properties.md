@@ -65,6 +65,7 @@ Given that each contract has a fixed number of important entrypoints, we list th
 ## Assumptions for Tezos Execution Environment
 
 We assume that the Tezos execution model does not allow any weird behaviors regarding the Dexter smart contract execution.  Specifically, we make the following assumptions:
+
 - Only the Dexter entrypoint functions can emit operations whose sender is Dexter.
 - As a smart contract, Dexter can emit only _internal_ operations (i.e., operations whose source is not Dexter).
 - The types of Dexter-emitted internal operations are fixed (i.e., no arbitrary operations can be emitted by Dexter).
@@ -1348,12 +1349,14 @@ min_fee_charged =        999 * 999 * Amount
                 = 0
 ```
 
-The fee increases as `Amount` becomes large compared to `XtzPool` with the limit becoming 0.1% in the limiting case:
+The fee increases as `Amount` becomes small compared to `XtzPool` with the limit becoming approximately 0.2% in the limiting case:
 
 ```
 max_fee_charged =        999 * 999 * XtzPool
                    1  -  ------------------
                          XtzPool * 1000 * 1000
 
-                =  0.1%
+                =  1  -  0.998001
+
+                =  0.1999 %
 ```
