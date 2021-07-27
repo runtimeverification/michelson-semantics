@@ -515,14 +515,16 @@ ensures  0 <Int X' andBool X' ==Int B' +Int Sends(Ops' ;; Ops)
  andBool 0 <Int L' andBool L' ==Int S' +Int MintBurns(Ops' ;; Ops)
 
 proof [inv-xtz-to-token]:
+- let XtzSoldNetBurn = XtzSold *Int 999 /Int 1000
+      TokensBought   = 999 *Int XtzSoldNetBurn *Int T /Int (1000 *Int X +Int 999 *Int XtzSoldNetBurn)
 - apply [xtz-to-token]
 - unify RHS
   - Ops' == ( [ Transaction DEXTER TOKEN 0                           Transfer(DEXTER, To, TokensBought) ] #as Op1 )
          ;; ( [ Transaction DEXTER Null  XtzSold -Int XtzSoldNetBurn Default ] #as Op2 )
-  - X' == X +Int (XtzSold *Int 999 /Int 1000 #as XtzSoldNetBurn)
-  - T' == T -Int ( 999 *Int XtzSoldNetBurn *Int T /Int (1000 *Int X +Int 999 *Int XtzSoldNetBurn) #as TokensBought )
+  - X' == X +Int XtzSoldNetBurn
+  - T' == T -Int TokensBought
   - L' == L
-  - B' == #if Sender == Dexter #then B +Int XtzSold #else B #fi
+  - B' == #if Sender <> Dexter #then B +Int XtzSold #else B #fi
   - D' == D
   - S' == S
 - X' >Int 0 by X >Int 0 and XtzSoldNetBurn >=Int 0
@@ -1036,10 +1038,9 @@ rule [xtz-to-token]:
 assert   IS_VALID(Deadline)
  andBool TokensBought >=Int MinTokensBought
 ensures  XtzSoldNetBurn ==Int XtzSold *Int 999 /Int 1000
- andBool BurnAmount ==Int XtzSold -Int XtzSoldNetBurn
  andBool TokensBought ==Int 999 *Int XtzSoldNetBurn *Int T /Int (1000 *Int X +Int 999 *Int XtzSoldNetBurn)
- andBool OpsEmitted ==K [ Transaction DEXTER TOKEN 0          Transfer(DEXTER, To, TokensBought) ]
-                     ;; [ Transaction DEXTER NULL  BurnAmount Default() ]
+ andBool OpsEmitted ==K [ Transaction DEXTER TOKEN 0                           Transfer(DEXTER, To, TokensBought) ]
+                     ;; [ Transaction DEXTER NULL  XtzSold -Int XtzSoldNetBurn Default() ]
  andBool Sender =/=K DEXTER impliesBool B' ==Int B +Int XtzSold
  andBool Sender  ==K DEXTER impliesBool B' ==Int B
 ```
