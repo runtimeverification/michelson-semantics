@@ -1347,7 +1347,7 @@ min_fee_charged =        999 * 999 * Amount
 The fee increases as `Amount` becomes large compared to `XtzPool` with the limit becoming 0.1% in the limiting case:
 
 ```
-min_fee_charged =        999 * 999 * XtzPool
+max_fee_charged =        999 * 999 * XtzPool
                    1  -  ------------------
                          XtzPool * 1000 * 1000
 
