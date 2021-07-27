@@ -6,4 +6,4 @@ pandoc --to latex -o lb-report.pdf      \
        --pdf-engine=xelatex             \
        -V geometry:margin=2cm           \
        --table-of-contents              \
-       README.md lb-properties.md
+       README.md lb-properties.md ../lqt/lqt-properties.md
