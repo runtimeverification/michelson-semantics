@@ -2,8 +2,18 @@
 
 cd "$(dirname $0)"
 
-pandoc --to latex -o lb-report.pdf      \
-       --pdf-engine=xelatex             \
-       -V geometry:margin=2cm           \
-       --table-of-contents              \
+pandoc </dev/null                                               \
+       --to latex -o lb-report.pdf                              \
+       --pdf-engine=xelatex                                     \
+       -V geometry:margin=2cm                                   \
+       -V documentclass=article                                 \
+       -V classoption:titlepage                                 \
+       -V title="Formal Verification Report"                    \
+       -V subtitle="Tezos Liquidity Baking Contract"            \
+       -V thanks="Prepared for the Tezos Foundation by"         \
+       -V date="TBD"                                            \
+       -V titlegraphic=title-image.png                          \
+       -V logoimage=rv-logo.png                                 \
+       --table-of-contents  -V toc-own-page=true                \
+       --template template.tex                                  \
        README.md lb-properties.md ../lqt/lqt-properties.md
