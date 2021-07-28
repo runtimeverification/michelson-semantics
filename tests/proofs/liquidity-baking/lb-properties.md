@@ -1014,7 +1014,7 @@ rule [remove-liquidity]:
 <lqtSupply>          S                              </lqtSupply>
 assert   IS_VALID(Deadline)
  andBool Amount ==Int 0
- andBool LqtBurned <Int L // TODO: ask the Dexter team to add this check
+ andBool LqtBurned <Int L
  andBool XtzWithdrawn    >=Int MinXtzWithdrawn
  andBool TokensWithdrawn >=Int MinTokensWithdrawn
 ensures  XtzWithdrawn    ==Int LqtBurned *Int X /Int L
