@@ -15,5 +15,6 @@ pandoc </dev/null                                               \
        -V titlegraphic=title-image.png                          \
        -V logoimage=rv-logo.png                                 \
        --table-of-contents  -V toc-own-page=true                \
+       --number-sections                                        \
        --template template.tex                                  \
        README.md lb-properties.md ../lqt/lqt-properties.md

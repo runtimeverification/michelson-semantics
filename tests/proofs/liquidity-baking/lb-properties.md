@@ -143,7 +143,7 @@ rule TopLevelOps([ Transaction Sender _ _ _ ] ;; _, Source) => false requires Se
 rule TopLevelOps(.List, _) => true
 ```
 
-## Assumptions for External Contracts
+## Requirements for External Contracts
 
 We make assumptions on the behaviors of external contracts, especially the token and liquidity contracts.  _**These assumptions are required for the proof of the invariant, and thus it is important to verify that these are satisfied by the given implementation of the token and liquidity contracts.**_  If some of these assumptions are not satisfied for good reasons, then the proof needs to be revisited.
 
@@ -173,20 +173,6 @@ proposition [only-token-transfer]:
 <tokenDexter> D => D' </tokenDexter>
 ensures  D' <Int D impliesBool ( Op ==K Transaction DEXTER TOKEN 0 Transfer(DEXTER, To, Value) andBool To =/=K DEXTER andBool Value >Int 0 )
  andBool D' >Int D impliesBool Op ==K Transaction _ TOKEN 0 Transfer(_, DEXTER, _)
-```
-
-Regarding the liquidity contract, we assume that:
-
-1.  only MintOrBurn() can update the total liquidity supply
-2.  the MintOrBurn() entrypoint does not emit any operations
-3.  only Dexter is permitted to call this entrypoint
-
-```
-rule [lqt-mint-burn]:
-<operations> ( [ Transaction Sender LQT Amount MintOrBurn(_, Value) ] => .List ) ;; _ </operations>
-<lqtSupply> S => S +Int Value </lqtSupply>
-assert   Sender ==K DEXTER
- andBool Amount ==Int 0
 ```
 
 ```

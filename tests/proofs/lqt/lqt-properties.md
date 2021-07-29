@@ -1,8 +1,37 @@
-# Lqt Token Invariants
+# Lqt Token Safety Property Proofs
 
-In this document we prove some important invariants about the Lqt Token contract.
+In this document, we prove the properties of the Lqt Token contract needed
+to verify the Dexter system.
+These properties are:
 
-## Sum of balances in account equals `totalSupply`
+1.  The MintOrBurn() entrypoint does not emit any operations.
+
+    ```
+    claim [lqt-mint-burn]:
+        <operations> ( [ Transaction Sender LQT Amount MintOrBurn(_, Value) ] => .List ) ;; _ </operations>
+        <lqt.totalSupply> S => S +Int Value </lqtSupply>
+        assert   Sender ==K DEXTER
+         andBool Amount ==Int 0
+    ```
+
+2.  `[only-lqt-mint-burn]`: Only MintOrBurn() can update the total liquidity
+    supply and only Dexter is permitted to call this entrypoint.
+
+    ```
+    claim [only-lqt-mint-burn]:
+        <operations> (Transaction Sender To Amount Op => _) ;; _ </operations>
+        <adminAddress> DEXTER </adminAddress>
+        <tokens> Tokens => Tokens' </tokens>
+        <lqtSupply> S => S' </lqtSupply>
+      ensures  S' =/=Int S impliesBool  ( Op     == MintOrBurn(Address, Quantity)
+                                      and To     == Lqt
+                                      and Amount == 0
+                                      and S' ==Int S +Int Quantity
+                                      and Sender == Dexter
+                                        )
+    ```
+
+## Sum of the balances in all accounts equals `totalSupply`
 
 ```
 syntax Int ::= Sum(Map) [function]
@@ -43,9 +72,9 @@ proof:
 claim [inv-totalSupply-is-sum]:
     <operations>  ( [ Transaction Sender LQT Amount CallParams ] #as Op => Ops' ) ;; Ops </operations>
     <totalSupply> TotalSupply => TotalSupply' </totalSupply>
-    <allowancesL> Allowances  => Allowances'  </allowances>
-  requires TotalSupply  ==Int Sum(Allowances)
-  ensures  TotalSupply' ==Int Sum(Allowances')
+    <tokens> Tokens  => Tokens'  </tokens>
+  requires TotalSupply  ==Int Sum(Tokens)
+  ensures  TotalSupply' ==Int Sum(Tokens')
 ```
 
 ```
@@ -57,7 +86,7 @@ proof:
               - apply [LQT-TOKEN-TRANSFER-DIRECT-SPEC]
                 - case Aborted:
                   We have TotalSupply == TotalSupply'
-                      and Allowances  == Allowances'
+                      and Tokens  == Tokens'
                 - else:
                     apply [sum-of-increment]
                     apply [sum-of-increment]
@@ -65,7 +94,7 @@ proof:
               - apply [LQT-TOKEN-TRANSFER-PROXY-SPEC]
                 - case Aborted:
                     We have TotalSupply == TotalSupply'
-                        and Allowances  == Allowances'
+                        and Tokens  == Tokens'
                 - else:
                     apply [sum-of-increment]
                     apply [sum-of-increment]
@@ -73,10 +102,51 @@ proof:
           - apply [LQT-TOKEN-MINTORBURN-SPEC]
             - case Aborted:
                 We have TotalSupply == TotalSupply'
-                    and Allowances  == Allowances'
+                    and Tokens  == Tokens'
             - else:
                 apply [sum-of-increment]
       - else:
           - We have TotalSupply == TotalSupply'
-                and Allowances  == Allowances'
+                and Tokens  == Tokens'
 ```
+
+## The `MintOrBurn` entrypoint does not emit any operations
+
+```
+claim [only-lqt-mint-burn]:
+    <operations> (Transaction Sender To Amount Op => _) ;; _ </operations>
+    <adminAddress> DEXTER </adminAddress>
+    <tokens> Tokens => Tokens' </tokens>
+    <lqtSupply> S => S' </lqtSupply>
+  ensures  S' =/=Int S impliesBool  ( Op     == MintOrBurn(Address, Quantity)
+                                  and To     == Lqt
+                                  and Amount == 0
+                                  and S' ==Int S +Int Quantity
+                                  and Sender == Dexter
+                                    )
+```
+
+```
+proof
+ - case To <> Lqt
+     - Lqt storage cannot be changed by other contracts directly
+ - case To == Lqt
+    - case Op == MintOrBurn
+         - case Amount == 0 and Sender == DEXTER
+            - apply [LQT-TOKEN-MINTORBURN-SPEC]
+                - case Aborted:
+                    We have S' == S
+                - else:
+                    We have  S' == absInt(TotalSupply +Int Quantity)
+                        and  Tokens[Address] +Int Quantity >= 0
+                    By well-typedness we have: Tokens[*] >= 0 
+                    By [inv-totalSupply-is-sum] we get: TotalSupply == Sum
+                    proving: S' == TotalSupply +Int Quantity
+         - case Amount <> 0 and Sender <> DEXTER
+             We have Aborted ==> S == S'
+    - else:
+        - apply [LQT-TOKEN-*-SPEC]
+          we have S' == S
+```
+
+
