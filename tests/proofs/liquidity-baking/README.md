@@ -77,6 +77,25 @@ We give a brief description of each rule in order:
 6.  The exchange may apply an LP redemption operation, i.e., the LP redeems their stored assets and shuts down the CPMM exchange.
     At this point, all applicable trades are zero-valued and effectively no-ops.
 
+**Exchange-rate Analysis:**
+Any good exchange-rate function should be monotonic, i.e., we should get more units of money out if we put more units of moeny in.
+Formally, we want to check that:
+
+`w <= w' => E(w,U,V) <= E(w',U,V)`
+
+The result follows by a chain of inequalities:
+
+```
+E(w,U,V) <= E(w',U,V) => (V * w) / (U + w) <= (V * w') / (U + w')
+                      => w / (U + w)       <= w' / (U + w')
+                      => w * (U + w')      <= w' * (U + w)
+                      => w * U + w * w'    <= w' * U + w * w'
+                      => w * U             <= w' * U
+                      => w                 <= w'
+```
+
+assuming that _U > 0_ and _V > 0_ since otherwise the two division steps (i.e. dividing by _V_ and dividing _U_) become impossible.
+
 **Invariant Analysis:**
 Note that the exchange function is designed so that trades preserve the constant product, i.e., for the `sell-A(x)` operation we have:
 
@@ -115,11 +134,7 @@ A CPMM is now an ordered 4-tuple *(L,P,X,Y)* where:
 
 To account for fees, we develop a new exchange function:
 
-```
-              V * w * P
-E(w,P,U,V) =  ---------
-              U + w * P
-```
+`E(w,P,U,V) = E(w * P,U,V)`
 
 **Model:**
 Now we refine our previous CPMM state machine model:
@@ -148,52 +163,32 @@ The above model is equivalent to our original model under the following conditio
 2.  The `redeem(n)` operation is only applied when *n = 1*;
 3.  The `add(n)` operation is *never* applied.
 
+**Exchange-rate with Fees Analysis**:
+We want to understand how the exchange rate function _E()_ varies as the trade scaling factor _P_ grows or shrinks.
+Using the equality _E(w,P,U,V) = E(w * P,U,V)_ and monotonicity, observe that _E(w,P,U,V)_ shrinks as _P_ shrinks.
+Again, this result only holds when _U_ and _V_ are both greater than _0_.
+Finally, note that _E(w,1,U,V) = E(w * 1,U,V) = E(w,U,V)_.
+
 **Invariant Analysis:**
 Recall that our theoretical CPMM model without fees satisfied the _constant product_ invariant after trades.
 In case of CPMMs with fees, is the the product of the pre-trade assets always equal to the product of the post-trade assets?
 Suppose we started off in a state `(L, P, X, Y)` with product _k = X * Y_.
 Then suppose the `sell-B(b)` operation was applied to obtain the resulting state:
 
-`(L, P, X - E(b,P,Y,X), Y + b)`
+`(L, P, X - E(y,P,Y,X), Y + y)`
 
-In resulting state, we have the product:
+Thus, we have:
 
 ```
-                                 ┌       X * b * P ┐   ┌       ┐
-[ X - E(b,P,Y,X) ] * [ Y + b ] = │ X  -  --------- │ * │ Y + b │
-                                 └       Y + b * P ┘   └       ┘
-
-                                     ┌         b * P     ┐   ┌       ┐
-                               = X * │ 1 - ------------- │ * │ Y + b │
-                                     └     Y + (b * P)   ┘   └       ┘
-
-                                     ┌ Y + (b * P) - (b * P) ┐   ┌       ┐
-                               = X * │ --------------------- │ * │ Y + b │
-                                     └       Y + (b * P)     ┘   └       ┘
-
-                                     ┌       Y      ┐   ┌       ┐
-                               = X * │ ------------ │ * │ Y + b │
-                                     └  Y + (b * P) ┘   └       ┘
-
-                                 ┌    X * Y     ┐   ┌       ┐
-                               = │ ------------ │ * │ Y + b │
-                                 └  Y + (b * P) ┘   └       ┘
-
-                                 ┌      k       ┐   ┌       ┐
-                               = │ ------------ │ * │ Y + b │
-                                 └  Y + (b * P) ┘   └       ┘
-
-                                     ┌   Y + b   ┐
-                               = k * │ --------- │
-                                     └ Y + b * P ┘
-
-                               >= k
+X * Y =  [ X - E(y,Y,X)     ] * [ Y + y ]
+      <= [ X - E(y * P,Y,X) ] * [ Y + y ]
+      =  [ X - E(y,P,Y,X)   ] * [ Y + y ]
 ```
 
 Thus, we see that the answer to our question is:
 
 -   if *P = 1*, then the product is constant in both states.
--   if *P < 1*, then the product _increases_, since `b * P < b`.
+-   if *P < 1*, then the product _increases_ by monotonicity of the exchange-rate function.
 
 A symmetric calculations shows that the same rule applies in the case of the `sell-A(a)` operation.
 In either case, this derivation shows us by applying trades, the redemeption value of liquidity shares _never decreases_.
@@ -299,17 +294,37 @@ Property (1) follows by an induction argument while property (2) follows by defi
 In computer programs, we do not have access to infinite precision numbers (i.e. real numbers).
 We typically either use fixed-width or arbitrary width integers (with rounding or truncation) or floating point numbers.
 In this section, we discuss which of the properties that we proved above hold when we restrict ourselves to arbitrary width integer arithmetic with truncation.
+Note that some of the expressions we used above do not work well (or at all) in the realm of integer arithmetic because they contain fractional values.
+In such cases, we can use algebra to re-formulate such expressions to minimize division operations (and thus, minimize rounding error).
+By doing so, we may also gain performance, since division is a fairly expensive operation.
+For the purposes of this section, let
+
+```
+ a
+---
+ b
+```
+
+and:
+
+`a / b`
+
+denote fractions using _real_ division and let:
+
+```
+ a
+---I
+ b
+```
+
+and:
+
+`a // b`
+
+denote fractions using _integer_ division with truncation.
 
 **Invariant Analysis without Fees:**:
-Recall that our original exchange rate function:
-
-```
-            V * w
-E(w,U,V) =  -----
-            U + w
-```
-
-was chosen so that:
+Recall that our original exchange rate function `E(w,U,V)` was chosen so that:
 
 `[ X - E(y,Y,X) ] * [ Y + y ] == X * Y`
 
@@ -333,7 +348,7 @@ When we plug these values into our formula, we obtain:
 The crucial problem arises because we must truncate the division _10 / 3_, which gives us _3_ instead of the infinite decimal expansion _3.333..._
 In fact, because we are truncating a number that is subtracted, the end result is that, in case of arbitrary-width integer arithmetic with truncation, even *without a fee*, the product of our asset reserves *never decreases, but may increase*.
 
-**Exchange-rate Calculation with Fees:**:
+**Exchange-rate with Fees Analysis:**:
 Recall that our exchange rate function with fees was:
 
 ```
@@ -343,47 +358,81 @@ E(w,P,U,V) =  ---------
 ```
 
 where *P* is a scaling factor in the range *[0,1]*.
-This function is unusable for us because the number *P* is not representable in integer arithmetic.
-What can we do?
-To make this operation usable under integer arithmetic, we can rewrite the exchange function as follows (which, under real arithmetic, is provably equal, as shown below):
+To make this operation usable under integer arithmetic, we can rewrite the exchange function as follows:
 
 ```
-                        V * w * Q         V * w * Q       (1 / R)    V * w * Q/R   V * w * P
-Ei(w,P = Q/R,U,V) =  --------------- = --------------- * --------- = ----------- = --------- = E(w,P = Q/R,U,V)
-                     (U * R) + w * Q   (U * R) + w * Q    (1 / R)    U + w * Q/R   U + w * P
+                        V * w * Q
+Ei(w,P = Q/R,U,V) =  ---------------I
+                     (U * R) + w * Q
 ```
 
-The above formulation helps because, when using integer arithmetic, it is impossible to represent a non-integer directly; one must use fractions.
-Of course, as noted above, we cannot even compute the fraction `Q/R < 1` directly, since the result will always be 0 (with some remainder) which is useless for further calcuation.
-Instead, we must use algebra to re-formulate our function so that such fractions are embedded in a larger calculation (as was done above).
-Apart from that, it is advisable to minimize the number of integer divisions which occur, since:
-
-1.  division is more computationally expensive than addition, subtraction, and multiplication;
-2.  each division with a non-zero remainder introduces a truncation error which compounds as it propogates.
-
-We also want to understand how the exchange rate function varies as the trade scaling factor _P_ grows or shrinks.
-To do that, we use another chain of equivalences:
+where the division operator `---I`, as mentioned above, is integer division with truncation.
+By a straightforward calculation, we can show that the above is provably equal to our original function when using real division, i.e.,
 
 ```
-                       V * w * Q         V * w * Q      (1 / Q)       V * w
-Ei(w,P = Q/R,U,V) = --------------- = --------------- * ------- = -------------
-                    (U * R) + w * Q   (U * R) + w * Q   (1 / Q)   (U * R/Q) + w
+   V * w * Q       (1 / R)    V * w * Q/R   V * w * P
+--------------- * --------- = ----------- = --------- = E(w,P = Q/R,U,V)
+(U * R) + w * Q    (1 / R)    U + w * Q/R   U + w * P
 ```
 
-Note that, as the value of _P = Q/R_ grows smaller, the denominator term _(U * R/Q)_ grows larger.
-Thus, the value of the function _Ei(b,P,U,V)_ shrink as _P_ shrinks _as long as U is non-zero_, which should not happen unless the last liquidity provider removes their liquidity which is equivalent to shutting down the entire system.
+We also note that:
 
-**Invariant Analysis with Fees:**
-Given the above analysis, we know the value of _Z = Ei(b,P,Y,X)_ shrinks as the value of _P_ shrinks.
-Thus, we can infer, as we did in our above invariant analysis in the real case that:
+```
+                       V * w * Q           V * w * Q
+Ei(w,P = Q/R,U,V) = ---------------I <= --------------- = E(w,P = Q/R,U,V)
+                    (U * R) + w * Q     (U * R) + w * Q
+```
 
-`[ X - Z ] * [ Y + b ]`
+since integer division will truncate the fractional part, giving a smaller value.
 
-grows as `P` shrinks, because the term _X - Z_ grows larger.
-This happens for two reasons:
+**Exchange-rate with Compounded Fees Analysis:**
+Suppose that, instead of our exchange function applying a fee which is a single scaling factor, it applies the same scaling factor twice in succession?
+That is, suppose we have this exchange function with a compound fee:
 
-1.  as noted above, the scaling factor `P` makes `Z = Ei(b,P,Y,X)` smaller;
-1.  the division operation in `Z = Ei(b,P,Y,X)` truncates, making its value even smaller under integer arithmetic than real arithmetic.
+```
+                                           V * w * P^2
+EC(w,P = Q/R,U,V) = E(w,P = Q^2/R^2,U,V) = ----------- = E((w * Q) / R,P = Q/R,U,V)
+                                           U + w * P^2
+```
+
+Now suppose that we reformulate it in the world of integer arithmetic using the following formulation:
+
+```
+                        V * ((w * Q) // R) * Q
+ECi(w,P = Q/R,U,V) = -----------------------------I = Ei((w * Q) // R,P = Q/R,U,V)
+                     (U * R) + ((w * Q) // R)  * Q
+```
+
+Note that this formulation _does not_ minimize rounding error, but, as shown above, _does_ allow us to re-use our exchange function we defined earlier.
+With our above knowledge, we can _almost_ prove the following:
+
+```
+ECi(w,P = Q/R,U,V) =  Ei((w * Q) // R,P = Q/R,U,V)
+                   <= E ((w * Q) // R,P = Q/R,U,V)
+                   <= E ((w * Q) /  R,P = Q/R,U,V)
+                   =  EC(w,P = Q/R,U,V)
+```
+
+The first, second, and fourth steps follow all by either definition or by our analysis in the subsection above.
+The second step follows because `(w * Q) // R <= (w * Q) / R` by integer division truncation and monotonicity.
+
+**Invariant Analysis with Fees or Compounded Fees:**
+Given our exchange-rate analysis in the preceeding subsections, we have:
+
+```
+X * Y =  [ X - E(y,Y,X)                     ] * [ Y + y ]
+      <= [ X - E((y * Q) / R,Y,X)           ] * [ Y + y ]
+      =  [ X - E(y,P = Q/R,Y,X)             ] * [ Y + y ]
+      <= [ X - Ei(y,P = Q/R,Y,X)            ] * [ Y + y ]
+      <= [ X - Ei((y * Q) // R,P = Q/R,Y,X) ] * [ Y + y ]
+      =  [ X - ECi(y,P = Q/R,Y,X)           ] * [ Y + y ]
+```
+
+where:
+
+1.  the equality steps follow by definition;
+2.  the second and third inequality steps follow by monotonicity;
+3.  the first inequality follows by our exchange rate with fees analysis.
 
 **Exchange Reserves Non-negativity Analysis:**
 After trades, are the exhange reserves always non-negative?
