@@ -1187,9 +1187,11 @@ proof [pool]:
           - T' == T -Int TokensBought
           - L' == L
           - XtzSold == Amount
-          - TokensBought == 999 *Int XtzSold *Int T /Int (1000 *Int X +Int 999 *Int XtzSold)
-        - let TokensBoughtReal = 999 *Int XtzSold *Int T /Real (1000 *Int X +Int 999 *Int XtzSold)
-        - TokensBought <=Real TokensBoughtReal
+          - XtzSoldNetBurn == XtzSold *Int 999 /Int 1000
+          - TokensBought == 999 *Int XtzSoldNetBurn *Int T /Int (1000 *Int X +Int 999 *Int XtzSoldNetBurn)
+        - let XtzSoldNetBurnReal == XtzSold *Int 999 /Real 1000
+              TokensBoughtReal = 999 *Real XtzSoldNetBurnReal *Real T /Real (1000 *Real X +Real 999 *Real XtzSoldNetBurnReal)
+        - TokensBought <=Real TokensBoughtReal by monotonicity of the exchange rate function and the fact that the integer-version is less than the real valued version
         - (X' *Int T') /Real (X *Int T) ==Real ((X +Int XtzSold) *Int  (T -Int  TokensBought    )) /Real (X *Int T) by X' and T'
                                         >=Real ((X +Int XtzSold) *Real (T -Real TokensBoughtReal)) /Real (X *Int T) by TokensBought <=Real TokensBoughtReal
                                         ==Real (X +Real XtzSold) /Real (X +Real 0.999 *Real XtzSold) by simp(Real)
