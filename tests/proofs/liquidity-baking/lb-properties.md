@@ -173,7 +173,10 @@ Moreover, we assume that the only way to alter the token balance of Dexter is th
 proposition [only-token-transfer]:
 <operations> (Op => _) ;; _ </operations>
 <tokenDexter> D => D' </tokenDexter>
-ensures  D' <Int D impliesBool ( Op ==K Transaction DEXTER TOKEN 0 Transfer(DEXTER, To, Value) andBool To =/=K DEXTER andBool Value >Int 0 )
+ensures  D' <Int D impliesBool (         Op ==K Transaction DEXTER TOKEN 0 Transfer(DEXTER, To, Value)
+                                 andBool To =/=K DEXTER
+                                 andBool Value >Int 0
+                               )
  andBool D' >Int D impliesBool Op ==K Transaction _ TOKEN 0 Transfer(_, DEXTER, _)
 ```
 
@@ -228,7 +231,10 @@ ensures  0 <Int X' andBool X' ==Int B'
 proof [inv-top-level]:
 - Sender =/=K DEXTER by [top-level]
 - TopLevelOps(Ops, Source) by [dfs]
-- Sends(Op ;; Ops) ==Int 0 andBool Transfers(Op ;; Ops) ==Int 0 andBool MintBurns(Op ;; Ops) ==Int 0 by Sender =/=K DEXTER and TopLevelOps(Ops, Source)
+- by Sender =/=K DEXTER and TopLevelOps(Ops, Source) derive:
+          Sends(Op ;; Ops)     ==Int 0
+  andBool Transfers(Op ;; Ops) ==Int 0
+  andBool MintBurns(Op ;; Ops) ==Int 0
 - apply [inv-trans]
 - unify RHS
   - Ops' == .List
@@ -620,7 +626,11 @@ proof [inv-token-to-xtz]:
 
 ```
 claim [inv-token-to-token]:
-<operations>  ( [ Transaction Sender DEXTER Amount TokenToToken(OutputDexterContract, MinTokensBought, To, TokensSold, Deadline) ] #as Op => Ops' ) ;; Ops </operations>
+<operations>
+   ( [ Transaction Sender DEXTER Amount TokenToToken(OutputDexter, MinTokensBought, To, TokensSold, Deadline) ] #as Op ) ;; Ops
+=>
+   Ops' ;; Ops
+</operations>
 <xtzPool>        #Mutez(X => X')   </xtzPool>
 <tokenPool>             T => T'    </tokenPool>
 <lqtTotal>              L => L'    </lqtTotal>
@@ -641,9 +651,9 @@ proof [inv-token-to-token]:
 - apply [token-to-token]
   - Amount ==Int 0 by assert
 - unify RHS
-  - Ops' == ( [ Transaction DEXTER TOKEN                0                            Transfer(Sender, DEXTER, TokensSold) ] #as Op1 )
-         ;; ( [ Transaction DEXTER OutputDexterContract XtzBoughtNetBurn             XtzToToken(To, MinTokensBought, Deadline) ] #as Op2 )
-         ;; ( [ Transaction DEXTER NULL                 XtzBought - XtzBoughtNetBurn Default() ] #as Op3 )
+  - Ops' == ( [ Transaction DEXTER TOKEN        0                            Transfer(Sender, DEXTER, TokensSold) ] #as Op1 )
+         ;; ( [ Transaction DEXTER OutputDexter XtzBoughtNetBurn             XtzToToken(To, MinTokensBought, Deadline) ] #as Op2 )
+         ;; ( [ Transaction DEXTER NULL         XtzBought - XtzBoughtNetBurn Default() ] #as Op3 )
   - X' == X -Int XtzBought
   - T' == T +Int TokensSold
   - L' == L
@@ -1273,7 +1283,8 @@ To receive these assets from LB, the transaction must have the form (where `Rece
 -   Tez - the `Amount` argument in a transaction of the form `[ Transaction DEXTER Receiver Amount Default() ]`
 -   tzBTC - the `Tokens` argument in a transaction of the form `[ Transaction DEXTER TOKEN 0 Transfer(DEXTER, Receiver, Tokens) ]`
 -   LT - the `Lt` argument in a transaction of the form `[ Transaction DEXTER LQT mintOrBurn(Receiver, Lt) ]` with `Lt` positive
--   other assets - when using `TokenToToken`, the `MinTokensBought` argument in a transaction of the form `[ Transaction DEXTER outputDexterContract _ XtzToToken(Receiver, MinTokensBought, _) ]`
+-   other assets - when using `TokenToToken`, the `MinTokensBought` argument in a transaction of the form  
+    `[ Transaction DEXTER outputDexterContract _ XtzToToken(Receiver, MinTokensBought, _) ]`
 
 Checking that each entrypoint properly bounds its worst-case exchange rates amounts to checking that:
 

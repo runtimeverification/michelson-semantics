@@ -194,7 +194,7 @@ A symmetric calculations shows that the same rule applies in the case of the `se
 In either case, this derivation shows us by applying trades, the redemeption value of liquidity shares _never decreases_.
 
 **Liquidity Shares vs. Exchange Reserves Analysis:**
-If our CPMM state is `(L, P, X, Y)`, during `redeem` or `add` operations, how do liquidity shares *L* scale with respect to the product of our exchange reserves _X*Y_?
+If our CPMM state is `(L, P, X, Y)`, during `redeem` or `add` operations, how do liquidity shares *L* scale with respect to the product of our exchange reserves `X*Y`?
 Let us consider the `redeem` and `add` operations in turn.
 
 First suppose we apply a `redeem(n)` operation.
