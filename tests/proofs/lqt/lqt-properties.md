@@ -1,28 +1,31 @@
 # Lqt Token Safety Property Proofs
 
 In this document, we prove the properties of the Lqt Token contract needed
-to verify the Dexter system.
-These properties are:
+to verify the Dexter system. These properties are:
 
-1.  The MintOrBurn() entrypoint does not emit any operations.
+1.  The MintOrBurn() entrypoint updates total liquidity if prerequisites are met.
 
     ```
     claim [lqt-mint-burn]:
-        <operations> ( [ Transaction Sender LQT Amount MintOrBurn(_, Value) ] => .List ) ;; _ </operations>
-        <lqt.totalSupply> S => S +Int Value </lqtSupply>
-        assert   Sender ==K DEXTER
-         andBool Amount ==Int 0
+        <operations> ( [ Transaction DEXTER LQT Amount MintOrBurn(_, Value) ] => .List ) ;; _ </operations>
+        <tokens> Tokens => Tokens' </tokens>
+        <totalSupply> S => S +Int Value </totalSupply>
+      requires Amount ==Int 0
+      andBool Tokens[Address] + Value  >= 0
     ```
 
-2.  `[only-lqt-mint-burn]`: Only MintOrBurn() can update the total liquidity
-    supply and only Dexter is permitted to call this entrypoint.
+2.  `[only-lqt-mint-burn]`:
+
+    * Only MintOrBurn() can update the total liquidity supply,
+    * only Dexter is permitted to call this entrypoint
+    * MintOrBurn doesn't emit any operations.
 
     ```
     claim [only-lqt-mint-burn]:
-        <operations> (Transaction Sender To Amount Op => _) ;; _ </operations>
+        <operations> (Transaction Sender To Amount Op => .List) ;; _ </operations>
         <adminAddress> DEXTER </adminAddress>
         <tokens> Tokens => Tokens' </tokens>
-        <lqtSupply> S => S' </lqtSupply>
+        <totalSupply> S => S' </totalSupply>
       ensures  S' =/=Int S impliesBool  ( Op     == MintOrBurn(Address, Quantity)
                                       and To     == Lqt
                                       and Amount == 0
@@ -31,15 +34,18 @@ These properties are:
                                         )
     ```
 
-## Sum of the balances in all accounts equals `totalSupply`
+These are proved in the following subsections.
+
+## Lemmas
+
+First, we need a lemma to prove our main properties:
+"The sum of the balances in all accounts equals `totalSupply`" is an invariant.
 
 ```
 syntax Int ::= Sum(Map) [function]
 rule Sum(.Map) => 0
 rule Sum(_ |-> N Rest) => N +Int Sum(Rest)
 ```
-
-We need the following lemma:
 
 ```
 claim [sum-of-increment]: Sum(#incrementTokens(M, Addr, Quantity)) => Sum(M) +Int Quantity
@@ -110,14 +116,14 @@ proof:
                 and Tokens  == Tokens'
 ```
 
-## The `MintOrBurn` entrypoint does not emit any operations
+## Only `MintOrBurn` entrypoint can change the total liquidity
 
 ```
 claim [only-lqt-mint-burn]:
     <operations> (Transaction Sender To Amount Op => _) ;; _ </operations>
     <adminAddress> DEXTER </adminAddress>
     <tokens> Tokens => Tokens' </tokens>
-    <lqtSupply> S => S' </lqtSupply>
+    <totalSupply> S => S' </totalSupply>
   ensures  S' =/=Int S impliesBool  ( Op     == MintOrBurn(Address, Quantity)
                                   and To     == Lqt
                                   and Amount == 0
@@ -149,4 +155,19 @@ proof
           we have S' == S
 ```
 
+## The `MintOrBurn` updates liquidity if prerequisites are met
 
+
+```
+claim [lqt-mint-burn]:
+    <operations> ( [ Transaction DEXTER LQT Amount MintOrBurn(_, Value) ] => .List ) ;; _ </operations>
+    <tokens> Tokens => Tokens' </tokens>
+    <totalSupply> S => S +Int Value </totalSupply>
+  requires Amount ==Int 0
+  andBool Tokens[Address] + Value  >= 0
+```
+
+```
+proof:
+- apply [LQT-TOKEN-MINTORBURN-SPEC]
+```
