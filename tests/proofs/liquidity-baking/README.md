@@ -1,4 +1,4 @@
-# Liquidity Baking Contract Verification
+# Background
 
 The liquidity baking (LB) system is a Uniswap-style constant product market maker (CPMM) for two assets: Tez and wrapped Bitcoin (tzBTC) where arbitary users can decide to become a liquidity provider (LP) and obtain liquidity share tokens by providing reserves of each asset to the CPMM.
 The system actually consists of three separate smart contracts which work together in concert:
@@ -239,10 +239,14 @@ We can formalize this notion by revising our trade and liquidity redemption/addi
 These four rules will then replace the last four rules of the former model.
 
 ```
-rule (L, P, X, Y)[T]{ sell-A(d,e,x)   ... } => (L, P, X + x, Y - E(x,P,X,Y)) [T]{ ... } requires x <= X      ∧ T <= d ∧ E(x,P,X,Y) >= x*e
-rule (L, P, X, Y)[T]{ sell-B(d,e,y)   ... } => (L, P, X - E(y,P,Y,X), Y + y) [T]{ ... } requires y <= Y      ∧ T <= d ∧ E(y,P,Y,X) >= y*e
-rule (L, P, X, Y)[T]{ redeem(d,a,b,n) ... } => (L - L*n, P, X - X*n, Y - Y*n)[T]{ ... } requires 0 <= n <= 1 ∧ T <= d ∧ X*n >= a ∧ Y*n >= b
-rule (L, P, X, Y)[T]{ add(d,a,b,n)    ... } => (L + L*n, P, X + X*n, Y + Y*n)[T]{ ... } requires 0 <= n      ∧ T <= d ∧ X*n <= a ∧ Y*n <= b
+rule (L, P, X, Y)[T]{ sell-A(d,e,x)   ... } => (L, P, X + x, Y - E(x,P,X,Y)) [T]{ ... }
+  requires x <= X ∧ T <= d ∧ E(x,P,X,Y) >= x*e
+rule (L, P, X, Y)[T]{ sell-B(d,e,y)   ... } => (L, P, X - E(y,P,Y,X), Y + y) [T]{ ... }
+  requires y <= Y ∧ T <= d ∧ E(y,P,Y,X) >= y*e
+rule (L, P, X, Y)[T]{ redeem(d,a,b,n) ... } => (L - L*n, P, X - X*n, Y - Y*n)[T]{ ... }
+  requires 0 <= n <= 1 ∧ T <= d ∧ X*n >= a ∧ Y*n >= b
+rule (L, P, X, Y)[T]{ add(d,a,b,n)    ... } => (L + L*n, P, X + X*n, Y + Y*n)[T]{ ... }
+  requires 0 <= n ∧ T <= d ∧ X*n <= a ∧ Y*n <= b
 ```
 
 These revised operations are identical to their former counterparts except:
