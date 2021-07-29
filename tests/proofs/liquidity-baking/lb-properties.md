@@ -43,7 +43,7 @@ Given that each contract has a fixed number of important entrypoints, we list th
 -   `Default`
 -   `XtzToToken(to : Address, minTokensBought : Nat, deadline : Timestamp)`
 -   `TokenToXtz(to : Address, tokensSold : Nat, minXtzBought : Mutez, deadline : Timestamp)`
--   `TokenToToken(outputDexterContract : Address, minTokensBought : Nat, to : Address, tokensSold : Natt, deadline : Timestamp)`
+-   `TokenToToken(outputDexterContract : Address, minTokensBought : Nat, to : Address, tokensSold : Nat, deadline : Timestamp)`
 
 *LQT* Entrypoints (includes the FA1.2 entrypoints as well as `MintOrBurn`):
 
@@ -138,8 +138,10 @@ proposition [dfs]:
 <sourceaddr> Source </sourceaddr>
 
 syntax Bool ::= TopLevelOps(OpList, Address) [function]
-rule TopLevelOps([ Transaction Sender _ _ _ ] ;; Ops, Source) => TopLevelOps(Ops, Source) requires Sender ==K Source
-rule TopLevelOps([ Transaction Sender _ _ _ ] ;; _, Source) => false requires Sender =/=K Source
+rule TopLevelOps([ Transaction Sender _ _ _ ] ;; Ops, Source) => TopLevelOps(Ops, Source)
+  requires Sender ==K Source
+rule TopLevelOps([ Transaction Sender _ _ _ ] ;; _, Source) => false
+  requires Sender =/=K Source
 rule TopLevelOps(.List, _) => true
 ```
 
@@ -1091,7 +1093,7 @@ ensures  Sender =/=K DEXTER impliesBool B' ==Int B +Int Amount
  andBool Sender  ==K DEXTER impliesBool B' ==Int B
 ```
 
-## Liquidity Share Price Never Decreasing
+## Liquidity Share Value Security
 
 The property `[inv]` states the relationship between the Dexter state variables and the actual pool reserves and liquidity supply.  Now we formulate another property regarding the relationship over the Dexter state variables themselves.
 

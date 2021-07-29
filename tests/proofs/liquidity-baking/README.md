@@ -270,7 +270,7 @@ Consider an arbitrary CPMM in the form `(L, P, X, Y)`.
 
     If `(L, P, X, Y)[T]{ ... } =>* (L', P, X', Y')[T']{ ... }` then:
 
-    _X' * Y' / X * Y >= L'^2 / L^2_
+    `X' * Y' / X * Y >= L'^2 / L^2`
 
 2.  *Operation safety*
 
@@ -279,7 +279,7 @@ Consider an arbitrary CPMM in the form `(L, P, X, Y)`.
 
     If `(L, P, X, Y)[T]{ o ... } => (L', P, X', Y')[T]{ ... }` then:
 
-    _T <= deadline(o) ∧ bounded-exchange(P,X,Y,o)_
+    `T <= deadline(o) ∧ bounded-exchange(P,X,Y,o)`
 
     where `deadline(o)` projects the deadline from an operation and `bounded-exchange(P,X,Y,o)` is defined as:
 
