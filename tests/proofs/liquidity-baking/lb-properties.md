@@ -1240,7 +1240,50 @@ proof [pool]:
                                     ==Real (L' /Real L) ^Real 2 by L' == L
 ```
 
-## Bounds on fees
+## Operation Safety
+
+In this section, we discuss the operation safety property a bit further.
+Recall our definition of operation safety: all trades and liquidity redemptions/deposits have a bounded exchange rate and time in which they are applicable.
+To see if this holds, we need only look at the five entrypoint specifications relating to these operations.
+For convenience, we reiterate them below:
+
+-   _AddLiquidity(owner, minLqtMinted, maxTokensDeposited, deadline)_: _amount_ -> _maxTokenDeposited_, _minLiquidityMinted_
+-   _RemoveLiquidity(to, lqtBurned, minXtzWithdrawn, minTokensWithdrawn, deadline)_: _lqtBurned_ -> _minXtzWithdrawn_, _minTokensWithDrawn_
+-   _XtzToToken(to, minTokensBought, deadline)_: _amount_ -> _minTokensBought_
+-   _TokenToXtz(to, tokensSold, minXtzBought, deadline)_: _tokensSold_ -> _minXtzBought_
+-   _TokenToToken(outputDexterContract, minTokensBought, to, tokensSold, deadline)_: _tokensSold_ -> _minTokensBought_
+
+To see that each operation has a bounded time in which it is valid, it is enough to check that its functional spec asserts that its _deadline_ has not passed; this is clearly the case.
+To see that each operation has a bounded exchange rate in which it is valid, it is enough for each operation to specify the worst possible exchange rate the sender is willing to accept.
+This is only slightly more complicated to show, because the kind of exchange depends on the entrypoint called.
+Next to each entrypoint above, we used the notation `input -> (min/max)bound1 [, (max/min)bound2]` (with the bracketed partial optional) which represents the input and worst-case bounds on the exchange rate.
+The output prefix `min` describes the minimum amount a sender is willing to receive in exchange for sending assets.
+The output prefix `max` describes the maximum amount a sender is required to _additionally_ send in exchange for receiving assets.
+All that remains to be done is correlate these output bounds with the actual movement of assets.
+Recall that the LB system manages three kinds of assets: Tez, tzBTC, and liquidity tokens (LT).
+Each of these assets can be sent to LB and received from LB.
+To send these assets to LB, the transaction must have the form (where `Sender` refers to entity sending assets to Dexter):
+
+-   Tez - the `Amount` argument in a transaction of the form `[ Transaction Sender DEXTER Amount _ ]`
+-   tzBTC - the `Tokens` argument in a transaction of the form `[ Transaction DEXTER TOKEN 0 Transfer(Sender, DEXTER, Tokens) ]`
+-   LT - the `Lt` argument in a transaction of the form `[ Transaction DEXTER LQT mintOrBurn(Sender, Lt) ]` with `Lt` negative
+
+To receive these assets from LB, the transaction must have the form (where `Receiver` refers to the entity expected to receive assets from Dexter):
+
+-   Tez - the `Amount` argument in a transaction of the form `[ Transaction DEXTER Receiver Amount Default() ]`
+-   tzBTC - the `Tokens` argument in a transaction of the form `[ Transaction DEXTER TOKEN 0 Transfer(DEXTER, Receiver, Tokens) ]`
+-   LT - the `Lt` argument in a transaction of the form `[ Transaction DEXTER LQT mintOrBurn(Receiver, Lt) ]` with `Lt` positive
+-   other assets - when using `TokenToToken`, the `MinTokensBought` argument in a transaction of the form `[ Transaction DEXTER outputDexterContract _ XtzToToken(Receiver, MinTokensBought, _) ]`
+
+Checking that each entrypoint properly bounds its worst-case exchange rates amounts to checking that:
+
+-   all bounds above are properly applied to all Dexter emitted transactions of the above forms (excepting transactions of the form `[ Transaction DEXTER NULL Amount Default() ]`, i.e., burned fees).
+
+This property immediately follows by our functional correctness specifications.
+Note that we must assume that `outputDexterContract` is, in fact, a valid dexter contract.
+Otherwise, its `XtzToToken` entrypoint may _not_ satisfy the same bounds guarantees that we have listed above.
+
+### Bounds on fees
 
 Note that the calculations in this section discount rouding due to integer division.
 
