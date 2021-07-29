@@ -327,7 +327,7 @@ proof [inv-xtz-to-token]:
   - X' == X +Int XtzSold
   - T' == T -Int ( 997 *Int XtzSold *Int T /Int (1000 *Int X +Int 997 *Int XtzSold) #as TokensBought )
   - L' == L
-  - B' == B +Int XtzSold
+  - B' == #if Sender == Dexter #then B +Int XtzSold #else B #fi
   - D' == D
   - S' == S
 - X' >Int 0 by X >Int 0 and XtzSold >=Int 0
