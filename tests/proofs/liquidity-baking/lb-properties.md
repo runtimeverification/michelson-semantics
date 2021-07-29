@@ -1247,11 +1247,11 @@ Recall our definition of operation safety: all trades and liquidity redemptions/
 To see if this holds, we need only look at the five entrypoint specifications relating to these operations.
 For convenience, we reiterate them below:
 
--   _AddLiquidity(owner, minLqtMinted, maxTokensDeposited, deadline)_: _amount_ -> _maxTokenDeposited_, _minLiquidityMinted_
--   _RemoveLiquidity(to, lqtBurned, minXtzWithdrawn, minTokensWithdrawn, deadline)_: _lqtBurned_ -> _minXtzWithdrawn_, _minTokensWithDrawn_
--   _XtzToToken(to, minTokensBought, deadline)_: _amount_ -> _minTokensBought_
--   _TokenToXtz(to, tokensSold, minXtzBought, deadline)_: _tokensSold_ -> _minXtzBought_
--   _TokenToToken(outputDexterContract, minTokensBought, to, tokensSold, deadline)_: _tokensSold_ -> _minTokensBought_
+-   `AddLiquidity(owner, minLqtMinted, maxTokensDeposited, deadline)`: `amount` -> `maxTokenDeposited`, `minLiquidityMinted`
+-   `RemoveLiquidity(to, lqtBurned, minXtzWithdrawn, minTokensWithdrawn, deadline)`: `lqtBurned` -> `minXtzWithdrawn`, `minTokensWithDrawn`
+-   `XtzToToken(to, minTokensBought, deadline)`: `amount` -> `minTokensBought`
+-   `TokenToXtz(to, tokensSold, minXtzBought, deadline)`: `tokensSold` -> `minXtzBought`
+-   `TokenToToken(outputDexterContract, minTokensBought, to, tokensSold, deadline)`: `tokensSold` -> `minTokensBought`
 
 To see that each operation has a bounded time in which it is valid, it is enough to check that its functional spec asserts that its _deadline_ has not passed; this is clearly the case.
 To see that each operation has a bounded exchange rate in which it is valid, it is enough for each operation to specify the worst possible exchange rate the sender is willing to accept.
