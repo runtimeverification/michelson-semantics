@@ -975,7 +975,7 @@ rule [is-valid]:
 <mynow> #Timestamp(Now) </mynow>
 ```
 
-#### AddLiquidity(Owner, MinLqtMinted, MaxTokensDeposited, Deadline)
+#### AddLiquidity
 
 The following rule formulates the behaviors of the AddLiquidity() entrypoint.  It states that, when it succeeds, the entrypoint execution updates the three state variables and the XTZ balance of Dexter.  The execution succeeds when the `assert` conditions are satisfied, and fails otherwise.
 
@@ -1002,7 +1002,7 @@ ensures  TokensDeposited ==Int XtzDeposited *Int T up/Int X
  andBool Sender  ==K DEXTER impliesBool B' ==Int B
 ```
 
-#### RemoveLiquidity(To, LqtBurned, MinXtzWithdrawn, MinTokensWithdrawn, Deadline)
+#### RemoveLiquidity
 
 The following rule formulates the behaviors of the RemoveLiquidity entrypoint.  As in the previous formulation, this specifies both success and failure cases depending on the satisfiability of the assertion conditions.
 
@@ -1031,7 +1031,7 @@ ensures  XtzWithdrawn    ==Int LqtBurned *Int X /Int L
                      ;; [ Transaction DEXTER To    XtzWithdrawn Default() ]
 ```
 
-#### XtzToToken(To, MinTokensBought, Deadline)
+#### XtzToToken
 
 ```
 rule [xtz-to-token]:
@@ -1054,7 +1054,7 @@ ensures  XtzSoldNetBurn ==Int XtzSold *Int 999 /Int 1000
  andBool Sender  ==K DEXTER impliesBool B' ==Int B
 ```
 
-#### TokenToXtz(To, TokensSold, MinXtzBought, Deadline)
+#### TokenToXtz
 
 ```
 rule [token-to-xtz]:
@@ -1077,7 +1077,7 @@ ensures  XtzBought ==Int 999 *Int TokensSold *Int X /Int (1000 *Int T +Int 999 *
                      ;; [ Transaction DEXTER NULL  XtzBought - XtzBoughtNetBurn Default() ]
 ```
 
-#### TokenToToken(OutputDexterContract, MinTokensBought, To, TokensSold, Deadline)
+#### TokenToToken
 
 Note that it is straightforward to prove the equivalence between the following two methods for the token-to-token exchange:
 
@@ -1106,7 +1106,7 @@ ensures  XtzBought ==Int 999 *Int TokensSold *Int X /Int (1000 *Int T +Int 999 *
                      ;; [ Transaction DEXTER NULL XtzBought - XtzBoughtNetBurn Default() ]
 ```
 
-#### Default()
+#### Default
 
 ```
 rule [default]:
