@@ -303,6 +303,10 @@ $if(listings)$
 \newcommand{\passthrough}[1]{#1}
 \lstset{defaultdialect=[5.3]Lua}
 \lstset{defaultdialect=[x86masm]Assembler}
+\lstset{
+  basicstyle=\scriptsize\ttfamily,
+  mathescape=true,
+}
 $endif$
 $if(lhs)$
 \lstnewenvironment{code}{\lstset{language=Haskell,basicstyle=\small\ttfamily}}{}
@@ -482,6 +486,8 @@ $endif$
     \vskip 0.5em
     \includegraphics[width=15em]{$logoimage$}
 \end{titlepage}
+
+\renewcommand {\paragraph}[1] {\textbf{#1}:}
 
 $for(include-before)$
 $include-before$

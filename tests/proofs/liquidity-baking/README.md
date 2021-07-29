@@ -5,8 +5,8 @@ The system actually consists of three separate smart contracts which work togeth
 
 ```
       [Dexter]
-         │
-[LQT]────┴────[tzBTC]
+         |
+[LQT]---------[tzBTC]
 ```
 
 -   the main contract *Dexter* is responsible for:
@@ -45,13 +45,13 @@ Network participants interact with the CPMM in a two-step, asynchronous, and uno
 For example, suppose both Alice and Bob wish to perform trades on the exchange.
 They will both need to *submit* their trade operations to the exchange operation pool.
 Some time later, the exchange will *apply* their operations.
-In this example, suppose Alice submits operation *o₁* first and then Bob submits operation *o₂*.
-The exchange may apply *o₁* first; on the other hand, it is just as likely that it will apply *o₂* first.
+In this example, suppose Alice submits operation *o_1* first and then Bob submits operation *o_2*.
+The exchange may apply *o_1* first; on the other hand, it is just as likely that it will apply *o_2* first.
 It all depends on network conditions.
-For this reason, we use the notation *{o₁, o₂ ... oₖ}* to represent the pending set of *submitted* operations.
+For this reason, we use the notation *{o_1, o_2 ... o_k}* to represent the pending set of *submitted* operations.
 We let *...* represent a (possibly empty) subset of a set.
 Thus, the notation *{o ...}* represents a set with an element *o* and does *not* mean that the first element in set is *o* (in any case, sets are unordered).
-Let *valid(oₖ)* be a predicate that defines the set of valid operations.
+Let *valid(o_k)* be a predicate that defines the set of valid operations.
 
 Finally, to properly model asynchronous operations, our exchange is equipped with a clock *[T]* where *T* is a natural number which represents the current exchange time.
 
@@ -59,7 +59,7 @@ Finally, to properly model asynchronous operations, our exchange is equipped wit
 Now we can describe CPMMs as a state machine starting from state `init` with the following rules:
 
 ```
-rule init => (X, Y)[0]{ } requires X > 0 ∧ Y > 0
+rule init => (X, Y)[0]{ } requires X > 0 /\ Y > 0
 rule (X, Y)[T]{ ... } => (X, Y)[T + 1]{ ... }
 rule (X, Y)[T]{ ... } => (X, Y)[T]{ ... o } requires valid(o)
 rule (X, Y)[T]{ sell-A(x) ... } => (X + x, Y - E(x,X,Y))[T]{ ... } requires x <= X
@@ -140,7 +140,7 @@ To account for fees, we develop a new exchange function:
 Now we refine our previous CPMM state machine model:
 
 ```
-rule init => (l, p, x, y)[0]{ } requires l > 0 ∧ p ∈ [0,1] ∧ x > 0 ∧ y > 0
+rule init => (l, p, x, y)[0]{ } requires l > 0 /\ p \in [0,1] /\ x > 0 /\ y > 0
 rule (X, Y)[T]{ ... } => (X, Y)[T + 1]{ ... }
 rule (L, P, X, Y)[T]{ ... } => (L, P, X, Y)[T]{ ... o } requires valid(o)
 rule (L, P, X, Y)[T]{ sell-A(x) ... } => (L, P, X + x, Y - E(x,P,X,Y)) [T]{ ... } requires x <= X
@@ -240,13 +240,13 @@ These four rules will then replace the last four rules of the former model.
 
 ```
 rule (L, P, X, Y)[T]{ sell-A(d,e,x)   ... } => (L, P, X + x, Y - E(x,P,X,Y)) [T]{ ... }
-  requires x <= X ∧ T <= d ∧ E(x,P,X,Y) >= x*e
+  requires x <= X /\ T <= d /\ E(x,P,X,Y) >= x*e
 rule (L, P, X, Y)[T]{ sell-B(d,e,y)   ... } => (L, P, X - E(y,P,Y,X), Y + y) [T]{ ... }
-  requires y <= Y ∧ T <= d ∧ E(y,P,Y,X) >= y*e
+  requires y <= Y /\ T <= d /\ E(y,P,Y,X) >= y*e
 rule (L, P, X, Y)[T]{ redeem(d,a,b,n) ... } => (L - L*n, P, X - X*n, Y - Y*n)[T]{ ... }
-  requires 0 <= n <= 1 ∧ T <= d ∧ X*n >= a ∧ Y*n >= b
+  requires 0 <= n <= 1 /\ T <= d /\ X*n >= a /\ Y*n >= b
 rule (L, P, X, Y)[T]{ add(d,a,b,n)    ... } => (L + L*n, P, X + X*n, Y + Y*n)[T]{ ... }
-  requires 0 <= n ∧ T <= d ∧ X*n <= a ∧ Y*n <= b
+  requires 0 <= n /\ T <= d /\ X*n <= a /\ Y*n <= b
 ```
 
 These revised operations are identical to their former counterparts except:
@@ -279,15 +279,17 @@ Consider an arbitrary CPMM in the form `(L, P, X, Y)`.
 
     If `(L, P, X, Y)[T]{ o ... } => (L', P, X', Y')[T]{ ... }` then:
 
-    `T <= deadline(o) ∧ bounded-exchange(P,X,Y,o)`
+    ```
+    t <= deadline(o) /\ bounded-exchange(P,X,Y,o)
+    ```
 
     where `deadline(o)` projects the deadline from an operation and `bounded-exchange(P,X,Y,o)` is defined as:
 
     ```
     bounded-exchange(P,X,Y,sell-A(d,e,x))   = E(x,P,X,Y) >= x*e
     bounded-exchange(P,X,Y,sell-B(d,e,y))   = E(y,P,Y,X) >= y*e
-    bounded-exchange(P,X,Y,redeem(d,a,b,n)) = X*n >= a ∧ Y*n >= b
-    bounded-exchange(P,X,Y,add(d,a,b,n))    = X*n <= a ∧ Y*n <= b
+    bounded-exchange(P,X,Y,redeem(d,a,b,n)) = X*n >= a /\ Y*n >= b
+    bounded-exchange(P,X,Y,add(d,a,b,n))    = X*n <= a /\ Y*n <= b
     ```
 
 Both properties are satisfied by our simplified model.

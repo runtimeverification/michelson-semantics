@@ -4,6 +4,7 @@ cd "$(dirname $0)"
 
 pandoc </dev/null                                               \
        --to latex -o lb-report.pdf                              \
+       --listings \
        --pdf-engine=xelatex                                     \
        -V geometry:margin=2cm                                   \
        -V documentclass=article                                 \

@@ -287,8 +287,10 @@ rule Sends(_ ;; Ops) => Sends(Ops) [owise]
 rule Sends(.List) => 0
 
 syntax Int ::= Transfers(OpList) [function]
-rule Transfers([ Transaction DEXTER TOKEN 0 Transfer(From, To, T) ] ;; Ops) => Transfers(Ops) +Int T when From =/=K DEXTER andBool To ==K DEXTER
-rule Transfers([ Transaction DEXTER TOKEN 0 Transfer(From, To, T) ] ;; Ops) => Transfers(Ops) -Int T when From  ==K DEXTER
+rule Transfers([ Transaction DEXTER TOKEN 0 Transfer(From, To, T) ] ;; Ops) => Transfers(Ops) +Int T
+  when From =/=K DEXTER andBool To ==K DEXTER
+rule Transfers([ Transaction DEXTER TOKEN 0 Transfer(From, To, T) ] ;; Ops) => Transfers(Ops) -Int T
+  when From  ==K DEXTER
 rule Transfers(_ ;; Ops) => Transfers(Ops) [owise]
 rule Transfers(.List) => 0
 
@@ -371,7 +373,9 @@ We prove the claim `[inv]` for each Dexter entrypoint.
 
 ```
 claim [inv-add-liquidity]:
-<operations>  ( [ Transaction Sender DEXTER XtzDeposited AddLiquidity(Owner, _, _, _) ] #as Op => Ops' ) ;; Ops </operations>
+<operations>   ( [ Transaction Sender DEXTER XtzDeposited AddLiquidity(Owner, _, _, _) ] #as Op => Ops' )
+            ;; Ops
+</operations>
 <xtzPool>     #Mutez(X => X')   </xtzPool>
 <tokenPool>          T => T'    </tokenPool>
 <lqtTotal>           L => L'    </lqtTotal>
@@ -967,7 +971,10 @@ The following rule formulates the behaviors of the AddLiquidity() entrypoint.  I
 
 ```
 rule [add-liquidity]:
-<operations>  ( [ Transaction Sender DEXTER XtzDeposited AddLiquidity(Owner, MinLqtMinted, MaxTokensDeposited, Deadline) ] => OpsEmitted ) ;; _ </operations>
+<operations>  ( [ Transaction Sender DEXTER XtzDeposited AddLiquidity(Owner, MinLqtMinted, MaxTokensDeposited, Deadline) ]
+             => OpsEmitted
+              ) ;; _
+</operations>
 <xtzPool>     #Mutez(X => X +Int XtzDeposited)      </xtzPool>
 <tokenPool>          T => T +Int TokensDeposited    </tokenPool>
 <lqtTotal>           L => L +Int LqtMinted          </lqtTotal>
@@ -993,7 +1000,9 @@ Note that the assertion explicitly includes the condition `LqtBurned <Int L` tha
 
 ```
 rule [remove-liquidity]:
-<operations>  ( [ Transaction Sender DEXTER Amount RemoveLiquidity(To, LqtBurned, MinXtzWithdrawn, MinTokensWithdrawn, Deadline) ] => OpsEmitted ) ;; _ </operations>
+<operations>  ( [ Transaction Sender DEXTER Amount RemoveLiquidity(To, LqtBurned, MinXtzWithdrawn, MinTokensWithdrawn, Deadline) ]
+          => OpsEmitted ) ;; _
+</operations>
 <xtzPool>     #Mutez(X => X -Int XtzWithdrawn)      </xtzPool>
 <tokenPool>          T => T -Int TokensWithdrawn    </tokenPool>
 <lqtTotal>           L => L -Int LqtBurned          </lqtTotal>
@@ -1016,7 +1025,9 @@ ensures  XtzWithdrawn    ==Int LqtBurned *Int X /Int L
 
 ```
 rule [xtz-to-token]:
-<operations>  ( [ Transaction Sender DEXTER XtzSold XtzToToken(To, MinTokensBought, Deadline) ] => OpsEmitted ) ;; _ </operations>
+<operations>  ( [ Transaction Sender DEXTER XtzSold XtzToToken(To, MinTokensBought, Deadline) ] => OpsEmitted )
+           ;; _
+</operations>
 <xtzPool>     #Mutez(X => X +Int XtzSoldNetBurn) </xtzPool>
 <tokenPool>          T => T -Int TokensBought    </tokenPool>
 <lqtTotal>           L                           </lqtTotal>
@@ -1037,7 +1048,9 @@ ensures  XtzSoldNetBurn ==Int XtzSold *Int 999 /Int 1000
 
 ```
 rule [token-to-xtz]:
-<operations>  ( [ Transaction Sender DEXTER Amount TokenToXtz(To, TokensSold, MinXtzBought, Deadline) ] => OpsEmitted ) ;; _ </operations>
+<operations>  ( [ Transaction Sender DEXTER Amount TokenToXtz(To, TokensSold, MinXtzBought, Deadline) ] => OpsEmitted )
+          ;; _
+</operations>
 <xtzPool>     #Mutez(X => X -Int XtzBought)     </xtzPool>
 <tokenPool>          T => T +Int TokensSold     </tokenPool>
 <lqtTotal>           L                          </lqtTotal>
@@ -1057,12 +1070,17 @@ ensures  XtzBought ==Int 999 *Int TokensSold *Int X /Int (1000 *Int T +Int 999 *
 #### TokenToToken(OutputDexterContract, MinTokensBought, To, TokensSold, Deadline)
 
 Note that it is straightforward to prove the equivalence between the following two methods for the token-to-token exchange:
-- Alice sends only a single transaction to Dexter, `Transaction Alice DEXTER 0 TokenToToken(OutputDexterContract, MinTokensBought, To, TokensSold, Deadline)`.
-- Alice first sends a transaction to Dexter, `Transaction Alice DEXTER 0 TokenToXtz(Alice, TokensSold, 0, Deadline)`, and then immediately sends another transaction to OutputDexterContract, `Transaction Alice OutputDexterContract XtzBought XtzToToken(To, MinTokensBought, Deadline)`, where XtzBought is the amount she received from the first transaction, provided that no transactions have been made to OutputDexterContract between the two transactions.
+
+- Alice sends only a single transaction to Dexter:  
+  `transaction Alice DEXTER 0 TokenToToken(OutputDexterContract, MinTokensBought, To, TokensSold, Deadline)`.
+- Alice first sends a transaction to Dexter:  
+  `Transaction Alice DEXTER 0 TokenToXtz(Alice, TokensSold, 0, Deadline)`, and then immediately sends another transaction to OutputDexterContract, `Transaction Alice OutputDexterContract XtzBought XtzToToken(To, MinTokensBought, Deadline)`, where XtzBought is the amount she received from the first transaction, provided that no transactions have been made to OutputDexterContract between the two transactions.
 
 ```
 rule [token-to-token]:
-<operations>  ( [ Transaction Sender DEXTER Amount TokenToToken(OutputDexterContract, MinTokensBought, To, TokensSold, Deadline) ] => OpsEmitted ) ;; _ </operations>
+<operations>  ( [ Transaction Sender DEXTER Amount TokenToToken(OutputDexterContract, MinTokensBought, To, TokensSold, Deadline) ]
+             => OpsEmitted ) ;; _
+</operations>
 <xtzPool>     #Mutez(X => X -Int XtzBought)     </xtzPool>
 <tokenPool>          T => T +Int TokensSold     </tokenPool>
 <lqtTotal>           L                          </lqtTotal>
@@ -1073,9 +1091,9 @@ assert   IS_VALID(Deadline)
  andBool Amount ==Int 0
 ensures  XtzBought ==Int 999 *Int TokensSold *Int X /Int (1000 *Int T +Int 999 *Int TokensSold)
  andBool XtzBoughtNetBurn ==Int XtzBought *Int 999 /Int 1000
- andBool OpsEmitted ==K [ Transaction DEXTER TOKEN                0                            Transfer(Sender, DEXTER, TokensSold) ]
-                     ;; [ Transaction DEXTER OutputDexterContract XtzBoughtNetBurn             XtzToToken(To, MinTokensBought, Deadline) ]
-                     ;; [ Transaction DEXTER NULL                 XtzBought - XtzBoughtNetBurn Default() ]
+ andBool OpsEmitted ==K [ Transaction DEXTER TOKEN 0  Transfer(Sender, DEXTER, TokensSold) ]
+                     ;; [ Transaction DEXTER OutputDexterContract XtzBoughtNetBurn XtzToToken(To, MinTokensBought, Deadline) ]
+                     ;; [ Transaction DEXTER NULL XtzBought - XtzBoughtNetBurn Default() ]
 ```
 
 #### Default()
@@ -1143,13 +1161,15 @@ proof [pool]:
         - let LqtMintedReal       = XtzDeposited *Int L /Real X
         - TokensDeposited >=Real TokensDepositedReal
         - LqtMinted       <=Real LqtMintedReal
-        - (X' *Int T') /Real (X *Int T) ==Real ((X +Int XtzDeposited) *Int  (T +Int  TokensDeposited    )) /Real (X *Int T) by X' and T'
-                                        >=Real ((X +Int XtzDeposited) *Real (T +Real TokensDepositedReal)) /Real (X *Int T) by TokensDeposited >=Real TokensDepositedReal
-                                        ==Real (1 +Real XtzDeposited /Real X) *Real (1 +Real XtzDeposited /Real X) by simp(Real)
-                                        ==Real (1 +Real XtzDeposited /Real X) ^Real 2 by simp(Real)
-                                        ==Real ((L +Real LqtMintedReal) /Real L) ^Real 2 by simp(Real)
-                                        >=Real ((L +Real LqtMinted    ) /Real L) ^Real 2 by LqtMinted <=Real LqtMintedReal
-                                        ==Real (L' /Real L) ^Real 2 by L'
+        - (X' *Int T') /Real (X *Int T)
+             ==Real ((X +Int XtzDeposited) *Int  (T +Int  TokensDeposited    )) /Real (X *Int T) by X' and T'
+             >=Real ((X +Int XtzDeposited) *Real (T +Real TokensDepositedReal)) /Real (X *Int T)
+                         by TokensDeposited >=Real TokensDepositedReal
+             ==Real (1 +Real XtzDeposited /Real X) *Real (1 +Real XtzDeposited /Real X) by simp(Real)
+             ==Real (1 +Real XtzDeposited /Real X) ^Real 2 by simp(Real)
+             ==Real ((L +Real LqtMintedReal) /Real L) ^Real 2 by simp(Real)
+             >=Real ((L +Real LqtMinted    ) /Real L) ^Real 2 by LqtMinted <=Real LqtMintedReal
+             ==Real (L' /Real L) ^Real 2 by L'
       - case CallParams == RemoveLiquidity(_, LqtBurned, _, _, _)
         - apply [remove-liquidity]
         - unify RHS
@@ -1162,12 +1182,14 @@ proof [pool]:
         - let TokensWithdrawnReal = LqtBurned *Int T /Real L
         - XtzWithdrawn    <=Real XtzWithdrawnReal
         - TokensWithdrawn <=Real TokensWithdrawnReal
-        - (X' *Int T') /Real (X *Int T) ==Real ((X -Int  XtzWithdrawn    ) *Int  (T -Int  TokensWithdrawn    )) /Real (X *Int T) by X' and T'
-                                        >=Real ((X -Real XtzWithdrawnReal) *Real (T -Real TokensWithdrawnReal)) /Real (X *Int T) by XtzWithdrawn <=Real XtzWithdrawnReal and TokensWithdrawn <=Real TokensWithdrawnReal
-                                        ==Real (1 -Real LqtBurned /Real L) *Real (1 -Real LqtBurned /Real L) by simp(Real)
-                                        ==Real (1 -Real LqtBurned /Real L) ^Real 2 by simp(Real)
-                                        ==Real ((L -Real LqtBurned) /Real L) ^Real 2 by simp(Real)
-                                        ==Real (L' /Real L) ^Real 2 by L'
+        - (X' *Int T') /Real (X *Int T)
+            ==Real ((X -Int  XtzWithdrawn    ) *Int  (T -Int  TokensWithdrawn    )) /Real (X *Int T) by X' and T'
+            >=Real ((X -Real XtzWithdrawnReal) *Real (T -Real TokensWithdrawnReal)) /Real (X *Int T)
+                        by XtzWithdrawn <=Real XtzWithdrawnReal and TokensWithdrawn <=Real TokensWithdrawnReal
+            ==Real (1 -Real LqtBurned /Real L) *Real (1 -Real LqtBurned /Real L) by simp(Real)
+            ==Real (1 -Real LqtBurned /Real L) ^Real 2 by simp(Real)
+            ==Real ((L -Real LqtBurned) /Real L) ^Real 2 by simp(Real)
+            ==Real (L' /Real L) ^Real 2 by L'
       - case CallParams == XtzToToken _
         - apply [xtz-to-token]
         - unify RHS
@@ -1179,12 +1201,15 @@ proof [pool]:
           - TokensBought == 999 *Int XtzSoldNetBurn *Int T /Int (1000 *Int X +Int 999 *Int XtzSoldNetBurn)
         - let XtzSoldNetBurnReal == XtzSold *Int 999 /Real 1000
               TokensBoughtReal = 999 *Real XtzSoldNetBurnReal *Real T /Real (1000 *Real X +Real 999 *Real XtzSoldNetBurnReal)
-        - TokensBought <=Real TokensBoughtReal by monotonicity of the exchange rate function and the fact that the integer-version is less than the real valued version
-        - (X' *Int T') /Real (X *Int T) ==Real ((X +Int XtzSold) *Int  (T -Int  TokensBought    )) /Real (X *Int T) by X' and T'
-                                        >=Real ((X +Int XtzSold) *Real (T -Real TokensBoughtReal)) /Real (X *Int T) by TokensBought <=Real TokensBoughtReal
-                                        ==Real (X +Real XtzSold) /Real (X +Real 0.999 *Real XtzSold) by simp(Real)
-                                        >=Real 1 by simp(Real)
-                                        ==Real (L' /Real L) ^Real 2 by L' == L
+        - TokensBought <=Real TokensBoughtReal
+                    by monotonicity of the exchange rate function
+                    and the fact that the integer-version is less than the real valued version
+        - (X' *Int T') /Real (X *Int T)
+            ==Real ((X +Int XtzSold) *Int  (T -Int  TokensBought    )) /Real (X *Int T) by X' and T'
+            >=Real ((X +Int XtzSold) *Real (T -Real TokensBoughtReal)) /Real (X *Int T) by TokensBought <=Real TokensBoughtReal
+            ==Real (X +Real XtzSold) /Real (X +Real 0.999 *Real XtzSold) by simp(Real)
+            >=Real 1 by simp(Real)
+            ==Real (L' /Real L) ^Real 2 by L' == L
       - case CallParams == TokenToXtz(_, TokensSold, _, _) | CallParams == TokenToToken(_, _, _, TokensSold, _)
         - apply [token-to-xtz] or [token-to-token]
         - unify RHS
@@ -1194,11 +1219,12 @@ proof [pool]:
           - XtzBought == 999 *Int TokensSold *Int X /Int (1000 *Int T +Int 999 *Int TokensSold)
         - let XtzBoughtReal = 999 *Int TokensSold *Int X /Real (1000 *Int T +Int 999 *Int TokensSold)
         - XtzBought <=Real XtzBoughtReal
-        - (X' *Int T') /Real (X *Int T) ==Real ((X -Int  XtzBought    ) *Int  (T +Int TokensSold)) /Real (X *Int T) by X' and T'
-                                        >=Real ((X -Real XtzBoughtReal) *Real (T +Int TokensSold)) /Real (X *Int T) by XtzBought <=Real XtzBoughtReal
-                                        ==Real (T +Real TokensSold) /Real (T +Real 0.999 *Real TokensSold) by simp(Real)
-                                        >=Real 1 by simp(Real)
-                                        ==Real (L' /Real L) ^Real 2 by L' == L
+        - (X' *Int T') /Real (X *Int T)
+            ==Real ((X -Int  XtzBought    ) *Int  (T +Int TokensSold)) /Real (X *Int T) by X' and T'
+            >=Real ((X -Real XtzBoughtReal) *Real (T +Int TokensSold)) /Real (X *Int T) by XtzBought <=Real XtzBoughtReal
+            ==Real (T +Real TokensSold) /Real (T +Real 0.999 *Real TokensSold) by simp(Real)
+            >=Real 1 by simp(Real)
+            ==Real (L' /Real L) ^Real 2 by L' == L
       - case CallParams == Default _
         - apply [default]
         - unify RHS
