@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+cd "$(dirname $0)"
+
+pandoc </dev/null                                               \
+       --to latex -o lb-report.pdf                              \
+       --listings \
+       --pdf-engine=xelatex                                     \
+       -V geometry:margin=2cm                                   \
+       -V documentclass=article                                 \
+       -V classoption:titlepage                                 \
+       -V title="Formal Verification Report"                    \
+       -V subtitle="Tezos Liquidity Baking Contract"            \
+       -V thanks="Prepared for the Tezos Foundation by"         \
+       -V date="TBD"                                            \
+       -V titlegraphic=title-image.png                          \
+       -V logoimage=rv-logo.png                                 \
+       --table-of-contents  -V toc-own-page=true                \
+       --number-sections                                        \
+       --template template.tex                                  \
+       README.md lb-properties.md ../lqt/lqt-properties.md
