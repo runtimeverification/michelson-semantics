@@ -180,12 +180,9 @@ ensures  D' <Int D impliesBool (         Op ==K Transaction DEXTER TOKEN 0 Trans
  andBool D' >Int D impliesBool Op ==K Transaction _ TOKEN 0 Transfer(_, DEXTER, _)
 ```
 
-```
-proposition [only-lqt-mint-burn]:
-<operations> (Op => _) ;; _ </operations>
-<lqt.totalSupply> S => S' </lqt.totalSupply>
-ensures  S' =/=Int S impliesBool ( Op ==K Transaction DEXTER LQT 0 MintOrBurn(_, Value) andBool S' ==Int S +Int Value )
-```
+For the LQT Token contract, we require one safety property and another liveness property
+that together state that the total number of liquidity shares may be updated if and only if
+the LB Dexter contract calls the `%mintOrBurn` entrypoint. Both these are proved in [lqt-properties.md](../lqt/lqt-properties.md).
 
 For the other unknown external contract calls, the only functions Dexter can call are Default() and XtzToToken().  We assume that such external calls can affect only the XTZ balance of Dexter (even if the target contract is the token or liquidity contract).  The following rule `[send]` formulates that.
 

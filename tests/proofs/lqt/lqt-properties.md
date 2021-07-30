@@ -1,4 +1,4 @@
-# Lqt Token Safety Property Proofs
+# LQT Token Proofs
 
 In this document, we prove the properties of the Lqt Token contract needed
 to verify the Dexter system. These properties are:
