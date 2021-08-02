@@ -25,3 +25,5 @@ run-tezos.timestamp
 *.swp
 template.tz
 .tezos-ut*
+
+tests/proofs/liquidity-baking/lb-report.pdf
