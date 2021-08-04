@@ -826,16 +826,6 @@ module OUTPUT-COMPARE
   // ----------------------------------------------------------------------------------------
   rule #OtherContractsMapToKMap( .OtherContractsMapEntryList ) => .Map
   rule #OtherContractsMapToKMap( Contract A T ; Rs )
-    => #OtherContractsMapToKMap(A, #BuildAnnotationMap(.FieldAnnotation, T), Rs)
-
-  rule #OtherContractsMapToKMap(A, TypeMap, Rs) =>
-       #BuildOtherContractsMap(#Address(A), TypeMap) #OtherContractsMapToKMap(Rs)
-
-  syntax Map ::= #BuildOtherContractsMap(Address, Map) [function]
-  // ------------------------------------------------------------
-  rule #BuildOtherContractsMap(_, .Map) => .Map
-  rule #BuildOtherContractsMap(A, FA:FieldAnnotation |-> T:TypeName TypeMap:Map)
-    => A . FA |-> T #BuildOtherContractsMap(A, TypeMap)
-
+    => #Address(A) |-> #BuildAnnotationMap(.FieldAnnotation, T) #OtherContractsMapToKMap(Rs)
 endmodule
 ```
