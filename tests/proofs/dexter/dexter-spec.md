@@ -162,6 +162,7 @@ module DEXTER-ADDLIQUIDITY-NEGATIVE-SPEC
         <lqtTotal> OldLqt </lqtTotal>
         <xtzPool> #Mutez(XtzAmount) </xtzPool>
         <tokenPool> TokenAmount </tokenPool>
+        <knownaddrs> KnownAddresses </knownaddrs>
     requires notBool IsFA2
      andBool ( IsUpdating
         orBool CurrentTime >=Int Deadline
@@ -182,6 +183,7 @@ module DEXTER-ADDLIQUIDITY-NEGATIVE-SPEC
         <lqtTotal> OldLqt </lqtTotal>
         <xtzPool> #Mutez(XtzAmount) </xtzPool>
         <tokenPool> TokenAmount </tokenPool>
+        <knownaddrs> KnownAddresses </knownaddrs>
     requires IsFA2
      andBool ( IsUpdating
         orBool CurrentTime >=Int Deadline
