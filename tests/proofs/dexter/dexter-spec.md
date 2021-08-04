@@ -171,6 +171,9 @@ module DEXTER-ADDLIQUIDITY-NEGATIVE-SPEC
         orBool MinLqtMinted >Int (Amount *Int OldLqt) /Int XtzAmount
              )
 
+     andBool #EntrypointExists(KnownAddresses, TokenAddress,   %transfer, #TokenTransferType(IsFA2))
+     andBool #EntrypointExists(KnownAddresses,   LqtAddress, %mintOrBurn, pair int %quantity .AnnotationList address %target .AnnotationList)
+
   claim <k> #runProof(IsFA2, AddLiquidity(_Owner, MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_:FailedStack </stack>
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
@@ -187,6 +190,9 @@ module DEXTER-ADDLIQUIDITY-NEGATIVE-SPEC
         orBool MinLqtMinted >Int (Amount *Int OldLqt) /Int XtzAmount
         orBool XtzAmount ==Int 0
              )
+
+     andBool #EntrypointExists(KnownAddresses, TokenAddress,   %transfer, #TokenTransferType(IsFA2))
+     andBool #EntrypointExists(KnownAddresses,   LqtAddress, %mintOrBurn, pair int %quantity .AnnotationList address %target .AnnotationList)
 ```
 
 TODO: Deal with the case when the token contract or the liquidity token contract don't exist or have the wrong type.
