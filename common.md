@@ -588,6 +588,8 @@ a contract lookup.
   syntax TypeName ::= #LookupEntrypoint(Map, Entrypoint) [function]
   // --------------------------------------------------------------
   rule #LookupEntrypoint(Entrypoints, A . FA) => { { Entrypoints [ A ] }:>Map [ FA ] }:>TypeName
+    requires A in_keys(Entrypoints)
+     andBool FA in_keys( { Entrypoints [ A ] }:>Map )
 ```
 
 We extract a `big_map` by index from the bigmaps map. Note that these have
