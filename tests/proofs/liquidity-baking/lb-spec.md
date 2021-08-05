@@ -70,8 +70,7 @@ We have one case for when `#ceildiv` results in an upwards rounding, and one for
         <lqtAddress> LqtAddress:Address </lqtAddress>
         <senderaddr> Sender </senderaddr>
         <nonce> #Nonce(Nonce => Nonce +Int 2) </nonce>
-        <knownaddrs> KnownAddresses </knownaddrs>
-        <paramtype> LocalEntrypoints </paramtype>
+        <contracts> Accounts </contracts>
         <operations> _
                   => [ Transfer_tokens #TokenTransferData(Sender, SelfAddress, #ceildiv(Amount *Int TokenAmount, XtzAmount)) #Mutez(0) TokenAddress . %transfer    Nonce ] ;;
                      [ Transfer_tokens Pair ((Amount *Int OldLqt) /Int XtzAmount) Owner                                      #Mutez(0) LqtAddress   . %mintOrBurn (Nonce +Int 1) ] ;;
@@ -83,9 +82,9 @@ We have one case for when `#ceildiv` results in an upwards rounding, and one for
      andBool MinLqtMinted <=Int (Amount *Int OldLqt) /Int XtzAmount
      andBool #IsLegalMutezValue(Amount +Int XtzAmount)
 
-     andBool #EntrypointExists(KnownAddresses, TokenAddress,   %transfer, #TokenTransferType())
-     andBool #EntrypointExists(KnownAddresses,   LqtAddress, %mintOrBurn, pair int %quantity .AnnotationList address %target .AnnotationList)
-     andBool #LocalEntrypointExists(LocalEntrypoints, %default, unit)
+     andBool #EntrypointExists(Accounts, TokenAddress,   %transfer, #TokenTransferType())
+     andBool #EntrypointExists(Accounts,   LqtAddress, %mintOrBurn, pair int %quantity .AnnotationList address %target .AnnotationList)
+     andBool #EntrypointExists(Accounts,  SelfAddress,    %default, unit)
 ```
 
 ```k
@@ -155,8 +154,7 @@ module LIQUIDITY-BAKING-REMOVELIQUIDITY-POSITIVE-SPEC
         <lqtAddress> LqtAddress:Address </lqtAddress>
         <senderaddr> Sender </senderaddr>
         <nonce> #Nonce(Nonce => Nonce +Int 3) </nonce>
-        <knownaddrs> KnownAddresses </knownaddrs>
-        <paramtype> LocalEntrypoints </paramtype>
+        <contracts> Accounts </contracts>
         <operations> _
                   => [ Transfer_tokens (Pair (0 -Int LqtBurned) Sender)                                              #Mutez(0)                                      LqtAddress . %mintOrBurn  Nonce         ] ;;
                      [ Transfer_tokens #TokenTransferData(SelfAddress, To, (LqtBurned *Int TokenAmount) /Int OldLqt) #Mutez(0)                                      TokenAddress . %transfer (Nonce +Int 1) ] ;;
@@ -172,10 +170,10 @@ module LIQUIDITY-BAKING-REMOVELIQUIDITY-POSITIVE-SPEC
      andBool TokenAmount -Int (LqtBurned *Int TokenAmount) /Int OldLqt >=Int 0
      andBool #IsLegalMutezValue(XtzAmount   -Int (LqtBurned *Int   XtzAmount) /Int OldLqt)
 
-     andBool #EntrypointExists(KnownAddresses, TokenAddress,   %transfer, #TokenTransferType())
-     andBool #EntrypointExists(KnownAddresses,   LqtAddress, %mintOrBurn, pair int %quantity .AnnotationList address %target .AnnotationList)
-     andBool #EntrypointExists(KnownAddresses,           To,    %default, #Type(unit))
-     andBool #LocalEntrypointExists(LocalEntrypoints, %default, unit)
+     andBool #EntrypointExists(Accounts, TokenAddress,   %transfer, #TokenTransferType())
+     andBool #EntrypointExists(Accounts,   LqtAddress, %mintOrBurn, pair int %quantity .AnnotationList address %target .AnnotationList)
+     andBool #EntrypointExists(Accounts,           To,    %default, #Type(unit))
+     andBool #EntrypointExists(Accounts,  SelfAddress,    %default, unit)
 ```
 
 ```k
@@ -197,8 +195,7 @@ module LIQUIDITY-BAKING-REMOVELIQUIDITY-NEGATIVE-SPEC
         <tokenAddress> TokenAddress:Address </tokenAddress>
         <lqtAddress> LqtAddress:Address </lqtAddress>
         <senderaddr> Sender </senderaddr>
-        <knownaddrs> KnownAddresses </knownaddrs>
-        <paramtype> LocalEntrypoints </paramtype>
+        <contracts> Accounts </contracts>
         <nonce> _ => ?_ </nonce>
     requires notBool( CurrentTime <Int Deadline
               andBool OldLqt >Int 0
@@ -210,10 +207,10 @@ module LIQUIDITY-BAKING-REMOVELIQUIDITY-NEGATIVE-SPEC
               andBool #IsLegalMutezValue(XtzAmount   -Int (LqtBurned *Int   XtzAmount) /Int OldLqt)
                     )
 
-     andBool #EntrypointExists(KnownAddresses, TokenAddress,   %transfer, #TokenTransferType())
-     andBool #EntrypointExists(KnownAddresses,   LqtAddress, %mintOrBurn, pair int %quantity .AnnotationList address %target .AnnotationList)
-     andBool #EntrypointExists(KnownAddresses,           To,    %default, #Type(unit))
-     andBool #LocalEntrypointExists(LocalEntrypoints, %default, unit)
+     andBool #EntrypointExists(Accounts, TokenAddress,   %transfer, #TokenTransferType())
+     andBool #EntrypointExists(Accounts,   LqtAddress, %mintOrBurn, pair int %quantity .AnnotationList address %target .AnnotationList)
+     andBool #EntrypointExists(Accounts,           To,    %default, #Type(unit))
+     andBool #EntrypointExists(Accounts, SelfAddress,     %default, unit)
 endmodule
 ```
 
@@ -282,10 +279,9 @@ even though the final mutez value that is actually used is smaller than or equal
         <tokenPool> TokenPool:Int => TokenPool +Int TokensSold </tokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <senderaddr> Sender </senderaddr>
-        <paramtype> LocalEntrypoints </paramtype>
         <currentContract> SelfAddress:Address </currentContract>
         <nonce> #Nonce(N => N +Int 3) </nonce>
-        <knownaddrs> KnownAddresses </knownaddrs>
+        <contracts> Accounts </contracts>
         <operations> _
                   => [ Transfer_tokens #TokenTransferData(Sender, SelfAddress, TokensSold) #Mutez(0)                                                               TokenAddress . %transfer N        ]
                   ;; [ Transfer_tokens Unit                                                #Mutez(#XtzNetBurn(#CurrencyBought(XtzPool, TokenPool, TokensSold)))    To           . %default (N +Int 1)]
@@ -306,10 +302,10 @@ even though the final mutez value that is actually used is smaller than or equal
       andBool #CurrencyBought(XtzPool, TokenPool, TokensSold) <=Int XtzPool
       andBool #IsLegalMutezValue(XtzPool -Int #CurrencyBought(XtzPool, TokenPool, TokensSold))
 
-      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType())
-      andBool #EntrypointExists(KnownAddresses, To,           %default,  #Type(unit))
-      andBool #EntrypointExists(KnownAddresses, null_address, %default,  #Type(unit))
-      andBool #LocalEntrypointExists(LocalEntrypoints, %default, unit)
+      andBool #EntrypointExists(Accounts, TokenAddress, %transfer, #TokenTransferType())
+      andBool #EntrypointExists(Accounts, To,            %default,  #Type(unit))
+      andBool #EntrypointExists(Accounts, null_address,  %default,  #Type(unit))
+      andBool #EntrypointExists(Accounts, SelfAddress,   %default, unit)
 endmodule
 ```
 
@@ -323,16 +319,15 @@ module LIQUIDITY-BAKING-TOKENTOXTZ-NEGATIVE-1-SPEC
         <mynow> #Timestamp(CurrentTime) </mynow>
         <myamount> #Mutez(Amount) </myamount>
         <tokenAddress> TokenAddress:Address </tokenAddress>
-        <paramtype> LocalEntrypoints </paramtype>
-        <knownaddrs> KnownAddresses </knownaddrs>
+        <contracts> Accounts </contracts>
      requires notBool ( Amount ==Int 0
                 andBool CurrentTime <Int Deadline
                       )
 
-      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType())
-      andBool #EntrypointExists(KnownAddresses, To,           %default,  #Type(unit))
-      andBool #EntrypointExists(KnownAddresses, null_address, %default,  #Type(unit))
-      andBool #LocalEntrypointExists(LocalEntrypoints, %default, unit)
+      andBool #EntrypointExists(Accounts, TokenAddress, %transfer, #TokenTransferType())
+      andBool #EntrypointExists(Accounts, To,            %default,  #Type(unit))
+      andBool #EntrypointExists(Accounts, null_address,  %default,  #Type(unit))
+      andBool #EntrypointExists(Accounts, SelfAddress,   %default, unit)
 endmodule
 ```
 
@@ -346,16 +341,15 @@ module LIQUIDITY-BAKING-TOKENTOXTZ-NEGATIVE-2-SPEC
         <tokenAddress> TokenAddress:Address </tokenAddress>
         <xtzPool> #Mutez(_XtzPool) </xtzPool>
         <tokenPool> TokenPool </tokenPool>
-        <paramtype> LocalEntrypoints </paramtype>
-        <knownaddrs> KnownAddresses </knownaddrs>
+        <contracts> Accounts </contracts>
      requires Amount ==Int 0
       andBool CurrentTime <Int Deadline
       andBool TokenPool ==Int 0 andBool TokensSold ==Int 0
 
-      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType())
-      andBool #EntrypointExists(KnownAddresses, To,           %default,  #Type(unit))
-      andBool #EntrypointExists(KnownAddresses, null_address, %default,  #Type(unit))
-      andBool #LocalEntrypointExists(LocalEntrypoints, %default, unit)
+      andBool #EntrypointExists(Accounts, TokenAddress, %transfer, #TokenTransferType())
+      andBool #EntrypointExists(Accounts, To,            %default, #Type(unit))
+      andBool #EntrypointExists(Accounts, null_address,  %default, #Type(unit))
+      andBool #EntrypointExists(Accounts, SelfAddress,   %default, unit)
 endmodule
 ```
 
@@ -369,8 +363,7 @@ module LIQUIDITY-BAKING-TOKENTOXTZ-NEGATIVE-3-SPEC
         <tokenAddress> TokenAddress:Address </tokenAddress>
         <xtzPool> #Mutez(XtzPool) </xtzPool>
         <tokenPool> TokenPool </tokenPool>
-        <paramtype> LocalEntrypoints </paramtype>
-        <knownaddrs> KnownAddresses </knownaddrs>
+        <contracts> Accounts </contracts>
         <nonce> #Nonce(_ => ?_) </nonce>
      requires Amount ==Int 0
       andBool CurrentTime <Int Deadline
@@ -382,10 +375,10 @@ module LIQUIDITY-BAKING-TOKENTOXTZ-NEGATIVE-3-SPEC
                andBool #XtzNetBurn(#CurrencyBought(XtzPool, TokenPool, TokensSold)) >=Int MinXtzBought
                      )
 
-      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType())
-      andBool #EntrypointExists(KnownAddresses, To,           %default,  #Type(unit))
-      andBool #EntrypointExists(KnownAddresses, null_address, %default,  #Type(unit))
-      andBool #LocalEntrypointExists(LocalEntrypoints, %default, unit)
+      andBool #EntrypointExists(Accounts, TokenAddress, %transfer, #TokenTransferType())
+      andBool #EntrypointExists(Accounts, To,           %default,  #Type(unit))
+      andBool #EntrypointExists(Accounts, null_address, %default,  #Type(unit))
+      andBool #EntrypointExists(Accounts, SelfAddress,          %default, unit)
 endmodule
 ```
 
@@ -399,8 +392,7 @@ module LIQUIDITY-BAKING-TOKENTOXTZ-NEGATIVE-4-SPEC
         <tokenAddress> TokenAddress:Address </tokenAddress>
         <xtzPool> #Mutez(XtzPool) </xtzPool>
         <tokenPool> TokenPool </tokenPool>
-        <paramtype> LocalEntrypoints </paramtype>
-        <knownaddrs> KnownAddresses </knownaddrs>
+        <contracts> Accounts </contracts>
         <nonce> #Nonce(_ => ?_) </nonce>
      requires Amount ==Int 0
       andBool CurrentTime <Int Deadline
@@ -415,10 +407,10 @@ module LIQUIDITY-BAKING-TOKENTOXTZ-NEGATIVE-4-SPEC
                andBool #IsLegalMutezValue(XtzPool -Int #CurrencyBought(XtzPool, TokenPool, TokensSold))
                      )
 
-      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType())
-      andBool #EntrypointExists(KnownAddresses, To,           %default,  #Type(unit))
-      andBool #EntrypointExists(KnownAddresses, null_address, %default,  #Type(unit))
-      andBool #LocalEntrypointExists(LocalEntrypoints, %default, unit)
+      andBool #EntrypointExists(Accounts, TokenAddress, %transfer, #TokenTransferType())
+      andBool #EntrypointExists(Accounts, To,           %default,  #Type(unit))
+      andBool #EntrypointExists(Accounts, null_address, %default,  #Type(unit))
+      andBool #EntrypointExists(Accounts, SelfAddress,  %default,  unit)
 endmodule
 ```
 
@@ -435,7 +427,6 @@ module LIQUIDITY-BAKING-XTZTOTOKEN-POSITIVE-SPEC
   imports LIQUIDITY-BAKING-VERIFICATION
   claim <k> #runProof(XtzToToken(To, MinTokensBought, #Timestamp(Deadline))) => . </k>
         <stack> .Stack </stack>
-        <paramtype> LocalEntrypoints </paramtype>
         <myamount> #Mutez(Amount) </myamount>
         <tokenAddress> TokenAddress </tokenAddress>
         <xtzPool> #Mutez(XtzPool => XtzPool +Int #XtzNetBurn(Amount)) </xtzPool>
@@ -443,7 +434,7 @@ module LIQUIDITY-BAKING-XTZTOTOKEN-POSITIVE-SPEC
         <mynow> #Timestamp(CurrentTime) </mynow>
         <currentContract> SelfAddress </currentContract>
         <nonce> #Nonce(N => N +Int 2) </nonce>
-        <knownaddrs> KnownAddresses </knownaddrs>
+        <contracts> Accounts </contracts>
         <operations> _
                   => [ Transfer_tokens #TokenTransferData(SelfAddress, To, #CurrencyBought(TokenPool, XtzPool, #XtzNetBurn(Amount))) #Mutez(0)                              TokenAddress . %transfer N        ]
                   ;; [ Transfer_tokens Unit                                                                                          #Mutez(absInt(#XtzBurnAmount(Amount))) null_address . %default (N +Int 1)]
@@ -458,9 +449,9 @@ module LIQUIDITY-BAKING-XTZTOTOKEN-POSITIVE-SPEC
      andBool #IsLegalMutezValue(#XtzNetBurn(Amount))
      // andBool #IsLegalMutezValue(#XtzBurnAmount(Amount)) // this check can be inferred by the SMT solver so we don't explicitly need it
 
-     andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType())
-     andBool #EntrypointExists(KnownAddresses, null_address, %default,  #Type(unit))
-     andBool #LocalEntrypointExists(LocalEntrypoints, %default, unit)
+     andBool #EntrypointExists(Accounts, TokenAddress, %transfer, #TokenTransferType())
+     andBool #EntrypointExists(Accounts, null_address,  %default,  #Type(unit))
+     andBool #EntrypointExists(Accounts, SelfAddress,   %default, unit)
 endmodule
 ```
 
@@ -469,13 +460,12 @@ module LIQUIDITY-BAKING-XTZTOTOKEN-NEGATIVE-SPEC
   imports LIQUIDITY-BAKING-VERIFICATION
   claim <k> #runProof(XtzToToken(_To, MinTokensBought, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_:FailedStack </stack>
-        <paramtype> LocalEntrypoints </paramtype>
         <myamount> #Mutez(Amount) </myamount>
         <tokenAddress> TokenAddress </tokenAddress>
         <xtzPool> #Mutez(XtzPool) </xtzPool>
         <tokenPool> TokenPool </tokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
-        <knownaddrs> KnownAddresses </knownaddrs>
+        <contracts> Accounts </contracts>
         <nonce> #Nonce(_:Int => ?_:Int) </nonce>
         <operations> _ </operations>
     requires notBool ( CurrentTime <Int Deadline
@@ -488,9 +478,9 @@ module LIQUIDITY-BAKING-XTZTOTOKEN-NEGATIVE-SPEC
                // andBool #IsLegalMutezValue(#XtzBurnAmount(Amount))
                      )
 
-     andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType())
-     andBool #EntrypointExists(KnownAddresses, null_address, %default,  #Type(unit))
-     andBool #LocalEntrypointExists(LocalEntrypoints, %default, unit)
+     andBool #EntrypointExists(Accounts, TokenAddress, %transfer, #TokenTransferType())
+     andBool #EntrypointExists(Accounts, null_address, %default,  #Type(unit))
+     andBool #EntrypointExists(Accounts, SelfAddress,           %default, unit)
 endmodule
 ```
 
@@ -519,9 +509,8 @@ A buyer sends tokens to the Liquidity Baking contract, converts its to xtz, and 
         <mynow> #Timestamp(CurrentTime:Int) </mynow>
         <senderaddr> Sender </senderaddr>
         <currentContract> SelfAddress </currentContract>
-        <paramtype> LocalEntrypoints </paramtype>
         <nonce> #Nonce(N => N +Int 3) </nonce>
-        <knownaddrs> KnownAddresses </knownaddrs>
+        <contracts> Accounts </contracts>
         <operations> _
                   => [ Transfer_tokens #TokenTransferData(Sender, SelfAddress, TokensSold) #Mutez(0)                                                               TokenAddress         . %transfer    N        ]
                   ;; [ Transfer_tokens Pair To Pair MinTokensBought #Timestamp(Deadline)   #Mutez(#XtzNetBurn(#CurrencyBought(XtzPool, TokenPool, TokensSold)))    OutputDexterContract . %xtzToToken (N +Int 1)]
@@ -543,10 +532,10 @@ A buyer sends tokens to the Liquidity Baking contract, converts its to xtz, and 
       andBool #CurrencyBought(XtzPool, TokenPool, TokensSold) <=Int XtzPool
       andBool #IsLegalMutezValue(XtzPool -Int #CurrencyBought(XtzPool, TokenPool, TokensSold))
 
-      andBool #EntrypointExists(KnownAddresses, TokenAddress,         %transfer,   #TokenTransferType())
-      andBool #EntrypointExists(KnownAddresses, OutputDexterContract, %xtzToToken, #Type(pair address pair nat timestamp))
-      andBool #EntrypointExists(KnownAddresses, null_address,         %default,    #Type(unit))
-      andBool #LocalEntrypointExists(LocalEntrypoints, %default, unit)
+      andBool #EntrypointExists(Accounts, TokenAddress,         %transfer,   #TokenTransferType())
+      andBool #EntrypointExists(Accounts, OutputDexterContract, %xtzToToken, #Type(pair address pair nat timestamp))
+      andBool #EntrypointExists(Accounts, null_address,         %default,    #Type(unit))
+      andBool #EntrypointExists(Accounts, SelfAddress,          %default,    unit)
 ```
 
 ```k
@@ -568,9 +557,8 @@ module LIQUIDITY-BAKING-TOKENTOTOKEN-NEGATIVE-SPEC
         <mynow> #Timestamp(CurrentTime:Int) </mynow>
         <senderaddr> _Sender </senderaddr>
         <currentContract> _SelfAddress </currentContract>
-        <paramtype> LocalEntrypoints </paramtype>
         <nonce> #Nonce(_:Int => ?_:Int) </nonce>
-        <knownaddrs> KnownAddresses </knownaddrs>
+        <contracts> Accounts </contracts>
         <operations> _ </operations>
      requires notBool ( Amount ==Int 0
                         andBool CurrentTime <Int Deadline
@@ -584,10 +572,10 @@ module LIQUIDITY-BAKING-TOKENTOTOKEN-NEGATIVE-SPEC
                         andBool #CurrencyBought(XtzPool, TokenPool, TokensSold) <=Int XtzPool
                         andBool #IsLegalMutezValue(XtzPool -Int #CurrencyBought(XtzPool, TokenPool, TokensSold))
                       )
-      andBool #EntrypointExists(KnownAddresses, TokenAddress,         %transfer,   #TokenTransferType())
-      andBool #EntrypointExists(KnownAddresses, OutputDexterContract, %xtzToToken, #Type(pair address pair nat timestamp))
-      andBool #EntrypointExists(KnownAddresses, null_address,         %default,    #Type(unit))
-      andBool #LocalEntrypointExists(LocalEntrypoints, %default, unit)
+      andBool #EntrypointExists(Accounts, TokenAddress,         %transfer,   #TokenTransferType())
+      andBool #EntrypointExists(Accounts, OutputDexterContract, %xtzToToken, #Type(pair address pair nat timestamp))
+      andBool #EntrypointExists(Accounts, null_address,         %default,    #Type(unit))
+      andBool #EntrypointExists(Accounts, SelfAddress,          %default,    #Type(unit))
 ```
 
 ```k
