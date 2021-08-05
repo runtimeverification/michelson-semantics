@@ -1674,14 +1674,18 @@ to the given addresses/key hashes.
 
 ```k
   syntax Map ::= #GetEntrypoints(Address, Map) [function, functional]
-  // --------------------------------------------------------------------------
+  // ----------------------------------------------------------------
   rule #GetEntrypoints( A, A |-> #Account(... entrypoints : EntrypointMap) _:Map) => EntrypointMap
-  rule #GetEntrypoints(_A, _) => .Map [owise]
+  rule #GetEntrypoints(A, ContractMap) => .Map requires notBool A in_keys(ContractMap)
 ```
 
 ```k
   syntax Instruction ::= CONTRACT(FieldAnnotation, TypeName, Map)
-  rule <k> CONTRACT AL:AnnotationList T:Type => CONTRACT(#GetFieldAnnot(AL), #Name(T), #GetEntrypoints(A, ContractMap)) ... </k>
+  rule <k> CONTRACT AL:AnnotationList T:Type
+        => #Assume(A in_keys(ContractMap) impliesBool ContractMap [ A ] ==K #Account(?_,?_,?_,?_,?_))
+        ~> CONTRACT(#GetFieldAnnot(AL), #Name(T), #GetEntrypoints(A, ContractMap))
+           ...
+       </k>
        <stack> [address A:Address] ; _SS </stack>
        <contracts> ContractMap </contracts>
 
@@ -1725,7 +1729,12 @@ These instructions push blockchain state on the stack.
        <senderaddr> A </senderaddr>
 
   syntax Instruction ::= SELF(FieldAnnotation)
-  rule <k> SELF AL:AnnotationList => SELF(#GetFieldAnnot(AL)) ... </k>
+  rule <k> SELF AL:AnnotationList => #Assume(Account ==K #Account(?_,?_,?_,?_,?_)) ~> SELF(#GetFieldAnnot(AL)) ... </k>
+       <currentContract> A </currentContract>
+       <contracts>
+          A |-> Account
+          ...
+       </contracts>
 
   rule <k> SELF(FA) => .K ... </k>
        <stack> SS
