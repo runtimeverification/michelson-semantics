@@ -430,16 +430,11 @@ If the contract execution fails, storage is not updated.
 ```k
   syntax Bool ::= #EntrypointExists(Map, Address, FieldAnnotation, Type)
  // --------------------------------------------------------------------
-  rule #EntrypointExists(KnownAddresses, Addr, FieldAnnot, EntrypointType)
-    => Addr . FieldAnnot  in_keys(KnownAddresses) andBool
-       KnownAddresses[Addr . FieldAnnot] ==K #Name(EntrypointType)
-    [macro]
-
-  syntax Bool ::= #LocalEntrypointExists(Map, FieldAnnotation, Type)
- // ----------------------------------------------------------------
-  rule #LocalEntrypointExists(LocalEntrypoints, FieldAnnot, EntrypointType)
-    => FieldAnnot in_keys(LocalEntrypoints) andBool
-       LocalEntrypoints[FieldAnnot] ==K #Name(EntrypointType)
+  rule #EntrypointExists(Accounts, Address, FieldAnnot, EntrypointType)
+    => Address in_keys(Accounts) andBool
+       isAccountState( Accounts [ Address ] ) andBool
+       FieldAnnot in_keys(entrypoints({ Accounts [ Address ] }:>AccountState)) andBool
+       entrypoints({ Accounts [ Address ] }:>AccountState) [ FieldAnnot ] ==K #Name(EntrypointType)
     [macro]
 ```
 

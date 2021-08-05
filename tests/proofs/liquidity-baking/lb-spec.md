@@ -62,7 +62,7 @@ We have one case for when `#ceildiv` results in an upwards rounding, and one for
         <stack> .Stack </stack>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <myamount> #Mutez(Amount) </myamount>
-        <myaddr> SelfAddress </myaddr>
+        <currentContract> SelfAddress </currentContract>
         <lqtTotal> OldLqt => OldLqt +Int (Amount *Int OldLqt) /Int XtzAmount </lqtTotal>
         <xtzPool> #Mutez(XtzAmount => XtzAmount +Int Amount) </xtzPool>
         <tokenPool> TokenAmount => TokenAmount +Int #ceildiv(Amount *Int TokenAmount, XtzAmount) </tokenPool>
@@ -147,7 +147,7 @@ module LIQUIDITY-BAKING-REMOVELIQUIDITY-POSITIVE-SPEC
         <stack> .Stack </stack>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <myamount> #Mutez(0) </myamount>
-        <myaddr> SelfAddress </myaddr>
+        <currentContract> SelfAddress </currentContract>
         <lqtTotal> OldLqt => OldLqt -Int LqtBurned </lqtTotal>
         <xtzPool> #Mutez(XtzAmount => XtzAmount -Int (LqtBurned *Int XtzAmount) /Int OldLqt) </xtzPool>
         <tokenPool> TokenAmount => TokenAmount -Int (LqtBurned *Int TokenAmount) /Int OldLqt </tokenPool>
@@ -190,7 +190,7 @@ module LIQUIDITY-BAKING-REMOVELIQUIDITY-NEGATIVE-SPEC
         <stack> .Stack => ?_:FailedStack </stack>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <myamount> #Mutez(0) </myamount>
-        <myaddr> SelfAddress </myaddr>
+        <currentContract> SelfAddress </currentContract>
         <lqtTotal> OldLqt </lqtTotal>
         <xtzPool> #Mutez(XtzAmount) </xtzPool>
         <tokenPool> TokenAmount </tokenPool>
@@ -283,7 +283,7 @@ even though the final mutez value that is actually used is smaller than or equal
         <mynow> #Timestamp(CurrentTime) </mynow>
         <senderaddr> Sender </senderaddr>
         <paramtype> LocalEntrypoints </paramtype>
-        <myaddr> SelfAddress:Address </myaddr>
+        <currentContract> SelfAddress:Address </currentContract>
         <nonce> #Nonce(N => N +Int 3) </nonce>
         <knownaddrs> KnownAddresses </knownaddrs>
         <operations> _
@@ -441,7 +441,7 @@ module LIQUIDITY-BAKING-XTZTOTOKEN-POSITIVE-SPEC
         <xtzPool> #Mutez(XtzPool => XtzPool +Int #XtzNetBurn(Amount)) </xtzPool>
         <tokenPool> TokenPool => TokenPool -Int #CurrencyBought(TokenPool, XtzPool, #XtzNetBurn(Amount)) </tokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
-        <myaddr> SelfAddress </myaddr>
+        <currentContract> SelfAddress </currentContract>
         <nonce> #Nonce(N => N +Int 2) </nonce>
         <knownaddrs> KnownAddresses </knownaddrs>
         <operations> _
@@ -518,7 +518,7 @@ A buyer sends tokens to the Liquidity Baking contract, converts its to xtz, and 
         <tokenPool> TokenPool => TokenPool +Int TokensSold </tokenPool>
         <mynow> #Timestamp(CurrentTime:Int) </mynow>
         <senderaddr> Sender </senderaddr>
-        <myaddr> SelfAddress </myaddr>
+        <currentContract> SelfAddress </currentContract>
         <paramtype> LocalEntrypoints </paramtype>
         <nonce> #Nonce(N => N +Int 3) </nonce>
         <knownaddrs> KnownAddresses </knownaddrs>
@@ -567,7 +567,7 @@ module LIQUIDITY-BAKING-TOKENTOTOKEN-NEGATIVE-SPEC
         <tokenPool> TokenPool </tokenPool>
         <mynow> #Timestamp(CurrentTime:Int) </mynow>
         <senderaddr> _Sender </senderaddr>
-        <myaddr> _SelfAddress </myaddr>
+        <currentContract> _SelfAddress </currentContract>
         <paramtype> LocalEntrypoints </paramtype>
         <nonce> #Nonce(_:Int => ?_:Int) </nonce>
         <knownaddrs> KnownAddresses </knownaddrs>
