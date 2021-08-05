@@ -55,6 +55,19 @@ cells inside a topmost cell, which we call `<michelsonTop>`.
                                    script       : MaybeData)
 ```
 
+This macro is convenient for writing proofs.
+
+```k
+  syntax Bool ::= #EntrypointExists(Map, Address, FieldAnnotation, Type)
+ // --------------------------------------------------------------------
+  rule #EntrypointExists(Accounts, Address, FieldAnnot, EntrypointType)
+    => Address in_keys(Accounts) andBool
+       isAccountState( Accounts [ Address ] ) andBool
+       FieldAnnot in_keys(entrypoints({ Accounts [ Address ] }:>AccountState)) andBool
+       entrypoints({ Accounts [ Address ] }:>AccountState) [ FieldAnnot ] ==K #Name(EntrypointType)
+    [macro]
+```
+
 ```k
   configuration
     <michelsonTop>
