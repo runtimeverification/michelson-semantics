@@ -1729,11 +1729,10 @@ These instructions push blockchain state on the stack.
        <senderaddr> A </senderaddr>
 
   syntax Instruction ::= SELF(FieldAnnotation)
-  rule <k> SELF AL:AnnotationList => #Assume(Account ==K #Account(?_,?_,?_,?_,?_)) ~> SELF(#GetFieldAnnot(AL)) ... </k>
+  rule <k> SELF AL:AnnotationList => #Assume(Contracts[A] ==K #Account(?_,?_,?_,?_,?_)) ~> SELF(#GetFieldAnnot(AL)) ... </k>
        <currentContract> A </currentContract>
        <contracts>
-          A |-> Account
-          ...
+          Contracts
        </contracts>
 
   rule <k> SELF(FA) => .K ... </k>
