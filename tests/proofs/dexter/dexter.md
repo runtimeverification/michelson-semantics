@@ -605,17 +605,6 @@ If the contract execution fails, storage is not updated.
     [simplification]
 ```
 
-```k
-  syntax Bool ::= #EntrypointExists(Map, Address, FieldAnnotation, Type)
- // --------------------------------------------------------------------
-  rule #EntrypointExists(Accounts, Address, FieldAnnot, EntrypointType)
-    => Address in_keys(Accounts) andBool
-       isAccountState( Accounts [ Address ] ) andBool
-       FieldAnnot in_keys(entrypoints({ Accounts [ Address ] }:>AccountState)) andBool
-       entrypoints({ Accounts [ Address ] }:>AccountState) [ FieldAnnot ] ==K #Name(EntrypointType)
-    [macro]
-```
-
 ### Avoiding Interpreting Functions
 
 If a function value does not play well with the prover or SMT solver, it can be rewritten to `#uninterpreted`.
