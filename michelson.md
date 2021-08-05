@@ -1729,25 +1729,20 @@ These instructions push blockchain state on the stack.
        <senderaddr> A </senderaddr>
 
   syntax Instruction ::= SELF(FieldAnnotation)
-  rule <k> SELF AL:AnnotationList => #Assume(Contracts[A] ==K #Account(?_,?_,?_,?_,?_)) ~> SELF(#GetFieldAnnot(AL)) ... </k>
+  rule <k> SELF AL:AnnotationList => #Assume(Accounts[A] ==K #Account(?_,?_,?_,?_,?_)) ~> SELF(#GetFieldAnnot(AL)) ... </k>
        <currentContract> A </currentContract>
        <contracts>
-          Contracts
+          Accounts
        </contracts>
 
   rule <k> SELF(FA) => .K ... </k>
        <stack> SS
-            => [contract {LocalEntrypointMap [ FA ]}:>TypeName
-                #Contract(A . FA, {LocalEntrypointMap [ FA ]}:>TypeName)]
+            => [contract { entrypoints({Accounts[A]}:>AccountState)[ FA ] }:>TypeName
+                #Contract(A . FA, { entrypoints({Accounts[A]}:>AccountState)[ FA ] }:>TypeName)]
              ; SS
        </stack>
        <currentContract> A </currentContract>
-       <contracts>
-         A |-> #Account(...  entrypoints : LocalEntrypointMap)
-         ...
-       </contracts>
-    ensures FA in_keys( LocalEntrypointMap )
-    andBool isTypeName(LocalEntrypointMap [ FA ])
+       <contracts> Accounts </contracts>
 
   rule <k> AMOUNT _A => . ... </k>
        <stack> SS => [mutez M] ; SS </stack>
