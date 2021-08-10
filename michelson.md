@@ -61,10 +61,10 @@ This macro is convenient for writing proofs.
   syntax Bool ::= #EntrypointExists(Map, Address, FieldAnnotation, Type)
  // --------------------------------------------------------------------
   rule #EntrypointExists(Accounts, Address, FieldAnnot, EntrypointType)
-    => Address in_keys(Accounts) andBool
-       isAccountState( Accounts [ Address ] ) andBool
-       FieldAnnot in_keys(entrypoints({ Accounts [ Address ] }:>AccountState)) andBool
-       entrypoints({ Accounts [ Address ] }:>AccountState) [ FieldAnnot ] ==K #Name(EntrypointType)
+    =>         Address in_keys(Accounts)
+       andBool isAccountState( Accounts [ Address ] )
+       andBool FieldAnnot in_keys(entrypoints({ Accounts [ Address ] }:>AccountState))
+       andBool entrypoints({ Accounts [ Address ] }:>AccountState) [ FieldAnnot ] ==K #Name(EntrypointType)
     [macro]
 ```
 
@@ -1686,32 +1686,40 @@ These instructions push fresh `contract` literals on the stack corresponding
 to the given addresses/key hashes.
 
 ```k
-  syntax Map ::= #GetEntrypoints(Address, Map) [function, functional]
-  // ----------------------------------------------------------------
-  rule #GetEntrypoints( A, A |-> #Account(... entrypoints : EntrypointMap) _:Map) => EntrypointMap
-  rule #GetEntrypoints(A, ContractMap) => .Map requires notBool A in_keys(ContractMap)
+  syntax Map ::= #GetEntrypoints(Address, accountsMap: Map) [function]
+  // -----------------------------------------------------------------
+  rule #GetEntrypoints(A, Accounts) => entrypoints({Accounts[A]}:>AccountState) requires A in_keys(Accounts) [simplification, anywhere]
 ```
 
 ```k
   syntax Instruction ::= CONTRACT(FieldAnnotation, TypeName, Map)
   rule <k> CONTRACT AL:AnnotationList T:Type
-        => #Assume(A in_keys(ContractMap) impliesBool ContractMap [ A ] ==K #Account(?_,?_,?_,?_,?_))
-        ~> CONTRACT(#GetFieldAnnot(AL), #Name(T), #GetEntrypoints(A, ContractMap))
+        => #AssumeIsAccount(Accounts [ A ])
+        ~> CONTRACT(#GetFieldAnnot(AL), #Name(T), #GetEntrypoints(A, Accounts))
            ...
        </k>
        <stack> [address A:Address] ; _SS </stack>
-       <contracts> ContractMap </contracts>
+       <contracts> Accounts </contracts>
+    requires A in_keys(Accounts)
+
+  rule <k> CONTRACT _:AnnotationList T:Type => .K ... </k>
+       <stack> [address A:Address] ; SS
+            => [option contract #Name(T) None] ; SS
+       </stack>
+       <contracts> Accounts </contracts>
+    requires notBool(A in_keys(Accounts))
 
   rule <k> CONTRACT(FA, T, Entrypoints) => . ... </k>
-       <stack> [address A:Address]
-             ; SS
-            => [option contract T
-                  #if FA in_keys(Entrypoints) andBool Entrypoints [ FA ] ==K T
-                    #then Some #Contract(A . FA, T)
-                    #else None
-                  #fi ]
-             ; SS
+       <stack> [address A:Address]                            ; SS
+            => [option contract T Some #Contract(A . FA, T) ] ; SS
        </stack>
+    requires FA in_keys(Entrypoints) andBool Entrypoints [ FA ] ==K T
+
+  rule <k> CONTRACT(FA, T, Entrypoints) => . ... </k>
+       <stack> [address _:Address] ; SS
+            => [option contract T None] ; SS
+       </stack>
+    requires notBool( FA in_keys(Entrypoints) andBool Entrypoints [ FA ] ==K T )
 
   rule <k> IMPLICIT_ACCOUNT _AL => . ... </k>
        <stack> [key_hash #KeyHash(A)] ; SS
@@ -1742,7 +1750,7 @@ These instructions push blockchain state on the stack.
        <senderaddr> A </senderaddr>
 
   syntax Instruction ::= SELF(FieldAnnotation)
-  rule <k> SELF AL:AnnotationList => #Assume(Accounts[A] ==K #Account(?_,?_,?_,?_,?_)) ~> SELF(#GetFieldAnnot(AL)) ... </k>
+  rule <k> SELF AL:AnnotationList => #AssumeIsAccount(Accounts [ A ]) ~> SELF(#GetFieldAnnot(AL)) ... </k>
        <currentContract> A </currentContract>
        <contracts>
           Accounts
@@ -2537,7 +2545,7 @@ We implement fresh lambdas as fresh uninterpreted functions.
     requires isValue(ArgT, Arg)
 ```
 
-### `#AssumeHasType`
+### `#AssumeHasType` and `#AssumeIsAccount`
 
 Michelson containers are parametric over a type. However, they are implemented
 in K as non-parametric containers such as `InternalList`, `Map` and `Set` that
@@ -2555,6 +2563,20 @@ the item to be of the correct type.
 
 ```symbolic
     rule <k> #AssumeHasType(E, T) => #Assume(E == #MakeFresh(#Type(T))) ... </k>
+```
+
+We need a similar construct for the `<contracts>` map.
+
+```k
+    syntax KItem ::= #AssumeIsAccount(KItem)
+```
+
+```concrete
+    rule <k> #AssumeIsAccount(_) => .K ... </k>
+```
+
+```symbolic
+    rule <k> #AssumeIsAccount(E) => #Assume(E ==K #Account(?_, ?_, ?_, ?_, ?_)) ... </k>
 ```
 
 ```k
