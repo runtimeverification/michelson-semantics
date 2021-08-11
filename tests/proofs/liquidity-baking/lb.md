@@ -33,8 +33,10 @@ module LIQUIDITY-BAKING-LEMMAS
 ```
 
 ```k
-  rule X /Int 1 => X [simplification]
-  rule X *Int 1 => X [simplification]
+  rule X /Int 1               => X  [simplification]
+  rule X *Int 1               => X  [simplification]
+  rule false   orBool @B:Bool => @B [simplification]
+  rule @B:Bool orBool false   => @B [simplification]
 ```
 
 ```k
@@ -425,17 +427,6 @@ If the contract execution fails, storage is not updated.
   syntax Int ::= #XtzBurnAmount(Int)
  // --------------------------------
   rule #XtzBurnAmount(XtzAmount) => XtzAmount -Int #XtzNetBurn ( XtzAmount ) [macro]
-```
-
-```k
-  syntax Bool ::= #EntrypointExists(Map, Address, FieldAnnotation, Type)
- // --------------------------------------------------------------------
-  rule #EntrypointExists(Accounts, Address, FieldAnnot, EntrypointType)
-    => Address in_keys(Accounts) andBool
-       isAccountState( Accounts [ Address ] ) andBool
-       FieldAnnot in_keys(entrypoints({ Accounts [ Address ] }:>AccountState)) andBool
-       entrypoints({ Accounts [ Address ] }:>AccountState) [ FieldAnnot ] ==K #Name(EntrypointType)
-    [macro]
 ```
 
 ### Avoiding Interpreting Functions
