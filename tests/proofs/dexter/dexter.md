@@ -33,8 +33,10 @@ module DEXTER-LEMMAS
 ```
 
 ```k
-  rule X /Int 1 => X [simplification]
-  rule X *Int 1 => X [simplification]
+  rule X /Int 1               => X  [simplification]
+  rule X *Int 1               => X  [simplification]
+  rule false   orBool @B:Bool => @B [simplification]
+  rule @B:Bool orBool false   => @B [simplification]
 ```
 
 ```k
