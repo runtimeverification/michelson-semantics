@@ -70,7 +70,7 @@ We have one case for when `#ceildiv` results in an upwards rounding, and one for
         <selfIsUpdatingTokenPool> false </selfIsUpdatingTokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <myamount> #Mutez(Amount) </myamount>
-        <currentContract> SelfAddress </currentContract>
+        <currentAccount> SelfAddress </currentAccount>
         <lqtTotal> OldLqt => OldLqt +Int (Amount *Int OldLqt) /Int XtzAmount </lqtTotal>
         <xtzPool> #Mutez(XtzAmount => XtzAmount +Int Amount) </xtzPool>
         <tokenPool> TokenAmount => TokenAmount +Int #ceildiv(Amount *Int TokenAmount, XtzAmount) </tokenPool>
@@ -79,7 +79,7 @@ We have one case for when `#ceildiv` results in an upwards rounding, and one for
         <lqtAddress> LqtAddress:Address </lqtAddress>
         <senderaddr> Sender </senderaddr>
         <nonce> #Nonce(Nonce => Nonce +Int 2) </nonce>
-        <contracts> Accounts </contracts>
+        <accounts> Accounts </accounts>
         <operations> _
                   => [ Transfer_tokens #TokenTransferData(IsFA2, Sender, SelfAddress, TokenId, #ceildiv(Amount *Int TokenAmount, XtzAmount)) #Mutez(0) TokenAddress . %transfer Nonce ] ;;
                      [ Transfer_tokens Pair ((Amount *Int OldLqt) /Int XtzAmount) Owner #Mutez(0) LqtAddress . %mintOrBurn (Nonce +Int 1) ] ;;
@@ -104,7 +104,7 @@ We have one case for when `#ceildiv` results in an upwards rounding, and one for
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <myamount> #Mutez(Amount) </myamount>
-        <currentContract> SelfAddress </currentContract>
+        <currentAccount> SelfAddress </currentAccount>
         <lqtTotal> OldLqt => OldLqt +Int (Amount *Int OldLqt) /Int XtzAmount </lqtTotal>
         <xtzPool> #Mutez(XtzAmount => XtzAmount +Int Amount) </xtzPool>
         <tokenPool> TokenAmount => TokenAmount +Int #ceildiv(Amount *Int TokenAmount, XtzAmount) </tokenPool>
@@ -113,7 +113,7 @@ We have one case for when `#ceildiv` results in an upwards rounding, and one for
         <lqtAddress> LqtAddress:Address </lqtAddress>
         <senderaddr> Sender </senderaddr>
         <nonce> #Nonce(Nonce => Nonce +Int 2) </nonce>
-        <contracts> Accounts </contracts>
+        <accounts> Accounts </accounts>
         <operations> _
                   => [ Transfer_tokens #TokenTransferData(IsFA2, Sender, SelfAddress, TokenId, #ceildiv(Amount *Int TokenAmount, XtzAmount)) #Mutez(0) TokenAddress . %transfer Nonce ] ;;
                      [ Transfer_tokens Pair ((Amount *Int OldLqt) /Int XtzAmount) Owner #Mutez(0) LqtAddress . %mintOrBurn (Nonce +Int 1) ] ;;
@@ -263,7 +263,7 @@ module DEXTER-REMOVELIQUIDITY-POSITIVE-SPEC
         <selfIsUpdatingTokenPool> false </selfIsUpdatingTokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <myamount> #Mutez(0) </myamount>
-        <currentContract> SelfAddress </currentContract>
+        <currentAccount> SelfAddress </currentAccount>
         <lqtTotal> OldLqt => OldLqt -Int LqtBurned </lqtTotal>
         <xtzPool> #Mutez(XtzAmount => XtzAmount -Int (LqtBurned *Int XtzAmount) /Int OldLqt) </xtzPool>
         <tokenPool> TokenAmount => TokenAmount -Int (LqtBurned *Int TokenAmount) /Int OldLqt </tokenPool>
@@ -272,7 +272,7 @@ module DEXTER-REMOVELIQUIDITY-POSITIVE-SPEC
         <lqtAddress> LqtAddress:Address </lqtAddress>
         <senderaddr> Sender </senderaddr>
         <nonce> #Nonce(Nonce => Nonce +Int 3) </nonce>
-        <contracts> Accounts </contracts>
+        <accounts> Accounts </accounts>
         <operations> _
                   => [ Transfer_tokens (Pair (0 -Int LqtBurned) Sender) #Mutez(0) LqtAddress . %mintOrBurn Nonce ] ;;
                      [ Transfer_tokens #TokenTransferData(IsFA2, SelfAddress, To, TokenId,  (LqtBurned *Int TokenAmount) /Int OldLqt) #Mutez(0) TokenAddress . %transfer (Nonce +Int 1) ] ;;
@@ -488,11 +488,11 @@ The contract queries its underlying token contract for its own token balance if 
         <selfIsUpdatingTokenPool> false => true </selfIsUpdatingTokenPool>
         <tokenAddress> TokenAddress:Address </tokenAddress>
         <tokenId> TokenId </tokenId>
-        <currentContract> SelfAddress </currentContract>
+        <currentAccount> SelfAddress </currentAccount>
         <myamount> #Mutez(Amount) </myamount>
         <senderaddr> Sender </senderaddr>
         <sourceaddr> Sender </sourceaddr>
-        <contracts> Accounts </contracts>
+        <accounts> Accounts </accounts>
         <operations> _ => [ Transfer_tokens Pair #UpdateTokenPoolTransferFrom(IsFA2, SelfAddress, TokenId) #Contract(SelfAddress . %updateTokenPoolInternal, #DexterVersionSpecificParamType(IsFA2)) #Mutez(0) #TokenBalanceEntrypoint(TokenAddress, IsFA2) O ] ;; .InternalList </operations>
         <nonce> #Nonce(O) => #Nonce(O +Int 1) </nonce>
     requires Amount ==Int 0
@@ -512,8 +512,8 @@ NOTE: The failure conditions are split into two claims with identical configurat
         <myamount> #Mutez(Amount) </myamount>
         <senderaddr> Sender </senderaddr>
         <sourceaddr> Source </sourceaddr>
-        <currentContract> SelfAddress </currentContract>
-        <contracts> Accounts </contracts>
+        <currentAccount> SelfAddress </currentAccount>
+        <accounts> Accounts </accounts>
     requires ( Amount >Int 0
       orBool (notBool #EntrypointExists(Accounts, TokenAddress, #if IsFA2 #then %balance_of #else %getBalance #fi, #TokenBalanceEntrypointType(IsFA2)))
       orBool IsUpdating
@@ -735,8 +735,8 @@ A buyer sends tokens to the Dexter contract and receives a corresponding amount 
         <tokenPool> TokenPool => TokenPool +Int TokensSold </tokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <senderaddr> Sender </senderaddr>
-        <contracts> Accounts </contracts>
-        <currentContract> SelfAddress:Address </currentContract>
+        <accounts> Accounts </accounts>
+        <currentAccount> SelfAddress:Address </currentAccount>
         <nonce> #Nonce(N => N +Int 2) </nonce>
         <tokenId> TokenID </tokenId>
         <operations> _
@@ -773,7 +773,7 @@ module DEXTER-TOKENTOXTZ-FA12-NEGATIVE-1-SPEC
         <mynow> #Timestamp(CurrentTime) </mynow>
         <myamount> #Mutez(Amount) </myamount>
         <tokenAddress> _TokenAddress:Address </tokenAddress>
-        <contracts> _Accounts </contracts>
+        <accounts> _Accounts </accounts>
      requires notBool IsFA2
       andBool ( IsUpdating
          orBool notBool Amount ==Int 0
@@ -793,8 +793,8 @@ module DEXTER-TOKENTOXTZ-FA12-NEGATIVE-2-SPEC
         <tokenAddress> TokenAddress:Address </tokenAddress>
         <xtzPool> #Mutez(_XtzPool) </xtzPool>
         <tokenPool> TokenPool </tokenPool>
-        <contracts> Accounts </contracts>
-        <currentContract> SelfAddress </currentContract>
+        <accounts> Accounts </accounts>
+        <currentAccount> SelfAddress </currentAccount>
      requires notBool IsFA2
       andBool notBool IsUpdating
       andBool notBool Amount ==Int 0
@@ -818,8 +818,8 @@ module DEXTER-TOKENTOXTZ-FA12-NEGATIVE-3-SPEC
         <tokenAddress> TokenAddress:Address </tokenAddress>
         <xtzPool> #Mutez(XtzPool) </xtzPool>
         <tokenPool> TokenPool </tokenPool>
-        <contracts> Accounts </contracts>
-        <currentContract> SelfAddress </currentContract>
+        <accounts> Accounts </accounts>
+        <currentAccount> SelfAddress </currentAccount>
      requires notBool IsFA2
       andBool notBool IsUpdating
       andBool notBool Amount ==Int 0
@@ -845,8 +845,8 @@ module DEXTER-TOKENTOXTZ-FA12-NEGATIVE-4-SPEC
         <tokenAddress> TokenAddress:Address </tokenAddress>
         <xtzPool> #Mutez(XtzPool) </xtzPool>
         <tokenPool> TokenPool </tokenPool>
-        <contracts> Accounts </contracts>
-        <currentContract> SelfAddress </currentContract>
+        <accounts> Accounts </accounts>
+        <currentAccount> SelfAddress </currentAccount>
      requires notBool IsFA2
       andBool notBool IsUpdating
       andBool notBool Amount ==Int 0
@@ -889,8 +889,8 @@ As before, a buyer sends tokens to the Dexter contract and receives a correspond
         <tokenPool> TokenPool => TokenPool +Int TokensSold </tokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <senderaddr> Sender </senderaddr>
-        <contracts> Accounts </contracts>
-        <currentContract> SelfAddress:Address </currentContract>
+        <accounts> Accounts </accounts>
+        <currentAccount> SelfAddress:Address </currentAccount>
         <nonce> #Nonce(N => N +Int 2) </nonce>
         <tokenId> TokenID </tokenId>
         <operations> _
@@ -926,7 +926,7 @@ module DEXTER-TOKENTOXTZ-FA2-NEGATIVE-1-SPEC
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <myamount> #Mutez(Amount) </myamount>
         <mynow> #Timestamp(CurrentTime) </mynow>
-        <contracts> _Accounts </contracts>
+        <accounts> _Accounts </accounts>
      requires IsFA2
       andBool ( IsUpdating
          orBool notBool Amount ==Int 0
@@ -943,8 +943,8 @@ module DEXTER-TOKENTOXTZ-FA2-NEGATIVE-2-SPEC
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <myamount> #Mutez(Amount) </myamount>
         <mynow> #Timestamp(CurrentTime) </mynow>
-        <contracts> Accounts </contracts>
-        <currentContract> SelfAddress </currentContract>
+        <accounts> Accounts </accounts>
+        <currentAccount> SelfAddress </currentAccount>
         <tokenPool> TokenPool </tokenPool>
         <xtzPool> #Mutez(XtzPool) </xtzPool>
         <tokenAddress> TokenAddress:Address </tokenAddress>
@@ -975,8 +975,8 @@ module DEXTER-TOKENTOXTZ-FA2-NEGATIVE-3-SPEC
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <myamount> #Mutez(Amount) </myamount>
         <mynow> #Timestamp(CurrentTime) </mynow>
-        <contracts> Accounts </contracts>
-        <currentContract> SelfAddress </currentContract>
+        <accounts> Accounts </accounts>
+        <currentAccount> SelfAddress </currentAccount>
         <tokenPool> TokenPool </tokenPool>
         <xtzPool> #Mutez(XtzPool) </xtzPool>
         <tokenAddress> TokenAddress:Address </tokenAddress>
@@ -1019,14 +1019,14 @@ module DEXTER-XTZTOTOKEN-FA12-POSITIVE-SPEC
   imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, XtzToToken(To, MinTokensBought, #Timestamp(Deadline))) => . </k>
         <stack> .Stack </stack>
-        <contracts> Accounts </contracts>
+        <accounts> Accounts </accounts>
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <myamount> #Mutez(Amount) </myamount>
         <tokenAddress> TokenAddress </tokenAddress>
         <xtzPool> #Mutez(XtzPool => XtzPool +Int Amount) </xtzPool>
         <tokenPool> TokenPool => TokenPool -Int #CurrencyBought(TokenPool, XtzPool, Amount) </tokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
-        <currentContract> SelfAddress </currentContract>
+        <currentAccount> SelfAddress </currentAccount>
         <nonce> #Nonce(N => N +Int 1) </nonce>
         <tokenId> TokenID </tokenId>
         <operations> _
@@ -1053,8 +1053,8 @@ module DEXTER-XTZTOTOKEN-FA12-NEGATIVE-SPEC
   imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, XtzToToken(_To, MinTokensBought, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_:FailedStack </stack>
-        <contracts> Accounts </contracts>
-        <currentContract> SelfAddress </currentContract>
+        <accounts> Accounts </accounts>
+        <currentAccount> SelfAddress </currentAccount>
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <myamount> #Mutez(Amount) </myamount>
         <tokenAddress> TokenAddress </tokenAddress>
@@ -1082,14 +1082,14 @@ module DEXTER-XTZTOTOKEN-FA2-POSITIVE-SPEC
   imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, XtzToToken(To, MinTokensBought, #Timestamp(Deadline))) => . </k>
         <stack> .Stack </stack>
-        <contracts> Accounts </contracts>
+        <accounts> Accounts </accounts>
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <myamount> #Mutez(Amount) </myamount>
         <tokenAddress> TokenAddress </tokenAddress>
         <xtzPool> #Mutez(XtzPool => XtzPool +Int Amount) </xtzPool>
         <tokenPool> TokenPool => TokenPool -Int #CurrencyBought(TokenPool, XtzPool, Amount) </tokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
-        <currentContract> SelfAddress </currentContract>
+        <currentAccount> SelfAddress </currentAccount>
         <nonce> #Nonce(N => N +Int 1) </nonce>
         <tokenId> TokenID </tokenId>
         <operations> _
@@ -1116,8 +1116,8 @@ module DEXTER-XTZTOTOKEN-FA2-NEGATIVE-SPEC
   imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, XtzToToken(_To, MinTokensBought, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_:FailedStack </stack>
-        <contracts> Accounts </contracts>
-        <currentContract> SelfAddress </currentContract>
+        <accounts> Accounts </accounts>
+        <currentAccount> SelfAddress </currentAccount>
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <myamount> #Mutez(Amount) </myamount>
         <tokenAddress> TokenAddress </tokenAddress>
@@ -1166,8 +1166,8 @@ A buyer sends tokens to the Dexter contract, converts its to xtz, and then immed
         <tokenPool> TokenPool => TokenPool +Int TokensSold </tokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <senderaddr> Sender </senderaddr>
-        <currentContract> SelfAddress </currentContract>
-        <contracts> Accounts </contracts>
+        <currentAccount> SelfAddress </currentAccount>
+        <accounts> Accounts </accounts>
         <nonce> #Nonce(N => N +Int 2) </nonce>
         <tokenId> TokenID </tokenId>
         <operations> _
@@ -1198,8 +1198,8 @@ A buyer sends tokens to the Dexter contract, converts its to xtz, and then immed
         <tokenPool> TokenPool => TokenPool +Int TokensSold </tokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <senderaddr> Sender </senderaddr>
-        <currentContract> SelfAddress </currentContract>
-        <contracts> Accounts </contracts>
+        <currentAccount> SelfAddress </currentAccount>
+        <accounts> Accounts </accounts>
         <nonce> #Nonce(N => N +Int 2) </nonce>
         <tokenId> TokenID </tokenId>
         <operations> _
@@ -1241,8 +1241,8 @@ module DEXTER-TOKENTOTOKEN-NEGATIVE-SPEC
         <tokenPool> TokenPool </tokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <senderaddr> _Sender </senderaddr>
-        <currentContract> SelfAddress </currentContract>
-        <contracts> Accounts </contracts>
+        <currentAccount> SelfAddress </currentAccount>
+        <accounts> Accounts </accounts>
         <nonce> #Nonce(_N => ?_) </nonce>
         <tokenId> _TokenID </tokenId>
         <operations> _ </operations>
@@ -1272,8 +1272,8 @@ module DEXTER-TOKENTOTOKEN-NEGATIVE-SPEC
         <tokenPool> TokenPool </tokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <senderaddr> _Sender </senderaddr>
-        <currentContract> SelfAddress </currentContract>
-        <contracts> Accounts </contracts>
+        <currentAccount> SelfAddress </currentAccount>
+        <accounts> Accounts </accounts>
         <nonce> #Nonce(_N => ?_) </nonce>
         <tokenId> _TokenID </tokenId>
         <operations> _ </operations>

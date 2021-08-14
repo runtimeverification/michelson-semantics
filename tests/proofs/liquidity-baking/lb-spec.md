@@ -62,7 +62,7 @@ We have one case for when `#ceildiv` results in an upwards rounding, and one for
         <stack> .Stack </stack>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <myamount> #Mutez(Amount) </myamount>
-        <currentContract> SelfAddress </currentContract>
+        <currentAccount> SelfAddress </currentAccount>
         <lqtTotal> OldLqt => OldLqt +Int (Amount *Int OldLqt) /Int XtzAmount </lqtTotal>
         <xtzPool> #Mutez(XtzAmount => XtzAmount +Int Amount) </xtzPool>
         <tokenPool> TokenAmount => TokenAmount +Int #ceildiv(Amount *Int TokenAmount, XtzAmount) </tokenPool>
@@ -70,7 +70,7 @@ We have one case for when `#ceildiv` results in an upwards rounding, and one for
         <lqtAddress> LqtAddress:Address </lqtAddress>
         <senderaddr> Sender </senderaddr>
         <nonce> #Nonce(Nonce => Nonce +Int 2) </nonce>
-        <contracts> Accounts </contracts>
+        <accounts> Accounts </accounts>
         <operations> _
                   => [ Transfer_tokens #TokenTransferData(Sender, SelfAddress, #ceildiv(Amount *Int TokenAmount, XtzAmount)) #Mutez(0) TokenAddress . %transfer    Nonce ] ;;
                      [ Transfer_tokens Pair ((Amount *Int OldLqt) /Int XtzAmount) Owner                                      #Mutez(0) LqtAddress   . %mintOrBurn (Nonce +Int 1) ] ;;
@@ -146,7 +146,7 @@ module LIQUIDITY-BAKING-REMOVELIQUIDITY-POSITIVE-SPEC
         <stack> .Stack </stack>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <myamount> #Mutez(0) </myamount>
-        <currentContract> SelfAddress </currentContract>
+        <currentAccount> SelfAddress </currentAccount>
         <lqtTotal> OldLqt => OldLqt -Int LqtBurned </lqtTotal>
         <xtzPool> #Mutez(XtzAmount => XtzAmount -Int (LqtBurned *Int XtzAmount) /Int OldLqt) </xtzPool>
         <tokenPool> TokenAmount => TokenAmount -Int (LqtBurned *Int TokenAmount) /Int OldLqt </tokenPool>
@@ -154,7 +154,7 @@ module LIQUIDITY-BAKING-REMOVELIQUIDITY-POSITIVE-SPEC
         <lqtAddress> LqtAddress:Address </lqtAddress>
         <senderaddr> Sender </senderaddr>
         <nonce> #Nonce(Nonce => Nonce +Int 3) </nonce>
-        <contracts> Accounts </contracts>
+        <accounts> Accounts </accounts>
         <operations> _
                   => [ Transfer_tokens (Pair (0 -Int LqtBurned) Sender)                                              #Mutez(0)                                      LqtAddress . %mintOrBurn  Nonce         ] ;;
                      [ Transfer_tokens #TokenTransferData(SelfAddress, To, (LqtBurned *Int TokenAmount) /Int OldLqt) #Mutez(0)                                      TokenAddress . %transfer (Nonce +Int 1) ] ;;
@@ -188,14 +188,14 @@ module LIQUIDITY-BAKING-REMOVELIQUIDITY-NEGATIVE-SPEC
         <stack> .Stack => ?_:FailedStack </stack>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <myamount> #Mutez(0) </myamount>
-        <currentContract> SelfAddress </currentContract>
+        <currentAccount> SelfAddress </currentAccount>
         <lqtTotal> OldLqt </lqtTotal>
         <xtzPool> #Mutez(XtzAmount) </xtzPool>
         <tokenPool> TokenAmount </tokenPool>
         <tokenAddress> TokenAddress:Address </tokenAddress>
         <lqtAddress> LqtAddress:Address </lqtAddress>
         <senderaddr> Sender </senderaddr>
-        <contracts> Accounts </contracts>
+        <accounts> Accounts </accounts>
         <nonce> _ => ?_ </nonce>
     requires notBool( CurrentTime <Int Deadline
               andBool OldLqt >Int 0
@@ -279,9 +279,9 @@ even though the final mutez value that is actually used is smaller than or equal
         <tokenPool> TokenPool:Int => TokenPool +Int TokensSold </tokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <senderaddr> Sender </senderaddr>
-        <currentContract> SelfAddress:Address </currentContract>
+        <currentAccount> SelfAddress:Address </currentAccount>
         <nonce> #Nonce(N => N +Int 3) </nonce>
-        <contracts> Accounts </contracts>
+        <accounts> Accounts </accounts>
         <operations> _
                   => [ Transfer_tokens #TokenTransferData(Sender, SelfAddress, TokensSold) #Mutez(0)                                                               TokenAddress . %transfer N        ]
                   ;; [ Transfer_tokens Unit                                                #Mutez(#XtzNetBurn(#CurrencyBought(XtzPool, TokenPool, TokensSold)))    To           . %default (N +Int 1)]
@@ -319,7 +319,7 @@ module LIQUIDITY-BAKING-TOKENTOXTZ-NEGATIVE-1-SPEC
         <mynow> #Timestamp(CurrentTime) </mynow>
         <myamount> #Mutez(Amount) </myamount>
         <tokenAddress> TokenAddress:Address </tokenAddress>
-        <contracts> Accounts </contracts>
+        <accounts> Accounts </accounts>
      requires notBool ( Amount ==Int 0
                 andBool CurrentTime <Int Deadline
                       )
@@ -341,7 +341,7 @@ module LIQUIDITY-BAKING-TOKENTOXTZ-NEGATIVE-2-SPEC
         <tokenAddress> TokenAddress:Address </tokenAddress>
         <xtzPool> #Mutez(_XtzPool) </xtzPool>
         <tokenPool> TokenPool </tokenPool>
-        <contracts> Accounts </contracts>
+        <accounts> Accounts </accounts>
      requires Amount ==Int 0
       andBool CurrentTime <Int Deadline
       andBool TokenPool ==Int 0 andBool TokensSold ==Int 0
@@ -363,7 +363,7 @@ module LIQUIDITY-BAKING-TOKENTOXTZ-NEGATIVE-3-SPEC
         <tokenAddress> TokenAddress:Address </tokenAddress>
         <xtzPool> #Mutez(XtzPool) </xtzPool>
         <tokenPool> TokenPool </tokenPool>
-        <contracts> Accounts </contracts>
+        <accounts> Accounts </accounts>
         <nonce> #Nonce(_ => ?_) </nonce>
      requires Amount ==Int 0
       andBool CurrentTime <Int Deadline
@@ -392,7 +392,7 @@ module LIQUIDITY-BAKING-TOKENTOXTZ-NEGATIVE-4-SPEC
         <tokenAddress> TokenAddress:Address </tokenAddress>
         <xtzPool> #Mutez(XtzPool) </xtzPool>
         <tokenPool> TokenPool </tokenPool>
-        <contracts> Accounts </contracts>
+        <accounts> Accounts </accounts>
         <nonce> #Nonce(_ => ?_) </nonce>
      requires Amount ==Int 0
       andBool CurrentTime <Int Deadline
@@ -432,9 +432,9 @@ module LIQUIDITY-BAKING-XTZTOTOKEN-POSITIVE-SPEC
         <xtzPool> #Mutez(XtzPool => XtzPool +Int #XtzNetBurn(Amount)) </xtzPool>
         <tokenPool> TokenPool => TokenPool -Int #CurrencyBought(TokenPool, XtzPool, #XtzNetBurn(Amount)) </tokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
-        <currentContract> SelfAddress </currentContract>
+        <currentAccount> SelfAddress </currentAccount>
         <nonce> #Nonce(N => N +Int 2) </nonce>
-        <contracts> Accounts </contracts>
+        <accounts> Accounts </accounts>
         <operations> _
                   => [ Transfer_tokens #TokenTransferData(SelfAddress, To, #CurrencyBought(TokenPool, XtzPool, #XtzNetBurn(Amount))) #Mutez(0)                              TokenAddress . %transfer N        ]
                   ;; [ Transfer_tokens Unit                                                                                          #Mutez(absInt(#XtzBurnAmount(Amount))) null_address . %default (N +Int 1)]
@@ -465,7 +465,7 @@ module LIQUIDITY-BAKING-XTZTOTOKEN-NEGATIVE-SPEC
         <xtzPool> #Mutez(XtzPool) </xtzPool>
         <tokenPool> TokenPool </tokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
-        <contracts> Accounts </contracts>
+        <accounts> Accounts </accounts>
         <nonce> #Nonce(_:Int => ?_:Int) </nonce>
         <operations> _ </operations>
     requires notBool ( CurrentTime <Int Deadline
@@ -508,9 +508,9 @@ A buyer sends tokens to the Liquidity Baking contract, converts its to xtz, and 
         <tokenPool> TokenPool => TokenPool +Int TokensSold </tokenPool>
         <mynow> #Timestamp(CurrentTime:Int) </mynow>
         <senderaddr> Sender </senderaddr>
-        <currentContract> SelfAddress </currentContract>
+        <currentAccount> SelfAddress </currentAccount>
         <nonce> #Nonce(N => N +Int 3) </nonce>
-        <contracts> Accounts </contracts>
+        <accounts> Accounts </accounts>
         <operations> _
                   => [ Transfer_tokens #TokenTransferData(Sender, SelfAddress, TokensSold) #Mutez(0)                                                               TokenAddress         . %transfer    N        ]
                   ;; [ Transfer_tokens Pair To Pair MinTokensBought #Timestamp(Deadline)   #Mutez(#XtzNetBurn(#CurrencyBought(XtzPool, TokenPool, TokensSold)))    OutputDexterContract . %xtzToToken (N +Int 1)]
@@ -556,9 +556,9 @@ module LIQUIDITY-BAKING-TOKENTOTOKEN-NEGATIVE-SPEC
         <tokenPool> TokenPool </tokenPool>
         <mynow> #Timestamp(CurrentTime:Int) </mynow>
         <senderaddr> _Sender </senderaddr>
-        <currentContract> _SelfAddress </currentContract>
+        <currentAccount> _SelfAddress </currentAccount>
         <nonce> #Nonce(_:Int => ?_:Int) </nonce>
-        <contracts> Accounts </contracts>
+        <accounts> Accounts </accounts>
         <operations> _ </operations>
      requires notBool ( Amount ==Int 0
                         andBool CurrentTime <Int Deadline

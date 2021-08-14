@@ -28,11 +28,11 @@ module RETURN-SPEC
         <stack> [ (pair unit unit) Pair Unit Unit ] ; .Stack => [ (pair (list operation) unit) Pair [ Transfer_tokens Unit #Mutez(A) #Address("SourceAddr") . %default ?_ ] ;; .InternalList Unit ] ; .Stack </stack>
         <myamount> #Mutez(A) </myamount>
         <mynow> #Timestamp(0) </mynow>
-        <contracts>
+        <accounts>
             #Address("SourceAddr") |-> #Account(... entrypoints : %default |-> unit,
                                                     storagetype : unit .AnnotationList)
             ...
-        </contracts>
+        </accounts>
         <sourceaddr> #Address("SourceAddr") </sourceaddr>
         <senderaddr> #Address("SenderAddr") </senderaddr>
         <mychainid> #ChainId(_) </mychainid>
@@ -61,11 +61,11 @@ module RETURN-SPEC
         <stack> [ (pair unit unit) Pair Unit Unit ] ; .Stack => [ (pair (list operation) unit) Pair .InternalList Unit ] ; .Stack </stack>
         <myamount> #Mutez(0) </myamount>
         <mynow> #Timestamp(0) </mynow>
-        <contracts>
+        <accounts>
             #Address("SourceAddr") |-> #Account(... entrypoints : %default |-> unit,
                                                     storagetype : unit .AnnotationList)
             ...
-        </contracts>
+        </accounts>
         <sourceaddr> #Address("SourceAddr") </sourceaddr>
         <senderaddr> #Address("SenderAddr") </senderaddr>
         <mychainid> #ChainId(_) </mychainid>

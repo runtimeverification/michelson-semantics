@@ -21,8 +21,8 @@ module SUM-TO-N-SPEC
                                            { PAIR .AnnotationList ; LEFT .AnnotationList nat .AnnotationList } } => .K </k>
         <stack> [(or (pair int int) int) Left (Pair A:Int B:Int)] ; .Stack
              => [int (B +Int ((A *Int (A +Int 1)) /Int 2))]       ; .Stack </stack>
-        <currentContract> ADDR </currentContract>
-        <contracts> ADDR |-> #Account(... entrypoints : %default |-> nat .AnnotationList) ... </contracts>
+        <currentAccount> ADDR </currentAccount>
+        <accounts> ADDR |-> #Account(... entrypoints : %default |-> nat .AnnotationList) ... </accounts>
         <storagetype> nat .AnnotationList </storagetype>
       requires A >=Int 0 andBool B >=Int 0
 endmodule

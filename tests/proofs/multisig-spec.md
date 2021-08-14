@@ -288,8 +288,8 @@ The side conditions are defined as follows (and marked in the claim below):
          => [ pair ( list operation ) pair nat pair nat list key Pair uninterpreted ( Id , Unit ) Pair Count +Int 1 Pair Threshold KeyList:InternalList ] ; .Stack
     </stack>
     <myamount> #Mutez(Amount:Int) </myamount>
-    <currentContract> MYADDR </currentContract>
-    <contracts>
+    <currentAccount> MYADDR </currentAccount>
+    <accounts>
         MYADDR |-> #Account(... entrypoints : %default |-> (or .AnnotationList unit .AnnotationList
                                                pair .AnnotationList (pair .AnnotationList nat .AnnotationList
                                                           (or .AnnotationList (lambda .AnnotationList unit .AnnotationList (list .AnnotationList operation .AnnotationList ))
@@ -297,7 +297,7 @@ The side conditions are defined as follows (and marked in the claim below):
                                                                    (list .AnnotationList key .AnnotationList )))
                                                     (list .AnnotationList (option .AnnotationList signature .AnnotationList ))))
         ...
-    </contracts>
+    </accounts>
     requires Amount ==Int 0  // --------------------------------------------------------------------------------------------------- (a)
      andBool size(SigList) ==Int size(KeyList)  // -------------------------------------------------------------------------------- (b)
      andBool numValidSigs(SigList, KeyList) >=Int Threshold // -------------------------------------------------------------------- (c)
@@ -389,8 +389,8 @@ for symbolic reasoning.
               ; .Stack
         </stack>
         <myamount> #Mutez(Amount:Int) </myamount>
-        <currentContract> MYADDR </currentContract>
-        <contracts>
+        <currentAccount> MYADDR </currentAccount>
+        <accounts>
             MYADDR |-> #Account(... entrypoints : %default |-> (or .AnnotationList unit .AnnotationList
                                                    pair .AnnotationList (pair .AnnotationList nat .AnnotationList
                                                               (or .AnnotationList (lambda .AnnotationList unit .AnnotationList (list .AnnotationList operation .AnnotationList ))
@@ -398,7 +398,7 @@ for symbolic reasoning.
                                                                        (list .AnnotationList key .AnnotationList )))
                                                         (list .AnnotationList (option .AnnotationList signature .AnnotationList ))))
             ...
-        </contracts>
+        </accounts>
     requires Amount ==Int 0
      andBool size(SigList) ==Int size(KeyList)
      andBool VerifiedKeys >=Int 0
