@@ -163,7 +163,48 @@ module DEXTER-ADDLIQUIDITY-NEGATIVE-SPEC
     requires notBool IsFA2
      andBool ( IsUpdating
         orBool CurrentTime >=Int Deadline
-        orBool #ceildiv(Amount *Int TokenAmount, XtzAmount) >Int MaxTokensDeposited
+        orBool notBool #IsLegalMutezValue(Amount +Int XtzAmount)
+        orBool XtzAmount ==Int 0
+        orBool MinLqtMinted >Int (Amount *Int OldLqt) /Int XtzAmount
+             )
+
+  claim <k> #runProof(IsFA2, AddLiquidity(_Owner, MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ?_:FailedStack </stack>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <mynow> #Timestamp(CurrentTime) </mynow>
+        <myamount> #Mutez(Amount) </myamount>
+        <lqtTotal> OldLqt </lqtTotal>
+        <xtzPool> #Mutez(XtzAmount) </xtzPool>
+        <tokenPool> TokenAmount </tokenPool>
+    requires notBool IsFA2
+     andBool XtzAmount >Int 0
+     andBool #ceildiv(Amount *Int TokenAmount, XtzAmount) >Int MaxTokensDeposited
+     andBool #mod(Amount *Int TokenAmount, XtzAmount) ==Int 0
+
+  claim <k> #runProof(IsFA2, AddLiquidity(_Owner, MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ?_:FailedStack </stack>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <mynow> #Timestamp(CurrentTime) </mynow>
+        <myamount> #Mutez(Amount) </myamount>
+        <lqtTotal> OldLqt </lqtTotal>
+        <xtzPool> #Mutez(XtzAmount) </xtzPool>
+        <tokenPool> TokenAmount </tokenPool>
+    requires notBool IsFA2
+     andBool XtzAmount >Int 0
+     andBool #ceildiv(Amount *Int TokenAmount, XtzAmount) >Int MaxTokensDeposited
+     andBool #mod(Amount *Int TokenAmount, XtzAmount) =/=Int 0
+
+  claim <k> #runProof(IsFA2, AddLiquidity(_Owner, MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ?_:FailedStack </stack>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <mynow> #Timestamp(CurrentTime) </mynow>
+        <myamount> #Mutez(Amount) </myamount>
+        <lqtTotal> OldLqt </lqtTotal>
+        <xtzPool> #Mutez(XtzAmount) </xtzPool>
+        <tokenPool> TokenAmount </tokenPool>
+    requires IsFA2
+     andBool ( IsUpdating
+        orBool CurrentTime >=Int Deadline
         orBool notBool #IsLegalMutezValue(Amount +Int XtzAmount)
         orBool XtzAmount ==Int 0
         orBool MinLqtMinted >Int (Amount *Int OldLqt) /Int XtzAmount
@@ -178,16 +219,23 @@ module DEXTER-ADDLIQUIDITY-NEGATIVE-SPEC
         <xtzPool> #Mutez(XtzAmount) </xtzPool>
         <tokenPool> TokenAmount </tokenPool>
     requires IsFA2
-     andBool ( IsUpdating
-        orBool CurrentTime >=Int Deadline
-        orBool #ceildiv(Amount *Int TokenAmount, XtzAmount) >Int MaxTokensDeposited
-        orBool notBool #IsLegalMutezValue(Amount +Int XtzAmount)
-        orBool MinLqtMinted >Int (Amount *Int OldLqt) /Int XtzAmount
-        orBool XtzAmount ==Int 0
-             )
-```
+     andBool XtzAmount >Int 0
+     andBool #ceildiv(Amount *Int TokenAmount, XtzAmount) >Int MaxTokensDeposited
+     andBool #mod(Amount *Int TokenAmount, XtzAmount) ==Int 0
 
-TODO: Deal with the case when the token contract or the liquidity token contract don't exist or have the wrong type.
+  claim <k> #runProof(IsFA2, AddLiquidity(_Owner, MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ?_:FailedStack </stack>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <mynow> #Timestamp(CurrentTime) </mynow>
+        <myamount> #Mutez(Amount) </myamount>
+        <lqtTotal> OldLqt </lqtTotal>
+        <xtzPool> #Mutez(XtzAmount) </xtzPool>
+        <tokenPool> TokenAmount </tokenPool>
+    requires IsFA2
+     andBool XtzAmount >Int 0
+     andBool #ceildiv(Amount *Int TokenAmount, XtzAmount) >Int MaxTokensDeposited
+     andBool #mod(Amount *Int TokenAmount, XtzAmount) =/=Int 0
+```
 
 ```k
 endmodule
