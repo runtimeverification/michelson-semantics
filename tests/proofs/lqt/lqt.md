@@ -226,15 +226,6 @@ If the contract execution fails, storage is not updated.
 ## Proof Helper Functions
 
 ```k
-  syntax Bool ::= #EntrypointExists(Map, Address, FieldAnnotation, Type)
-// ---------------------------------------------------------------------
-  rule #EntrypointExists(KnownAddresses, Addr, FieldAnnot, EntrypointType)
-    => Addr . FieldAnnot  in_keys(KnownAddresses) andBool
-       KnownAddresses[Addr . FieldAnnot] ==K #Name(EntrypointType)
-    [macro]
-```
-
-```k
   syntax Map ::= #incrementTokens(Map, Address, quantity: Int) [function, functional]
   rule #incrementTokens(Tokens, Address, Quantity) => Tokens[ Address <- undef ]                                     requires         #tokensFor(Tokens, Address) +Int Quantity ==Int 0 [simplification, anywhere]
   rule #incrementTokens(Tokens, Address, Quantity) => Tokens[ Address <- #tokensFor(Tokens, Address) +Int Quantity ] requires notBool #tokensFor(Tokens, Address) +Int Quantity ==Int 0 [simplification, anywhere]
