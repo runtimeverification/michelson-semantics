@@ -387,6 +387,24 @@ module LQT-TOKEN-TRANSFER-PROXY-SPEC
      andBool notBool (Pair From Sender) in_keys(Allowances)
      andBool         From in_keys(Tokens)
      andBool         To in_keys(Tokens)
+     andBool Value ==Int 0
+
+  claim <k> #runProof(TransferParams(From, To, Value)) => .K </k>
+        <stack> .Stack </stack>
+        <tokens> Tokens => #incrementTokens(#incrementTokens(Tokens, From, 0 -Int Value), To, Value)  </tokens>
+        <allowances> Allowances => #updateAllowances(Allowances, From, Sender, #allowanceFor(Allowances, From, Sender) -Int Value) </allowances>
+        <myamount> #Mutez(Amount) </myamount>
+        <senderaddr> Sender </senderaddr>
+        <operations> _ => .InternalList </operations>
+    requires Amount ==Int 0
+     andBool #tokensFor(Tokens, From) >=Int Value
+          // Spend via proxy
+     andBool Sender =/=K From
+     andBool #allowanceFor(Allowances, From, Sender) >=Int Value
+     andBool notBool (Pair From Sender) in_keys(Allowances)
+     andBool         From in_keys(Tokens)
+     andBool         To in_keys(Tokens)
+     andBool Value =/=Int 0
 
   claim <k> #runProof(TransferParams(From, To, Value)) => .K </k>
         <stack> .Stack </stack>

@@ -39,6 +39,8 @@ module LQT-TOKEN-LEMMAS
   rule X *Int 1 => X [simplification]
 
   rule X +Int (0 -Int Y) => X -Int Y [simplification]
+  rule X -Int  0         => X        [simplification]
+  rule X +Int  0         => X        [simplification]
 ```
 
 ```k
