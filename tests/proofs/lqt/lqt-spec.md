@@ -110,6 +110,7 @@ module LQT-TOKEN-MINTORBURN-SPEC
      andBool Sender ==K Admin
      andBool #tokensFor(Tokens, Address) +Int Quantity ==Int 0
      andBool Address in_keys(Tokens)
+     andBool Tokens[Address] ==K ?V:Int
 
   claim <k> #runProof(MintOrBurnParams(Quantity, Address)) => .K ... </k>
         <stack> .Stack </stack>
@@ -136,6 +137,7 @@ module LQT-TOKEN-MINTORBURN-SPEC
      andBool Sender ==K Admin
      andBool #tokensFor(Tokens, Address) +Int Quantity >Int 0
      andBool Address in_keys(Tokens)
+     andBool Tokens[Address] ==K ?V:Int
 
   claim <k> #runProof(MintOrBurnParams(Quantity, Address)) => .K ... </k>
         <stack> .Stack </stack>
@@ -161,6 +163,7 @@ module LQT-TOKEN-MINTORBURN-SPEC
               andBool #tokensFor(Tokens, Address) +Int Quantity >=Int 0
                     )
               andBool Address in_keys(Tokens)
+              andBool Tokens [Address] ==K ?V:Int
 
 
    claim <k> #runProof(MintOrBurnParams(Quantity, Address)) => Aborted(?_, ?_, ?_, ?_) ... </k>
