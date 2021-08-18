@@ -1401,6 +1401,15 @@ We need some simplications for dealing with map lookups:
 
   rule K2 in_keys(M:Map[K1 <- _])     => K1 ==K  K2 orBool  K2 in_keys(M) [simplification]
   rule K2 in_keys(M:Map[K1 <- undef]) => K1 =/=K K2 andBool K2 in_keys(M) [simplification]
+
+  syntax KItem ::= #caseAnalysis(Bool)
+  rule <k> #caseAnalysis(B) => . ... </k> ensures B
+  rule <k> #caseAnalysis(B) => . ... </k> ensures notBool B
+
+  syntax KItem ::= #mapKeyCaseAnalysis(Map, KItem, TypeName)
+  rule <k> #mapKeyCaseAnalysis(M, K, T) => #AssumeHasType(M[K], T) ... </k> ensures         K in_keys(M)
+  rule <k> #mapKeyCaseAnalysis(M, K, T) => .                       ... </k> ensures notBool K in_keys(M)
+
 ```
 
 ### Map Specific Operations
