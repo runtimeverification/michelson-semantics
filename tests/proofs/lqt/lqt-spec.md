@@ -253,6 +253,25 @@ module LQT-TOKEN-TRANSFER-DIRECT-SPEC
      andBool Sender ==K From
      andBool From in_keys(Tokens)
      andBool To in_keys(Tokens)
+     andBool To ==K From
+     andBool Tokens[From] ==K ?V0:Int
+     andBool Tokens[To] ==K ?V1:Int
+
+  claim <k> #runProof(TransferParams(From, To, Value)) => .K </k>
+        <stack> .Stack </stack>
+        <tokens> Tokens => #incrementTokens(#incrementTokens(Tokens, From, 0 -Int Value), To, Value)  </tokens>
+        <myamount> #Mutez(Amount) </myamount>
+        <senderaddr> Sender </senderaddr>
+        <operations> _ => .InternalList </operations>
+    requires Amount ==Int 0
+     andBool #tokensFor(Tokens, From) >=Int Value
+          // Direct spending
+     andBool Sender ==K From
+     andBool From in_keys(Tokens)
+     andBool To in_keys(Tokens)
+     andBool To =/=K From
+     andBool Tokens[From] ==K ?V0:Int
+     andBool Tokens[To] ==K ?V1:Int
 
   claim <k> #runProof(TransferParams(From, To, Value)) => .K </k>
         <stack> .Stack </stack>
@@ -266,6 +285,23 @@ module LQT-TOKEN-TRANSFER-DIRECT-SPEC
      andBool Sender ==K From
      andBool notBool From in_keys(Tokens)
      andBool         To in_keys(Tokens)
+     andBool         To ==K From
+     andBool         Tokens[To] ==K ?V1:Int
+
+  claim <k> #runProof(TransferParams(From, To, Value)) => .K </k>
+        <stack> .Stack </stack>
+        <tokens> Tokens => #incrementTokens(#incrementTokens(Tokens, From, 0 -Int Value), To, Value)  </tokens>
+        <myamount> #Mutez(Amount) </myamount>
+        <senderaddr> Sender </senderaddr>
+        <operations> _ => .InternalList </operations>
+    requires Amount ==Int 0
+     andBool #tokensFor(Tokens, From) >=Int Value
+          // Direct spending
+     andBool Sender ==K From
+     andBool notBool From in_keys(Tokens)
+     andBool         To in_keys(Tokens)
+     andBool         To =/=K From
+     andBool         Tokens[To] ==K ?V1:Int
 
   claim <k> #runProof(TransferParams(From, To, Value)) => .K </k>
         <stack> .Stack </stack>
@@ -279,6 +315,23 @@ module LQT-TOKEN-TRANSFER-DIRECT-SPEC
      andBool Sender ==K From
      andBool         From in_keys(Tokens)
      andBool notBool To in_keys(Tokens)
+     andBool         To ==K From
+     andBool         Tokens[From] ==K ?V0:Int
+
+  claim <k> #runProof(TransferParams(From, To, Value)) => .K </k>
+        <stack> .Stack </stack>
+        <tokens> Tokens => #incrementTokens(#incrementTokens(Tokens, From, 0 -Int Value), To, Value)  </tokens>
+        <myamount> #Mutez(Amount) </myamount>
+        <senderaddr> Sender </senderaddr>
+        <operations> _ => .InternalList </operations>
+    requires Amount ==Int 0
+     andBool #tokensFor(Tokens, From) >=Int Value
+          // Direct spending
+     andBool Sender ==K From
+     andBool         From in_keys(Tokens)
+     andBool notBool To in_keys(Tokens)
+     andBool         To =/=K From
+     andBool         Tokens[From] ==K ?V0:Int
 
   claim <k> #runProof(TransferParams(From, To, Value)) => .K </k>
         <stack> .Stack </stack>
