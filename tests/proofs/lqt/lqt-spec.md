@@ -351,7 +351,6 @@ module LQT-TOKEN-TRANSFER-DIRECT-SPEC
   claim <k> #runProof(TransferParams(From, To, Value)) => Aborted(?_, ?_, ?_, ?_) ... </k>
         <stack> .Stack => ?_:FailedStack </stack>
         <tokens> Tokens </tokens>
-        <allowances> Allowances </allowances>
         <myamount> #Mutez(Amount) </myamount>
         <senderaddr> Sender </senderaddr>
     requires Sender ==K From
@@ -360,11 +359,28 @@ module LQT-TOKEN-TRANSFER-DIRECT-SPEC
                     )
               andBool From in_keys(Tokens)
               andBool To in_keys(Tokens)
+              andBool To ==K From
+              andBool Tokens[From] ==K ?V0:Int
+              andBool Tokens[To] ==K ?V1:Int
 
   claim <k> #runProof(TransferParams(From, To, Value)) => Aborted(?_, ?_, ?_, ?_) ... </k>
         <stack> .Stack => ?_:FailedStack </stack>
         <tokens> Tokens </tokens>
-        <allowances> Allowances </allowances>
+        <myamount> #Mutez(Amount) </myamount>
+        <senderaddr> Sender </senderaddr>
+    requires Sender ==K From
+     andBool notBool( Amount ==Int 0
+              andBool #tokensFor(Tokens, From) >=Int Value
+                    )
+              andBool From in_keys(Tokens)
+              andBool To in_keys(Tokens)
+              andBool To =/=K From
+              andBool Tokens[From] ==K ?V0:Int
+              andBool Tokens[To] ==K ?V1:Int
+
+  claim <k> #runProof(TransferParams(From, To, Value)) => Aborted(?_, ?_, ?_, ?_) ... </k>
+        <stack> .Stack => ?_:FailedStack </stack>
+        <tokens> Tokens </tokens>
         <myamount> #Mutez(Amount) </myamount>
         <senderaddr> Sender </senderaddr>
     requires Sender ==K From
@@ -373,11 +389,26 @@ module LQT-TOKEN-TRANSFER-DIRECT-SPEC
                     )
               andBool notBool From in_keys(Tokens)
               andBool         To in_keys(Tokens)
+              andBool         To ==K From
+              andBool         Tokens[To] ==K ?V1:Int
 
   claim <k> #runProof(TransferParams(From, To, Value)) => Aborted(?_, ?_, ?_, ?_) ... </k>
         <stack> .Stack => ?_:FailedStack </stack>
         <tokens> Tokens </tokens>
-        <allowances> Allowances </allowances>
+        <myamount> #Mutez(Amount) </myamount>
+        <senderaddr> Sender </senderaddr>
+    requires Sender ==K From
+     andBool notBool( Amount ==Int 0
+              andBool #tokensFor(Tokens, From) >=Int Value
+                    )
+              andBool notBool From in_keys(Tokens)
+              andBool         To in_keys(Tokens)
+              andBool         To =/=K From
+              andBool         Tokens[To] ==K ?V1:Int
+
+  claim <k> #runProof(TransferParams(From, To, Value)) => Aborted(?_, ?_, ?_, ?_) ... </k>
+        <stack> .Stack => ?_:FailedStack </stack>
+        <tokens> Tokens </tokens>
         <myamount> #Mutez(Amount) </myamount>
         <senderaddr> Sender </senderaddr>
     requires Sender ==K From
@@ -386,11 +417,26 @@ module LQT-TOKEN-TRANSFER-DIRECT-SPEC
                     )
               andBool         From in_keys(Tokens)
               andBool notBool To in_keys(Tokens)
+              andBool         To ==K From
+              andBool         Tokens[From] ==K ?V1:Int
 
   claim <k> #runProof(TransferParams(From, To, Value)) => Aborted(?_, ?_, ?_, ?_) ... </k>
         <stack> .Stack => ?_:FailedStack </stack>
         <tokens> Tokens </tokens>
-        <allowances> Allowances </allowances>
+        <myamount> #Mutez(Amount) </myamount>
+        <senderaddr> Sender </senderaddr>
+    requires Sender ==K From
+     andBool notBool( Amount ==Int 0
+              andBool #tokensFor(Tokens, From) >=Int Value
+                    )
+              andBool         From in_keys(Tokens)
+              andBool notBool To in_keys(Tokens)
+              andBool         To =/=K From
+              andBool         Tokens[From] ==K ?V1:Int
+
+  claim <k> #runProof(TransferParams(From, To, Value)) => Aborted(?_, ?_, ?_, ?_) ... </k>
+        <stack> .Stack => ?_:FailedStack </stack>
+        <tokens> Tokens </tokens>
         <myamount> #Mutez(Amount) </myamount>
         <senderaddr> Sender </senderaddr>
     requires Sender ==K From
@@ -399,6 +445,20 @@ module LQT-TOKEN-TRANSFER-DIRECT-SPEC
                     )
               andBool notBool From in_keys(Tokens)
               andBool notBool To in_keys(Tokens)
+              andBool         To ==K From
+
+  claim <k> #runProof(TransferParams(From, To, Value)) => Aborted(?_, ?_, ?_, ?_) ... </k>
+        <stack> .Stack => ?_:FailedStack </stack>
+        <tokens> Tokens </tokens>
+        <myamount> #Mutez(Amount) </myamount>
+        <senderaddr> Sender </senderaddr>
+    requires Sender ==K From
+     andBool notBool( Amount ==Int 0
+              andBool #tokensFor(Tokens, From) >=Int Value
+                    )
+              andBool notBool From in_keys(Tokens)
+              andBool notBool To in_keys(Tokens)
+              andBool         To =/=K From
 ```
 
 ```k
