@@ -472,7 +472,31 @@ module LQT-TOKEN-TRANSFER-PROXY-SPEC
 ```
 
 ```k
-  claim <k> #runProof(TransferParams(From, To, Value)) => .K </k>
+//  claim <k> #runProof(TransferParams(From, To, Value)) => .K </k>
+//        <stack> .Stack </stack>
+//        <tokens> Tokens => #incrementTokens(#incrementTokens(Tokens, From, 0 -Int Value), To, Value)  </tokens>
+//        <allowances> Allowances => #updateAllowances(Allowances, From, Sender, #allowanceFor(Allowances, From, Sender) -Int Value) </allowances>
+//        <myamount> #Mutez(Amount) </myamount>
+//        <senderaddr> Sender </senderaddr>
+//        <operations> _ => .InternalList </operations>
+//    requires Amount ==Int 0
+//     andBool #tokensFor(Tokens, From) >=Int Value
+//          // Spend via proxy
+//     andBool Sender =/=K From
+//     andBool #allowanceFor(Allowances, From, Sender) >=Int Value
+//     andBool         (Pair From Sender) in_keys(Allowances)
+//     andBool         From in_keys(Tokens)
+//     andBool         To in_keys(Tokens)
+//     andBool         To ==K From
+//     andBool         Tokens[From] ==K ?V0:Int
+//     andBool         Tokens[To] ==K ?V1:Int
+//     andBool         Allowances[(Pair From Sender)] ==K ?V2:Int
+
+  claim <k> #mapKeyCaseAnalysis(Allowances, (Pair From Sender), nat)
+         ~> #mapKeyCaseAnalysis(Tokens, From, nat)
+         ~> #mapKeyCaseAnalysis(Tokens, To, nat)
+         ~> #caseAnalysis(To ==K From)
+         ~> #runProof(TransferParams(From, To, Value)) => .K </k>
         <stack> .Stack </stack>
         <tokens> Tokens => #incrementTokens(#incrementTokens(Tokens, From, 0 -Int Value), To, Value)  </tokens>
         <allowances> Allowances => #updateAllowances(Allowances, From, Sender, #allowanceFor(Allowances, From, Sender) -Int Value) </allowances>
@@ -484,261 +508,264 @@ module LQT-TOKEN-TRANSFER-PROXY-SPEC
           // Spend via proxy
      andBool Sender =/=K From
      andBool #allowanceFor(Allowances, From, Sender) >=Int Value
-     andBool         (Pair From Sender) in_keys(Allowances)
-     andBool         From in_keys(Tokens)
-     andBool         To in_keys(Tokens)
 
-  claim <k> #runProof(TransferParams(From, To, Value)) => .K </k>
-        <stack> .Stack </stack>
-        <tokens> Tokens => #incrementTokens(#incrementTokens(Tokens, From, 0 -Int Value), To, Value)  </tokens>
-        <allowances> Allowances => #updateAllowances(Allowances, From, Sender, #allowanceFor(Allowances, From, Sender) -Int Value) </allowances>
-        <myamount> #Mutez(Amount) </myamount>
-        <senderaddr> Sender </senderaddr>
-        <operations> _ => .InternalList </operations>
-    requires Amount ==Int 0
-     andBool #tokensFor(Tokens, From) >=Int Value
-          // Spend via proxy
-     andBool Sender =/=K From
-     andBool #allowanceFor(Allowances, From, Sender) >=Int Value
-     andBool notBool (Pair From Sender) in_keys(Allowances)
-     andBool         From in_keys(Tokens)
-     andBool         To in_keys(Tokens)
-     andBool Value ==Int 0
+//  claim <k> #runProof(TransferParams(From, To, Value)) => .K </k>
+//        <stack> .Stack </stack>
+//        <tokens> Tokens => #incrementTokens(#incrementTokens(Tokens, From, 0 -Int Value), To, Value)  </tokens>
+//        <allowances> Allowances => #updateAllowances(Allowances, From, Sender, #allowanceFor(Allowances, From, Sender) -Int Value) </allowances>
+//        <myamount> #Mutez(Amount) </myamount>
+//        <senderaddr> Sender </senderaddr>
+//        <operations> _ => .InternalList </operations>
+//    requires Amount ==Int 0
+//     andBool #tokensFor(Tokens, From) >=Int Value
+//          // Spend via proxy
+//     andBool Sender =/=K From
+//     andBool #allowanceFor(Allowances, From, Sender) >=Int Value
+//     andBool notBool (Pair From Sender) in_keys(Allowances)
+//     andBool         From in_keys(Tokens)
+//     andBool         To in_keys(Tokens)
+//     andBool         To ==K From
+//     andBool         Tokens[From] ==K ?V0:Int
+//     andBool         Tokens[To] ==K ?V1:Int
+//     andBool         Value ==Int 0
+//
+//  claim <k> #runProof(TransferParams(From, To, Value)) => .K </k>
+//        <stack> .Stack </stack>
+//        <tokens> Tokens => #incrementTokens(#incrementTokens(Tokens, From, 0 -Int Value), To, Value)  </tokens>
+//        <allowances> Allowances => #updateAllowances(Allowances, From, Sender, #allowanceFor(Allowances, From, Sender) -Int Value) </allowances>
+//        <myamount> #Mutez(Amount) </myamount>
+//        <senderaddr> Sender </senderaddr>
+//        <operations> _ => .InternalList </operations>
+//    requires Amount ==Int 0
+//     andBool #tokensFor(Tokens, From) >=Int Value
+//          // Spend via proxy
+//     andBool Sender =/=K From
+//     andBool #allowanceFor(Allowances, From, Sender) >=Int Value
+//     andBool notBool (Pair From Sender) in_keys(Allowances)
+//     andBool         From in_keys(Tokens)
+//     andBool         To in_keys(Tokens)
+//     andBool         To =/=K From
+//     andBool         Tokens[From] ==K ?V0:Int
+//     andBool         Tokens[To] ==K ?V1:Int
+//     andBool         Value =/=Int 0
 
-  claim <k> #runProof(TransferParams(From, To, Value)) => .K </k>
-        <stack> .Stack </stack>
-        <tokens> Tokens => #incrementTokens(#incrementTokens(Tokens, From, 0 -Int Value), To, Value)  </tokens>
-        <allowances> Allowances => #updateAllowances(Allowances, From, Sender, #allowanceFor(Allowances, From, Sender) -Int Value) </allowances>
-        <myamount> #Mutez(Amount) </myamount>
-        <senderaddr> Sender </senderaddr>
-        <operations> _ => .InternalList </operations>
-    requires Amount ==Int 0
-     andBool #tokensFor(Tokens, From) >=Int Value
-          // Spend via proxy
-     andBool Sender =/=K From
-     andBool #allowanceFor(Allowances, From, Sender) >=Int Value
-     andBool notBool (Pair From Sender) in_keys(Allowances)
-     andBool         From in_keys(Tokens)
-     andBool         To in_keys(Tokens)
-     andBool Value =/=Int 0
-
-  claim <k> #runProof(TransferParams(From, To, Value)) => .K </k>
-        <stack> .Stack </stack>
-        <tokens> Tokens => #incrementTokens(#incrementTokens(Tokens, From, 0 -Int Value), To, Value)  </tokens>
-        <allowances> Allowances => #updateAllowances(Allowances, From, Sender, #allowanceFor(Allowances, From, Sender) -Int Value) </allowances>
-        <myamount> #Mutez(Amount) </myamount>
-        <senderaddr> Sender </senderaddr>
-        <operations> _ => .InternalList </operations>
-    requires Amount ==Int 0
-     andBool #tokensFor(Tokens, From) >=Int Value
-          // Spend via proxy
-     andBool Sender =/=K From
-     andBool #allowanceFor(Allowances, From, Sender) >=Int Value
-     andBool         (Pair From Sender) in_keys(Allowances)
-     andBool notBool From in_keys(Tokens)
-     andBool         To in_keys(Tokens)
-
-  claim <k> #runProof(TransferParams(From, To, Value)) => .K </k>
-        <stack> .Stack </stack>
-        <tokens> Tokens => #incrementTokens(#incrementTokens(Tokens, From, 0 -Int Value), To, Value)  </tokens>
-        <allowances> Allowances => #updateAllowances(Allowances, From, Sender, #allowanceFor(Allowances, From, Sender) -Int Value) </allowances>
-        <myamount> #Mutez(Amount) </myamount>
-        <senderaddr> Sender </senderaddr>
-        <operations> _ => .InternalList </operations>
-    requires Amount ==Int 0
-     andBool #tokensFor(Tokens, From) >=Int Value
-          // Spend via proxy
-     andBool Sender =/=K From
-     andBool #allowanceFor(Allowances, From, Sender) >=Int Value
-     andBool notBool (Pair From Sender) in_keys(Allowances)
-     andBool notBool From in_keys(Tokens)
-     andBool         To in_keys(Tokens)
-
-  claim <k> #runProof(TransferParams(From, To, Value)) => .K </k>
-        <stack> .Stack </stack>
-        <tokens> Tokens => #incrementTokens(#incrementTokens(Tokens, From, 0 -Int Value), To, Value)  </tokens>
-        <allowances> Allowances => #updateAllowances(Allowances, From, Sender, #allowanceFor(Allowances, From, Sender) -Int Value) </allowances>
-        <myamount> #Mutez(Amount) </myamount>
-        <senderaddr> Sender </senderaddr>
-        <operations> _ => .InternalList </operations>
-    requires Amount ==Int 0
-     andBool #tokensFor(Tokens, From) >=Int Value
-          // Spend via proxy
-     andBool Sender =/=K From
-     andBool #allowanceFor(Allowances, From, Sender) >=Int Value
-     andBool         (Pair From Sender) in_keys(Allowances)
-     andBool         From in_keys(Tokens)
-     andBool notBool To in_keys(Tokens)
-
-  claim <k> #runProof(TransferParams(From, To, Value)) => .K </k>
-        <stack> .Stack </stack>
-        <tokens> Tokens => #incrementTokens(#incrementTokens(Tokens, From, 0 -Int Value), To, Value)  </tokens>
-        <allowances> Allowances => #updateAllowances(Allowances, From, Sender, #allowanceFor(Allowances, From, Sender) -Int Value) </allowances>
-        <myamount> #Mutez(Amount) </myamount>
-        <senderaddr> Sender </senderaddr>
-        <operations> _ => .InternalList </operations>
-    requires Amount ==Int 0
-     andBool #tokensFor(Tokens, From) >=Int Value
-          // Spend via proxy
-     andBool Sender =/=K From
-     andBool #allowanceFor(Allowances, From, Sender) >=Int Value
-     andBool notBool (Pair From Sender) in_keys(Allowances)
-     andBool         From in_keys(Tokens)
-     andBool notBool To in_keys(Tokens)
-
-  claim <k> #runProof(TransferParams(From, To, Value)) => .K </k>
-        <stack> .Stack </stack>
-        <tokens> Tokens => #incrementTokens(#incrementTokens(Tokens, From, 0 -Int Value), To, Value)  </tokens>
-        <allowances> Allowances => #updateAllowances(Allowances, From, Sender, #allowanceFor(Allowances, From, Sender) -Int Value) </allowances>
-        <myamount> #Mutez(Amount) </myamount>
-        <senderaddr> Sender </senderaddr>
-        <operations> _ => .InternalList </operations>
-    requires Amount ==Int 0
-     andBool #tokensFor(Tokens, From) >=Int Value
-          // Spend via proxy
-     andBool Sender =/=K From
-     andBool #allowanceFor(Allowances, From, Sender) >=Int Value
-     andBool         (Pair From Sender) in_keys(Allowances)
-     andBool notBool From in_keys(Tokens)
-     andBool notBool To in_keys(Tokens)
-
-  claim <k> #runProof(TransferParams(From, To, Value)) => .K </k>
-        <stack> .Stack </stack>
-        <tokens> Tokens => #incrementTokens(#incrementTokens(Tokens, From, 0 -Int Value), To, Value)  </tokens>
-        <allowances> Allowances => #updateAllowances(Allowances, From, Sender, #allowanceFor(Allowances, From, Sender) -Int Value) </allowances>
-        <myamount> #Mutez(Amount) </myamount>
-        <senderaddr> Sender </senderaddr>
-        <operations> _ => .InternalList </operations>
-    requires Amount ==Int 0
-     andBool #tokensFor(Tokens, From) >=Int Value
-          // Spend via proxy
-     andBool Sender =/=K From
-     andBool #allowanceFor(Allowances, From, Sender) >=Int Value
-     andBool notBool (Pair From Sender) in_keys(Allowances)
-     andBool notBool From in_keys(Tokens)
-     andBool notBool To in_keys(Tokens)
-
-///////////////////////////////////////////////////////////////////////////////
-
-  claim <k> #runProof(TransferParams(From, To, Value)) => Aborted(?_, ?_, ?_, ?_) ... </k>
-        <stack> .Stack => ?_:FailedStack </stack>
-        <tokens> Tokens  </tokens>
-        <allowances> Allowances </allowances>
-        <myamount> #Mutez(Amount) </myamount>
-        <senderaddr> Sender </senderaddr>
-    requires Sender =/=K From
-     andBool notBool( Amount ==Int 0
-              andBool #tokensFor(Tokens, From) >=Int Value
-              andBool #allowanceFor(Allowances, From, Sender) >=Int Value
-                    )
-              andBool         (Pair From Sender) in_keys(Allowances)
-              andBool         From in_keys(Tokens)
-              andBool         To in_keys(Tokens)
-
-  claim <k> #runProof(TransferParams(From, To, Value)) => Aborted(?_, ?_, ?_, ?_) ... </k>
-        <stack> .Stack => ?_:FailedStack </stack>
-        <tokens> Tokens  </tokens>
-        <allowances> Allowances </allowances>
-        <myamount> #Mutez(Amount) </myamount>
-        <senderaddr> Sender </senderaddr>
-    requires Sender =/=K From
-     andBool notBool( Amount ==Int 0
-              andBool #tokensFor(Tokens, From) >=Int Value
-              andBool #allowanceFor(Allowances, From, Sender) >=Int Value
-                    )
-              andBool notBool (Pair From Sender) in_keys(Allowances)
-              andBool         From in_keys(Tokens)
-              andBool         To in_keys(Tokens)
-
-  claim <k> #runProof(TransferParams(From, To, Value)) => Aborted(?_, ?_, ?_, ?_) ... </k>
-        <stack> .Stack => ?_:FailedStack </stack>
-        <tokens> Tokens  </tokens>
-        <allowances> Allowances </allowances>
-        <myamount> #Mutez(Amount) </myamount>
-        <senderaddr> Sender </senderaddr>
-    requires Sender =/=K From
-     andBool notBool( Amount ==Int 0
-              andBool #tokensFor(Tokens, From) >=Int Value
-              andBool #allowanceFor(Allowances, From, Sender) >=Int Value
-                    )
-              andBool         (Pair From Sender) in_keys(Allowances)
-              andBool notBool From in_keys(Tokens)
-              andBool         To in_keys(Tokens)
-
-  claim <k> #runProof(TransferParams(From, To, Value)) => Aborted(?_, ?_, ?_, ?_) ... </k>
-        <stack> .Stack => ?_:FailedStack </stack>
-        <tokens> Tokens  </tokens>
-        <allowances> Allowances </allowances>
-        <myamount> #Mutez(Amount) </myamount>
-        <senderaddr> Sender </senderaddr>
-    requires Sender =/=K From
-     andBool notBool( Amount ==Int 0
-              andBool #tokensFor(Tokens, From) >=Int Value
-              andBool #allowanceFor(Allowances, From, Sender) >=Int Value
-                    )
-              andBool notBool (Pair From Sender) in_keys(Allowances)
-              andBool notBool From in_keys(Tokens)
-              andBool         To in_keys(Tokens)
-
-  claim <k> #runProof(TransferParams(From, To, Value)) => Aborted(?_, ?_, ?_, ?_) ... </k>
-        <stack> .Stack => ?_:FailedStack </stack>
-        <tokens> Tokens  </tokens>
-        <allowances> Allowances </allowances>
-        <myamount> #Mutez(Amount) </myamount>
-        <senderaddr> Sender </senderaddr>
-    requires Sender =/=K From
-     andBool notBool( Amount ==Int 0
-              andBool #tokensFor(Tokens, From) >=Int Value
-              andBool #allowanceFor(Allowances, From, Sender) >=Int Value
-                    )
-              andBool         (Pair From Sender) in_keys(Allowances)
-              andBool         From in_keys(Tokens)
-              andBool notBool To in_keys(Tokens)
-
-  claim <k> #runProof(TransferParams(From, To, Value)) => Aborted(?_, ?_, ?_, ?_) ... </k>
-        <stack> .Stack => ?_:FailedStack </stack>
-        <tokens> Tokens  </tokens>
-        <allowances> Allowances </allowances>
-        <myamount> #Mutez(Amount) </myamount>
-        <senderaddr> Sender </senderaddr>
-    requires Sender =/=K From
-     andBool notBool( Amount ==Int 0
-              andBool #tokensFor(Tokens, From) >=Int Value
-              andBool #allowanceFor(Allowances, From, Sender) >=Int Value
-                    )
-              andBool notBool (Pair From Sender) in_keys(Allowances)
-              andBool         From in_keys(Tokens)
-              andBool notBool To in_keys(Tokens)
-
-  claim <k> #runProof(TransferParams(From, To, Value)) => Aborted(?_, ?_, ?_, ?_) ... </k>
-        <stack> .Stack => ?_:FailedStack </stack>
-        <tokens> Tokens  </tokens>
-        <allowances> Allowances </allowances>
-        <myamount> #Mutez(Amount) </myamount>
-        <senderaddr> Sender </senderaddr>
-    requires Sender =/=K From
-     andBool notBool( Amount ==Int 0
-              andBool #tokensFor(Tokens, From) >=Int Value
-              andBool #allowanceFor(Allowances, From, Sender) >=Int Value
-                    )
-              andBool         (Pair From Sender) in_keys(Allowances)
-              andBool notBool From in_keys(Tokens)
-              andBool notBool To in_keys(Tokens)
-
-  claim <k> #runProof(TransferParams(From, To, Value)) => Aborted(?_, ?_, ?_, ?_) ... </k>
-        <stack> .Stack => ?_:FailedStack </stack>
-        <tokens> Tokens  </tokens>
-        <allowances> Allowances </allowances>
-        <myamount> #Mutez(Amount) </myamount>
-        <senderaddr> Sender </senderaddr>
-    requires Sender =/=K From
-     andBool notBool( Amount ==Int 0
-              andBool #tokensFor(Tokens, From) >=Int Value
-              andBool #allowanceFor(Allowances, From, Sender) >=Int Value
-                    )
-              andBool notBool (Pair From Sender) in_keys(Allowances)
-              andBool notBool From in_keys(Tokens)
-              andBool notBool To in_keys(Tokens)
+//  claim <k> #runProof(TransferParams(From, To, Value)) => .K </k>
+//        <stack> .Stack </stack>
+//        <tokens> Tokens => #incrementTokens(#incrementTokens(Tokens, From, 0 -Int Value), To, Value)  </tokens>
+//        <allowances> Allowances => #updateAllowances(Allowances, From, Sender, #allowanceFor(Allowances, From, Sender) -Int Value) </allowances>
+//        <myamount> #Mutez(Amount) </myamount>
+//        <senderaddr> Sender </senderaddr>
+//        <operations> _ => .InternalList </operations>
+//    requires Amount ==Int 0
+//     andBool #tokensFor(Tokens, From) >=Int Value
+//          // Spend via proxy
+//     andBool Sender =/=K From
+//     andBool #allowanceFor(Allowances, From, Sender) >=Int Value
+//     andBool         (Pair From Sender) in_keys(Allowances)
+//     andBool notBool From in_keys(Tokens)
+//     andBool         To in_keys(Tokens)
+//
+//  claim <k> #runProof(TransferParams(From, To, Value)) => .K </k>
+//        <stack> .Stack </stack>
+//        <tokens> Tokens => #incrementTokens(#incrementTokens(Tokens, From, 0 -Int Value), To, Value)  </tokens>
+//        <allowances> Allowances => #updateAllowances(Allowances, From, Sender, #allowanceFor(Allowances, From, Sender) -Int Value) </allowances>
+//        <myamount> #Mutez(Amount) </myamount>
+//        <senderaddr> Sender </senderaddr>
+//        <operations> _ => .InternalList </operations>
+//    requires Amount ==Int 0
+//     andBool #tokensFor(Tokens, From) >=Int Value
+//          // Spend via proxy
+//     andBool Sender =/=K From
+//     andBool #allowanceFor(Allowances, From, Sender) >=Int Value
+//     andBool notBool (Pair From Sender) in_keys(Allowances)
+//     andBool notBool From in_keys(Tokens)
+//     andBool         To in_keys(Tokens)
+//
+//  claim <k> #runProof(TransferParams(From, To, Value)) => .K </k>
+//        <stack> .Stack </stack>
+//        <tokens> Tokens => #incrementTokens(#incrementTokens(Tokens, From, 0 -Int Value), To, Value)  </tokens>
+//        <allowances> Allowances => #updateAllowances(Allowances, From, Sender, #allowanceFor(Allowances, From, Sender) -Int Value) </allowances>
+//        <myamount> #Mutez(Amount) </myamount>
+//        <senderaddr> Sender </senderaddr>
+//        <operations> _ => .InternalList </operations>
+//    requires Amount ==Int 0
+//     andBool #tokensFor(Tokens, From) >=Int Value
+//          // Spend via proxy
+//     andBool Sender =/=K From
+//     andBool #allowanceFor(Allowances, From, Sender) >=Int Value
+//     andBool         (Pair From Sender) in_keys(Allowances)
+//     andBool         From in_keys(Tokens)
+//     andBool notBool To in_keys(Tokens)
+//
+//  claim <k> #runProof(TransferParams(From, To, Value)) => .K </k>
+//        <stack> .Stack </stack>
+//        <tokens> Tokens => #incrementTokens(#incrementTokens(Tokens, From, 0 -Int Value), To, Value)  </tokens>
+//        <allowances> Allowances => #updateAllowances(Allowances, From, Sender, #allowanceFor(Allowances, From, Sender) -Int Value) </allowances>
+//        <myamount> #Mutez(Amount) </myamount>
+//        <senderaddr> Sender </senderaddr>
+//        <operations> _ => .InternalList </operations>
+//    requires Amount ==Int 0
+//     andBool #tokensFor(Tokens, From) >=Int Value
+//          // Spend via proxy
+//     andBool Sender =/=K From
+//     andBool #allowanceFor(Allowances, From, Sender) >=Int Value
+//     andBool notBool (Pair From Sender) in_keys(Allowances)
+//     andBool         From in_keys(Tokens)
+//     andBool notBool To in_keys(Tokens)
+//
+//  claim <k> #runProof(TransferParams(From, To, Value)) => .K </k>
+//        <stack> .Stack </stack>
+//        <tokens> Tokens => #incrementTokens(#incrementTokens(Tokens, From, 0 -Int Value), To, Value)  </tokens>
+//        <allowances> Allowances => #updateAllowances(Allowances, From, Sender, #allowanceFor(Allowances, From, Sender) -Int Value) </allowances>
+//        <myamount> #Mutez(Amount) </myamount>
+//        <senderaddr> Sender </senderaddr>
+//        <operations> _ => .InternalList </operations>
+//    requires Amount ==Int 0
+//     andBool #tokensFor(Tokens, From) >=Int Value
+//          // Spend via proxy
+//     andBool Sender =/=K From
+//     andBool #allowanceFor(Allowances, From, Sender) >=Int Value
+//     andBool         (Pair From Sender) in_keys(Allowances)
+//     andBool notBool From in_keys(Tokens)
+//     andBool notBool To in_keys(Tokens)
+//
+//  claim <k> #runProof(TransferParams(From, To, Value)) => .K </k>
+//        <stack> .Stack </stack>
+//        <tokens> Tokens => #incrementTokens(#incrementTokens(Tokens, From, 0 -Int Value), To, Value)  </tokens>
+//        <allowances> Allowances => #updateAllowances(Allowances, From, Sender, #allowanceFor(Allowances, From, Sender) -Int Value) </allowances>
+//        <myamount> #Mutez(Amount) </myamount>
+//        <senderaddr> Sender </senderaddr>
+//        <operations> _ => .InternalList </operations>
+//    requires Amount ==Int 0
+//     andBool #tokensFor(Tokens, From) >=Int Value
+//          // Spend via proxy
+//     andBool Sender =/=K From
+//     andBool #allowanceFor(Allowances, From, Sender) >=Int Value
+//     andBool notBool (Pair From Sender) in_keys(Allowances)
+//     andBool notBool From in_keys(Tokens)
+//     andBool notBool To in_keys(Tokens)
+//
+/////////////////////////////////////////////////////////////////////////////////
+//
+//  claim <k> #runProof(TransferParams(From, To, Value)) => Aborted(?_, ?_, ?_, ?_) ... </k>
+//        <stack> .Stack => ?_:FailedStack </stack>
+//        <tokens> Tokens  </tokens>
+//        <allowances> Allowances </allowances>
+//        <myamount> #Mutez(Amount) </myamount>
+//        <senderaddr> Sender </senderaddr>
+//    requires Sender =/=K From
+//     andBool notBool( Amount ==Int 0
+//              andBool #tokensFor(Tokens, From) >=Int Value
+//              andBool #allowanceFor(Allowances, From, Sender) >=Int Value
+//                    )
+//              andBool         (Pair From Sender) in_keys(Allowances)
+//              andBool         From in_keys(Tokens)
+//              andBool         To in_keys(Tokens)
+//
+//  claim <k> #runProof(TransferParams(From, To, Value)) => Aborted(?_, ?_, ?_, ?_) ... </k>
+//        <stack> .Stack => ?_:FailedStack </stack>
+//        <tokens> Tokens  </tokens>
+//        <allowances> Allowances </allowances>
+//        <myamount> #Mutez(Amount) </myamount>
+//        <senderaddr> Sender </senderaddr>
+//    requires Sender =/=K From
+//     andBool notBool( Amount ==Int 0
+//              andBool #tokensFor(Tokens, From) >=Int Value
+//              andBool #allowanceFor(Allowances, From, Sender) >=Int Value
+//                    )
+//              andBool notBool (Pair From Sender) in_keys(Allowances)
+//              andBool         From in_keys(Tokens)
+//              andBool         To in_keys(Tokens)
+//
+//  claim <k> #runProof(TransferParams(From, To, Value)) => Aborted(?_, ?_, ?_, ?_) ... </k>
+//        <stack> .Stack => ?_:FailedStack </stack>
+//        <tokens> Tokens  </tokens>
+//        <allowances> Allowances </allowances>
+//        <myamount> #Mutez(Amount) </myamount>
+//        <senderaddr> Sender </senderaddr>
+//    requires Sender =/=K From
+//     andBool notBool( Amount ==Int 0
+//              andBool #tokensFor(Tokens, From) >=Int Value
+//              andBool #allowanceFor(Allowances, From, Sender) >=Int Value
+//                    )
+//              andBool         (Pair From Sender) in_keys(Allowances)
+//              andBool notBool From in_keys(Tokens)
+//              andBool         To in_keys(Tokens)
+//
+//  claim <k> #runProof(TransferParams(From, To, Value)) => Aborted(?_, ?_, ?_, ?_) ... </k>
+//        <stack> .Stack => ?_:FailedStack </stack>
+//        <tokens> Tokens  </tokens>
+//        <allowances> Allowances </allowances>
+//        <myamount> #Mutez(Amount) </myamount>
+//        <senderaddr> Sender </senderaddr>
+//    requires Sender =/=K From
+//     andBool notBool( Amount ==Int 0
+//              andBool #tokensFor(Tokens, From) >=Int Value
+//              andBool #allowanceFor(Allowances, From, Sender) >=Int Value
+//                    )
+//              andBool notBool (Pair From Sender) in_keys(Allowances)
+//              andBool notBool From in_keys(Tokens)
+//              andBool         To in_keys(Tokens)
+//
+//  claim <k> #runProof(TransferParams(From, To, Value)) => Aborted(?_, ?_, ?_, ?_) ... </k>
+//        <stack> .Stack => ?_:FailedStack </stack>
+//        <tokens> Tokens  </tokens>
+//        <allowances> Allowances </allowances>
+//        <myamount> #Mutez(Amount) </myamount>
+//        <senderaddr> Sender </senderaddr>
+//    requires Sender =/=K From
+//     andBool notBool( Amount ==Int 0
+//              andBool #tokensFor(Tokens, From) >=Int Value
+//              andBool #allowanceFor(Allowances, From, Sender) >=Int Value
+//                    )
+//              andBool         (Pair From Sender) in_keys(Allowances)
+//              andBool         From in_keys(Tokens)
+//              andBool notBool To in_keys(Tokens)
+//
+//  claim <k> #runProof(TransferParams(From, To, Value)) => Aborted(?_, ?_, ?_, ?_) ... </k>
+//        <stack> .Stack => ?_:FailedStack </stack>
+//        <tokens> Tokens  </tokens>
+//        <allowances> Allowances </allowances>
+//        <myamount> #Mutez(Amount) </myamount>
+//        <senderaddr> Sender </senderaddr>
+//    requires Sender =/=K From
+//     andBool notBool( Amount ==Int 0
+//              andBool #tokensFor(Tokens, From) >=Int Value
+//              andBool #allowanceFor(Allowances, From, Sender) >=Int Value
+//                    )
+//              andBool notBool (Pair From Sender) in_keys(Allowances)
+//              andBool         From in_keys(Tokens)
+//              andBool notBool To in_keys(Tokens)
+//
+//  claim <k> #runProof(TransferParams(From, To, Value)) => Aborted(?_, ?_, ?_, ?_) ... </k>
+//        <stack> .Stack => ?_:FailedStack </stack>
+//        <tokens> Tokens  </tokens>
+//        <allowances> Allowances </allowances>
+//        <myamount> #Mutez(Amount) </myamount>
+//        <senderaddr> Sender </senderaddr>
+//    requires Sender =/=K From
+//     andBool notBool( Amount ==Int 0
+//              andBool #tokensFor(Tokens, From) >=Int Value
+//              andBool #allowanceFor(Allowances, From, Sender) >=Int Value
+//                    )
+//              andBool         (Pair From Sender) in_keys(Allowances)
+//              andBool notBool From in_keys(Tokens)
+//              andBool notBool To in_keys(Tokens)
+//
+//  claim <k> #runProof(TransferParams(From, To, Value)) => Aborted(?_, ?_, ?_, ?_) ... </k>
+//        <stack> .Stack => ?_:FailedStack </stack>
+//        <tokens> Tokens  </tokens>
+//        <allowances> Allowances </allowances>
+//        <myamount> #Mutez(Amount) </myamount>
+//        <senderaddr> Sender </senderaddr>
+//    requires Sender =/=K From
+//     andBool notBool( Amount ==Int 0
+//              andBool #tokensFor(Tokens, From) >=Int Value
+//              andBool #allowanceFor(Allowances, From, Sender) >=Int Value
+//                    )
+//              andBool notBool (Pair From Sender) in_keys(Allowances)
+//              andBool notBool From in_keys(Tokens)
+//              andBool notBool To in_keys(Tokens)
 ```
 
 ```k
