@@ -1399,7 +1399,8 @@ We need some simplications for dealing with map lookups:
   rule M:Map [ K1 <- _     ][K2] => M[K2]   requires K1 =/=K K2 [simplification]
   rule M:Map [ K1 <- undef ][K2] => M[K2]   requires K1 =/=K K2 [simplification]
 
-  rule K2 in_keys(M:Map[K1 <- _]) => K1 ==K K2 orBool K2 in_keys(M) [simplification]
+  rule K2 in_keys(M:Map[K1 <- _])     => K1 ==K  K2 orBool  K2 in_keys(M) [simplification]
+  rule K2 in_keys(M:Map[K1 <- undef]) => K1 =/=K K2 andBool K2 in_keys(M) [simplification]
 ```
 
 ### Map Specific Operations
