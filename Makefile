@@ -122,8 +122,7 @@ endif
 
 CPP_FILES := hooks/time.cpp
 
-LLVM_KOMPILE_OPTS += --hook-namespaces "$(HOOK_NAMESPACES)"      \
-                     -L$(LOCAL_LIB) -I$(K_RELEASE)/include/kllvm \
+LLVM_KOMPILE_OPTS += -L$(LOCAL_LIB) -I$(K_RELEASE)/include/kllvm \
                      $(abspath $(CPP_FILES))                     \
                      -std=c++14
 
@@ -132,6 +131,7 @@ ifeq (,$(RELEASE))
 endif
 
 KOMPILE_LLVM = kompile --debug --backend llvm --md-selector "$(tangle_llvm)" \
+               --hook-namespaces "$(HOOK_NAMESPACES)"                        \
                $(KOMPILE_OPTS)                                               \
                $(KOMPILE_KRUN_OPTS)                                          \
                $(addprefix -ccopt ,$(LLVM_KOMPILE_OPTS))
