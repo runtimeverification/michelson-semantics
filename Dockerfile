@@ -34,6 +34,8 @@ RUN    git clone 'https://github.com/z3prover/z3' --branch=z3-4.8.11 \
     && cd ../..                                                      \
     && rm -rf z3
 
+RUN curl -sL https://sh.rustup.rs | bash -
+
 RUN curl -sL https://deb.nodesource.com/setup_14.x | bash -
 RUN    apt-get update               \
     && apt-get upgrade --yes        \
