@@ -492,10 +492,12 @@ module LQT-TOKEN-TRANSFER-PROXY-SPEC
 //     andBool         Tokens[To] ==K ?V1:Int
 //     andBool         Allowances[(Pair From Sender)] ==K ?V2:Int
 
-  claim <k> #mapKeyCaseAnalysis(Allowances, (Pair From Sender), nat)
-         ~> #mapKeyCaseAnalysis(Tokens, From, nat)
-         ~> #mapKeyCaseAnalysis(Tokens, To, nat)
-         ~> #caseAnalysis(To ==K From)
+  claim <k>
+//            #caseAnalysis(Value =/=Int 0)
+//         ~> #mapKeyCaseAnalysis(Allowances, (Pair From Sender), nat)
+//         ~> #mapKeyCaseAnalysis(Tokens, From, nat)
+              #mapKeyCaseAnalysis(Tokens, To, nat)
+           ~> #caseAnalysis(To ==K From)
          ~> #runProof(TransferParams(From, To, Value)) => .K </k>
         <stack> .Stack </stack>
         <tokens> Tokens => #incrementTokens(#incrementTokens(Tokens, From, 0 -Int Value), To, Value)  </tokens>
@@ -508,6 +510,12 @@ module LQT-TOKEN-TRANSFER-PROXY-SPEC
           // Spend via proxy
      andBool Sender =/=K From
      andBool #allowanceFor(Allowances, From, Sender) >=Int Value
+
+     andBool (Pair From Sender) in_keys(Allowances)
+     andBool Allowances[(Pair From Sender)] ==K ?V:Int
+
+     andBool From in_keys(Tokens)
+     andBool Tokens[From] ==K ?V0:Int
 
 //  claim <k> #runProof(TransferParams(From, To, Value)) => .K </k>
 //        <stack> .Stack </stack>
