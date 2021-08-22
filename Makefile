@@ -113,7 +113,8 @@ tangle_llvm    := k | concrete
 HOOK_NAMESPACES := TIME
 
 # NOTE: -W useless-rule check is quite expensive (increasing compilation times by several times), use -Wno useless-rule unless this check is needed!!!
-KOMPILE_OPTS += --hook-namespaces "$(HOOK_NAMESPACES)" --gen-bison-parser --emit-json -w all -Wno unused-symbol -Wno useless-rule
+KOMPILE_OPTS += -w all -Wno unused-symbol -Wno useless-rule
+KOMPILE_KRUN_OPTS += --gen-bison-parser
 
 ifneq (,$(RELEASE))
     KOMPILE_OPTS += -O3
@@ -121,7 +122,8 @@ endif
 
 CPP_FILES := hooks/time.cpp
 
-LLVM_KOMPILE_OPTS += -L$(LOCAL_LIB) -I$(K_RELEASE)/include/kllvm \
+LLVM_KOMPILE_OPTS += --hook-namespaces "$(HOOK_NAMESPACES)"      \
+                     -L$(LOCAL_LIB) -I$(K_RELEASE)/include/kllvm \
                      $(abspath $(CPP_FILES))                     \
                      -std=c++14
 
@@ -131,6 +133,7 @@ endif
 
 KOMPILE_LLVM = kompile --debug --backend llvm --md-selector "$(tangle_llvm)" \
                $(KOMPILE_OPTS)                                               \
+               $(KOMPILE_KRUN_OPTS)                                          \
                $(addprefix -ccopt ,$(LLVM_KOMPILE_OPTS))
 
 HASKELL_KOMPILE_OPTS +=
