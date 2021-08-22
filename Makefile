@@ -107,8 +107,8 @@ SOURCE_FILES       := compat    \
 EXTRA_SOURCE_FILES :=
 ALL_FILES          := $(patsubst %, %.md, $(SOURCE_FILES) $(EXTRA_SOURCE_FILES))
 
-tangle_haskell := k | symbolic
-tangle_llvm    := k | concrete
+tangle_haskell := k|symbolic
+tangle_llvm    := k|concrete
 
 HOOK_NAMESPACES := TIME
 
@@ -255,7 +255,7 @@ driver_pattern_parser := $(driver_dir)/$(notdir $(driver_main_file))-kompiled/pa
 defn-driver:  $(driver_files)
 build-driver: $(driver_kompiled) $(driver_pattern_parser)
 
-$(driver_kompiled): tangle_haskell := k | driver
+$(driver_kompiled): tangle_haskell := k|driver
 $(driver_kompiled): $(driver_files)
 	$(KOMPILE_LLVM) $(driver_main_file).md                  \
 	                --directory $(driver_dir) -I $(CURDIR)  \
@@ -277,7 +277,7 @@ symbolic_kompiled      := $(symbolic_dir)/$(notdir $(symbolic_main_file))-kompil
 defn-symbolic:  $(symbolic_files)
 build-symbolic: $(symbolic_kompiled) build-driver
 
-$(symbolic_kompiled): tangle_haskell := k | symbolic | internalized-rl
+$(symbolic_kompiled): tangle_haskell := k|symbolic|internalized-rl
 $(symbolic_kompiled): $(symbolic_files)
 	$(KOMPILE_HASKELL) $(symbolic_main_file).md                  \
 	                   --directory $(symbolic_dir) -I $(CURDIR)  \
