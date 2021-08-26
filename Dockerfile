@@ -4,6 +4,7 @@ FROM runtimeverificationinc/kframework-k:ubuntu-focal-${K_COMMIT}
 RUN    apt-get update                \
     && apt-get upgrade --yes         \
     && apt-get install --yes         \
+                autoconf             \
                 cmake                \
                 curl                 \
                 jq                   \
@@ -23,7 +24,8 @@ RUN    apt-get update                \
                 python3-pip          \
                 python-pygments      \
                 python3-recommonmark \
-                sphinx-common
+                sphinx-common        \
+                zlib1g-dev
 
 RUN    git clone 'https://github.com/z3prover/z3' --branch=z3-4.8.11 \
     && cd z3                                                         \
@@ -33,8 +35,6 @@ RUN    git clone 'https://github.com/z3prover/z3' --branch=z3-4.8.11 \
     && make install                                                  \
     && cd ../..                                                      \
     && rm -rf z3
-
-RUN curl -sL https://sh.rustup.rs/rustup-init.sh | bash -s -- --profile minimal --default-toolchain 1.52.1 -y
 
 RUN curl -sL https://deb.nodesource.com/setup_14.x | bash -
 RUN    apt-get update               \
@@ -49,6 +49,9 @@ RUN groupadd -g $GROUP_ID user && useradd -m -u $USER_ID -s /bin/sh -g user user
 
 USER user:user
 WORKDIR /home/user
+
+RUN    curl -sL https://sh.rustup.rs/rustup-init.sh | bash -s -- --profile minimal --default-toolchain 1.52.1 -y \
+    && echo 'source $HOME/.cargo/env' >> $HOME/.bashrc
 
 RUN    git config --global user.email 'admin@runtimeverification.com' \
     && git config --global user.name  'RV Jenkins'                    \
