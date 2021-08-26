@@ -6,6 +6,7 @@ RUN    apt-get update                \
     && apt-get install --yes         \
                 cargo                \
                 cmake                \
+                curl                 \
                 jq                   \
                 libcrypto++-dev      \
                 libev-dev            \
@@ -34,7 +35,7 @@ RUN    git clone 'https://github.com/z3prover/z3' --branch=z3-4.8.11 \
     && cd ../..                                                      \
     && rm -rf z3
 
-RUN curl -sL https://sh.rustup.rs | bash -
+RUN curl -sL https://sh.rustup.rs/rustup-init.sh | bash -s -- --profile minimal --default-toolchain 1.52.1 -y
 
 RUN curl -sL https://deb.nodesource.com/setup_14.x | bash -
 RUN    apt-get update               \
