@@ -1,0 +1,10 @@
+code { JOIN_TICKETS } ;
+input { Stack_elt (pair (ticket string) (ticket string))
+        (Pair
+            (Pair "KT1BEqzn5Wx8uJrZNvuS9DVHmLvG9td3fDLi" (Pair "testticket" 2))
+            (Pair "tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx" (Pair "testticket" 3))
+        )
+      } ;
+output { Stack_elt (option (ticket string))
+         None
+       }

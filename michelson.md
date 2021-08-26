@@ -1900,7 +1900,7 @@ identical to those defined over integers.
             => [(option (ticket CTy)) None] ;
                SS
        </stack>
-     requires notBool S1 ==String S2
+     requires notBool S1 ==K S2
 
   rule <k> JOIN_TICKETS _A => . ...</k>
        <stack> [(pair (ticket CTy) (ticket CTy))
