@@ -282,7 +282,8 @@ $(symbolic_kompiled): $(symbolic_files)
 	$(KOMPILE_HASKELL) $(symbolic_main_file).md                  \
 	                   --directory $(symbolic_dir) -I $(CURDIR)  \
 	                   --main-module $(symbolic_main_module)     \
-	                   --syntax-module $(symbolic_syntax_module)
+	                   --syntax-module $(symbolic_syntax_module) \
+	                   $(KOMPILE_KRUN_OPTS)
 
 # Compat Contract Expander
 
