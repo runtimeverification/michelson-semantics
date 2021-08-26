@@ -492,6 +492,13 @@ We recursively convert the contents of pairs, ors and options, if applicable.
   rule #MichelineToNative(Right V, or _:AnnotationList _:Type TR:Type, KnownAddrs, BigMaps) => Right #MichelineToNative(V, TR, KnownAddrs, BigMaps)
 ```
 
+TODO: Define a proper internal encoding for tickets instead of abusing pairs.
+
+```k
+  rule #MichelineToNative(Ticket, ticket _:AnnotationList T:Type, KnownAddrs, BigMaps) =>
+    #MichelineToNative(Ticket, #Type(pair address (pair #Name(T) nat)), KnownAddrs, BigMaps)
+```
+
 We wrap Lambdas appropriately and save their type information.  Note that we do *not* recurse into the Block.
 
 ```k

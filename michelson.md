@@ -413,7 +413,7 @@ instruction placement:
       a concrete value type for the resulting `map key_ty val_ty` or `list ty`
       that it produces.
 
-Currently, we do enforce these restrictions, but we may do so in a future
+Currently, we do not enforce these restrictions, but we may do so in a future
 version.
 
 ### Stack Initialization
@@ -608,6 +608,44 @@ Here we handle symbolic loop semantics.
 
 ### Stack Manipulation
 
+The `#IsDuplicable`-predicate indicates wether values of a certain type can be
+passes as arguments to the `DUP`-instruction. Currently only `ticket`s cannot be
+duplicated. Special attention is required for container-types because
+duplicating a container with ticket effectively also duplicates the ticket itself.
+
+TODO: The reference is a bit unclear with respect to container-types. Tickets
+cannot appear inside sets because they are not comparable. However, the case with
+lists and pairs is less clear. The reference says that these types are duplicable,
+but this seems to be inaccurate/unintentional. What about lambdas?
+
+```k
+  syntax Bool ::= #IsDuplicable(TypeName) [function, functional]
+
+  rule #IsDuplicable(_:NumTypeName) => true
+  rule #IsDuplicable(string) => true
+  rule #IsDuplicable(bytes) => true
+  rule #IsDuplicable(mutez) => true
+  rule #IsDuplicable(bool) => true
+  rule #IsDuplicable(key_hash) => true
+  rule #IsDuplicable(timestamp) => true
+  rule #IsDuplicable(address) => true
+  rule #IsDuplicable(pair T1 T2) => #IsDuplicable(T1) andBool #IsDuplicable(T2)
+  rule #IsDuplicable(option T) => #IsDuplicable(T)
+  rule #IsDuplicable(key) => true
+  rule #IsDuplicable(unit) => true
+  rule #IsDuplicable(signature) => true
+  rule #IsDuplicable(operation) => true
+  rule #IsDuplicable(chain_id) => true
+  rule #IsDuplicable(list T) => #IsDuplicable(T)
+  rule #IsDuplicable(set T) => #IsDuplicable(T)
+  rule #IsDuplicable(contract T) => #IsDuplicable(T)
+  rule #IsDuplicable(ticket _) => false
+  rule #IsDuplicable(or LTy RTy) => #IsDuplicable(LTy) andBool #IsDuplicable(RTy)
+  rule #IsDuplicable(lambda IT OT) => true
+  rule #IsDuplicable(map KT VT) => #IsDuplicable(KT) andBool #IsDuplicable(VT)
+  rule #IsDuplicable(big_map KT VT) => #IsDuplicable(KT) andBool #IsDuplicable(VT)
+```
+
 It is sometimes useful to create "pseudo-instructions" like this to schedule
 operations to happen in the future.
 
@@ -655,7 +693,8 @@ documentation.
 
 ```k
   rule <k> DUP _A => . ... </k>
-       <stack> X:StackElement ; SS => X ; X ; SS </stack>
+       <stack> [T X] ; SS => [T X] ; [T X] ; SS </stack>
+     requires #IsDuplicable(T)
 
   rule <k> SWAP _A => . ... </k>
        <stack> X:StackElement ; Y:StackElement ; SS
@@ -707,12 +746,45 @@ climb back up, respectively.
 
 #### `PUSH`-like Instructions
 
+The `#IsPushable`-predicate indicates wether values of a certain type can be
+passes as arguments to the `PUSH`-instruction.
+
+TODO: What are the semantics of container-types that contain non-pushable values?
+
+```k
+  syntax Bool ::= #IsPushable(TypeName) [function, functional]
+
+  rule #IsPushable(_:NumTypeName) => true
+  rule #IsPushable(string) => true
+  rule #IsPushable(bytes) => true
+  rule #IsPushable(mutez) => true
+  rule #IsPushable(bool) => true
+  rule #IsPushable(key_hash) => true
+  rule #IsPushable(timestamp) => true
+  rule #IsPushable(address) => true
+  rule #IsPushable(pair T1 T2) => true
+  rule #IsPushable(option T) => true
+  rule #IsPushable(key) => true
+  rule #IsPushable(unit) => true
+  rule #IsPushable(signature) => true
+  rule #IsPushable(operation) => false
+  rule #IsPushable(chain_id) => true
+  rule #IsPushable(list T) => true
+  rule #IsPushable(set T) => true
+  rule #IsPushable(contract T) => false
+  rule #IsPushable(ticket _) => false
+  rule #IsPushable(or LTy RTy) => true
+  rule #IsPushable(lambda IT OT) => true
+  rule #IsPushable(map KT VT) => true
+  rule #IsPushable(big_map _KT _VT) => false
+```
+
 `PUSH` puts its syntactic argument on the stack *when it is a `Value`*.
 
 ```k
   rule <k> PUSH _A T X => . ... </k>
        <stack> SS => [ #Name(T) X ] ; SS </stack>
-    requires isValue(#Name(T), X)
+    requires isValue(#Name(T), X) andBool #IsPushable(#Name(T))
 ```
 
 If it is not a `Value`, `PUSH` converts its argument to a `Value`, either by
@@ -1016,6 +1088,7 @@ The `COMPARE` instruction is defined over all comparable datatypes.
   rule #IsComparable(list _) => false
   rule #IsComparable(set _) => false
   rule #IsComparable(contract _) => false
+  rule #IsComparable(ticket _) => false
 
   // Bianry Incomparables
   rule #IsComparable(or _ _) => false
@@ -1790,6 +1863,76 @@ identical to those defined over integers.
     requires I2 >Int 0
 ```
 
+### Ticket operations
+
+```k
+  rule <k> TICKET _A => . ...</k>
+       <stack> [T X] ;
+               [nat N] ;
+               SS
+            => [(ticket T) (Pair A (Pair X N))] ;
+               SS
+       </stack>
+       <myaddr> A </myaddr>
+
+  rule <k> READ_TICKET _A => . ...</k>
+       <stack> [(ticket T) (Pair A (Pair X N))] ;
+               SS
+            => [(pair address (pair T nat)) (Pair A (Pair X N))] ;
+               [(ticket T) (Pair A (Pair X N))] ;
+               SS
+       </stack>
+
+  rule <k> JOIN_TICKETS _A => . ...</k>
+       <stack> [(pair (ticket CTy) (ticket CTy))
+                (Pair (Pair S (Pair X N1)) (Pair S (Pair X N2)))
+               ] ;
+               SS
+            => [(option (ticket CTy)) (Some (Pair S (Pair X (N1 +Int N2))))] ;
+               SS
+       </stack>
+
+  rule <k> JOIN_TICKETS _A => . ...</k>
+       <stack> [(pair (ticket CTy) (ticket CTy))
+                (Pair (Pair S1 (Pair _X1 _N1)) (Pair S2 (Pair _X2 _N2)))
+               ] ;
+               SS
+            => [(option (ticket CTy)) None] ;
+               SS
+       </stack>
+     requires notBool S1 ==String S2
+
+  rule <k> JOIN_TICKETS _A => . ...</k>
+       <stack> [(pair (ticket CTy) (ticket CTy))
+                (Pair (Pair _S1 (Pair X1 _N1)) (Pair _S2 (Pair X2 _N2)))
+               ] ;
+               SS
+            => [(option (ticket CTy)) None] ;
+               SS
+       </stack>
+     requires notBool X1 ==K X2
+
+  rule <k> SPLIT_TICKET _A => . ...</k>
+       <stack> [(ticket CTy) (Pair S (Pair X N3))] ;
+               [(pair nat nat) (Pair N1 N2)] ;
+               SS
+            => [(option (pair (ticket CTy) (ticket CTy)))
+                Some (Pair (Pair S (Pair X N1)) (Pair S (Pair X N2)))
+               ] ;
+               SS
+       </stack>
+     requires N1 +Int N2 ==Int N3
+
+  rule <k> SPLIT_TICKET _A => . ...</k>
+       <stack> [(ticket CTy) (Pair S (Pair X N3))] ;
+               [(pair nat nat) (Pair N1 N2)] ;
+               SS
+            => [(option (pair (ticket CTy) (ticket CTy))) None] ;
+               SS
+       </stack>
+     requires notBool N1 +Int N2 ==Int N3
+```
+
 Debugging Operations
 --------------------
 
@@ -2343,6 +2486,8 @@ It has an untyped and typed variant.
   rule isValue(list _, _:InternalList)   => true
   rule isValue(set _,  _:Set)            => true
   rule isValue(_:MapTypeName _ _, _:Map) => true
+
+  rule isValue(ticket T, Pair A (Pair X N)) => isValue(address, A) andBool isValue(T, X) andBool isValue(nat, N)
 
   rule isValue(_,_) => false [owise]
 ```
