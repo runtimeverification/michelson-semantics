@@ -130,7 +130,7 @@ ifeq (,$(RELEASE))
     LLVM_KOMPILE_OPTS += -g
 endif
 
-KOMPILE_LLVM = kompile --debug --backend llvm --md-selector "$(tangle_llvm)" \
+KOMPILE_LLVM = "kompile" --debug --backend llvm --md-selector "$(tangle_llvm)" \
                --hook-namespaces "$(HOOK_NAMESPACES)"                        \
                $(KOMPILE_OPTS)                                               \
                $(KOMPILE_KRUN_OPTS)                                          \
@@ -138,7 +138,7 @@ KOMPILE_LLVM = kompile --debug --backend llvm --md-selector "$(tangle_llvm)" \
 
 HASKELL_KOMPILE_OPTS +=
 
-KOMPILE_HASKELL = kompile --debug --backend haskell --md-selector "$(tangle_haskell)" \
+KOMPILE_HASKELL = "kompile" --debug --backend haskell --md-selector "$(tangle_haskell)" \
                   $(KOMPILE_OPTS)                                                     \
                   $(HASKELL_KOMPILE_OPTS)
 
@@ -263,7 +263,7 @@ $(driver_kompiled): $(driver_files)
 	                --syntax-module $(driver_syntax_module)
 
 $(driver_pattern_parser): $(driver_files) $(driver_kompiled)
-	kast --gen-parser --directory $(driver_dir) --sort Pattern $@
+	"kast" --gen-parser --directory $(driver_dir) --sort Pattern $@
 
 ### Symbolic
 
