@@ -613,11 +613,6 @@ passes as arguments to the `DUP`-instruction. Currently only `ticket`s cannot be
 duplicated. Special attention is required for container-types because
 duplicating a container with ticket effectively also duplicates the ticket itself.
 
-TODO: The reference is a bit unclear with respect to container-types. Tickets
-cannot appear inside sets because they are not comparable. However, the case with
-lists and pairs is less clear. The reference says that these types are duplicable,
-but this seems to be inaccurate/unintentional. What about lambdas?
-
 ```k
   syntax Bool ::= #IsDuplicable(TypeName) [function, functional]
 
@@ -747,9 +742,8 @@ climb back up, respectively.
 #### `PUSH`-like Instructions
 
 The `#IsPushable`-predicate indicates wether values of a certain type can be
-passes as arguments to the `PUSH`-instruction.
-
-TODO: What are the semantics of container-types that contain non-pushable values?
+passes as arguments to the `PUSH`-instruction. Special attention is required
+by container-types which may contain non-pushable types.
 
 ```k
   syntax Bool ::= #IsPushable(TypeName) [function, functional]
@@ -1877,10 +1871,10 @@ identical to those defined over integers.
      requires #IsComparable(T)
 
   rule <k> READ_TICKET _A => . ...</k>
-       <stack> [(ticket T) #Ticket(A, X, N)] ;
+       <stack> [(ticket T) #Ticket(Addr, X, N)] ;
                SS
-            => [(pair address (pair T nat)) (Pair A (Pair X N))] ;
-               [(ticket T) #Ticket(A, X, N)] ;
+            => [(pair address (pair T nat)) (Pair Addr (Pair X N))] ;
+               [(ticket T) #Ticket(Addr, X, N)] ;
                SS
        </stack>
 

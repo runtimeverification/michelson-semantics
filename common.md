@@ -494,7 +494,10 @@ We recursively convert the contents of pairs, ors and options, if applicable.
   rule #MichelineToNative(Right V, or _:AnnotationList _:Type TR:Type, KnownAddrs, BigMaps) => Right #MichelineToNative(V, TR, KnownAddrs, BigMaps)
 ```
 
-TODO: Define a proper internal encoding for tickets instead of abusing pairs.
+Externally, tickets are represented by `Pair`-constructors.
+Internally, we represent tickets with the `#Ticket`-constructor.
+Notice that this rule does not overlap with the rule for ordinary pairs
+since they match on different types (second argument of `#MichelineToNative`).
 
 ```k
   rule #MichelineToNative(Pair Addr (Pair V N), ticket _:AnnotationList T:Type, KnownAddrs, BigMaps) =>
