@@ -1906,8 +1906,8 @@ identical to those defined over integers.
                SS
        </stack>
      requires notBool X1 ==K X2
-      andBool isValue(T, X1)
-      andBool isValue(T, X2)
+      andBool isValue(CTy, X1)
+      andBool isValue(CTy, X2)
 
   rule <k> SPLIT_TICKET _A => . ...</k>
        <stack> [(ticket CTy) #Ticket(S, X, N3)] ;
