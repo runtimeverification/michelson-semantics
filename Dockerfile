@@ -50,8 +50,9 @@ RUN groupadd -g $GROUP_ID user && useradd -m -u $USER_ID -s /bin/sh -g user user
 USER user:user
 WORKDIR /home/user
 
-RUN    curl -sL https://sh.rustup.rs/rustup-init.sh | bash -s -- --profile minimal --default-toolchain 1.52.1 -y \
-    && echo 'source $HOME/.cargo/env' >> $HOME/.bashrc
+# setup rust with correct version
+RUN curl -sL https://sh.rustup.rs/rustup-init.sh | bash -s -- --profile minimal --default-toolchain 1.52.1 -y
+ENV PATH="/home/user/.cargo/bin/:${PATH}"
 
 RUN    git config --global user.email 'admin@runtimeverification.com' \
     && git config --global user.name  'RV Jenkins'                    \
