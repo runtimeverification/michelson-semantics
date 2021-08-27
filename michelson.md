@@ -639,9 +639,9 @@ but this seems to be inaccurate/unintentional. What about lambdas?
   rule #IsDuplicable(list T) => #IsDuplicable(T)
   rule #IsDuplicable(set T) => #IsDuplicable(T)
   rule #IsDuplicable(contract T) => #IsDuplicable(T)
-  rule #IsDuplicable(ticket _) => false
+  rule #IsDuplicable(ticket _T) => false
   rule #IsDuplicable(or LTy RTy) => #IsDuplicable(LTy) andBool #IsDuplicable(RTy)
-  rule #IsDuplicable(lambda IT OT) => true
+  rule #IsDuplicable(lambda _IT _OT) => true
   rule #IsDuplicable(map KT VT) => #IsDuplicable(KT) andBool #IsDuplicable(VT)
   rule #IsDuplicable(big_map KT VT) => #IsDuplicable(KT) andBool #IsDuplicable(VT)
 ```
@@ -762,20 +762,20 @@ TODO: What are the semantics of container-types that contain non-pushable values
   rule #IsPushable(key_hash) => true
   rule #IsPushable(timestamp) => true
   rule #IsPushable(address) => true
-  rule #IsPushable(pair T1 T2) => true
-  rule #IsPushable(option T) => true
+  rule #IsPushable(pair T1 T2) => #IsPushable(T1) andBool #IsPushable(T2)
+  rule #IsPushable(option T) => #IsPushable(T)
   rule #IsPushable(key) => true
   rule #IsPushable(unit) => true
   rule #IsPushable(signature) => true
   rule #IsPushable(operation) => false
   rule #IsPushable(chain_id) => true
-  rule #IsPushable(list T) => true
-  rule #IsPushable(set T) => true
-  rule #IsPushable(contract T) => false
-  rule #IsPushable(ticket _) => false
-  rule #IsPushable(or LTy RTy) => true
-  rule #IsPushable(lambda IT OT) => true
-  rule #IsPushable(map KT VT) => true
+  rule #IsPushable(list T) => #IsPushable(T)
+  rule #IsPushable(set T) => #IsPushable(T)
+  rule #IsPushable(contract _T) => false
+  rule #IsPushable(ticket _T) => false
+  rule #IsPushable(or LTy RTy) => #IsPushable(LTy) andBool #IsPushable(RTy)
+  rule #IsPushable(lambda _IT _OT) => true
+  rule #IsPushable(map KT VT) => #IsPushable(KT) andBool #IsPushable(VT)
   rule #IsPushable(big_map _KT _VT) => false
 ```
 
@@ -1870,61 +1870,64 @@ identical to those defined over integers.
        <stack> [T X] ;
                [nat N] ;
                SS
-            => [(ticket T) (Pair A (Pair X N))] ;
+            => [(ticket T) #Ticket(Addr, X, N)] ;
                SS
        </stack>
-       <myaddr> A </myaddr>
+       <myaddr> Addr </myaddr>
+     requires #IsComparable(T)
 
   rule <k> READ_TICKET _A => . ...</k>
-       <stack> [(ticket T) (Pair A (Pair X N))] ;
+       <stack> [(ticket T) #Ticket(A, X, N)] ;
                SS
             => [(pair address (pair T nat)) (Pair A (Pair X N))] ;
-               [(ticket T) (Pair A (Pair X N))] ;
+               [(ticket T) #Ticket(A, X, N)] ;
                SS
        </stack>
 
   rule <k> JOIN_TICKETS _A => . ...</k>
        <stack> [(pair (ticket CTy) (ticket CTy))
-                (Pair (Pair S (Pair X N1)) (Pair S (Pair X N2)))
+                (Pair #Ticket(S, X, N1) #Ticket(S, X, N2))
                ] ;
                SS
-            => [(option (ticket CTy)) (Some (Pair S (Pair X (N1 +Int N2))))] ;
+            => [(option (ticket CTy)) (Some #Ticket(S, X, (N1 +Int N2)))] ;
                SS
        </stack>
 
   rule <k> JOIN_TICKETS _A => . ...</k>
        <stack> [(pair (ticket CTy) (ticket CTy))
-                (Pair (Pair S1 (Pair _X1 _N1)) (Pair S2 (Pair _X2 _N2)))
+                (Pair #Ticket(S1, _X1, _N1) #Ticket(S2, _X2, _N2))
                ] ;
                SS
             => [(option (ticket CTy)) None] ;
                SS
        </stack>
-     requires notBool S1 ==K S2
+     requires notBool S1 ==#Address S2
 
   rule <k> JOIN_TICKETS _A => . ...</k>
        <stack> [(pair (ticket CTy) (ticket CTy))
-                (Pair (Pair _S1 (Pair X1 _N1)) (Pair _S2 (Pair X2 _N2)))
+                (Pair #Ticket(_S1, X1, _N1) #Ticket(_S2, X2, _N2))
                ] ;
                SS
             => [(option (ticket CTy)) None] ;
                SS
        </stack>
      requires notBool X1 ==K X2
+      andBool isValue(T, X1)
+      andBool isValue(T, X2)
 
   rule <k> SPLIT_TICKET _A => . ...</k>
-       <stack> [(ticket CTy) (Pair S (Pair X N3))] ;
+       <stack> [(ticket CTy) #Ticket(S, X, N3)] ;
                [(pair nat nat) (Pair N1 N2)] ;
                SS
             => [(option (pair (ticket CTy) (ticket CTy)))
-                Some (Pair (Pair S (Pair X N1)) (Pair S (Pair X N2)))
+                Some (Pair #Ticket(S, X, N1) #Ticket(S, X, N2))
                ] ;
                SS
        </stack>
      requires N1 +Int N2 ==Int N3
 
   rule <k> SPLIT_TICKET _A => . ...</k>
-       <stack> [(ticket CTy) (Pair S (Pair X N3))] ;
+       <stack> [(ticket CTy) #Ticket(_S, _X, N3)] ;
                [(pair nat nat) (Pair N1 N2)] ;
                SS
             => [(option (pair (ticket CTy) (ticket CTy))) None] ;
@@ -2487,7 +2490,7 @@ It has an untyped and typed variant.
   rule isValue(set _,  _:Set)            => true
   rule isValue(_:MapTypeName _ _, _:Map) => true
 
-  rule isValue(ticket T, Pair A (Pair X N)) => isValue(address, A) andBool isValue(T, X) andBool isValue(nat, N)
+  rule isValue(ticket T, #Ticket A X N) => isValue(address, A) andBool isValue(T, X) andBool isValue(nat, N)
 
   rule isValue(_,_) => false [owise]
 ```

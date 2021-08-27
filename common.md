@@ -159,6 +159,7 @@ We represent Michelson values by constructors which wrap K primitive types.
   syntax Signature ::= #Signature(String)
   syntax OperationNonce ::= #Nonce(Int)
   syntax LambdaData ::= #Lambda(TypeName, TypeName, Block)
+  syntax Ticket ::= #Ticket(Data, Data, Data)
 
   syntax SimpleData ::= LambdaData
                       | Timestamp
@@ -167,6 +168,7 @@ We represent Michelson values by constructors which wrap K primitive types.
                       | ContractData
                       | Key
                       | Signature
+                      | Ticket
 
   syntax BlockchainOperation ::= "Transfer_tokens" Data Mutez Entrypoint Data
 ```
@@ -495,8 +497,12 @@ We recursively convert the contents of pairs, ors and options, if applicable.
 TODO: Define a proper internal encoding for tickets instead of abusing pairs.
 
 ```k
-  rule #MichelineToNative(Ticket, ticket _:AnnotationList T:Type, KnownAddrs, BigMaps) =>
-    #MichelineToNative(Ticket, #Type(pair address (pair #Name(T) nat)), KnownAddrs, BigMaps)
+  rule #MichelineToNative(Pair Addr (Pair V N), ticket _:AnnotationList T:Type, KnownAddrs, BigMaps) =>
+    #Ticket(
+      #MichelineToNative(Addr, address .AnnotationList, KnownAddrs, BigMaps),
+      #MichelineToNative(V, T, KnownAddrs, BigMaps),
+      #MichelineToNative(N, nat .AnnotationList, KnownAddrs, BigMaps)
+    )
 ```
 
 We wrap Lambdas appropriately and save their type information.  Note that we do *not* recurse into the Block.
