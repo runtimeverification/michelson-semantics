@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="A Michelson semantics for Tezos built using the K Framework."
+/>
+<meta name="keywords" content="runtime, verification, rv, k" />
+<meta name="author" content="Michelson Semantics | Runtime Verification Inc" />
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../assets/img/favicon.ico" /> -->
+
+<title>Michelson Semantics | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../index.html"> Michelson Semantics </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/michelson-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../">Homepage</a>
+      <a class="bd-toc-link" href="../INSTALL">Install</a>
+      <a class="bd-toc-link" href="../USER_GUIDE">User Guide</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><pre class="language-k"><code><span class="token keyword">requires</span> <span class="token string">&quot;syntax.md&quot;</span>
+</code></pre>
+<h1 id="michelson-internal-representation">Michelson Internal Representation</h1>
+<p>The Michelson external syntax needs to be converted into an internal
+representation. We define all our internal representations below.</p>
+<pre class="language-k"><code><span class="token keyword">module</span> MICHELSON<span class="token operator">-</span>COMMON
+  <span class="token keyword">imports</span> SYMBOLIC<span class="token operator">-</span>UNIT<span class="token operator">-</span>TEST<span class="token operator">-</span>COMMON<span class="token operator">-</span>SYNTAX
+  <span class="token keyword">imports</span> BYTES
+  <span class="token keyword">imports</span> DOMAINS
+  <span class="token keyword">imports</span> COLLECTIONS
+</code></pre>
+<h2 id="type-representation">Type Representation</h2>
+<p>We represent types internally without their annotations.</p>
+<p>NOTE: This simplification breaks the semantics of some instructions relating
+to contracts with entrypoints. We may fix this issue in a later release.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> TypeName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> NullaryTypeName
+                    <span class="token operator">|</span> UnaryTypeName TypeName
+                    <span class="token operator">|</span> BinaryTypeName TypeName TypeName
+
+  <span class="token keyword">syntax</span> TypeName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #Name<span class="token punctuation">(</span>Type<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">]</span>
+  <span class="token comment">// ---------------------------------------------------</span>
+  <span class="token keyword">rule</span> #Name<span class="token punctuation">(</span>T<span class="token punctuation">:</span>NullaryTypeName _<span class="token punctuation">:</span>AnnotationList<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> T
+  <span class="token keyword">rule</span> #Name<span class="token punctuation">(</span>T<span class="token punctuation">:</span>UnaryTypeName _<span class="token punctuation">:</span>AnnotationList ArgT<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> T #Name<span class="token punctuation">(</span>ArgT<span class="token punctuation">)</span>
+  <span class="token keyword">rule</span> #Name<span class="token punctuation">(</span>T<span class="token punctuation">:</span>BinaryTypeName _<span class="token punctuation">:</span>AnnotationList ArgT1 ArgT2<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> T #Name<span class="token punctuation">(</span>ArgT1<span class="token punctuation">)</span> #Name<span class="token punctuation">(</span>ArgT2<span class="token punctuation">)</span>
+
+  <span class="token keyword">syntax</span> Type     <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #Type<span class="token punctuation">(</span>TypeName<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">]</span>
+  <span class="token comment">// -------------------------------------------------------</span>
+  <span class="token keyword">rule</span> #Type<span class="token punctuation">(</span>T<span class="token punctuation">:</span>NullaryTypeName<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> T <span class="token punctuation">.</span>AnnotationList
+  <span class="token keyword">rule</span> #Type<span class="token punctuation">(</span>T<span class="token punctuation">:</span>UnaryTypeName ArgT<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> T <span class="token punctuation">.</span>AnnotationList #Type<span class="token punctuation">(</span>ArgT<span class="token punctuation">)</span>
+  <span class="token keyword">rule</span> #Type<span class="token punctuation">(</span>T<span class="token punctuation">:</span>BinaryTypeName ArgT1 ArgT2<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> T <span class="token punctuation">.</span>AnnotationList #Type<span class="token punctuation">(</span>ArgT1<span class="token punctuation">)</span> #Type<span class="token punctuation">(</span>ArgT2<span class="token punctuation">)</span>
+</code></pre>
+<h2 id="entrypoint-representation">Entrypoint Representation</h2>
+<p>We represent entrypoints as the concatenation of an address and a field
+annotation.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> Entrypoint <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> Address <span class="token string">&quot;.&quot;</span> FieldAnnotation
+
+  <span class="token keyword">syntax</span> Entrypoint <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #ParseEntrypoint<span class="token punctuation">(</span><span class="token keyword">String</span><span class="token punctuation">)</span>      <span class="token punctuation">[</span>function<span class="token punctuation">]</span>
+                      <span class="token operator">|</span> #ParseEntrypoint<span class="token punctuation">(</span><span class="token keyword">String</span><span class="token punctuation">,</span> <span class="token keyword">Int</span><span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">]</span>
+  <span class="token comment">// -----------------------------------------------------------</span>
+  <span class="token keyword">rule</span> #ParseEntrypoint<span class="token punctuation">(</span>AddrLit<span class="token punctuation">:</span><span class="token keyword">String</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #ParseEntrypoint<span class="token punctuation">(</span>AddrLit<span class="token punctuation">,</span> findChar<span class="token punctuation">(</span>AddrLit<span class="token punctuation">,</span> <span class="token string">&quot;%&quot;</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+  <span class="token keyword">rule</span> #ParseEntrypoint<span class="token punctuation">(</span>AddrLit<span class="token punctuation">:</span><span class="token keyword">String</span><span class="token punctuation">,</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #Address<span class="token punctuation">(</span>AddrLit<span class="token punctuation">)</span> <span class="token punctuation">.</span> <span class="token operator">%</span>default
+
+  <span class="token keyword">rule</span> #ParseEntrypoint<span class="token punctuation">(</span>AddrLit<span class="token punctuation">,</span> N<span class="token punctuation">:</span><span class="token keyword">Int</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #Address<span class="token punctuation">(</span>substrString<span class="token punctuation">(</span>AddrLit<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">,</span> N<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">.</span> ToFieldAnnot<span class="token punctuation">(</span>substrString<span class="token punctuation">(</span>AddrLit<span class="token punctuation">,</span> N<span class="token punctuation">,</span> lengthString<span class="token punctuation">(</span>AddrLit<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token keyword">requires</span> N <span class="token operator">&gt;=</span><span class="token keyword">Int</span> <span class="token number">0</span>
+     andBool N <span class="token operator">+</span><span class="token keyword">Int</span> <span class="token number">1</span> &lt;<span class="token keyword">Int</span> lengthString<span class="token punctuation">(</span>AddrLit<span class="token punctuation">)</span>
+     andBool rfindChar<span class="token punctuation">(</span>AddrLit<span class="token punctuation">,</span> <span class="token string">&quot;%&quot;</span><span class="token punctuation">,</span> lengthString<span class="token punctuation">(</span>AddrLit<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">==</span><span class="token keyword">Int</span> N
+
+  <span class="token keyword">syntax</span> FieldAnnotation <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> ToFieldAnnot<span class="token punctuation">(</span><span class="token keyword">String</span><span class="token punctuation">)</span>                <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">,</span> hook<span class="token punctuation">(</span>STRING<span class="token punctuation">.</span>string2token<span class="token punctuation">)</span><span class="token punctuation">]</span>
+  <span class="token keyword">syntax</span> <span class="token keyword">String</span>          <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> FieldAnnotToString<span class="token punctuation">(</span>FieldAnnotation<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">,</span> hook<span class="token punctuation">(</span>STRING<span class="token punctuation">.</span>token2string<span class="token punctuation">)</span><span class="token punctuation">]</span>
+
+  <span class="token keyword">syntax</span> <span class="token keyword">String</span> <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #ToString<span class="token punctuation">(</span>Entrypoint<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">]</span>
+  <span class="token comment">// -----------------------------------------------------------</span>
+  <span class="token keyword">rule</span> #ToString<span class="token punctuation">(</span>#Address<span class="token punctuation">(</span>Addr<span class="token punctuation">)</span> <span class="token punctuation">.</span> <span class="token operator">%</span>default  <span class="token punctuation">)</span> <span class="token operator">=&gt;</span> Addr
+  <span class="token keyword">rule</span> #ToString<span class="token punctuation">(</span>#Address<span class="token punctuation">(</span>Addr<span class="token punctuation">)</span> <span class="token punctuation">.</span> FieldAnnot<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> Addr <span class="token operator">+</span><span class="token keyword">String</span> FieldAnnotToString<span class="token punctuation">(</span>FieldAnnot<span class="token punctuation">)</span> <span class="token punctuation">[</span>owise<span class="token punctuation">]</span>
+</code></pre>
+<p>We map parameter types with annotations to a map of types.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> MaybeFieldAnnotation <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">&quot;.FieldAnnotation&quot;</span>
+                                <span class="token operator">|</span> FieldAnnotation
+
+  <span class="token keyword">syntax</span> TypeList <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> List<span class="token punctuation">{</span>Type<span class="token punctuation">,</span> <span class="token string">&quot;||&quot;</span><span class="token punctuation">}</span>
+
+  <span class="token keyword">syntax</span> Map <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #BuildAnnotationMap<span class="token punctuation">(</span>MaybeFieldAnnotation<span class="token punctuation">,</span> Type<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">]</span>
+               <span class="token operator">|</span> #BuildAnnotationMap<span class="token punctuation">(</span>TypeList<span class="token punctuation">,</span> Map<span class="token punctuation">)</span>              <span class="token punctuation">[</span>function<span class="token punctuation">]</span>
+  <span class="token comment">// ----------------------------------------------------------------------</span>
+  <span class="token keyword">rule</span> #BuildAnnotationMap<span class="token punctuation">(</span>MA<span class="token punctuation">,</span> T<span class="token punctuation">)</span>
+    <span class="token operator">=&gt;</span> #AddDefaultEntry<span class="token punctuation">(</span>#BuildAnnotationMap<span class="token punctuation">(</span>T <span class="token operator">||</span> <span class="token punctuation">.</span>TypeList<span class="token punctuation">,</span> #AddAnnotationEntry<span class="token punctuation">(</span>MA<span class="token punctuation">,</span> T<span class="token punctuation">,</span> <span class="token punctuation">.</span>Map<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">,</span> T<span class="token punctuation">)</span>
+
+  <span class="token keyword">rule</span> #BuildAnnotationMap<span class="token punctuation">(</span>or Annots T1 T2 <span class="token operator">||</span> TL<span class="token punctuation">,</span> AnnotMap<span class="token punctuation">)</span>
+    <span class="token operator">=&gt;</span> #BuildAnnotationMap<span class="token punctuation">(</span>T1 <span class="token operator">||</span> T2 <span class="token operator">||</span> TL<span class="token punctuation">,</span> #AddAnnotationEntry<span class="token punctuation">(</span>#GetMaybeFieldAnnot<span class="token punctuation">(</span>Annots<span class="token punctuation">)</span><span class="token punctuation">,</span> or Annots T1 T2<span class="token punctuation">,</span> AnnotMap<span class="token punctuation">)</span><span class="token punctuation">)</span>
+
+  <span class="token keyword">rule</span> #BuildAnnotationMap<span class="token punctuation">(</span>T <span class="token operator">||</span> TL<span class="token punctuation">,</span> AnnotMap<span class="token punctuation">)</span>
+    <span class="token operator">=&gt;</span> #BuildAnnotationMap<span class="token punctuation">(</span>TL<span class="token punctuation">,</span> #AddAnnotationEntry<span class="token punctuation">(</span>#GetMaybeFieldAnnot<span class="token punctuation">(</span>T<span class="token punctuation">)</span><span class="token punctuation">,</span> T<span class="token punctuation">,</span> AnnotMap<span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token punctuation">[</span>owise<span class="token punctuation">]</span>
+
+  <span class="token keyword">rule</span> #BuildAnnotationMap<span class="token punctuation">(</span><span class="token punctuation">.</span>TypeList<span class="token punctuation">,</span> AnnotMap<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> AnnotMap
+
+  <span class="token keyword">syntax</span> Map <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #AddAnnotationEntry<span class="token punctuation">(</span>MaybeFieldAnnotation<span class="token punctuation">,</span> Type<span class="token punctuation">,</span> Map<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">]</span>
+  <span class="token comment">// ---------------------------------------------------------------------------</span>
+  <span class="token keyword">rule</span> #AddAnnotationEntry<span class="token punctuation">(</span><span class="token punctuation">.</span>FieldAnnotation<span class="token punctuation">,</span>   _<span class="token punctuation">,</span> AnnotMap<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> AnnotMap
+  <span class="token keyword">rule</span> #AddAnnotationEntry<span class="token punctuation">(</span>FA<span class="token punctuation">:</span>FieldAnnotation<span class="token punctuation">,</span> T<span class="token punctuation">,</span> AnnotMap<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> FA <span class="token operator">|</span><span class="token operator">-</span>&gt; #Name<span class="token punctuation">(</span>T<span class="token punctuation">)</span> AnnotMap
+    <span class="token keyword">requires</span> notBool FA in_keys<span class="token punctuation">(</span>AnnotMap<span class="token punctuation">)</span>
+</code></pre>
+<p>We add functions for adding default entrypoints to a map or producing the default annotation.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> Map <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #AddDefaultEntry<span class="token punctuation">(</span>Map<span class="token punctuation">,</span> Type<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">]</span>
+  <span class="token comment">// --------------------------------------------------</span>
+  <span class="token keyword">rule</span> #AddDefaultEntry<span class="token punctuation">(</span>AnnotMap<span class="token punctuation">,</span> _Type<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> AnnotMap
+    <span class="token keyword">requires</span> <span class="token operator">%</span>default in_keys<span class="token punctuation">(</span>AnnotMap<span class="token punctuation">)</span>
+  <span class="token keyword">rule</span> #AddDefaultEntry<span class="token punctuation">(</span>AnnotMap<span class="token punctuation">,</span>  Type<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token operator">%</span>default <span class="token operator">|</span><span class="token operator">-</span>&gt; #Name<span class="token punctuation">(</span>Type<span class="token punctuation">)</span> AnnotMap
+    <span class="token punctuation">[</span>owise<span class="token punctuation">]</span>
+
+  <span class="token keyword">syntax</span> FieldAnnotation <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">&quot;%default&quot;</span>
+  <span class="token comment">// ----------------------------------</span>
+  <span class="token keyword">rule</span> <span class="token operator">%</span>default <span class="token operator">=&gt;</span> #<span class="token class-name">token</span><span class="token punctuation">(</span><span class="token string">&quot;%default&quot;</span><span class="token punctuation">,</span> <span class="token string">&quot;FieldAnnotation&quot;</span><span class="token punctuation">)</span> <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+</code></pre>
+<p>We have a function which extracts a unique field annotation from a type.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> MaybeFieldAnnotation <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #GetMaybeFieldAnnot<span class="token punctuation">(</span>Type<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">]</span>
+  <span class="token comment">// -----------------------------------------------------------------</span>
+  <span class="token keyword">rule</span> #GetMaybeFieldAnnot<span class="token punctuation">(</span>_<span class="token punctuation">:</span>NullaryTypeName A<span class="token punctuation">:</span>AnnotationList              <span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #GetMaybeFieldAnnot<span class="token punctuation">(</span>A<span class="token punctuation">)</span>
+  <span class="token keyword">rule</span> #GetMaybeFieldAnnot<span class="token punctuation">(</span>_<span class="token punctuation">:</span>UnaryTypeName   A<span class="token punctuation">:</span>AnnotationList _<span class="token punctuation">:</span>Type       <span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #GetMaybeFieldAnnot<span class="token punctuation">(</span>A<span class="token punctuation">)</span>
+  <span class="token keyword">rule</span> #GetMaybeFieldAnnot<span class="token punctuation">(</span>_<span class="token punctuation">:</span>BinaryTypeName  A<span class="token punctuation">:</span>AnnotationList _<span class="token punctuation">:</span>Type _<span class="token punctuation">:</span>Type<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #GetMaybeFieldAnnot<span class="token punctuation">(</span>A<span class="token punctuation">)</span>
+
+  <span class="token keyword">syntax</span> MaybeFieldAnnotation <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #GetMaybeFieldAnnot<span class="token punctuation">(</span>AnnotationList<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">]</span>
+  <span class="token comment">// ---------------------------------------------------------------------------</span>
+  <span class="token keyword">rule</span> #GetMaybeFieldAnnot<span class="token punctuation">(</span>FA<span class="token punctuation">:</span>FieldAnnotation      _<span class="token punctuation">:</span>AnnotationList<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> FA
+  <span class="token keyword">rule</span> #GetMaybeFieldAnnot<span class="token punctuation">(</span>_<span class="token punctuation">:</span>Annotation       Annots<span class="token punctuation">:</span>AnnotationList<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #GetMaybeFieldAnnot<span class="token punctuation">(</span>Annots<span class="token punctuation">)</span> <span class="token punctuation">[</span>owise<span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> #GetMaybeFieldAnnot<span class="token punctuation">(</span><span class="token punctuation">.</span>AnnotationList<span class="token punctuation">)</span>                          <span class="token operator">=&gt;</span> <span class="token punctuation">.</span>FieldAnnotation
+
+  <span class="token keyword">syntax</span> FieldAnnotation <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #GetDefault<span class="token punctuation">(</span>MaybeFieldAnnotation<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">]</span>
+  <span class="token comment">// --------------------------------------------------------------------</span>
+  <span class="token keyword">rule</span> #GetDefault<span class="token punctuation">(</span><span class="token punctuation">.</span>FieldAnnotation<span class="token punctuation">)</span>   <span class="token operator">=&gt;</span> <span class="token operator">%</span>default
+  <span class="token keyword">rule</span> #GetDefault<span class="token punctuation">(</span>FA<span class="token punctuation">:</span>FieldAnnotation<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> FA
+
+  <span class="token keyword">syntax</span> FieldAnnotation <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #GetFieldAnnot<span class="token punctuation">(</span>Type<span class="token punctuation">)</span>           <span class="token punctuation">[</span>function<span class="token punctuation">]</span>
+                           <span class="token operator">|</span> #GetFieldAnnot<span class="token punctuation">(</span>AnnotationList<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">]</span>
+  <span class="token comment">// -----------------------------------------------------------------</span>
+  <span class="token keyword">rule</span> #GetFieldAnnot<span class="token punctuation">(</span>T<span class="token punctuation">:</span>Type<span class="token punctuation">)</span>                <span class="token operator">=&gt;</span> #GetDefault<span class="token punctuation">(</span>#GetMaybeFieldAnnot<span class="token punctuation">(</span>T<span class="token punctuation">)</span><span class="token punctuation">)</span>
+  <span class="token keyword">rule</span> #GetFieldAnnot<span class="token punctuation">(</span>Annots<span class="token punctuation">:</span>AnnotationList<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #GetDefault<span class="token punctuation">(</span>#GetMaybeFieldAnnot<span class="token punctuation">(</span>Annots<span class="token punctuation">)</span><span class="token punctuation">)</span>
+</code></pre>
+<h2 id="value-representation">Value Representation</h2>
+<p>We represent Michelson values by constructors which wrap K primitive types.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> Address <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #Address<span class="token punctuation">(</span><span class="token keyword">String</span><span class="token punctuation">)</span>
+  <span class="token keyword">syntax</span> ContractData <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #Contract<span class="token punctuation">(</span>Entrypoint<span class="token punctuation">,</span> TypeName<span class="token punctuation">)</span>
+  <span class="token keyword">syntax</span> Mutez <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #Mutez<span class="token punctuation">(</span><span class="token keyword">Int</span><span class="token punctuation">)</span>
+  <span class="token keyword">syntax</span> KeyHash <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #KeyHash<span class="token punctuation">(</span><span class="token keyword">String</span><span class="token punctuation">)</span>
+  <span class="token keyword">syntax</span> ChainId <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #ChainId<span class="token punctuation">(</span>MichelsonBytes<span class="token punctuation">)</span>
+  <span class="token keyword">syntax</span> Timestamp <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #Timestamp<span class="token punctuation">(</span><span class="token keyword">Int</span><span class="token punctuation">)</span>
+  <span class="token keyword">syntax</span> Key <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #Key<span class="token punctuation">(</span><span class="token keyword">String</span><span class="token punctuation">)</span>
+  <span class="token keyword">syntax</span> Signature <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #Signature<span class="token punctuation">(</span><span class="token keyword">String</span><span class="token punctuation">)</span>
+  <span class="token keyword">syntax</span> OperationNonce <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #Nonce<span class="token punctuation">(</span><span class="token keyword">Int</span><span class="token punctuation">)</span>
+  <span class="token keyword">syntax</span> LambdaData <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #Lambda<span class="token punctuation">(</span>TypeName<span class="token punctuation">,</span> TypeName<span class="token punctuation">,</span> Block<span class="token punctuation">)</span>
+
+  <span class="token keyword">syntax</span> SimpleData <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> LambdaData
+                      <span class="token operator">|</span> Timestamp
+                      <span class="token operator">|</span> ChainId
+                      <span class="token operator">|</span> KeyHash
+                      <span class="token operator">|</span> ContractData
+                      <span class="token operator">|</span> Key
+                      <span class="token operator">|</span> Signature
+
+  <span class="token keyword">syntax</span> BlockchainOperation <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">&quot;Transfer_tokens&quot;</span> Data Mutez Entrypoint Data
+</code></pre>
+<p>We represent the values of byte operations as special constructors.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> MichelsonBytes <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #Packed<span class="token punctuation">(</span>TypeName<span class="token punctuation">,</span>Data<span class="token punctuation">)</span>
+                          <span class="token operator">|</span> #Blake2B<span class="token punctuation">(</span>MichelsonBytes<span class="token punctuation">)</span>
+                          <span class="token operator">|</span> #SHA256<span class="token punctuation">(</span>MichelsonBytes<span class="token punctuation">)</span>
+                          <span class="token operator">|</span> #SHA512<span class="token punctuation">(</span>MichelsonBytes<span class="token punctuation">)</span>
+</code></pre>
+<p>We represent values of collection types (lists, sets, maps) as follows:</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> WrappedData  <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">&quot;[&quot;</span> Data <span class="token string">&quot;]&quot;</span>
+  <span class="token keyword">syntax</span> InternalList <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> List<span class="token punctuation">{</span>WrappedData<span class="token punctuation">,</span> <span class="token string">&quot;;;&quot;</span><span class="token punctuation">}</span>
+
+  <span class="token keyword">syntax</span> <span class="token keyword">Int</span> <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> size<span class="token punctuation">(</span>InternalList<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">,</span> smtlib<span class="token punctuation">(</span>listsize<span class="token punctuation">)</span><span class="token punctuation">]</span>
+  <span class="token comment">// ----------------------------------------------------------</span>
+  <span class="token keyword">rule</span> size<span class="token punctuation">(</span>_ <span class="token punctuation">;</span><span class="token punctuation">;</span> L       <span class="token punctuation">)</span> <span class="token operator">=&gt;</span> size<span class="token punctuation">(</span>L<span class="token punctuation">)</span> <span class="token operator">+</span><span class="token keyword">Int</span> <span class="token number">1</span>
+  <span class="token keyword">rule</span> size<span class="token punctuation">(</span><span class="token punctuation">.</span>InternalList<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token number">0</span>
+
+  <span class="token keyword">syntax</span> SimpleData <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> Set <span class="token operator">|</span> Map <span class="token operator">|</span> InternalList
+</code></pre>
+<p>The internal representation of mutez is bounded.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> <span class="token keyword">Int</span> <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">&quot;#MutezOverflowLimit&quot;</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">]</span>
+  <span class="token comment">// --------------------------------------------------------</span>
+  <span class="token keyword">rule</span> #MutezOverflowLimit <span class="token operator">=&gt;</span> <span class="token number">2</span> <span class="token operator">^</span><span class="token keyword">Int</span> <span class="token number">63</span> <span class="token comment">// Signed 64 bit integers.</span>
+
+  <span class="token keyword">syntax</span> <span class="token keyword">Bool</span> <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #IsLegalMutezValue<span class="token punctuation">(</span><span class="token keyword">Int</span><span class="token punctuation">)</span>   <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">]</span>
+                <span class="token operator">|</span> #IsLegalMutezValue<span class="token punctuation">(</span>Mutez<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">]</span>
+ <span class="token comment">// --------------------------------------------------------------</span>
+  <span class="token keyword">rule</span> #IsLegalMutezValue<span class="token punctuation">(</span>I<span class="token punctuation">)</span>         <span class="token operator">=&gt;</span> I <span class="token operator">&gt;=</span><span class="token keyword">Int</span> <span class="token number">0</span> andBool I &lt;<span class="token keyword">Int</span> #MutezOverflowLimit
+  <span class="token keyword">rule</span> #IsLegalMutezValue<span class="token punctuation">(</span>#Mutez<span class="token punctuation">(</span>I<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #IsLegalMutezValue<span class="token punctuation">(</span>I<span class="token punctuation">)</span>
+</code></pre>
+<p>The following representation is used by our legacy type checker.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> TypedData <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #Typed<span class="token punctuation">(</span>Data<span class="token punctuation">,</span> Type<span class="token punctuation">)</span>
+  <span class="token keyword">syntax</span> Data <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> TypedData
+</code></pre>
+<h2 id="literal-token-to-value-conversion">Literal Token to Value Conversion</h2>
+<p>Michelson bool literals are represented internally by the K <code>Bool</code> type.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> MichelsonBool <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token keyword">Bool</span>
+  <span class="token keyword">rule</span> `MichelsonBoolToken`<span class="token punctuation">(</span>#<span class="token class-name">token</span><span class="token punctuation">(</span><span class="token string">&quot;True&quot;</span><span class="token punctuation">,</span>  <span class="token string">&quot;MichelsonBoolToken&quot;</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token boolean">true</span>
+  <span class="token keyword">rule</span> `MichelsonBoolToken`<span class="token punctuation">(</span>#<span class="token class-name">token</span><span class="token punctuation">(</span><span class="token string">&quot;False&quot;</span><span class="token punctuation">,</span> <span class="token string">&quot;MichelsonBoolToken&quot;</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token boolean">false</span>
+</code></pre>
+<p>Michelson byte literals are represented internally by the K <code>Bytes</code> type.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> MichelsonBytes <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> Bytes
+  <span class="token keyword">rule</span> `MichelsonBytesToken`<span class="token punctuation">(</span>M<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #ParseBytes<span class="token punctuation">(</span>stripFirst<span class="token punctuation">(</span>#MichelsonBytesTokenToString<span class="token punctuation">(</span>M<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span>Bytes<span class="token punctuation">)</span>
+
+  <span class="token keyword">syntax</span> <span class="token keyword">String</span> <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #MichelsonBytesTokenToString<span class="token punctuation">(</span>MichelsonBytesToken<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> hook<span class="token punctuation">(</span>STRING<span class="token punctuation">.</span>token2string<span class="token punctuation">)</span><span class="token punctuation">]</span>
+
+  <span class="token keyword">syntax</span> Bytes <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #ParseBytes<span class="token punctuation">(</span><span class="token keyword">String</span><span class="token punctuation">,</span> Bytes<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">]</span>
+  <span class="token comment">// ---------------------------------------------------</span>
+  <span class="token keyword">rule</span> #ParseBytes<span class="token punctuation">(</span><span class="token string">&quot;&quot;</span><span class="token punctuation">,</span> ByteStr<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> ByteStr
+  <span class="token keyword">rule</span> #ParseBytes<span class="token punctuation">(</span>Hex<span class="token punctuation">,</span> ByteStr<span class="token punctuation">)</span>
+    <span class="token operator">=&gt;</span> #ParseBytes<span class="token punctuation">(</span>stripFirst<span class="token punctuation">(</span>Hex<span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+                   ByteStr
+            <span class="token operator">+</span>Bytes Int2Bytes<span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span> String2Base<span class="token punctuation">(</span>substrString<span class="token punctuation">(</span>Hex<span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token number">16</span><span class="token punctuation">)</span><span class="token punctuation">,</span> BE<span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token keyword">requires</span> Hex <span class="token operator">=</span><span class="token operator">/</span><span class="token operator">=</span><span class="token keyword">String</span> <span class="token string">&quot;&quot;</span>
+
+  <span class="token keyword">syntax</span> <span class="token keyword">String</span> <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> stripFirst<span class="token punctuation">(</span><span class="token keyword">String</span><span class="token punctuation">,</span> <span class="token keyword">Int</span><span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">]</span>
+  <span class="token comment">// -------------------------------------------------</span>
+  <span class="token keyword">rule</span> stripFirst<span class="token punctuation">(</span>S<span class="token punctuation">,</span> I<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> substrString<span class="token punctuation">(</span>S<span class="token punctuation">,</span> I<span class="token punctuation">,</span> lengthString<span class="token punctuation">(</span>S<span class="token punctuation">)</span><span class="token punctuation">)</span>
+</code></pre>
+<p>Macros must be converted into strings for further processing.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> <span class="token keyword">String</span> <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #DIPMacroToString<span class="token punctuation">(</span>DIPMacro<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> hook<span class="token punctuation">(</span>STRING<span class="token punctuation">.</span>token2string<span class="token punctuation">)</span><span class="token punctuation">]</span>
+  <span class="token keyword">syntax</span> <span class="token keyword">String</span> <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #DUPMacroToString<span class="token punctuation">(</span>DUPMacro<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> hook<span class="token punctuation">(</span>STRING<span class="token punctuation">.</span>token2string<span class="token punctuation">)</span><span class="token punctuation">]</span>
+  <span class="token keyword">syntax</span> <span class="token keyword">String</span> <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #CDARMacroToString<span class="token punctuation">(</span>CDARMacro<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> hook<span class="token punctuation">(</span>STRING<span class="token punctuation">.</span>token2string<span class="token punctuation">)</span><span class="token punctuation">]</span>
+  <span class="token keyword">syntax</span> <span class="token keyword">String</span> <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #SetCDARMacroToString<span class="token punctuation">(</span>SetCDARMacro<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> hook<span class="token punctuation">(</span>STRING<span class="token punctuation">.</span>token2string<span class="token punctuation">)</span><span class="token punctuation">]</span>
+  <span class="token keyword">syntax</span> <span class="token keyword">String</span> <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #MapCDARMacroToString<span class="token punctuation">(</span>MapCDARMacro<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> hook<span class="token punctuation">(</span>STRING<span class="token punctuation">.</span>token2string<span class="token punctuation">)</span><span class="token punctuation">]</span>
+</code></pre>
+<p>These macro conversion functions are currently disabled.</p>
+<pre class="language-text"><code>  syntax String ::= #PairMacroToString(PairMacro) [function, hook(STRING.token2string)]
+  syntax String ::= #UnpairMacroToString(UnpairMacro) [function, hook(STRING.token2string)]
+</code></pre>
+<h2 id="stack-representation">Stack Representation</h2>
+<p>We represent the Michelson stack using the <code>InternalStack</code> type which contains
+the representation of standard stacks as well as failed stacks.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> StackElement <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">&quot;[&quot;</span> TypeName Data <span class="token string">&quot;]&quot;</span>
+  <span class="token keyword">syntax</span> Stack <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> List<span class="token punctuation">{</span>StackElement<span class="token punctuation">,</span> <span class="token string">&quot;;&quot;</span><span class="token punctuation">}</span> <span class="token punctuation">[</span><span class="token class-name">klabel</span><span class="token punctuation">(</span>Stack<span class="token punctuation">)</span><span class="token punctuation">]</span>
+  <span class="token keyword">syntax</span> InternalStack <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> Stack <span class="token operator">|</span> FailedStack
+
+  <span class="token keyword">syntax</span> InternalStack <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #LiteralStackToStack<span class="token punctuation">(</span>OutputStack<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">]</span>
+  <span class="token keyword">syntax</span> Stack <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #LiteralStackToStack<span class="token punctuation">(</span>StackElementList<span class="token punctuation">,</span> Stack<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">]</span>
+  <span class="token comment">// ----------------------------------------------------------------------</span>
+  <span class="token keyword">rule</span> #LiteralStackToStack<span class="token punctuation">(</span>FS<span class="token punctuation">:</span>FailedStack<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> FS
+  <span class="token keyword">rule</span> #LiteralStackToStack<span class="token punctuation">(</span><span class="token punctuation">{</span> LS <span class="token punctuation">}</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #LiteralStackToStack<span class="token punctuation">(</span>LS<span class="token punctuation">,</span> <span class="token punctuation">.</span>Stack<span class="token punctuation">)</span>
+  <span class="token keyword">rule</span> #LiteralStackToStack<span class="token punctuation">(</span>Stack_elt T D <span class="token punctuation">;</span> LS<span class="token punctuation">,</span> SS<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #LiteralStackToStack<span class="token punctuation">(</span>LS<span class="token punctuation">,</span> <span class="token punctuation">[</span>#Name<span class="token punctuation">(</span>T<span class="token punctuation">)</span> D<span class="token punctuation">]</span> <span class="token punctuation">;</span> SS<span class="token punctuation">)</span>
+  <span class="token keyword">rule</span> #LiteralStackToStack<span class="token punctuation">(</span><span class="token punctuation">.</span>StackElementList<span class="token punctuation">,</span> SS<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> reverseStack<span class="token punctuation">(</span>SS<span class="token punctuation">)</span>
+
+  <span class="token keyword">syntax</span> Stack <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> reverseStack<span class="token punctuation">(</span> Stack <span class="token punctuation">)</span>        <span class="token punctuation">[</span>function<span class="token punctuation">]</span>
+                 <span class="token operator">|</span> reverseStack<span class="token punctuation">(</span> Stack<span class="token punctuation">,</span> Stack <span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">]</span>
+  <span class="token comment">// -----------------------------------------------------</span>
+  <span class="token keyword">rule</span> reverseStack<span class="token punctuation">(</span> EL <span class="token punctuation">)</span>          <span class="token operator">=&gt;</span> reverseStack<span class="token punctuation">(</span> EL<span class="token punctuation">,</span> <span class="token punctuation">.</span>Stack  <span class="token punctuation">)</span>
+  <span class="token keyword">rule</span> reverseStack<span class="token punctuation">(</span> E <span class="token punctuation">;</span> EL<span class="token punctuation">,</span> EL<span class="token string">&apos; ) =&gt; reverseStack( EL, E ; EL&apos;</span> <span class="token punctuation">)</span>
+  <span class="token keyword">rule</span> reverseStack<span class="token punctuation">(</span> <span class="token punctuation">.</span>Stack<span class="token punctuation">,</span> EL<span class="token string">&apos; ) =&gt; EL&apos;</span>
+</code></pre>
+<h2 id="miscellaneous-internal-representations">Miscellaneous Internal Representations</h2>
+<p>The internal representation of unset type and data values.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> MaybeTypeName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">&quot;.TypeName&quot;</span> <span class="token operator">|</span> TypeName
+  <span class="token keyword">syntax</span> MaybeType     <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">&quot;.Type&quot;</span>     <span class="token operator">|</span> Type
+  <span class="token keyword">syntax</span> MaybeData     <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">&quot;.Data&quot;</span>     <span class="token operator">|</span> Data
+</code></pre>
+<p>We specify that both <code>parameter T</code> and <code>storage T</code> productions are also groups
+(see <a href="../syntax/">syntax.md</a> for a description of groups).</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> Group <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> ParameterDecl
+  <span class="token keyword">syntax</span> Group <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> StorageDecl
+</code></pre>
+<p>A Michelson contract consists of three <a href="https://tezos.gitlab.io/whitedoc/michelson.html#primitive-applications" target="_blank" rel="noopener">primitive
+applications</a>
+<code>code</code>, <code>storage</code> and <code>parameter</code> in any order, separated by semicolons and with
+or without an extra semicolon at the end. We standardize this format with these
+eleven &apos;anywhere&apos; rules here.</p>
+<pre class="language-k"><code>  <span class="token keyword">rule</span> code B <span class="token punctuation">;</span> storage St <span class="token punctuation">;</span> parameter Pt <span class="token operator">=&gt;</span> code B <span class="token punctuation">;</span> storage St <span class="token punctuation">;</span> parameter Pt <span class="token punctuation">;</span> <span class="token punctuation">[</span>anywhere<span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> code B <span class="token punctuation">;</span> parameter Pt <span class="token punctuation">;</span> storage St <span class="token operator">=&gt;</span> code B <span class="token punctuation">;</span> storage St <span class="token punctuation">;</span> parameter Pt <span class="token punctuation">;</span> <span class="token punctuation">[</span>anywhere<span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> storage St <span class="token punctuation">;</span> code B <span class="token punctuation">;</span> parameter Pt <span class="token operator">=&gt;</span> code B <span class="token punctuation">;</span> storage St <span class="token punctuation">;</span> parameter Pt <span class="token punctuation">;</span> <span class="token punctuation">[</span>anywhere<span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> parameter Pt <span class="token punctuation">;</span> code B <span class="token punctuation">;</span> storage St <span class="token operator">=&gt;</span> code B <span class="token punctuation">;</span> storage St <span class="token punctuation">;</span> parameter Pt <span class="token punctuation">;</span> <span class="token punctuation">[</span>anywhere<span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> storage St <span class="token punctuation">;</span> parameter Pt <span class="token punctuation">;</span> code B <span class="token operator">=&gt;</span> code B <span class="token punctuation">;</span> storage St <span class="token punctuation">;</span> parameter Pt <span class="token punctuation">;</span> <span class="token punctuation">[</span>anywhere<span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> parameter Pt <span class="token punctuation">;</span> storage St <span class="token punctuation">;</span> code B <span class="token operator">=&gt;</span> code B <span class="token punctuation">;</span> storage St <span class="token punctuation">;</span> parameter Pt <span class="token punctuation">;</span> <span class="token punctuation">[</span>anywhere<span class="token punctuation">]</span>
+
+  <span class="token keyword">rule</span> code B <span class="token punctuation">;</span> parameter Pt <span class="token punctuation">;</span> storage St <span class="token punctuation">;</span> <span class="token operator">=&gt;</span> code B <span class="token punctuation">;</span> storage St <span class="token punctuation">;</span> parameter Pt <span class="token punctuation">;</span> <span class="token punctuation">[</span>anywhere<span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> storage St <span class="token punctuation">;</span> code B <span class="token punctuation">;</span> parameter Pt <span class="token punctuation">;</span> <span class="token operator">=&gt;</span> code B <span class="token punctuation">;</span> storage St <span class="token punctuation">;</span> parameter Pt <span class="token punctuation">;</span> <span class="token punctuation">[</span>anywhere<span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> parameter Pt <span class="token punctuation">;</span> code B <span class="token punctuation">;</span> storage St <span class="token punctuation">;</span> <span class="token operator">=&gt;</span> code B <span class="token punctuation">;</span> storage St <span class="token punctuation">;</span> parameter Pt <span class="token punctuation">;</span> <span class="token punctuation">[</span>anywhere<span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> storage St <span class="token punctuation">;</span> parameter Pt <span class="token punctuation">;</span> code B <span class="token punctuation">;</span> <span class="token operator">=&gt;</span> code B <span class="token punctuation">;</span> storage St <span class="token punctuation">;</span> parameter Pt <span class="token punctuation">;</span> <span class="token punctuation">[</span>anywhere<span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> parameter Pt <span class="token punctuation">;</span> storage St <span class="token punctuation">;</span> code B <span class="token punctuation">;</span> <span class="token operator">=&gt;</span> code B <span class="token punctuation">;</span> storage St <span class="token punctuation">;</span> parameter Pt <span class="token punctuation">;</span> <span class="token punctuation">[</span>anywhere<span class="token punctuation">]</span>
+</code></pre>
+<h2 id="michelson-internal-representation-conversion">Michelson Internal Representation Conversion</h2>
+<p>This function converts the <code>other_contracts</code> field into its internal
+represetation.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> Map <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #OtherContractsMapToKMap<span class="token punctuation">(</span>OtherContractsMapEntryList<span class="token punctuation">)</span>              <span class="token punctuation">[</span>function<span class="token punctuation">]</span>
+               <span class="token operator">|</span> #OtherContractsMapToKMap<span class="token punctuation">(</span><span class="token keyword">String</span><span class="token punctuation">,</span> Map<span class="token punctuation">,</span> OtherContractsMapEntryList<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">]</span>
+  <span class="token comment">// ----------------------------------------------------------------------------------------</span>
+  <span class="token keyword">rule</span> #OtherContractsMapToKMap<span class="token punctuation">(</span> <span class="token punctuation">.</span>OtherContractsMapEntryList <span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token punctuation">.</span>Map
+  <span class="token keyword">rule</span> #OtherContractsMapToKMap<span class="token punctuation">(</span> Contract A T <span class="token punctuation">;</span> Rs <span class="token punctuation">)</span>
+    <span class="token operator">=&gt;</span> #OtherContractsMapToKMap<span class="token punctuation">(</span>A<span class="token punctuation">,</span> #BuildAnnotationMap<span class="token punctuation">(</span><span class="token punctuation">.</span>FieldAnnotation<span class="token punctuation">,</span> T<span class="token punctuation">)</span><span class="token punctuation">,</span> Rs<span class="token punctuation">)</span>
+
+  <span class="token keyword">rule</span> #OtherContractsMapToKMap<span class="token punctuation">(</span>A<span class="token punctuation">,</span> TypeMap<span class="token punctuation">,</span> Rs<span class="token punctuation">)</span> <span class="token operator">=&gt;</span>
+       #BuildOtherContractsMap<span class="token punctuation">(</span>#Address<span class="token punctuation">(</span>A<span class="token punctuation">)</span><span class="token punctuation">,</span> TypeMap<span class="token punctuation">)</span> #OtherContractsMapToKMap<span class="token punctuation">(</span>Rs<span class="token punctuation">)</span>
+
+  <span class="token keyword">syntax</span> Map <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #BuildOtherContractsMap<span class="token punctuation">(</span>Address<span class="token punctuation">,</span> Map<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">]</span>
+  <span class="token comment">// ------------------------------------------------------------</span>
+  <span class="token keyword">rule</span> #BuildOtherContractsMap<span class="token punctuation">(</span>A<span class="token punctuation">,</span> FA<span class="token punctuation">:</span>FieldAnnotation <span class="token operator">|</span><span class="token operator">-</span>&gt; T<span class="token punctuation">:</span>TypeName TypeMap<span class="token punctuation">:</span>Map<span class="token punctuation">)</span>
+    <span class="token operator">=&gt;</span> A <span class="token punctuation">.</span> FA <span class="token operator">|</span><span class="token operator">-</span>&gt; T #BuildOtherContractsMap<span class="token punctuation">(</span>A<span class="token punctuation">,</span> TypeMap<span class="token punctuation">)</span>
+
+  <span class="token keyword">rule</span> #BuildOtherContractsMap<span class="token punctuation">(</span>_<span class="token punctuation">,</span> <span class="token punctuation">.</span>Map<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token punctuation">.</span>Map
+</code></pre>
+<p>This function converts all other datatypes into their internal represenations.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> DataOrSeq <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> Data <span class="token operator">|</span> DataList <span class="token operator">|</span> MapEntryList <span class="token comment">// Can&apos;t subsort DataList to Data, as that would form a cycle.</span>
+  <span class="token keyword">syntax</span> Data <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #MichelineToNative<span class="token punctuation">(</span>DataOrSeq<span class="token punctuation">,</span> Type<span class="token punctuation">,</span> Map<span class="token punctuation">,</span> Map<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">]</span>
+</code></pre>
+<h3 id="converting-string-based-datatypes">Converting String-Based Datatypes</h3>
+<p>Michelson has several datatypes whose values are given as Micheline Strings.
+These include:</p>
+<ul>
+<li>address</li>
+<li>key</li>
+<li>key_hash</li>
+<li>signature</li>
+<li>string</li>
+<li>timestamp (in its human-readable form)</li>
+</ul>
+<p>We delegate these datatypes validations to their own functions.</p>
+<pre class="language-k"><code>  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span>S<span class="token punctuation">:</span><span class="token keyword">String</span><span class="token punctuation">,</span> key_hash _<span class="token punctuation">,</span>  _KnownAddrs<span class="token punctuation">,</span> _BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #ParseKeyHash<span class="token punctuation">(</span>S<span class="token punctuation">)</span>
+  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span>S<span class="token punctuation">:</span><span class="token keyword">String</span><span class="token punctuation">,</span> address _<span class="token punctuation">,</span>   _KnownAddrs<span class="token punctuation">,</span> _BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #ParseAddress<span class="token punctuation">(</span>S<span class="token punctuation">)</span>
+  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span>S<span class="token punctuation">:</span><span class="token keyword">String</span><span class="token punctuation">,</span> key _<span class="token punctuation">,</span>       _KnownAddrs<span class="token punctuation">,</span> _BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #ParseKey<span class="token punctuation">(</span>S<span class="token punctuation">)</span>
+  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span>S<span class="token punctuation">:</span><span class="token keyword">String</span><span class="token punctuation">,</span> signature _<span class="token punctuation">,</span> _KnownAddrs<span class="token punctuation">,</span> _BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #ParseSignature<span class="token punctuation">(</span>S<span class="token punctuation">)</span>
+  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span>S<span class="token punctuation">:</span><span class="token keyword">String</span><span class="token punctuation">,</span> timestamp _<span class="token punctuation">,</span> _KnownAddrs<span class="token punctuation">,</span> _BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #ParseTimestamp<span class="token punctuation">(</span>S<span class="token punctuation">)</span>
+</code></pre>
+<p>A simple hook to return the Unix epoch representation of a timestamp passed to
+the semantics in an ISO8601 format string. See time.cpp for its implementation.
+The semantics accept timestamps in one of two formats:</p>
+<ol>
+<li>An ISO-8601 string.</li>
+<li>A unix timestamp</li>
+</ol>
+<p>We also include a (partial) internal timestamp validation check.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> <span class="token keyword">Int</span> <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #ISO2Epoch<span class="token punctuation">(</span><span class="token keyword">String</span><span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> hook<span class="token punctuation">(</span>TIME<span class="token punctuation">.</span>ISO2Epoch<span class="token punctuation">)</span><span class="token punctuation">]</span>
+  <span class="token keyword">syntax</span> Timestamp <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #ParseTimestamp<span class="token punctuation">(</span><span class="token keyword">String</span><span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> #ParseTimestamp<span class="token punctuation">(</span>S<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #Timestamp<span class="token punctuation">(</span>#ISO2Epoch<span class="token punctuation">(</span>S<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token keyword">requires</span> findString<span class="token punctuation">(</span>S<span class="token punctuation">,</span> <span class="token string">&quot;Z&quot;</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token operator">&gt;=</span><span class="token keyword">Int</span> <span class="token number">0</span>
+  <span class="token keyword">rule</span> #ParseTimestamp<span class="token punctuation">(</span>S<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #Timestamp<span class="token punctuation">(</span>String2Int<span class="token punctuation">(</span>S<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token keyword">requires</span> findString<span class="token punctuation">(</span>S<span class="token punctuation">,</span> <span class="token string">&quot;Z&quot;</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span> &lt;<span class="token keyword">Int</span> <span class="token number">0</span>
+
+  <span class="token keyword">syntax</span> <span class="token keyword">Bool</span> <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #IsLegalTimestamp<span class="token punctuation">(</span>Timestamp<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">]</span>
+  <span class="token comment">// ----------------------------------------------------------------</span>
+  <span class="token keyword">rule</span> #IsLegalTimestamp<span class="token punctuation">(</span>#Timestamp<span class="token punctuation">(</span>I<span class="token punctuation">:</span><span class="token keyword">Int</span><span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> I <span class="token operator">&gt;=</span><span class="token keyword">Int</span> <span class="token number">0</span>
+</code></pre>
+<p>The other string based datatypes have stubs for their validation functions.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> KeyHash <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #ParseKeyHash<span class="token punctuation">(</span><span class="token keyword">String</span><span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> #ParseKeyHash<span class="token punctuation">(</span>S<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #KeyHash<span class="token punctuation">(</span>S<span class="token punctuation">)</span>
+
+  <span class="token keyword">syntax</span> Address <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #ParseAddress<span class="token punctuation">(</span><span class="token keyword">String</span><span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> #ParseAddress<span class="token punctuation">(</span>S<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #Address<span class="token punctuation">(</span>S<span class="token punctuation">)</span>
+
+  <span class="token keyword">syntax</span> Key <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #ParseKey<span class="token punctuation">(</span><span class="token keyword">String</span><span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> #ParseKey<span class="token punctuation">(</span>S<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #Key<span class="token punctuation">(</span>S<span class="token punctuation">)</span>
+
+  <span class="token keyword">syntax</span> Signature <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #ParseSignature<span class="token punctuation">(</span><span class="token keyword">String</span><span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> #ParseSignature<span class="token punctuation">(</span>S<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #Signature<span class="token punctuation">(</span>S<span class="token punctuation">)</span>
+</code></pre>
+<p>Note that timestamps have an optimized form based on integers.
+We convert that form here.</p>
+<pre class="language-k"><code>  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span>I<span class="token punctuation">:</span><span class="token keyword">Int</span><span class="token punctuation">,</span> timestamp _<span class="token punctuation">,</span> _KnownAddrs<span class="token punctuation">,</span> _BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #Timestamp<span class="token punctuation">(</span>I<span class="token punctuation">)</span>
+</code></pre>
+<h3 id="converting-simple-datatypes">Converting Simple Datatypes</h3>
+<p>A ChainId is simply a specially tagged MichelsonBytes.</p>
+<pre class="language-k"><code>  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span>H<span class="token punctuation">:</span>MichelsonBytes<span class="token punctuation">,</span> chain_id _<span class="token punctuation">,</span> _KnownAddrs<span class="token punctuation">,</span> _BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #ChainId<span class="token punctuation">(</span>H<span class="token punctuation">)</span>
+</code></pre>
+<p>An int can simply be represented directly as a K int. Nats get an additional
+sanity check to avoid negative nats.</p>
+<pre class="language-k"><code>  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span>I<span class="token punctuation">:</span><span class="token keyword">Int</span><span class="token punctuation">,</span> int _<span class="token punctuation">,</span> _KnownAddrs<span class="token punctuation">,</span> _BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> I
+  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span>I<span class="token punctuation">:</span><span class="token keyword">Int</span><span class="token punctuation">,</span> nat _<span class="token punctuation">,</span> _KnownAddrs<span class="token punctuation">,</span> _BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> I <span class="token keyword">requires</span> I <span class="token operator">&gt;=</span><span class="token keyword">Int</span> <span class="token number">0</span>
+</code></pre>
+<p>Strings, like ints, represent themselves.</p>
+<pre class="language-k"><code>  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span>S<span class="token punctuation">:</span><span class="token keyword">String</span><span class="token punctuation">,</span> string _<span class="token punctuation">,</span> _KnownAddrs<span class="token punctuation">,</span> _BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> S
+</code></pre>
+<p>MichelsonBytes conversion is done by the function rule.</p>
+<pre class="language-k"><code>  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span>B<span class="token punctuation">:</span>MichelsonBytes<span class="token punctuation">,</span> bytes _<span class="token punctuation">,</span> _KnownAddrs<span class="token punctuation">,</span> _BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> B
+</code></pre>
+<p>Mutez is simply a specially tagged int - we also sanity check the int to ensure
+that it is in bounds.</p>
+<pre class="language-k"><code>  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span>I<span class="token punctuation">:</span><span class="token keyword">Int</span><span class="token punctuation">,</span> mutez _<span class="token punctuation">,</span> _KnownAddrs<span class="token punctuation">,</span> _BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #Mutez<span class="token punctuation">(</span>I<span class="token punctuation">)</span> <span class="token keyword">requires</span> #IsLegalMutezValue<span class="token punctuation">(</span>I<span class="token punctuation">)</span>
+</code></pre>
+<p>K&apos;s function expansion step has already handled converting Michelsons
+&quot;True/False&quot; booleans into &quot;true/false&quot; K bools, so we don&apos;t need to do anything
+special with them here.</p>
+<pre class="language-k"><code>  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span>B<span class="token punctuation">:</span><span class="token keyword">Bool</span><span class="token punctuation">,</span> bool _<span class="token punctuation">,</span> _KnownAddrs<span class="token punctuation">,</span> _BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> B
+</code></pre>
+<p>The Unit token represents itself.</p>
+<pre class="language-k"><code>  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span>Unit<span class="token punctuation">,</span> unit _<span class="token punctuation">,</span> _KnownAddrs<span class="token punctuation">,</span> _BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> Unit
+</code></pre>
+<h3 id="converting-complex-datatypes">Converting Complex Datatypes</h3>
+<p>We recursively convert the contents of pairs, ors and options, if applicable.</p>
+<pre class="language-k"><code>  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span>Pair A B<span class="token punctuation">,</span> pair _ T1<span class="token punctuation">:</span>Type T2<span class="token punctuation">:</span>Type<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span>
+       Pair #MichelineToNative<span class="token punctuation">(</span>A<span class="token punctuation">,</span> T1<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span> #MichelineToNative<span class="token punctuation">(</span>B<span class="token punctuation">,</span> T2<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span>
+
+  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span>Some V<span class="token punctuation">,</span> option _ T<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> Some #MichelineToNative<span class="token punctuation">(</span>V<span class="token punctuation">,</span> T<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span>
+  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span>None<span class="token punctuation">,</span> option _<span class="token punctuation">:</span>AnnotationList _<span class="token punctuation">,</span> _KnownAddrs<span class="token punctuation">,</span> _BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> None
+
+  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span>Left V<span class="token punctuation">,</span> or _<span class="token punctuation">:</span>AnnotationList TL<span class="token punctuation">:</span>Type _<span class="token punctuation">:</span>Type<span class="token punctuation">,</span>  KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> Left #MichelineToNative<span class="token punctuation">(</span>V<span class="token punctuation">,</span> TL<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span>
+  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span>Right V<span class="token punctuation">,</span> or _<span class="token punctuation">:</span>AnnotationList _<span class="token punctuation">:</span>Type TR<span class="token punctuation">:</span>Type<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> Right #MichelineToNative<span class="token punctuation">(</span>V<span class="token punctuation">,</span> TR<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span>
+</code></pre>
+<p>We wrap Lambdas appropriately and save their type information.  Note that we do <em>not</em> recurse into the Block.</p>
+<pre class="language-k"><code>  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span>B<span class="token punctuation">:</span>Block<span class="token punctuation">,</span> lambda _<span class="token punctuation">:</span>AnnotationList T1 T2<span class="token punctuation">,</span> _KnownAddrs<span class="token punctuation">,</span> _BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #Lambda<span class="token punctuation">(</span>#Name<span class="token punctuation">(</span>T1<span class="token punctuation">)</span><span class="token punctuation">,</span> #Name<span class="token punctuation">(</span>T2<span class="token punctuation">)</span><span class="token punctuation">,</span> B<span class="token punctuation">)</span>
+</code></pre>
+<p>Collections are converted one element at a time. We need to handle the cases of
+0 and 1 length lists separately due to parsing ambiguities between a size 1
+element list, and another embedded list.</p>
+<pre class="language-k"><code>  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span><span class="token punctuation">{</span> <span class="token punctuation">}</span><span class="token punctuation">,</span>                  list _ _<span class="token punctuation">,</span> _KnownAddrs<span class="token punctuation">,</span> _BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token punctuation">.</span>InternalList
+  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span><span class="token punctuation">{</span> D1<span class="token punctuation">:</span>Data <span class="token punctuation">}</span><span class="token punctuation">,</span>          list _ T<span class="token punctuation">,</span>  KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token punctuation">[</span> #MichelineToNative<span class="token punctuation">(</span>D1<span class="token punctuation">,</span> T<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span> <span class="token punctuation">]</span> <span class="token punctuation">;</span><span class="token punctuation">;</span> <span class="token punctuation">.</span>InternalList
+  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span><span class="token punctuation">{</span> D1 <span class="token punctuation">;</span> DL<span class="token punctuation">:</span>DataList <span class="token punctuation">}</span><span class="token punctuation">,</span> list _ T<span class="token punctuation">,</span>  KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #MichelineToNativeList<span class="token punctuation">(</span>D1 <span class="token punctuation">;</span> DL<span class="token punctuation">,</span> list <span class="token punctuation">.</span>AnnotationList T<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span>
+
+  <span class="token keyword">syntax</span> InternalList <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #MichelineToNativeList<span class="token punctuation">(</span>DataList<span class="token punctuation">,</span> Type<span class="token punctuation">,</span> Map<span class="token punctuation">,</span> Map<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">]</span>
+  <span class="token comment">// --------------------------------------------------------------------------------</span>
+  <span class="token keyword">rule</span> #MichelineToNativeList<span class="token punctuation">(</span>D1<span class="token punctuation">:</span>Data <span class="token punctuation">;</span> D2<span class="token punctuation">:</span>Data<span class="token punctuation">,</span> list _ T<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span>
+       <span class="token punctuation">[</span> #MichelineToNative<span class="token punctuation">(</span>D1<span class="token punctuation">,</span> T<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span> <span class="token punctuation">]</span>  <span class="token punctuation">;</span><span class="token punctuation">;</span> <span class="token punctuation">[</span> #MichelineToNative<span class="token punctuation">(</span>D2<span class="token punctuation">,</span> T<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span> <span class="token punctuation">]</span>
+
+  <span class="token keyword">rule</span> #MichelineToNativeList<span class="token punctuation">(</span>D1<span class="token punctuation">:</span>Data <span class="token punctuation">;</span> D2<span class="token punctuation">:</span>Data <span class="token punctuation">;</span> DL<span class="token punctuation">:</span>DataList<span class="token punctuation">,</span> list _ T<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span>
+       <span class="token punctuation">[</span> #MichelineToNative<span class="token punctuation">(</span>D1<span class="token punctuation">,</span> T<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span> <span class="token punctuation">]</span> <span class="token punctuation">;</span><span class="token punctuation">;</span> #MichelineToNativeList<span class="token punctuation">(</span>D2 <span class="token punctuation">;</span> DL<span class="token punctuation">,</span> list <span class="token punctuation">.</span>AnnotationList T<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span>
+</code></pre>
+<p>Sets are handled essentially the same way as lists, with the same caveat about
+needing to handle 3 cases (0-Size sets, 1-Size sets, and otherwise).</p>
+<pre class="language-k"><code>  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span><span class="token punctuation">{</span> <span class="token punctuation">}</span><span class="token punctuation">,</span> set _ _<span class="token punctuation">,</span> _KnownAddrs<span class="token punctuation">,</span> _BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token punctuation">.</span>Set
+  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span><span class="token punctuation">{</span> D<span class="token punctuation">:</span>Data <span class="token punctuation">}</span><span class="token punctuation">,</span> set _ T<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> SetItem<span class="token punctuation">(</span>#MichelineToNative<span class="token punctuation">(</span>D<span class="token punctuation">,</span> T<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span><span class="token punctuation">)</span>
+  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span><span class="token punctuation">{</span> D1 <span class="token punctuation">;</span> DL<span class="token punctuation">:</span>DataList <span class="token punctuation">}</span><span class="token punctuation">,</span> set _ T<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #MichelineToNative<span class="token punctuation">(</span>D1 <span class="token punctuation">;</span> DL<span class="token punctuation">,</span> set <span class="token punctuation">.</span>AnnotationList T<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span>
+
+  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span>D1<span class="token punctuation">:</span>Data <span class="token punctuation">;</span> D2<span class="token punctuation">:</span>Data<span class="token punctuation">,</span> set _ T<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span>
+       SetItem<span class="token punctuation">(</span>#MichelineToNative<span class="token punctuation">(</span>D1<span class="token punctuation">,</span> T<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span><span class="token punctuation">)</span> SetItem<span class="token punctuation">(</span>#MichelineToNative<span class="token punctuation">(</span>D2<span class="token punctuation">,</span> T<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span><span class="token punctuation">)</span>
+
+  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span>D1<span class="token punctuation">:</span>Data <span class="token punctuation">;</span> D2<span class="token punctuation">:</span>Data <span class="token punctuation">;</span> DL<span class="token punctuation">:</span>DataList<span class="token punctuation">,</span> set _ T<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span>
+       SetItem<span class="token punctuation">(</span>#MichelineToNative<span class="token punctuation">(</span>D1<span class="token punctuation">,</span> T<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>#MichelineToNative<span class="token punctuation">(</span>D2 <span class="token punctuation">;</span> DL<span class="token punctuation">,</span> set <span class="token punctuation">.</span>AnnotationList T<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span>BigMaps<span class="token punctuation">)</span><span class="token punctuation">}</span><span class="token punctuation">:</span>&gt;Set
+</code></pre>
+<p>Maps and <code>big_map</code>s do not have the same parsing ambiguity, so we do not need to
+handle the case of size 1 maps separately. Note that, internally, no difference
+exists between maps and <code>big_map</code>s in K-Michelson.</p>
+<pre class="language-k"><code>  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span><span class="token punctuation">{</span> <span class="token punctuation">}</span><span class="token punctuation">,</span> map _ _ _<span class="token punctuation">,</span> _KnownAddrs<span class="token punctuation">,</span> _BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token punctuation">.</span>Map
+  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span><span class="token punctuation">{</span> M<span class="token punctuation">:</span>MapEntryList <span class="token punctuation">}</span><span class="token punctuation">,</span> map _<span class="token punctuation">:</span>AnnotationList KT VT<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span>
+       #MichelineToNative<span class="token punctuation">(</span>M<span class="token punctuation">,</span> map <span class="token punctuation">.</span>AnnotationList KT VT<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span>
+
+  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span>Elt K V <span class="token punctuation">;</span> ML<span class="token punctuation">,</span> map _<span class="token punctuation">:</span>AnnotationList KT VT<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span>
+       <span class="token punctuation">(</span><span class="token punctuation">{</span>#MichelineToNative<span class="token punctuation">(</span>ML<span class="token punctuation">,</span> map <span class="token punctuation">.</span>AnnotationList KT VT<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span><span class="token punctuation">}</span><span class="token punctuation">:</span>&gt;Map<span class="token punctuation">)</span><span class="token punctuation">[</span>#MichelineToNative<span class="token punctuation">(</span>K<span class="token punctuation">,</span> KT<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span> &lt;<span class="token operator">-</span> #MichelineToNative<span class="token punctuation">(</span>V<span class="token punctuation">,</span> VT<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span><span class="token punctuation">]</span>
+
+  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span>Elt K V<span class="token punctuation">,</span> map _<span class="token punctuation">:</span>AnnotationList KT VT<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span>
+       #MichelineToNative<span class="token punctuation">(</span>K<span class="token punctuation">,</span> KT<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span> <span class="token operator">|</span><span class="token operator">-</span>&gt; #MichelineToNative<span class="token punctuation">(</span>V<span class="token punctuation">,</span> VT<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span>
+
+  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span><span class="token punctuation">{</span> <span class="token punctuation">}</span><span class="token punctuation">,</span> big_map _<span class="token punctuation">:</span>AnnotationList _K _V<span class="token punctuation">,</span> _KnownAddrs<span class="token punctuation">,</span> _BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token punctuation">.</span>Map
+
+  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span><span class="token punctuation">{</span> M<span class="token punctuation">:</span>MapEntryList <span class="token punctuation">}</span><span class="token punctuation">,</span> big_map _<span class="token punctuation">:</span>AnnotationList K V<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span>
+       #MichelineToNative<span class="token punctuation">(</span><span class="token punctuation">{</span> M<span class="token punctuation">:</span>MapEntryList <span class="token punctuation">}</span><span class="token punctuation">,</span> map <span class="token punctuation">.</span>AnnotationList K V<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span>  <span class="token comment">// We handle big_map literals as maps.</span>
+</code></pre>
+<p>We construct a contract datatype from its string address and type. Note that,
+for convenience, we do not enforce that this address exists in the
+<code>other_contracts</code> map!</p>
+<pre class="language-k"><code>  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span>S<span class="token punctuation">:</span><span class="token keyword">String</span><span class="token punctuation">,</span> contract _ T<span class="token punctuation">,</span> _KnownAddrs<span class="token punctuation">,</span> _BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #Contract<span class="token punctuation">(</span>#ParseEntrypoint<span class="token punctuation">(</span>S<span class="token punctuation">)</span><span class="token punctuation">,</span> #Name<span class="token punctuation">(</span>T<span class="token punctuation">)</span><span class="token punctuation">)</span>
+
+  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span>#Typed<span class="token punctuation">(</span>D<span class="token punctuation">,</span> T<span class="token punctuation">)</span><span class="token punctuation">,</span> T<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> #MichelineToNative<span class="token punctuation">(</span>D<span class="token punctuation">,</span> T<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span>
+</code></pre>
+<p>These rules exists for the unit testing semantics - operations are not legal
+data literals in normal Michelson. Note that we need to recurse into the data
+elements.</p>
+<pre class="language-k"><code>  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span>Create_contract <span class="token punctuation">{</span> C <span class="token punctuation">}</span> O M S N<span class="token punctuation">,</span> operation _<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span>
+       Create_contract
+           <span class="token punctuation">{</span> C <span class="token punctuation">}</span>
+           <span class="token punctuation">{</span>#MichelineToNative<span class="token punctuation">(</span>O<span class="token punctuation">,</span> <span class="token punctuation">(</span>option <span class="token punctuation">.</span>AnnotationList  key_hash <span class="token punctuation">.</span>AnnotationList<span class="token punctuation">)</span><span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span><span class="token punctuation">}</span><span class="token punctuation">:</span>&gt;OptionData
+           M
+           #MichelineToNative<span class="token punctuation">(</span>S<span class="token punctuation">,</span> #StorageTypeFromContract<span class="token punctuation">(</span>C<span class="token punctuation">)</span><span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span>
+           N
+    <span class="token keyword">requires</span> <span class="token punctuation">(</span>isWildcard<span class="token punctuation">(</span>N<span class="token punctuation">)</span> orBool isInt<span class="token punctuation">(</span>N<span class="token punctuation">)</span><span class="token punctuation">)</span>
+     andBool #IsLegalMutezValue<span class="token punctuation">(</span>M<span class="token punctuation">)</span>
+
+  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span>Set_delegate K N<span class="token punctuation">,</span> operation _<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span>
+       Set_delegate <span class="token punctuation">{</span>#MichelineToNative<span class="token punctuation">(</span>K<span class="token punctuation">,</span> <span class="token punctuation">(</span>option <span class="token punctuation">.</span>AnnotationList key_hash <span class="token punctuation">.</span>AnnotationList<span class="token punctuation">)</span><span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span><span class="token punctuation">}</span><span class="token punctuation">:</span>&gt;OptionData N
+    <span class="token keyword">requires</span> <span class="token punctuation">(</span>isWildcard<span class="token punctuation">(</span>N<span class="token punctuation">)</span> orBool isInt<span class="token punctuation">(</span>N<span class="token punctuation">)</span><span class="token punctuation">)</span>
+
+  <span class="token keyword">syntax</span> Type <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #StorageTypeFromContract<span class="token punctuation">(</span>Contract<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> #StorageTypeFromContract<span class="token punctuation">(</span>code _ <span class="token punctuation">;</span> storage S <span class="token punctuation">;</span> parameter _ <span class="token punctuation">;</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> S
+</code></pre>
+<p>These rules use the K syntax for a <code>withConfig</code> function. This attribute allows
+a function read-only access to the K configuration, and is necessary here to
+avoid needing an explicit configuration argument in all other rules. We need the
+configuration because we need to be able to construct a <code>contract</code> value from an
+address specified in the <code>Transfer_tokens</code> production, and thus need to perform
+a contract lookup.</p>
+<pre class="language-k"><code>  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span>Transfer_tokens P M A N<span class="token punctuation">,</span> operation _<span class="token punctuation">,</span> KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span>
+          <span class="token operator">=&gt;</span> Transfer_tokens
+              #MichelineToNative<span class="token punctuation">(</span>
+                  P<span class="token punctuation">,</span>
+                  #Type<span class="token punctuation">(</span><span class="token punctuation">{</span>KnownAddrs <span class="token punctuation">[</span> #ParseEntrypoint<span class="token punctuation">(</span>A<span class="token punctuation">)</span> <span class="token punctuation">]</span><span class="token punctuation">}</span><span class="token punctuation">:</span>&gt;TypeName<span class="token punctuation">)</span><span class="token punctuation">,</span>
+                  KnownAddrs<span class="token punctuation">,</span>
+                  BigMaps
+              <span class="token punctuation">)</span>
+              #Mutez<span class="token punctuation">(</span>M<span class="token punctuation">)</span>
+              #ParseEntrypoint<span class="token punctuation">(</span>A<span class="token punctuation">)</span>
+              N
+       <span class="token keyword">requires</span> <span class="token punctuation">(</span>isWildcard<span class="token punctuation">(</span>N<span class="token punctuation">)</span> orBool isInt<span class="token punctuation">(</span>N<span class="token punctuation">)</span><span class="token punctuation">)</span>
+        andBool #ParseEntrypoint<span class="token punctuation">(</span>A<span class="token punctuation">)</span> in_keys<span class="token punctuation">(</span>KnownAddrs<span class="token punctuation">)</span>
+        andBool #IsLegalMutezValue<span class="token punctuation">(</span>M<span class="token punctuation">)</span>
+</code></pre>
+<p>We extract a <code>big_map</code> by index from the bigmaps map. Note that these have
+already been converted to K-internal form, so there is no need to recurse here.</p>
+<pre class="language-k"><code>  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span>I<span class="token punctuation">:</span><span class="token keyword">Int</span><span class="token punctuation">,</span> big_map _<span class="token punctuation">:</span>AnnotationList _K _V<span class="token punctuation">,</span> _KnownAddrs<span class="token punctuation">,</span> BigMaps<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token punctuation">{</span>BigMaps<span class="token punctuation">[</span>I<span class="token punctuation">]</span><span class="token punctuation">}</span><span class="token punctuation">:</span>&gt;Data
+</code></pre>
+<p>The wildcard value maps to itself.</p>
+<pre class="language-k"><code>  <span class="token keyword">rule</span> #MichelineToNative<span class="token punctuation">(</span>WC<span class="token punctuation">:</span>Wildcard<span class="token punctuation">,</span> _<span class="token punctuation">,</span> _<span class="token punctuation">,</span> _<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> WC
+</code></pre>
+<pre class="language-k"><code><span class="token keyword">endmodule</span>
+</code></pre>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#michelson-internal-representation" class="bd-toc-link">Michelson Internal Representation</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#type-representation"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Type Representation
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#entrypoint-representation"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Entrypoint Representation
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#value-representation"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Value Representation
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#literal-token-to-value-conversion"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Literal Token to Value Conversion
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#stack-representation"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Stack Representation
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#miscellaneous-internal-representations"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Miscellaneous Internal Representations
+              </a></div><details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#michelson-internal-representation-conversion" class="bd-toc-link">Michelson Internal Representation Conversion</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#converting-string-based-datatypes"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Converting String-Based Datatypes
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#converting-simple-datatypes"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Converting Simple Datatypes
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#converting-complex-datatypes"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Converting Complex Datatypes
+              </a></div>
+            </div>
+          </details>
+        
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Typist/1.2/typist.min.js"></script>
+    <script src="../assets/js/index.js"></script>
+  </body>
+</html>
