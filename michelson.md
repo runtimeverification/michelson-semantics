@@ -1889,13 +1889,13 @@ identical to those defined over integers.
 
   rule <k> JOIN_TICKETS _A => . ...</k>
        <stack> [(pair (ticket CTy) (ticket CTy))
-                (Pair #Ticket(S1, _X1, _N1) #Ticket(S2, _X2, _N2))
+                (Pair #Ticket(#Address(S1), _X1, _N1) #Ticket(#Address(S2), _X2, _N2))
                ] ;
                SS
             => [(option (ticket CTy)) None] ;
                SS
        </stack>
-     requires notBool S1 ==Address S2
+     requires notBool S1 ==String S2
 
   rule <k> JOIN_TICKETS _A => . ...</k>
        <stack> [(pair (ticket CTy) (ticket CTy))
@@ -2484,7 +2484,7 @@ It has an untyped and typed variant.
   rule isValue(set _,  _:Set)            => true
   rule isValue(_:MapTypeName _ _, _:Map) => true
 
-  rule isValue(ticket T, #Ticket A X N) => isValue(address, A) andBool isValue(T, X) andBool isValue(nat, N)
+  rule isValue(ticket T, #Ticket(A, X, N)) => isValue(address, A) andBool isValue(T, X) andBool isValue(nat, N)
 
   rule isValue(_,_) => false [owise]
 ```
