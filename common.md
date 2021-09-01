@@ -28,18 +28,22 @@ to contracts with entrypoints. We may fix this issue in a later release.
   syntax TypeName ::= NullaryTypeName
                     | UnaryTypeName TypeName
                     | BinaryTypeName TypeName TypeName
+                    | BinaryPlusTypeName TypeName TypeName
 
   syntax TypeName ::= #Name(Type) [function, functional]
   // ---------------------------------------------------
   rule #Name(T:NullaryTypeName _:AnnotationList) => T
   rule #Name(T:UnaryTypeName _:AnnotationList ArgT) => T #Name(ArgT)
   rule #Name(T:BinaryTypeName _:AnnotationList ArgT1 ArgT2) => T #Name(ArgT1) #Name(ArgT2)
+  rule #Name(T:BinaryPlusTypeName _:AnnotationList ArgT1 ArgT2:Type) => T #Name(ArgT1) #Name(ArgT2)
+  rule #Name(T:BinaryPlusTypeName _:AnnotationList ArgT1 ArgT2:Type ArgT3:TypeList) => T #Name(ArgT1) #Name(T .AnnotationList ArgT2 ArgT3)
 
-  syntax Type     ::= #Type(TypeName) [function, functional]
-  // -------------------------------------------------------
+  syntax Type ::= #Type(TypeName) [function, functional]
+  // ---------------------------------------------------
   rule #Type(T:NullaryTypeName) => T .AnnotationList
   rule #Type(T:UnaryTypeName ArgT) => T .AnnotationList #Type(ArgT)
   rule #Type(T:BinaryTypeName ArgT1 ArgT2) => T .AnnotationList #Type(ArgT1) #Type(ArgT2)
+  rule #Type(T:BinaryPlusTypeName ArgT1 ArgT2) => T .AnnotationList #Type(ArgT1) #Type(ArgT2)
 ```
 
 Entrypoint Representation
@@ -77,13 +81,13 @@ We map parameter types with annotations to a map of types.
   syntax MaybeFieldAnnotation ::= ".FieldAnnotation"
                                 | FieldAnnotation
 
-  syntax TypeList ::= List{Type, "||"}
+  syntax TypeProcessorList ::= List{Type, "||"}
 
   syntax Map ::= #BuildAnnotationMap(MaybeFieldAnnotation, Type) [function]
-               | #BuildAnnotationMap(TypeList, Map)              [function]
+               | #BuildAnnotationMap(TypeProcessorList, Map)     [function]
   // ----------------------------------------------------------------------
   rule #BuildAnnotationMap(MA, T)
-    => #AddDefaultEntry(#BuildAnnotationMap(T || .TypeList, #AddAnnotationEntry(MA, T, .Map)), T)
+    => #AddDefaultEntry(#BuildAnnotationMap(T || .TypeProcessorList, #AddAnnotationEntry(MA, T, .Map)), T)
 
   rule #BuildAnnotationMap(or Annots T1 T2 || TL, AnnotMap)
     => #BuildAnnotationMap(T1 || T2 || TL, #AddAnnotationEntry(#GetMaybeFieldAnnot(Annots), or Annots T1 T2, AnnotMap))
@@ -92,7 +96,7 @@ We map parameter types with annotations to a map of types.
     => #BuildAnnotationMap(TL, #AddAnnotationEntry(#GetMaybeFieldAnnot(T), T, AnnotMap))
     [owise]
 
-  rule #BuildAnnotationMap(.TypeList, AnnotMap) => AnnotMap
+  rule #BuildAnnotationMap(.TypeProcessorList, AnnotMap) => AnnotMap
 
   syntax Map ::= #AddAnnotationEntry(MaybeFieldAnnotation, Type, Map) [function]
   // ---------------------------------------------------------------------------
@@ -185,7 +189,7 @@ We represent the values of byte operations as special constructors.
 We represent values of collection types (lists, sets, maps) as follows:
 
 ```k
-  syntax WrappedData  ::= "[" Data "]"
+  syntax WrappedData  ::= "[|" Data "|]"
   syntax InternalList ::= List{WrappedData, ";;"}
 
   syntax Int ::= size(InternalList) [function, functional, smtlib(listsize)]
@@ -484,8 +488,23 @@ The Unit token represents itself.
 We recursively convert the contents of pairs, ors and options, if applicable.
 
 ```k
-  rule #MichelineToNative(Pair A B, pair _ T1:Type T2:Type, KnownAddrs, BigMaps) =>
+  rule #MichelineToNative(Pair A B:Data, pair _ T1:Type T2:Type, KnownAddrs, BigMaps) =>
        Pair #MichelineToNative(A, T1, KnownAddrs, BigMaps) #MichelineToNative(B, T2, KnownAddrs, BigMaps)
+
+  // type pun
+  rule #MichelineToNative(Pair A (Pair B C), pair Annots T1:Type T2:Type T3:TypeList, KnownAddrs, BigMaps) =>
+       Pair #MichelineToNative(A,        T1,                 KnownAddrs, BigMaps)
+            #MichelineToNative(Pair B C, pair Annots T2 T3,  KnownAddrs, BigMaps)
+
+  // data pun
+  rule #MichelineToNative(Pair A B:Data C:PairDataList, pair _ T1:Type (pair Annots T2:Type T3:Type), KnownAddrs, BigMaps) =>
+       Pair #MichelineToNative(A,         T1,                 KnownAddrs, BigMaps)
+            #MichelineToNative(Pair B C, (pair Annots T2 T3), KnownAddrs, BigMaps)
+
+  // type and data pun
+  rule #MichelineToNative(Pair A B:Data C:PairDataList, pair Annots T1:Type T2:Type T3:TypeList, KnownAddrs, BigMaps) =>
+       Pair #MichelineToNative(A,         T1,                 KnownAddrs, BigMaps)
+            #MichelineToNative(Pair B C, (pair Annots T2 T3), KnownAddrs, BigMaps)
 
   rule #MichelineToNative(Some V, option _ T, KnownAddrs, BigMaps) => Some #MichelineToNative(V, T, KnownAddrs, BigMaps)
   rule #MichelineToNative(None, option _:AnnotationList _, _KnownAddrs, _BigMaps) => None
@@ -520,16 +539,16 @@ element list, and another embedded list.
 
 ```k
   rule #MichelineToNative({ },                  list _ _, _KnownAddrs, _BigMaps) => .InternalList
-  rule #MichelineToNative({ D1:Data },          list _ T,  KnownAddrs, BigMaps) => [ #MichelineToNative(D1, T, KnownAddrs, BigMaps) ] ;; .InternalList
-  rule #MichelineToNative({ D1 ; DL:DataList }, list _ T,  KnownAddrs, BigMaps) => #MichelineToNativeList(D1 ; DL, list .AnnotationList T, KnownAddrs, BigMaps)
+  rule #MichelineToNative({ D1:Data },          list _ T,  KnownAddrs,  BigMaps) => [| #MichelineToNative(D1, T, KnownAddrs, BigMaps) |] ;; .InternalList
+  rule #MichelineToNative({ D1 ; DL:DataList }, list _ T,  KnownAddrs,  BigMaps) => #MichelineToNativeList(D1 ; DL, list .AnnotationList T, KnownAddrs, BigMaps)
 
   syntax InternalList ::= #MichelineToNativeList(DataList, Type, Map, Map) [function]
   // --------------------------------------------------------------------------------
   rule #MichelineToNativeList(D1:Data ; D2:Data, list _ T, KnownAddrs, BigMaps) =>
-       [ #MichelineToNative(D1, T, KnownAddrs, BigMaps) ]  ;; [ #MichelineToNative(D2, T, KnownAddrs, BigMaps) ]
+       [| #MichelineToNative(D1, T, KnownAddrs, BigMaps) |]  ;; [| #MichelineToNative(D2, T, KnownAddrs, BigMaps) |]
 
   rule #MichelineToNativeList(D1:Data ; D2:Data ; DL:DataList, list _ T, KnownAddrs, BigMaps) =>
-       [ #MichelineToNative(D1, T, KnownAddrs, BigMaps) ] ;; #MichelineToNativeList(D2 ; DL, list .AnnotationList T, KnownAddrs, BigMaps)
+       [| #MichelineToNative(D1, T, KnownAddrs, BigMaps) |] ;; #MichelineToNativeList(D2 ; DL, list .AnnotationList T, KnownAddrs, BigMaps)
 ```
 
 Sets are handled essentially the same way as lists, with the same caveat about

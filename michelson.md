@@ -1531,7 +1531,7 @@ since it does not need to track the new map while keeping it off the stack.
 
 ```k
   rule <k> CONS _A => .  ... </k>
-       <stack> [T V] ; [list T L] ; SS => [list T [ V ] ;; L] ; SS </stack>
+       <stack> [T V] ; [list T L] ; SS => [list T [| V |] ;; L] ; SS </stack>
 
   rule <k> NIL _A T => .  ... </k>
        <stack> SS => [list #Name(T) .InternalList] ; SS </stack>
@@ -1541,7 +1541,7 @@ since it does not need to track the new map while keeping it off the stack.
         ~> BT
            ...
        </k>
-       <stack> [list T [ E ] ;; L] ; SS => [T E] ; [list T L] ; SS </stack>
+       <stack> [list T [| E |] ;; L] ; SS => [T E] ; [list T L] ; SS </stack>
 
   rule <k> IF_CONS _A _  BF => BF ... </k>
        <stack> [list _ .InternalList ] ; SS => SS </stack>
@@ -1559,7 +1559,7 @@ since it does not need to track the new map while keeping it off the stack.
         ~> ITER .AnnotationList Body
            ...
        </k>
-       <stack> [list T [ E ] ;; L] ; SS => [T E] ; SS </stack>
+       <stack> [list T [| E |] ;; L] ; SS => [T E] ; SS </stack>
 ```
 
 The `MAP` operation over `list`s is defined in terms of a helper function.
@@ -1577,7 +1577,7 @@ The `MAP` operation over `list`s is defined in terms of a helper function.
   rule <k> #DoMap(T, NT, .InternalList, Acc, _) => .K ... </k>
        <stack> SS => [list #DefaultType(NT,T) #ReverseList(Acc, .InternalList)] ; SS </stack>
 
-  rule <k> #DoMap(T, NT, [ E ] ;; L, Acc, B)
+  rule <k> #DoMap(T, NT, [| E |] ;; L, Acc, B)
         => B
         ~> #DoMapAux(T, NT, L, Acc, B)
            ...
@@ -1585,7 +1585,7 @@ The `MAP` operation over `list`s is defined in terms of a helper function.
        <stack> SS => [T E] ; SS </stack>
 
   rule <k> #DoMapAux(T, NT, L, Acc, B)
-        => #DoMap(T, NT', L, [ E ] ;; Acc, B)
+        => #DoMap(T, NT', L, [| E |] ;; Acc, B)
            ...
        </k>
        <stack> [NT' E] ; SS => SS </stack>
