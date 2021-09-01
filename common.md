@@ -159,6 +159,7 @@ We represent Michelson values by constructors which wrap K primitive types.
   syntax Signature ::= #Signature(String)
   syntax OperationNonce ::= #Nonce(Int)
   syntax LambdaData ::= #Lambda(TypeName, TypeName, Block)
+  syntax Ticket ::= #Ticket(Address, Data, Int)
 
   syntax SimpleData ::= LambdaData
                       | Timestamp
@@ -167,6 +168,7 @@ We represent Michelson values by constructors which wrap K primitive types.
                       | ContractData
                       | Key
                       | Signature
+                      | Ticket
 
   syntax BlockchainOperation ::= "Transfer_tokens" Data Mutez Entrypoint Data
 ```
@@ -490,6 +492,20 @@ We recursively convert the contents of pairs, ors and options, if applicable.
 
   rule #MichelineToNative(Left V, or _:AnnotationList TL:Type _:Type,  KnownAddrs, BigMaps) => Left #MichelineToNative(V, TL, KnownAddrs, BigMaps)
   rule #MichelineToNative(Right V, or _:AnnotationList _:Type TR:Type, KnownAddrs, BigMaps) => Right #MichelineToNative(V, TR, KnownAddrs, BigMaps)
+```
+
+Externally, tickets are represented by `Pair`-constructors.
+Internally, we represent tickets with the `#Ticket`-constructor.
+Notice that this rule does not overlap with the rule for ordinary pairs
+since they match on different types (second argument of `#MichelineToNative`).
+
+```k
+  rule #MichelineToNative(Pair Addr (Pair V N), ticket _:AnnotationList T:Type, KnownAddrs, BigMaps) =>
+    #Ticket(
+      {#MichelineToNative(Addr, address .AnnotationList, KnownAddrs, BigMaps)}:>Address,
+      #MichelineToNative(V, T, KnownAddrs, BigMaps),
+      {#MichelineToNative(N, nat .AnnotationList, KnownAddrs, BigMaps)}:>Int
+    )
 ```
 
 We wrap Lambdas appropriately and save their type information.  Note that we do *not* recurse into the Block.

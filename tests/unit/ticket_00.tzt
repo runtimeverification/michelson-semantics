@@ -1,0 +1,8 @@
+code { TICKET } ;
+input { Stack_elt string "testticket"
+      ; Stack_elt nat 5
+      } ;
+self "KT1BEqzn5Wx8uJrZNvuS9DVHmLvG9td3fDLi" ;
+output { Stack_elt (ticket string)
+        (Pair "KT1BEqzn5Wx8uJrZNvuS9DVHmLvG9td3fDLi" (Pair "testticket" 5))
+       }
