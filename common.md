@@ -159,7 +159,7 @@ We represent Michelson values by constructors which wrap K primitive types.
   syntax Signature ::= #Signature(String)
   syntax OperationNonce ::= #Nonce(Int)
   syntax LambdaData ::= #Lambda(TypeName, TypeName, Block)
-  syntax Ticket ::= #Ticket(Data, Data, Data)
+  syntax Ticket ::= #Ticket(Address, Data, Int)
 
   syntax SimpleData ::= LambdaData
                       | Timestamp
@@ -502,9 +502,9 @@ since they match on different types (second argument of `#MichelineToNative`).
 ```k
   rule #MichelineToNative(Pair Addr (Pair V N), ticket _:AnnotationList T:Type, KnownAddrs, BigMaps) =>
     #Ticket(
-      #MichelineToNative(Addr, address .AnnotationList, KnownAddrs, BigMaps),
+      {#MichelineToNative(Addr, address .AnnotationList, KnownAddrs, BigMaps)}:>Address,
       #MichelineToNative(V, T, KnownAddrs, BigMaps),
-      #MichelineToNative(N, nat .AnnotationList, KnownAddrs, BigMaps)
+      {#MichelineToNative(N, nat .AnnotationList, KnownAddrs, BigMaps)}:>Int
     )
 ```
 

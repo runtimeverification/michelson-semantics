@@ -1889,25 +1889,14 @@ identical to those defined over integers.
 
   rule <k> JOIN_TICKETS _A => . ...</k>
        <stack> [(pair (ticket CTy) (ticket CTy))
-                (Pair #Ticket(#Address(S1), _X1, _N1) #Ticket(#Address(S2), _X2, _N2))
+                (Pair #Ticket(#Address(S1), X1, _N1) #Ticket(#Address(S2), X2, _N2))
                ] ;
                SS
             => [(option (ticket CTy)) None] ;
                SS
        </stack>
-     requires notBool S1 ==String S2
-
-  rule <k> JOIN_TICKETS _A => . ...</k>
-       <stack> [(pair (ticket CTy) (ticket CTy))
-                (Pair #Ticket(_S1, X1, _N1) #Ticket(_S2, X2, _N2))
-               ] ;
-               SS
-            => [(option (ticket CTy)) None] ;
-               SS
-       </stack>
-     requires notBool X1 ==K X2
-      andBool isValue(CTy, X1)
-      andBool isValue(CTy, X2)
+     requires S1 =/=String S2
+       orBool X1 =/=K X2
 
   rule <k> SPLIT_TICKET _A => . ...</k>
        <stack> [(ticket CTy) #Ticket(S, X, N3)] ;
