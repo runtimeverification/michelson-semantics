@@ -6,6 +6,9 @@ tests/unit/failwith_00.tzt
 tests/unit/get_bigmapstringstring_00.tzt
 tests/unit/get_bigmapstringstring_01.tzt
 tests/unit/get_bigmapstringstring_02.tzt
+tests/unit/join_tickets_00.tzt
+tests/unit/join_tickets_01.tzt
+tests/unit/join_tickets_02.tzt
 tests/unit/lsl_01.tzt
 tests/unit/lsr_01.tzt
 tests/unit/mem_bigmapnatnat_00.tzt
@@ -35,9 +38,13 @@ tests/unit/update_bigmapstringstring_07.tzt
 tests/unit/contract_06.tzt
 tests/unit/contract_07.tzt
 tests/unit/contract_08.tzt
+tests/unit/ticket_00.tzt
+tests/unit/read_ticket_00.tzt
 tests/unit/self_01.tzt
 tests/unit/self_02.tzt
 tests/unit/self_03.tzt
+tests/unit/split_ticket_00.tzt
+tests/unit/split_ticket_01.tzt
 
 tests/macros/pair_00.tzt
 tests/macros/unpair_00.tzt

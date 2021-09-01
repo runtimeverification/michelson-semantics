@@ -81,6 +81,7 @@ Types are defined as expected.
                            | "list"
                            | "set"
                            | "contract"
+                           | "ticket"
 
   syntax MapTypeName ::= "map" | "big_map"
 
@@ -277,6 +278,10 @@ with a unique arity.
   syntax NullaryInstName ::= "SOURCE"
   syntax NullaryInstName ::= "SENDER"
   syntax NullaryInstName ::= "ADDRESS"
+  syntax NullaryInstName ::= "TICKET"
+  syntax NullaryInstName ::= "READ_TICKET"
+  syntax NullaryInstName ::= "JOIN_TICKETS"
+  syntax NullaryInstName ::= "SPLIT_TICKET"
 ```
 
 #### Unary Instructions
