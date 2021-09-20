@@ -136,6 +136,8 @@ endmodule
 module KORE-UNPARSE
     imports KORE
     imports STRING
+    imports BOOL
+    imports K-EQUAL
 
     syntax String ::= unparsePattern(Pattern) [function, functional]
     rule unparsePattern(\equals { S1 , S2 } (P1, P2)) => "\\equals{" +String unparseSort(S1) +String "," +String unparseSort(S2)  +String "} (" +String unparsePattern(P1) +String " , " +String unparsePattern(P2) +String ")"
