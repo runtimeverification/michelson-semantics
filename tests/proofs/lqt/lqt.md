@@ -256,8 +256,8 @@ If the contract execution fails, storage is not updated.
 
   syntax Int ::= #allowanceFor(Map, owner: Address, spender: Address) [function, functional]
 // -----------------------------------------------------------------------------------------
-  rule #allowanceFor(Allowances, Owner, Spender) => {Allowances[ #allowanceKey(Owner, Spender) ]}:>Int requires (Pair Owner Spender) in_keys(Allowances) [simplification, anywhere]
-  rule [allowanceForZero] : #allowanceFor(Allowances, Owner, Spender) => 0                             requires notBool (Pair Owner Spender) in_keys(Allowances) [simplification, anywhere]
+  rule #allowanceFor(Allowances, Owner, Spender) => {Allowances[ #allowanceKey(Owner, Spender) ]}:>Int requires         (Pair Owner Spender) in_keys(Allowances) [simplification, anywhere]
+  rule [allowanceForZero] : #allowanceFor(Allowances, Owner, Spender) => 0                                                  requires notBool (Pair Owner Spender) in_keys(Allowances) [simplification, anywhere]
 ```
 
 ## Putting It All Together
