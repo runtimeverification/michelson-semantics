@@ -415,7 +415,7 @@ test-prove:         $(prove_tests_passing:=.prove)
 test-prove-failing: $(prove_tests_failing:=.prove)
 
 tests/%.prove: tests/% $(prove_kompiled)
-	$(TEST) prove --backend prove $< $(KPROVE_MODULE) $(KPROVE_OPTIONS)
+	$(TEST) prove --backend prove $< $(KPROVE_MODULE) $(KPROVE_OPTIONS) -I $(CURDIR)
 
 # Dexter proofs
 
