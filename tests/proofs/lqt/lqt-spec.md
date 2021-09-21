@@ -147,8 +147,8 @@ module LQT-TOKEN-APPROVE-SPEC
         <myamount> #Mutez(Amount) </myamount>
         <senderaddr> Sender </senderaddr>
         <operations> _ => .InternalList </operations>
-    requires Amount ==Int 0
-     andBool Allowance ==Int #allowanceFor(Allowances, Sender, Spender)
+    requires Allowance ==Int #allowanceFor(Allowances, Sender, Spender)
+     andBool Amount ==Int 0
      andBool (Allowance >Int 0 impliesBool Value ==Int 0)
 ```
 
