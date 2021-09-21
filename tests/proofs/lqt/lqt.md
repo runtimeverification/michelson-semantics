@@ -256,8 +256,17 @@ If the contract execution fails, storage is not updated.
 
   syntax Int ::= #allowanceFor(Map, owner: Address, spender: Address) [function, functional]
 // -----------------------------------------------------------------------------------------
-  rule #allowanceFor(Allowances, Owner, Spender) => {Allowances[ #allowanceKey(Owner, Spender) ]}:>Int requires         (Pair Owner Spender) in_keys(Allowances) [simplification]
-  rule [allowanceForZero] : #allowanceFor(Allowances, Owner, Spender) => 0                                                  requires notBool (Pair Owner Spender) in_keys(Allowances) [simplification]
+  rule #allowanceFor((#allowanceKey(Owner, Spender) |-> Allowance:Int) _, Owner, Spender) => Allowance
+  rule #allowanceFor(_, _, _)                                                             => 0         [owise]
+
+  rule Allowance ==Int #allowanceFor(Allowances, Sender, Spender)
+    =>         (          #isPresent(Allowances, #allowanceKey(Sender, Spender))  impliesBool Allowance ==Int {Allowances [ #allowanceKey(Sender, Spender) ]}:>Int )
+       andBool ( (notBool #isPresent(Allowances, #allowanceKey(Sender, Spender))) impliesBool Allowance ==Int 0 )
+    [simplification]
+
+  syntax Bool ::= #isPresent ( Map , Pair )
+// ----------------------------------------
+  rule #isPresent(M, K) => K in_keys(M) andBool isInt(M[K]) [macro]
 ```
 
 ## Putting It All Together

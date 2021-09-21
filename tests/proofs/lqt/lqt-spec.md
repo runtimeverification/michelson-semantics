@@ -148,7 +148,8 @@ module LQT-TOKEN-APPROVE-SPEC
         <senderaddr> Sender </senderaddr>
         <operations> _ => .InternalList </operations>
     requires Amount ==Int 0
-     andBool (#allowanceFor(Allowances, Sender, Spender) >Int 0 impliesBool Value ==Int 0)
+     andBool Allowance ==Int #allowanceFor(Allowances, Sender, Spender)
+     andBool (Allowance >Int 0 impliesBool Value ==Int 0)
 ```
 
 ```k
