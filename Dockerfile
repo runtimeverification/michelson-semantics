@@ -23,13 +23,13 @@ RUN    apt-get update                \
                 python3-recommonmark \
                 sphinx-common
 
-RUN    git clone 'https://github.com/z3prover/z3' --branch=z3-4.8.9 \
-    && cd z3                                                        \
-    && python scripts/mk_make.py                                    \
-    && cd build                                                     \
-    && make -j8                                                     \
-    && make install                                                 \
-    && cd ../..                                                     \
+RUN    git clone 'https://github.com/z3prover/z3' --branch=z3-4.8.12 \
+    && cd z3                                                         \
+    && python scripts/mk_make.py                                     \
+    && cd build                                                      \
+    && make -j8                                                      \
+    && make install                                                  \
+    && cd ../..                                                      \
     && rm -rf z3
 
 RUN curl -sL https://deb.nodesource.com/setup_14.x | bash -
