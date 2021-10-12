@@ -83,7 +83,7 @@ class Block:
         self.code = self.code.strip()
 
     def __repr__(self):
-        return "Block(id: {}, parents: {}, loopy: {}, revert: {}, depth: {}, code: {}, next: {})".format(self.sid, [p[1].sid for p in self.parents], self.loopy, self.revert, self.depth, self.code.replace('\n',' '), [n[1].sid for n in self.next])
+        return "Block(id: {}, parents: {}, revert: {}, depth: {}, code: {}, next: {})".format(self.sid, [p[1].sid for p in self.parents], self.revert, self.depth, self.code.replace('\n',' '), [n[1].sid for n in self.next])
 
     def handle(self, prim):
         name = prim['prim']
@@ -221,6 +221,8 @@ def micheline_to_dot(mcode, skipRevert = False):
     graph = graphviz.Digraph('Michelson')
     graph.attr('node', shape='rectangle')
     queue = [start]
+    names = dict()
+    nxtid = 0
 
     while len(queue) != 0:
         curr = queue.pop()
@@ -241,7 +243,9 @@ def micheline_to_dot(mcode, skipRevert = False):
             depthpart = "depth: {}\n".format(curr.depth) if curr.depth > 0 else ""
             codepart  = "SKIP" if len(curr.code) == 0 else curr.code
             nodelabel = depthpart + codepart
-            node = graph.node(curr.id, nodelabel)
+            if curr.id not in names:
+                names[curr.id], nxtid = str(nxtid), nxtid+1
+            node = graph.node(names[curr.id], nodelabel)
 
             # mark that child nodes need to add edge and queue for processing
             for edge in curr.next: edge[1].parents += [(edge[0], curr)]
@@ -253,7 +257,7 @@ def micheline_to_dot(mcode, skipRevert = False):
         # create edges to this block non-skipped blocks
         if not (skipRevert and curr.revert):
             # add edges from all known parent nodes and clear work queue
-            for edge_type, parent in curr.parents: graph.edge(parent.id, curr.id, edge_type)
+            for edge_type, parent in curr.parents: graph.edge(names[parent.id], names[curr.id], edge_type)
             curr.parents = []
 
         logging.debug("Build graph - current queue: {}".format([n.sid for n in queue]))
