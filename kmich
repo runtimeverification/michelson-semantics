@@ -78,6 +78,10 @@ run_symbtest() {
        "$@"
 }
 
+run_cfg() {
+    python "$kmich_dir/ext/tezos-utils/tezos-utils" convert -i michelson -o dot "$@" -- "$run_file" -
+}
+
 # Main
 # ----
 
@@ -127,8 +131,10 @@ fi
 backend="llvm"
 debug=false
 repl=false
+virtual_backend=false
 [[ ! "$run_command" == 'prove'    ]] || backend='prove'
 [[ ! "$run_command" == 'symbtest' ]] || backend='driver'
+[[ ! "$run_command" == 'cfg'      ]] || { backend='cfg'; virtual_backend=true; }
 args=()
 while [[ $# -gt 0 ]]; do
     arg="$1"
@@ -143,16 +149,18 @@ while [[ $# -gt 0 ]]; do
 done
 
 set -- "${args[@]}" "$@"
-backend_dir="${backend_dir:-$defn_dir/$backend}"
-kompiled_dir=$(find $backend_dir -name '*-kompiled')
-[[ -d "$kompiled_dir" ]] || fatal "Could not find single *-kompiled directory in $backend_dir"
+if [ "$virtual_backend" == false ]; then
+  backend_dir="${backend_dir:-$defn_dir/$backend}"
+  kompiled_dir=$(find $backend_dir -name '*-kompiled')
+  [[ -d "$kompiled_dir" ]] || fatal "Could not find single *-kompiled directory in $backend_dir"
+fi
 
 ! $repl || \
 [[ "$backend" == dexter ]] || \
 [[ "$backend" == lb     ]] || \
 [[ "$backend" == lqt    ]] || \
 [[ "$backend" == prove  ]] || \
-    fatal 'Option --repl only usable with `--backend prove` or `--backend dexter` !'
+    fatal 'Option --repl only usable with `--backend` values `prove`, `dexter`, `lb`, or `lqt` !'
 
 # get the run file
 run_file="$1" ; shift
@@ -170,7 +178,7 @@ extra_args=()
 [[ ! "$backend" == "llvm" ]] \
     || extra_args+=(-cPATH="\"$(dirname $run_file)\"")
 
-export PATH="$kompiled_dir:$PATH"
+[ "$virtual_backend" == false ] && export PATH="$kompiled_dir:$PATH"
 
 case "$run_command-$backend" in
 
@@ -180,5 +188,6 @@ case "$run_command-$backend" in
     symbtest-driver                                                                           ) run_symbtest   "$@" ;;
     prove-@(prove|symbolic|dexter|lb|lqt)                                                     ) run_prove      "$@" ;;
     interpret-@(llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare) ) run_interpret  "$@" ;;
+    cfg-cfg                                                                                   ) run_cfg        "$@" ;;
     *) $0 help ; fatal "Unknown command on backend: $run_command $backend" ;;
 esac
