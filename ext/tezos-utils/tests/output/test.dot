@@ -1,0 +1,11 @@
+digraph Michelson {
+	node [shape=rectangle]
+	0 [label="SUB
+ADD
+EXEC"]
+	1 [label="..."]
+	0 -> 1 [label=""]
+	2 [label="DUP
+FAILWITH"]
+	1 -> 2 [label=""]
+}
