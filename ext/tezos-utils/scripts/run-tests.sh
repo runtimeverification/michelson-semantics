@@ -8,6 +8,11 @@ TESTS_DIR="$MAIN_DIR/tests"
 INPUT_DIR="$TESTS_DIR/input"
 OUTPUT_DIR="$TESTS_DIR/output"
 
+if $(which python3 &> /dev/null); then
+  python_bin=python3
+else
+  python_bin=python
+fi
 tezos_utils="$MAIN_DIR/tezos-utils"
 
 BUILD_TESTS=
@@ -19,9 +24,9 @@ for test in $(ls -- "$INPUT_DIR"); do
   testout="$OUTPUT_DIR/$testname.dot.testout"
   testexp="$OUTPUT_DIR/$testname.dot"
   if [ -n "$BUILD_TESTS" ]; then
-    python "$tezos_utils" convert -i michelson -o dot "$testin" "$testexp"
+    "$python_bin" "$tezos_utils" convert -i michelson -o dot "$testin" "$testexp"
   else
-    python "$tezos_utils" convert -i michelson -o dot "$testin" "$testout"
+    "$python_bin" "$tezos_utils" convert -i michelson -o dot "$testin" "$testout"
     diff -q "$testout" "$testexp"
   fi
 done
