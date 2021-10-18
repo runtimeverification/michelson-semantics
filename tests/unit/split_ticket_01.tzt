@@ -1,0 +1,7 @@
+code { SPLIT_TICKET } ;
+input { Stack_elt (ticket string) (Pair "KT1BEqzn5Wx8uJrZNvuS9DVHmLvG9td3fDLi" (Pair "testticket" 5))
+      ; Stack_elt (pair nat nat) Pair 3 3
+      } ;
+output { Stack_elt (option (pair (ticket string) (ticket string)))
+         None
+       }
