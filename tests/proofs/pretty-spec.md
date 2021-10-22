@@ -18,7 +18,6 @@ module VERIFICATION
                       DIP { EMPTY_MAP timestamp key_hash ; DROP } ;
                       NONE map (set mutez) address ;
                       IF_NONE { } { } ;
-                      
                       PUSH bool True ;
                       DROP
                       }
@@ -26,9 +25,6 @@ module VERIFICATION
 
 endmodule
 ```
-
-
-                       | BinaryBlockInstName AnnotationList Block Block
 
 ```k
 module PRETTY-SPEC

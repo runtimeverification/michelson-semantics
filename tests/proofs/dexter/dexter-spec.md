@@ -70,7 +70,7 @@ We have one case for when `#ceildiv` results in an upwards rounding, and one for
         <selfIsUpdatingTokenPool> false </selfIsUpdatingTokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <myamount> #Mutez(Amount) </myamount>
-        <myaddr> SelfAddress </myaddr>
+        <currentAccount> SelfAddress </currentAccount>
         <lqtTotal> OldLqt => OldLqt +Int (Amount *Int OldLqt) /Int XtzAmount </lqtTotal>
         <xtzPool> #Mutez(XtzAmount => XtzAmount +Int Amount) </xtzPool>
         <tokenPool> TokenAmount => TokenAmount +Int #ceildiv(Amount *Int TokenAmount, XtzAmount) </tokenPool>
@@ -79,8 +79,7 @@ We have one case for when `#ceildiv` results in an upwards rounding, and one for
         <lqtAddress> LqtAddress:Address </lqtAddress>
         <senderaddr> Sender </senderaddr>
         <nonce> #Nonce(Nonce => Nonce +Int 2) </nonce>
-        <knownaddrs> KnownAddresses </knownaddrs>
-        <paramtype> LocalEntrypoints </paramtype>
+        <accounts> Accounts </accounts>
         <operations> _
                   => [ Transfer_tokens #TokenTransferData(IsFA2, Sender, SelfAddress, TokenId, #ceildiv(Amount *Int TokenAmount, XtzAmount)) #Mutez(0) TokenAddress . %transfer Nonce ] ;;
                      [ Transfer_tokens Pair ((Amount *Int OldLqt) /Int XtzAmount) Owner #Mutez(0) LqtAddress . %mintOrBurn (Nonce +Int 1) ] ;;
@@ -93,10 +92,10 @@ We have one case for when `#ceildiv` results in an upwards rounding, and one for
      andBool MinLqtMinted <=Int (Amount *Int OldLqt) /Int XtzAmount
      andBool #IsLegalMutezValue(Amount +Int XtzAmount)
 
-     andBool #EntrypointExists(KnownAddresses, TokenAddress,   %transfer, #TokenTransferType(IsFA2))
-     andBool #EntrypointExists(KnownAddresses,   LqtAddress, %mintOrBurn, pair int %quantity .AnnotationList address %target .AnnotationList)
-     andBool #LocalEntrypointExists(LocalEntrypoints, %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
-     andBool #LocalEntrypointExists(LocalEntrypoints, %default,                 unit)
+     andBool #EntrypointExists(Accounts, TokenAddress, %transfer,                #TokenTransferType(IsFA2))
+     andBool #EntrypointExists(Accounts,   LqtAddress, %mintOrBurn,              pair int %quantity .AnnotationList address %target .AnnotationList)
+     andBool #EntrypointExists(Accounts,  SelfAddress, %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
+     andBool #EntrypointExists(Accounts,  SelfAddress, %default,                 unit)
 ```
 
 ```k
@@ -105,7 +104,7 @@ We have one case for when `#ceildiv` results in an upwards rounding, and one for
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <myamount> #Mutez(Amount) </myamount>
-        <myaddr> SelfAddress </myaddr>
+        <currentAccount> SelfAddress </currentAccount>
         <lqtTotal> OldLqt => OldLqt +Int (Amount *Int OldLqt) /Int XtzAmount </lqtTotal>
         <xtzPool> #Mutez(XtzAmount => XtzAmount +Int Amount) </xtzPool>
         <tokenPool> TokenAmount => TokenAmount +Int #ceildiv(Amount *Int TokenAmount, XtzAmount) </tokenPool>
@@ -114,8 +113,7 @@ We have one case for when `#ceildiv` results in an upwards rounding, and one for
         <lqtAddress> LqtAddress:Address </lqtAddress>
         <senderaddr> Sender </senderaddr>
         <nonce> #Nonce(Nonce => Nonce +Int 2) </nonce>
-        <knownaddrs> KnownAddresses </knownaddrs>
-        <paramtype> LocalEntrypoints </paramtype>
+        <accounts> Accounts </accounts>
         <operations> _
                   => [ Transfer_tokens #TokenTransferData(IsFA2, Sender, SelfAddress, TokenId, #ceildiv(Amount *Int TokenAmount, XtzAmount)) #Mutez(0) TokenAddress . %transfer Nonce ] ;;
                      [ Transfer_tokens Pair ((Amount *Int OldLqt) /Int XtzAmount) Owner #Mutez(0) LqtAddress . %mintOrBurn (Nonce +Int 1) ] ;;
@@ -129,10 +127,10 @@ We have one case for when `#ceildiv` results in an upwards rounding, and one for
      andBool XtzAmount   >Int 0
      andBool (Amount *Int TokenAmount) %Int XtzAmount =/=Int 0
 
-     andBool #EntrypointExists(KnownAddresses, TokenAddress,   %transfer, #TokenTransferType(IsFA2))
-     andBool #EntrypointExists(KnownAddresses,   LqtAddress, %mintOrBurn, pair int %quantity .AnnotationList address %target .AnnotationList)
-     andBool #LocalEntrypointExists(LocalEntrypoints, %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
-     andBool #LocalEntrypointExists(LocalEntrypoints, %default,                 unit)
+     andBool #EntrypointExists(Accounts, TokenAddress, %transfer, #TokenTransferType(IsFA2))
+     andBool #EntrypointExists(Accounts,   LqtAddress, %mintOrBurn, pair int %quantity .AnnotationList address %target .AnnotationList)
+     andBool #EntrypointExists(Accounts,  SelfAddress, %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
+     andBool #EntrypointExists(Accounts,  SelfAddress, %default,                 unit)
 ```
 
 ```k
@@ -165,7 +163,48 @@ module DEXTER-ADDLIQUIDITY-NEGATIVE-SPEC
     requires notBool IsFA2
      andBool ( IsUpdating
         orBool CurrentTime >=Int Deadline
-        orBool #ceildiv(Amount *Int TokenAmount, XtzAmount) >Int MaxTokensDeposited
+        orBool notBool #IsLegalMutezValue(Amount +Int XtzAmount)
+        orBool XtzAmount ==Int 0
+        orBool MinLqtMinted >Int (Amount *Int OldLqt) /Int XtzAmount
+             )
+
+  claim <k> #runProof(IsFA2, AddLiquidity(_Owner, MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ?_:FailedStack </stack>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <mynow> #Timestamp(CurrentTime) </mynow>
+        <myamount> #Mutez(Amount) </myamount>
+        <lqtTotal> OldLqt </lqtTotal>
+        <xtzPool> #Mutez(XtzAmount) </xtzPool>
+        <tokenPool> TokenAmount </tokenPool>
+    requires notBool IsFA2
+     andBool XtzAmount >Int 0
+     andBool #ceildiv(Amount *Int TokenAmount, XtzAmount) >Int MaxTokensDeposited
+     andBool #mod(Amount *Int TokenAmount, XtzAmount) ==Int 0
+
+  claim <k> #runProof(IsFA2, AddLiquidity(_Owner, MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ?_:FailedStack </stack>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <mynow> #Timestamp(CurrentTime) </mynow>
+        <myamount> #Mutez(Amount) </myamount>
+        <lqtTotal> OldLqt </lqtTotal>
+        <xtzPool> #Mutez(XtzAmount) </xtzPool>
+        <tokenPool> TokenAmount </tokenPool>
+    requires notBool IsFA2
+     andBool XtzAmount >Int 0
+     andBool #ceildiv(Amount *Int TokenAmount, XtzAmount) >Int MaxTokensDeposited
+     andBool #mod(Amount *Int TokenAmount, XtzAmount) =/=Int 0
+
+  claim <k> #runProof(IsFA2, AddLiquidity(_Owner, MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ?_:FailedStack </stack>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <mynow> #Timestamp(CurrentTime) </mynow>
+        <myamount> #Mutez(Amount) </myamount>
+        <lqtTotal> OldLqt </lqtTotal>
+        <xtzPool> #Mutez(XtzAmount) </xtzPool>
+        <tokenPool> TokenAmount </tokenPool>
+    requires IsFA2
+     andBool ( IsUpdating
+        orBool CurrentTime >=Int Deadline
         orBool notBool #IsLegalMutezValue(Amount +Int XtzAmount)
         orBool XtzAmount ==Int 0
         orBool MinLqtMinted >Int (Amount *Int OldLqt) /Int XtzAmount
@@ -180,16 +219,23 @@ module DEXTER-ADDLIQUIDITY-NEGATIVE-SPEC
         <xtzPool> #Mutez(XtzAmount) </xtzPool>
         <tokenPool> TokenAmount </tokenPool>
     requires IsFA2
-     andBool ( IsUpdating
-        orBool CurrentTime >=Int Deadline
-        orBool #ceildiv(Amount *Int TokenAmount, XtzAmount) >Int MaxTokensDeposited
-        orBool notBool #IsLegalMutezValue(Amount +Int XtzAmount)
-        orBool MinLqtMinted >Int (Amount *Int OldLqt) /Int XtzAmount
-        orBool XtzAmount ==Int 0
-             )
-```
+     andBool XtzAmount >Int 0
+     andBool #ceildiv(Amount *Int TokenAmount, XtzAmount) >Int MaxTokensDeposited
+     andBool #mod(Amount *Int TokenAmount, XtzAmount) ==Int 0
 
-TODO: Deal with the case when the token contract or the liquidity token contract don't exist or have the wrong type.
+  claim <k> #runProof(IsFA2, AddLiquidity(_Owner, MinLqtMinted, MaxTokensDeposited, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
+        <stack> .Stack => ?_:FailedStack </stack>
+        <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
+        <mynow> #Timestamp(CurrentTime) </mynow>
+        <myamount> #Mutez(Amount) </myamount>
+        <lqtTotal> OldLqt </lqtTotal>
+        <xtzPool> #Mutez(XtzAmount) </xtzPool>
+        <tokenPool> TokenAmount </tokenPool>
+    requires IsFA2
+     andBool XtzAmount >Int 0
+     andBool #ceildiv(Amount *Int TokenAmount, XtzAmount) >Int MaxTokensDeposited
+     andBool #mod(Amount *Int TokenAmount, XtzAmount) =/=Int 0
+```
 
 ```k
 endmodule
@@ -217,7 +263,7 @@ module DEXTER-REMOVELIQUIDITY-POSITIVE-SPEC
         <selfIsUpdatingTokenPool> false </selfIsUpdatingTokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <myamount> #Mutez(0) </myamount>
-        <myaddr> SelfAddress </myaddr>
+        <currentAccount> SelfAddress </currentAccount>
         <lqtTotal> OldLqt => OldLqt -Int LqtBurned </lqtTotal>
         <xtzPool> #Mutez(XtzAmount => XtzAmount -Int (LqtBurned *Int XtzAmount) /Int OldLqt) </xtzPool>
         <tokenPool> TokenAmount => TokenAmount -Int (LqtBurned *Int TokenAmount) /Int OldLqt </tokenPool>
@@ -226,8 +272,7 @@ module DEXTER-REMOVELIQUIDITY-POSITIVE-SPEC
         <lqtAddress> LqtAddress:Address </lqtAddress>
         <senderaddr> Sender </senderaddr>
         <nonce> #Nonce(Nonce => Nonce +Int 3) </nonce>
-        <knownaddrs> KnownAddresses </knownaddrs>
-        <paramtype> LocalEntrypoints </paramtype> // 1027
+        <accounts> Accounts </accounts>
         <operations> _
                   => [ Transfer_tokens (Pair (0 -Int LqtBurned) Sender) #Mutez(0) LqtAddress . %mintOrBurn Nonce ] ;;
                      [ Transfer_tokens #TokenTransferData(IsFA2, SelfAddress, To, TokenId,  (LqtBurned *Int TokenAmount) /Int OldLqt) #Mutez(0) TokenAddress . %transfer (Nonce +Int 1) ] ;;
@@ -239,11 +284,11 @@ module DEXTER-REMOVELIQUIDITY-POSITIVE-SPEC
      andBool OldLqt >=Int LqtBurned
      andBool MinXtzWithdrawn <=Int (LqtBurned *Int XtzAmount) /Int OldLqt
      andBool MinTokensWithdrawn <=Int (LqtBurned *Int TokenAmount) /Int OldLqt
-     andBool #EntrypointExists(KnownAddresses, TokenAddress,   %transfer, #TokenTransferType(IsFA2))
-     andBool #EntrypointExists(KnownAddresses,   LqtAddress, %mintOrBurn, pair int %quantity .AnnotationList address %target .AnnotationList)
-     andBool #EntrypointExists(KnownAddresses,           To,    %default, unit)
-     andBool #LocalEntrypointExists(LocalEntrypoints, %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
-     andBool #LocalEntrypointExists(LocalEntrypoints, %default,                 unit)
+     andBool #EntrypointExists(Accounts, TokenAddress, %transfer,                #TokenTransferType(IsFA2))
+     andBool #EntrypointExists(Accounts,   LqtAddress, %mintOrBurn,              pair int %quantity .AnnotationList address %target .AnnotationList)
+     andBool #EntrypointExists(Accounts,           To, %default,                 unit)
+     andBool #EntrypointExists(Accounts,  SelfAddress, %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
+     andBool #EntrypointExists(Accounts,  SelfAddress, %default,                 unit)
 
      andBool #IsLegalMutezValue(XtzAmount)
      andBool #IsLegalMutezValue((LqtBurned *Int XtzAmount) /Int OldLqt)
@@ -437,28 +482,23 @@ The contract queries its underlying token contract for its own token balance if 
 4.  if we are running the FA2 version of Dexter, then check that the contract at address `storage.tokenAddress` has a well-typed FA2 `balance_of` entrypoint;
     otherwise, check that the contract at address `storage.tokenAddress` has a well-typed FA12 `get_balance` entrypoint.
 
-- TODO: Generalize the Michelson `SELF` and `CONTRACT` instructions to properly use annotations.
-        That way, we can use the actual, full #DexterParamType in the `paramtype` cell, and in the `KnownAddresses` map.
-        Right now, we need to pretend to have a more specialized type.
-
 ```k
   claim <k> #runProof(IsFA2, UpdateTokenPool) => . </k>
         <stack> .Stack </stack>
         <selfIsUpdatingTokenPool> false => true </selfIsUpdatingTokenPool>
         <tokenAddress> TokenAddress:Address </tokenAddress>
         <tokenId> TokenId </tokenId>
-        <myaddr> SelfAddress </myaddr>
+        <currentAccount> SelfAddress </currentAccount>
         <myamount> #Mutez(Amount) </myamount>
         <senderaddr> Sender </senderaddr>
         <sourceaddr> Sender </sourceaddr>
-        <paramtype> LocalEntrypoints </paramtype>
-        <knownaddrs> KnownAddresses </knownaddrs>
+        <accounts> Accounts </accounts>
         <operations> _ => [ Transfer_tokens Pair #UpdateTokenPoolTransferFrom(IsFA2, SelfAddress, TokenId) #Contract(SelfAddress . %updateTokenPoolInternal, #DexterVersionSpecificParamType(IsFA2)) #Mutez(0) #TokenBalanceEntrypoint(TokenAddress, IsFA2) O ] ;; .InternalList </operations>
         <nonce> #Nonce(O) => #Nonce(O +Int 1) </nonce>
     requires Amount ==Int 0
-     andBool #EntrypointExists(KnownAddresses, TokenAddress, #if IsFA2 #then %balance_of #else %getBalance #fi, #TokenBalanceEntrypointType(IsFA2))
-     andBool #LocalEntrypointExists(LocalEntrypoints, %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
-     andBool #LocalEntrypointExists(LocalEntrypoints, %default,                 unit)
+     andBool #EntrypointExists(Accounts, TokenAddress, #if IsFA2 #then %balance_of #else %getBalance #fi, #TokenBalanceEntrypointType(IsFA2))
+     andBool #EntrypointExists(Accounts,  SelfAddress, %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
+     andBool #EntrypointExists(Accounts,  SelfAddress, %default,                 unit)
 ```
 
 If any of the conditions are not satisfied, the call fails.
@@ -472,15 +512,15 @@ NOTE: The failure conditions are split into two claims with identical configurat
         <myamount> #Mutez(Amount) </myamount>
         <senderaddr> Sender </senderaddr>
         <sourceaddr> Source </sourceaddr>
-        <paramtype> LocalEntrypoints </paramtype>
-        <knownaddrs> KnownAddresses </knownaddrs>
+        <currentAccount> SelfAddress </currentAccount>
+        <accounts> Accounts </accounts>
     requires ( Amount >Int 0
-      orBool (notBool #EntrypointExists(KnownAddresses, TokenAddress, #if IsFA2 #then %balance_of #else %getBalance #fi, #TokenBalanceEntrypointType(IsFA2)))
+      orBool (notBool #EntrypointExists(Accounts, TokenAddress, #if IsFA2 #then %balance_of #else %getBalance #fi, #TokenBalanceEntrypointType(IsFA2)))
       orBool IsUpdating
       orBool Sender =/=K Source
              )
-     andBool #LocalEntrypointExists(LocalEntrypoints, %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
-     andBool #LocalEntrypointExists(LocalEntrypoints, %default,                 unit)
+     andBool #EntrypointExists(Accounts,  SelfAddress, %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
+     andBool #EntrypointExists(Accounts,  SelfAddress, %default,                 unit)
 ```
 
 ```k
@@ -695,10 +735,9 @@ A buyer sends tokens to the Dexter contract and receives a corresponding amount 
         <tokenPool> TokenPool => TokenPool +Int TokensSold </tokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <senderaddr> Sender </senderaddr>
-        <paramtype> LocalEntrypoints </paramtype>
-        <myaddr> SelfAddress:Address </myaddr>
+        <accounts> Accounts </accounts>
+        <currentAccount> SelfAddress:Address </currentAccount>
         <nonce> #Nonce(N => N +Int 2) </nonce>
-        <knownaddrs> KnownAddresses </knownaddrs>
         <tokenId> TokenID </tokenId>
         <operations> _
                   => [ Transfer_tokens #TokenTransferData(IsFA2, Sender, SelfAddress, TokenID, TokensSold) #Mutez(0)                                               TokenAddress . %transfer N        ]
@@ -716,10 +755,10 @@ A buyer sends tokens to the Dexter contract and receives a corresponding amount 
       andBool #IsLegalMutezValue(MinXtzBought)
       andBool #IsLegalMutezValue(#CurrencyBought(XtzPool, TokenPool, TokensSold))
       andBool #IsLegalMutezValue(XtzPool:Int -Int #CurrencyBought (XtzPool:Int, TokenPool:Int, TokensSold:Int))
-      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer,                             #TokenTransferType(IsFA2))
-      andBool #EntrypointExists(KnownAddresses, To,           #token("%default", "FieldAnnotation"), #Type(unit))
-      andBool #LocalEntrypointExists(LocalEntrypoints, %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
-      andBool #LocalEntrypointExists(LocalEntrypoints, %default,                 unit)
+      andBool #EntrypointExists(Accounts,  TokenAddress, %transfer,                #TokenTransferType(IsFA2))
+      andBool #EntrypointExists(Accounts,  To,           %default,                 #Type(unit))
+      andBool #EntrypointExists(Accounts,  SelfAddress,  %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
+      andBool #EntrypointExists(Accounts,  SelfAddress,  %default,                 unit)
 endmodule
 ```
 
@@ -734,7 +773,7 @@ module DEXTER-TOKENTOXTZ-FA12-NEGATIVE-1-SPEC
         <mynow> #Timestamp(CurrentTime) </mynow>
         <myamount> #Mutez(Amount) </myamount>
         <tokenAddress> _TokenAddress:Address </tokenAddress>
-        <paramtype> _LocalEntrypoints </paramtype>
+        <accounts> _Accounts </accounts>
      requires notBool IsFA2
       andBool ( IsUpdating
          orBool notBool Amount ==Int 0
@@ -754,15 +793,16 @@ module DEXTER-TOKENTOXTZ-FA12-NEGATIVE-2-SPEC
         <tokenAddress> TokenAddress:Address </tokenAddress>
         <xtzPool> #Mutez(_XtzPool) </xtzPool>
         <tokenPool> TokenPool </tokenPool>
-        <paramtype> LocalEntrypoints </paramtype>
+        <accounts> Accounts </accounts>
+        <currentAccount> SelfAddress </currentAccount>
      requires notBool IsFA2
       andBool notBool IsUpdating
       andBool notBool Amount ==Int 0
       andBool notBool CurrentTime <Int Deadline
-      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer,                             #TokenTransferType(IsFA2))
-      andBool #EntrypointExists(KnownAddresses, To,           #token("%default", "FieldAnnotation"), #Type(unit))
-      andBool #LocalEntrypointExists(LocalEntrypoints, %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
-      andBool #LocalEntrypointExists(LocalEntrypoints, %default,                 unit)
+      andBool #EntrypointExists(Accounts,  TokenAddress, %transfer,                #TokenTransferType(IsFA2))
+      andBool #EntrypointExists(Accounts,  To,           %default,                 #Type(unit))
+      andBool #EntrypointExists(Accounts,  SelfAddress,  %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
+      andBool #EntrypointExists(Accounts,  SelfAddress,  %default,                 unit)
       andBool notBool (TokenPool >Int 0 orBool TokensSold >Int 0)
 endmodule
 ```
@@ -778,15 +818,16 @@ module DEXTER-TOKENTOXTZ-FA12-NEGATIVE-3-SPEC
         <tokenAddress> TokenAddress:Address </tokenAddress>
         <xtzPool> #Mutez(XtzPool) </xtzPool>
         <tokenPool> TokenPool </tokenPool>
-        <paramtype> LocalEntrypoints </paramtype>
+        <accounts> Accounts </accounts>
+        <currentAccount> SelfAddress </currentAccount>
      requires notBool IsFA2
       andBool notBool IsUpdating
       andBool notBool Amount ==Int 0
       andBool notBool CurrentTime <Int Deadline
-      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer,                             #TokenTransferType(IsFA2))
-      andBool #EntrypointExists(KnownAddresses, To,           #token("%default", "FieldAnnotation"), #Type(unit))
-      andBool #LocalEntrypointExists(LocalEntrypoints, %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
-      andBool #LocalEntrypointExists(LocalEntrypoints, %default,                 unit)
+      andBool #EntrypointExists(Accounts, TokenAddress, %transfer,                             #TokenTransferType(IsFA2))
+      andBool #EntrypointExists(Accounts, To,           %default, #Type(unit))
+      andBool #EntrypointExists(Accounts,  SelfAddress, %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
+      andBool #EntrypointExists(Accounts,  SelfAddress, %default,                 unit)
       andBool notBool( #CurrencyBought(XtzPool, TokenPool, TokensSold) >=Int  MinXtzBought
                andBool #IsLegalMutezValue(MinXtzBought)
                      )
@@ -804,15 +845,16 @@ module DEXTER-TOKENTOXTZ-FA12-NEGATIVE-4-SPEC
         <tokenAddress> TokenAddress:Address </tokenAddress>
         <xtzPool> #Mutez(XtzPool) </xtzPool>
         <tokenPool> TokenPool </tokenPool>
-        <paramtype> LocalEntrypoints </paramtype>
+        <accounts> Accounts </accounts>
+        <currentAccount> SelfAddress </currentAccount>
      requires notBool IsFA2
       andBool notBool IsUpdating
       andBool notBool Amount ==Int 0
       andBool notBool CurrentTime <Int Deadline
-      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer,                             #TokenTransferType(IsFA2))
-      andBool #EntrypointExists(KnownAddresses, To,           #token("%default", "FieldAnnotation"), #Type(unit))
-      andBool #LocalEntrypointExists(LocalEntrypoints, %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
-      andBool #LocalEntrypointExists(LocalEntrypoints, %default,                 unit)
+      andBool #EntrypointExists(Accounts, TokenAddress, %transfer,                             #TokenTransferType(IsFA2))
+      andBool #EntrypointExists(Accounts, To,           %default, #Type(unit))
+      andBool #EntrypointExists(Accounts,  SelfAddress, %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
+      andBool #EntrypointExists(Accounts,  SelfAddress, %default,                 unit)
       andBool  #CurrencyBought(XtzPool, TokenPool, TokensSold) >=Int  MinXtzBought
       andBool #IsLegalMutezValue(MinXtzBought)
       andBool notBool( #CurrencyBought(XtzPool, TokenPool, TokensSold) <=Int XtzPool
@@ -847,10 +889,9 @@ As before, a buyer sends tokens to the Dexter contract and receives a correspond
         <tokenPool> TokenPool => TokenPool +Int TokensSold </tokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <senderaddr> Sender </senderaddr>
-        <paramtype> LocalEntrypoints </paramtype>
-        <myaddr> SelfAddress:Address </myaddr>
+        <accounts> Accounts </accounts>
+        <currentAccount> SelfAddress:Address </currentAccount>
         <nonce> #Nonce(N => N +Int 2) </nonce>
-        <knownaddrs> KnownAddresses </knownaddrs>
         <tokenId> TokenID </tokenId>
         <operations> _
                   => [ Transfer_tokens #TokenTransferData(IsFA2, Sender, SelfAddress, TokenID, TokensSold) #Mutez(0)                                               TokenAddress . %transfer N        ]
@@ -868,10 +909,10 @@ As before, a buyer sends tokens to the Dexter contract and receives a correspond
       andBool #IsLegalMutezValue(MinXtzBought)
       andBool #IsLegalMutezValue(#CurrencyBought(XtzPool, TokenPool, TokensSold))
       andBool #IsLegalMutezValue(XtzPool:Int -Int #CurrencyBought (XtzPool:Int, TokenPool:Int, TokensSold:Int))
-      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer,                             #TokenTransferType(IsFA2))
-      andBool #EntrypointExists(KnownAddresses, To,           #token("%default", "FieldAnnotation"), #Type(unit))
-      andBool #LocalEntrypointExists(LocalEntrypoints, %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
-      andBool #LocalEntrypointExists(LocalEntrypoints, %default,                 unit)
+      andBool #EntrypointExists(Accounts,  TokenAddress, %transfer,                #TokenTransferType(IsFA2))
+      andBool #EntrypointExists(Accounts,  To,           %default,                 #Type(unit))
+      andBool #EntrypointExists(Accounts,  SelfAddress,  %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
+      andBool #EntrypointExists(Accounts,  SelfAddress,  %default,                 unit)
 endmodule
 ```
 
@@ -885,7 +926,7 @@ module DEXTER-TOKENTOXTZ-FA2-NEGATIVE-1-SPEC
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <myamount> #Mutez(Amount) </myamount>
         <mynow> #Timestamp(CurrentTime) </mynow>
-        <paramtype> _LocalEntrypoints </paramtype>
+        <accounts> _Accounts </accounts>
      requires IsFA2
       andBool ( IsUpdating
          orBool notBool Amount ==Int 0
@@ -902,11 +943,11 @@ module DEXTER-TOKENTOXTZ-FA2-NEGATIVE-2-SPEC
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <myamount> #Mutez(Amount) </myamount>
         <mynow> #Timestamp(CurrentTime) </mynow>
-        <paramtype> LocalEntrypoints </paramtype>
+        <accounts> Accounts </accounts>
+        <currentAccount> SelfAddress </currentAccount>
         <tokenPool> TokenPool </tokenPool>
         <xtzPool> #Mutez(XtzPool) </xtzPool>
         <tokenAddress> TokenAddress:Address </tokenAddress>
-        <knownaddrs> KnownAddresses </knownaddrs>
      requires IsFA2
       andBool notBool IsUpdating
       andBool Amount ==Int 0
@@ -919,10 +960,10 @@ module DEXTER-TOKENTOXTZ-FA2-NEGATIVE-2-SPEC
       andBool #IsLegalMutezValue(MinXtzBought)
       andBool #IsLegalMutezValue(#CurrencyBought(XtzPool, TokenPool, TokensSold))
       andBool #IsLegalMutezValue(XtzPool:Int -Int #CurrencyBought (XtzPool:Int, TokenPool:Int, TokensSold:Int))
-      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer,                             #TokenTransferType(IsFA2))
-      andBool #EntrypointExists(KnownAddresses, To,           #token("%default", "FieldAnnotation"), #Type(unit))
-      andBool #LocalEntrypointExists(LocalEntrypoints, %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
-      andBool #LocalEntrypointExists(LocalEntrypoints, %default,                 unit)
+      andBool #EntrypointExists(Accounts, TokenAddress, %transfer,                #TokenTransferType(IsFA2))
+      andBool #EntrypointExists(Accounts, To,           %default,                 #Type(unit))
+      andBool #EntrypointExists(Accounts, SelfAddress,  %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
+      andBool #EntrypointExists(Accounts, SelfAddress,  %default,                 unit)
 endmodule
 ```
 
@@ -934,11 +975,11 @@ module DEXTER-TOKENTOXTZ-FA2-NEGATIVE-3-SPEC
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <myamount> #Mutez(Amount) </myamount>
         <mynow> #Timestamp(CurrentTime) </mynow>
-        <paramtype> LocalEntrypoints </paramtype>
+        <accounts> Accounts </accounts>
+        <currentAccount> SelfAddress </currentAccount>
         <tokenPool> TokenPool </tokenPool>
         <xtzPool> #Mutez(XtzPool) </xtzPool>
         <tokenAddress> TokenAddress:Address </tokenAddress>
-        <knownaddrs> KnownAddresses </knownaddrs>
         <nonce> #Nonce(_N => ?_) </nonce>
      requires IsFA2
       andBool notBool IsUpdating
@@ -952,10 +993,10 @@ module DEXTER-TOKENTOXTZ-FA2-NEGATIVE-3-SPEC
                 andBool #IsLegalMutezValue(#CurrencyBought(XtzPool, TokenPool, TokensSold))
                 andBool #IsLegalMutezValue(XtzPool:Int -Int #CurrencyBought (XtzPool:Int, TokenPool:Int, TokensSold:Int))
                       )
-      andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer,                             #TokenTransferType(IsFA2))
-      andBool #EntrypointExists(KnownAddresses, To,           #token("%default", "FieldAnnotation"), #Type(unit))
-      andBool #LocalEntrypointExists(LocalEntrypoints, %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
-      andBool #LocalEntrypointExists(LocalEntrypoints, %default,                 unit)
+      andBool #EntrypointExists(Accounts, TokenAddress, %transfer,                #TokenTransferType(IsFA2))
+      andBool #EntrypointExists(Accounts, To,           %default,                 #Type(unit))
+      andBool #EntrypointExists(Accounts, SelfAddress,  %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
+      andBool #EntrypointExists(Accounts, SelfAddress,  %default,                 unit)
 ```
 
 ```k
@@ -978,17 +1019,16 @@ module DEXTER-XTZTOTOKEN-FA12-POSITIVE-SPEC
   imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, XtzToToken(To, MinTokensBought, #Timestamp(Deadline))) => . </k>
         <stack> .Stack </stack>
-        <paramtype> LocalEntrypoints </paramtype>
+        <accounts> Accounts </accounts>
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <myamount> #Mutez(Amount) </myamount>
         <tokenAddress> TokenAddress </tokenAddress>
         <xtzPool> #Mutez(XtzPool => XtzPool +Int Amount) </xtzPool>
         <tokenPool> TokenPool => TokenPool -Int #CurrencyBought(TokenPool, XtzPool, Amount) </tokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
-        <myaddr> SelfAddress </myaddr>
+        <currentAccount> SelfAddress </currentAccount>
         <nonce> #Nonce(N => N +Int 1) </nonce>
         <tokenId> TokenID </tokenId>
-        <knownaddrs> KnownAddresses </knownaddrs>
         <operations> _
                   => [ Transfer_tokens #TokenTransferData(IsFA2, SelfAddress, To, TokenID, #CurrencyBought(TokenPool, XtzPool, Amount)) #Mutez(0) TokenAddress . %transfer N ]
                   ;; .InternalList
@@ -1002,9 +1042,9 @@ module DEXTER-XTZTOTOKEN-FA12-POSITIVE-SPEC
      andBool TokenPool -Int #CurrencyBought ( TokenPool , XtzPool , Amount ) >=Int 0
      andBool #IsLegalMutezValue(XtzPool +Int Amount)
 
-     andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType(IsFA2))
-     andBool #LocalEntrypointExists(LocalEntrypoints, %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
-     andBool #LocalEntrypointExists(LocalEntrypoints, %default,                 unit)
+     andBool #EntrypointExists(Accounts, TokenAddress, %transfer, #TokenTransferType(IsFA2))
+     andBool #EntrypointExists(Accounts,  SelfAddress, %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
+     andBool #EntrypointExists(Accounts,  SelfAddress, %default,                 unit)
 endmodule
 ```
 
@@ -1013,14 +1053,14 @@ module DEXTER-XTZTOTOKEN-FA12-NEGATIVE-SPEC
   imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, XtzToToken(_To, MinTokensBought, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_:FailedStack </stack>
-        <paramtype> LocalEntrypoints </paramtype>
+        <accounts> Accounts </accounts>
+        <currentAccount> SelfAddress </currentAccount>
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <myamount> #Mutez(Amount) </myamount>
         <tokenAddress> TokenAddress </tokenAddress>
         <xtzPool> #Mutez(XtzPool) </xtzPool>
         <tokenPool> TokenPool </tokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
-        <knownaddrs> KnownAddresses </knownaddrs>
         <operations> _ </operations>
     requires notBool IsFA2
      andBool notBool ( notBool IsUpdating
@@ -1031,9 +1071,9 @@ module DEXTER-XTZTOTOKEN-FA12-NEGATIVE-SPEC
                andBool TokenPool -Int #CurrencyBought ( TokenPool , XtzPool , Amount ) >=Int 0
                andBool #IsLegalMutezValue(XtzPool +Int Amount)
                      )
-     andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType(IsFA2))
-     andBool #LocalEntrypointExists(LocalEntrypoints, %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
-     andBool #LocalEntrypointExists(LocalEntrypoints, %default,                 unit)
+     andBool #EntrypointExists(Accounts, TokenAddress, %transfer,                #TokenTransferType(IsFA2))
+     andBool #EntrypointExists(Accounts,  SelfAddress, %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
+     andBool #EntrypointExists(Accounts,  SelfAddress, %default,                 unit)
 endmodule
 ```
 
@@ -1042,17 +1082,16 @@ module DEXTER-XTZTOTOKEN-FA2-POSITIVE-SPEC
   imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, XtzToToken(To, MinTokensBought, #Timestamp(Deadline))) => . </k>
         <stack> .Stack </stack>
-        <paramtype> LocalEntrypoints </paramtype>
+        <accounts> Accounts </accounts>
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <myamount> #Mutez(Amount) </myamount>
         <tokenAddress> TokenAddress </tokenAddress>
         <xtzPool> #Mutez(XtzPool => XtzPool +Int Amount) </xtzPool>
         <tokenPool> TokenPool => TokenPool -Int #CurrencyBought(TokenPool, XtzPool, Amount) </tokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
-        <myaddr> SelfAddress </myaddr>
+        <currentAccount> SelfAddress </currentAccount>
         <nonce> #Nonce(N => N +Int 1) </nonce>
         <tokenId> TokenID </tokenId>
-        <knownaddrs> KnownAddresses </knownaddrs>
         <operations> _
                   => [ Transfer_tokens #TokenTransferData(IsFA2, SelfAddress, To, TokenID, #CurrencyBought(TokenPool, XtzPool, Amount)) #Mutez(0) TokenAddress . %transfer N ]
                   ;; .InternalList
@@ -1066,9 +1105,9 @@ module DEXTER-XTZTOTOKEN-FA2-POSITIVE-SPEC
      andBool TokenPool -Int #CurrencyBought ( TokenPool , XtzPool , Amount ) >=Int 0
      andBool #IsLegalMutezValue(XtzPool +Int Amount)
 
-     andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType(IsFA2))
-     andBool #LocalEntrypointExists(LocalEntrypoints, %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
-     andBool #LocalEntrypointExists(LocalEntrypoints, %default,                 unit)
+     andBool #EntrypointExists(Accounts, TokenAddress, %transfer, #TokenTransferType(IsFA2))
+     andBool #EntrypointExists(Accounts,  SelfAddress, %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
+     andBool #EntrypointExists(Accounts,  SelfAddress, %default,                 unit)
 endmodule
 ```
 
@@ -1077,14 +1116,14 @@ module DEXTER-XTZTOTOKEN-FA2-NEGATIVE-SPEC
   imports DEXTER-VERIFICATION
   claim <k> #runProof(IsFA2, XtzToToken(_To, MinTokensBought, #Timestamp(Deadline))) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_:FailedStack </stack>
-        <paramtype> LocalEntrypoints </paramtype>
+        <accounts> Accounts </accounts>
+        <currentAccount> SelfAddress </currentAccount>
         <selfIsUpdatingTokenPool> IsUpdating </selfIsUpdatingTokenPool>
         <myamount> #Mutez(Amount) </myamount>
         <tokenAddress> TokenAddress </tokenAddress>
         <xtzPool> #Mutez(XtzPool) </xtzPool>
         <tokenPool> TokenPool </tokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
-        <knownaddrs> KnownAddresses </knownaddrs>
         <operations> _ </operations>
     requires IsFA2
      andBool notBool ( notBool IsUpdating
@@ -1095,9 +1134,9 @@ module DEXTER-XTZTOTOKEN-FA2-NEGATIVE-SPEC
                andBool TokenPool -Int #CurrencyBought ( TokenPool , XtzPool , Amount ) >=Int 0
                andBool #IsLegalMutezValue(XtzPool +Int Amount)
                      )
-     andBool #EntrypointExists(KnownAddresses, TokenAddress, %transfer, #TokenTransferType(IsFA2))
-     andBool #LocalEntrypointExists(LocalEntrypoints, %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
-     andBool #LocalEntrypointExists(LocalEntrypoints, %default,                 unit)
+     andBool #EntrypointExists(Accounts, TokenAddress, %transfer, #TokenTransferType(IsFA2))
+     andBool #EntrypointExists(Accounts,  SelfAddress, %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
+     andBool #EntrypointExists(Accounts,  SelfAddress, %default,                 unit)
 endmodule
 ```
 
@@ -1127,11 +1166,10 @@ A buyer sends tokens to the Dexter contract, converts its to xtz, and then immed
         <tokenPool> TokenPool => TokenPool +Int TokensSold </tokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <senderaddr> Sender </senderaddr>
-        <myaddr> SelfAddress </myaddr>
-        <paramtype> LocalEntrypoints </paramtype>
+        <currentAccount> SelfAddress </currentAccount>
+        <accounts> Accounts </accounts>
         <nonce> #Nonce(N => N +Int 2) </nonce>
         <tokenId> TokenID </tokenId>
-        <knownaddrs> KnownAddresses </knownaddrs>
         <operations> _
                   => [ Transfer_tokens #TokenTransferData(IsFA2, Sender, SelfAddress, TokenID, TokensSold) #Mutez(0)                                               TokenAddress         . %transfer    N        ]
                   ;; [ Transfer_tokens Pair To Pair MinTokensBought #Timestamp(Deadline)                   #Mutez(#CurrencyBought(XtzPool, TokenPool, TokensSold)) OutputDexterContract . %xtzToToken (N +Int 1)]
@@ -1144,10 +1182,10 @@ A buyer sends tokens to the Dexter contract, converts its to xtz, and then immed
       andBool #CurrencyBought(XtzPool, TokenPool, TokensSold) <=Int XtzPool
       andBool (TokenPool >Int 0 orBool TokensSold >Int 0)
       andBool #IsLegalMutezValue(#CurrencyBought(XtzPool, TokenPool, TokensSold))
-      andBool #EntrypointExists(KnownAddresses, TokenAddress,         %transfer,   #TokenTransferType(IsFA2))
-      andBool #EntrypointExists(KnownAddresses, OutputDexterContract, %xtzToToken, pair (address %to) (pair (nat %minTokensBought) (timestamp %deadline)))
-      andBool #LocalEntrypointExists(LocalEntrypoints, %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
-      andBool #LocalEntrypointExists(LocalEntrypoints, %default,                 unit)
+      andBool #EntrypointExists(Accounts, TokenAddress,         %transfer,                #TokenTransferType(IsFA2))
+      andBool #EntrypointExists(Accounts, OutputDexterContract, %xtzToToken,              pair (address %to) (pair (nat %minTokensBought) (timestamp %deadline)))
+      andBool #EntrypointExists(Accounts, SelfAddress,          %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
+      andBool #EntrypointExists(Accounts, SelfAddress,          %default,                 unit)
 ```
 
 ```k
@@ -1160,11 +1198,10 @@ A buyer sends tokens to the Dexter contract, converts its to xtz, and then immed
         <tokenPool> TokenPool => TokenPool +Int TokensSold </tokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <senderaddr> Sender </senderaddr>
-        <myaddr> SelfAddress </myaddr>
-        <paramtype> LocalEntrypoints </paramtype>
+        <currentAccount> SelfAddress </currentAccount>
+        <accounts> Accounts </accounts>
         <nonce> #Nonce(N => N +Int 2) </nonce>
         <tokenId> TokenID </tokenId>
-        <knownaddrs> KnownAddresses </knownaddrs>
         <operations> _
                   => [ Transfer_tokens #TokenTransferData(IsFA2, Sender, SelfAddress, TokenID, TokensSold) #Mutez(0)                                               TokenAddress         . %transfer    N        ]
                   ;; [ Transfer_tokens Pair To Pair MinTokensBought #Timestamp(Deadline)                   #Mutez(#CurrencyBought(XtzPool, TokenPool, TokensSold)) OutputDexterContract . %xtzToToken (N +Int 1)]
@@ -1177,10 +1214,10 @@ A buyer sends tokens to the Dexter contract, converts its to xtz, and then immed
       andBool #CurrencyBought(XtzPool, TokenPool, TokensSold) <=Int XtzPool
       andBool (TokenPool >Int 0 orBool TokensSold >Int 0)
       andBool #IsLegalMutezValue(#CurrencyBought(XtzPool, TokenPool, TokensSold))
-      andBool #EntrypointExists(KnownAddresses, TokenAddress,         %transfer,   #TokenTransferType(IsFA2))
-      andBool #EntrypointExists(KnownAddresses, OutputDexterContract, %xtzToToken, pair (address %to) (pair (nat %minTokensBought) (timestamp %deadline)))
-      andBool #LocalEntrypointExists(LocalEntrypoints, %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
-      andBool #LocalEntrypointExists(LocalEntrypoints, %default,                 unit)
+      andBool #EntrypointExists(Accounts, TokenAddress,         %transfer,   #TokenTransferType(IsFA2))
+      andBool #EntrypointExists(Accounts, OutputDexterContract, %xtzToToken, pair (address %to) (pair (nat %minTokensBought) (timestamp %deadline)))
+      andBool #EntrypointExists(Accounts, SelfAddress,          %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
+      andBool #EntrypointExists(Accounts, SelfAddress,          %default,                 unit)
 ```
 
 ```k
@@ -1204,11 +1241,10 @@ module DEXTER-TOKENTOTOKEN-NEGATIVE-SPEC
         <tokenPool> TokenPool </tokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <senderaddr> _Sender </senderaddr>
-        <myaddr> _SelfAddress </myaddr>
-        <paramtype> LocalEntrypoints </paramtype>
+        <currentAccount> SelfAddress </currentAccount>
+        <accounts> Accounts </accounts>
         <nonce> #Nonce(_N => ?_) </nonce>
         <tokenId> _TokenID </tokenId>
-        <knownaddrs> KnownAddresses </knownaddrs>
         <operations> _ </operations>
      requires notBool IsFA2
       andBool notBool( notBool SelfIsUpdating
@@ -1218,10 +1254,10 @@ module DEXTER-TOKENTOTOKEN-NEGATIVE-SPEC
                andBool (TokenPool >Int 0 orBool TokensSold >Int 0)
                andBool #IsLegalMutezValue(#CurrencyBought(XtzPool, TokenPool, TokensSold))
                      )
-      andBool #EntrypointExists(KnownAddresses, TokenAddress,         %transfer,   #TokenTransferType(IsFA2))
-      andBool #EntrypointExists(KnownAddresses, OutputDexterContract, %xtzToToken, pair (address %to) (pair (nat %minTokensBought) (timestamp %deadline)))
-      andBool #LocalEntrypointExists(LocalEntrypoints, %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
-      andBool #LocalEntrypointExists(LocalEntrypoints, %default,                 unit)
+      andBool #EntrypointExists(Accounts, TokenAddress,         %transfer,                #TokenTransferType(IsFA2))
+      andBool #EntrypointExists(Accounts, OutputDexterContract, %xtzToToken,              pair (address %to) (pair (nat %minTokensBought) (timestamp %deadline)))
+      andBool #EntrypointExists(Accounts, SelfAddress,          %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
+      andBool #EntrypointExists(Accounts, SelfAddress,          %default,                 unit)
 ```
 
 ```k
@@ -1236,11 +1272,10 @@ module DEXTER-TOKENTOTOKEN-NEGATIVE-SPEC
         <tokenPool> TokenPool </tokenPool>
         <mynow> #Timestamp(CurrentTime) </mynow>
         <senderaddr> _Sender </senderaddr>
-        <myaddr> _SelfAddress </myaddr>
-        <paramtype> LocalEntrypoints </paramtype>
+        <currentAccount> SelfAddress </currentAccount>
+        <accounts> Accounts </accounts>
         <nonce> #Nonce(_N => ?_) </nonce>
         <tokenId> _TokenID </tokenId>
-        <knownaddrs> KnownAddresses </knownaddrs>
         <operations> _ </operations>
      requires IsFA2
       andBool notBool( notBool SelfIsUpdating
@@ -1250,10 +1285,10 @@ module DEXTER-TOKENTOTOKEN-NEGATIVE-SPEC
                andBool (TokenPool >Int 0 orBool TokensSold >Int 0)
                andBool #IsLegalMutezValue(#CurrencyBought(XtzPool, TokenPool, TokensSold))
                      )
-      andBool #EntrypointExists(KnownAddresses, TokenAddress,         %transfer,   #TokenTransferType(IsFA2))
-      andBool #EntrypointExists(KnownAddresses, OutputDexterContract, %xtzToToken, pair (address %to) (pair (nat %minTokensBought) (timestamp %deadline)))
-      andBool #LocalEntrypointExists(LocalEntrypoints, %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
-      andBool #LocalEntrypointExists(LocalEntrypoints, %default,                 unit)
+      andBool #EntrypointExists(Accounts, TokenAddress,         %transfer,                #TokenTransferType(IsFA2))
+      andBool #EntrypointExists(Accounts, OutputDexterContract, %xtzToToken,              pair (address %to) (pair (nat %minTokensBought) (timestamp %deadline)))
+      andBool #EntrypointExists(Accounts, SelfAddress,          %updateTokenPoolInternal, #Type(#DexterVersionSpecificParamType(IsFA2)))
+      andBool #EntrypointExists(Accounts, SelfAddress,          %default,                 unit)
 ```
 
 ```k

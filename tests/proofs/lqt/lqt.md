@@ -39,6 +39,8 @@ module LQT-TOKEN-LEMMAS
   rule X *Int 1 => X [simplification]
 
   rule X +Int (0 -Int Y) => X -Int Y [simplification]
+  rule X -Int  0         => X        [simplification]
+  rule X +Int  0         => X        [simplification]
 ```
 
 ```k
@@ -224,15 +226,6 @@ If the contract execution fails, storage is not updated.
 ```
 
 ## Proof Helper Functions
-
-```k
-  syntax Bool ::= #EntrypointExists(Map, Address, FieldAnnotation, Type)
-// ---------------------------------------------------------------------
-  rule #EntrypointExists(KnownAddresses, Addr, FieldAnnot, EntrypointType)
-    => Addr . FieldAnnot  in_keys(KnownAddresses) andBool
-       KnownAddresses[Addr . FieldAnnot] ==K #Name(EntrypointType)
-    [macro]
-```
 
 ```k
   syntax Map ::= #incrementTokens(Map, Address, quantity: Int) [function, functional]

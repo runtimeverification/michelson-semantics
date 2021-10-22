@@ -33,8 +33,10 @@ module DEXTER-LEMMAS
 ```
 
 ```k
-  rule X /Int 1 => X [simplification]
-  rule X *Int 1 => X [simplification]
+  rule X /Int 1               => X  [simplification]
+  rule X *Int 1               => X  [simplification]
+  rule false   orBool @B:Bool => @B [simplification]
+  rule @B:Bool orBool false   => @B [simplification]
 ```
 
 ```k
@@ -590,35 +592,11 @@ If the contract execution fails, storage is not updated.
   rule #TokenBalanceEntrypointType(false) => #Type(pair address (contract nat))
   rule #TokenBalanceEntrypointType(true)  => #Type(pair (list (pair address nat)) (contract (list (pair (pair (address) nat) nat))))
 
-  syntax Int ::= #ceildiv   (Int, Int) [function]
-               | #ceildivAux(Int, Int) [function, functional]
- // ---------------------------------------------------------
-  rule #ceildiv   (X, Y) => #ceildivAux(X, Y) requires Y =/=Int 0
-  rule #ceildivAux(_, Y) => 0                 requires Y  ==Int 0
-  rule #ceildivAux(X, Y) => X /Int Y          requires Y  =/=Int 0 andBool         X %Int Y ==Int 0
-  rule #ceildivAux(X, Y) => X /Int Y +Int 1   requires Y  =/=Int 0 andBool notBool X %Int Y ==Int 0
-
   syntax Int ::= #CurrencyBought(Int, Int, Int) [function, functional, smtlib(xtzbought), no-evaluators]
  // ----------------------------------------------------------------------------------------------------
   rule (ToSellAmt *Int 997 *Int ToBuyCurrencyTotal) /Int (ToSellCurrencyTotal *Int 1000 +Int (ToSellAmt *Int 997))
     => #CurrencyBought(ToBuyCurrencyTotal, ToSellCurrencyTotal, ToSellAmt)
     [simplification]
-```
-
-```k
-  syntax Bool ::= #EntrypointExists(Map, Address, FieldAnnotation, Type)
-// ---------------------------------------------------------------------
-  rule #EntrypointExists(KnownAddresses, Addr, FieldAnnot, EntrypointType)
-    => Addr . FieldAnnot  in_keys(KnownAddresses) andBool
-       KnownAddresses[Addr . FieldAnnot] ==K #Name(EntrypointType)
-    [macro]
-
-  syntax Bool ::= #LocalEntrypointExists(Map, FieldAnnotation, Type)
- // ----------------------------------------------------------------
-  rule #LocalEntrypointExists(LocalEntrypoints, FieldAnnot, EntrypointType)
-    => FieldAnnot in_keys(LocalEntrypoints) andBool
-       LocalEntrypoints[FieldAnnot] ==K #Name(EntrypointType)
-    [macro]
 ```
 
 ### Avoiding Interpreting Functions
@@ -627,11 +605,19 @@ If a function value does not play well with the prover or SMT solver, it can be 
 This function has no evaluation rules, so the prover can make no assumptions about it -- it will be assumed it can take on any value.
 
 ```k
-  syntax Int ::= #mulMod(Int, Int, Int) [function, functional, smtlib(mulMod), no-evaluators]
+  syntax Int ::= #mod(Int, Int) [function, functional, smtlib(mulMod), no-evaluators]
                | #mulDiv(Int, Int, Int) [function, functional, smtlib(mulDiv), no-evaluators]
  // -----------------------------------------------------------------------------------------
-  rule (X *Int Y) %Int Z => #mulMod(X, Y, Z) [simplification]
+  rule  X %Int Y => #mod(X, Y) [simplification]
   rule (X *Int Y) /Int Z => #mulDiv(X, Y, Z) [simplification]
+
+  syntax Int ::= #ceildiv   (Int, Int) [function]
+               | #ceildivAux(Int, Int) [function, functional]
+ // ---------------------------------------------------------
+  rule #ceildiv   (X, Y) => #ceildivAux(X, Y) requires Y =/=Int 0
+  rule #ceildivAux(_, Y) => 0                 requires Y  ==Int 0
+  rule #ceildivAux(X, Y) => X /Int Y          requires Y  =/=Int 0 andBool         #mod(X, Y) ==Int 0
+  rule #ceildivAux(X, Y) => X /Int Y +Int 1   requires Y  =/=Int 0 andBool notBool #mod(X, Y) ==Int 0
 ```
 
 ## Putting It All Together

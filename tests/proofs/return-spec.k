@@ -25,19 +25,16 @@ module RETURN-SPEC
           } ;
           PAIR .AnnotationList
         } => .K </k>
-        <stack> [ (pair unit unit) Pair Unit Unit ] ; .Stack => [ (pair (list operation) unit) Pair [ Transfer_tokens Unit #Mutez(A) #Address("SourceAddr") . %default ?_ ] ;; .InternalList Unit ] ; .Stack </stack>
-        <paramtype> %default |-> unit .AnnotationList </paramtype>
-        <storagetype> unit .AnnotationList </storagetype>
-        <mybalance> #Mutez(0) </mybalance>
+        <stack> [ (pair unit unit) Pair Unit Unit ] ; .Stack => [ (pair (list operation) unit) Pair [ Transfer_tokens Unit #Mutez(A) SourceAddr . %default ?_ ] ;; .InternalList Unit ] ; .Stack </stack>
         <myamount> #Mutez(A) </myamount>
         <mynow> #Timestamp(0) </mynow>
-        <myaddr> #Address("OwnAddr") </myaddr>
-        <knownaddrs> #Address("SourceAddr") . %default |-> unit </knownaddrs>
-        <sourceaddr> #Address("SourceAddr") </sourceaddr>
-        <senderaddr> #Address("SenderAddr") </senderaddr>
+        <accounts> Accounts </accounts>
+        <sourceaddr> SourceAddr </sourceaddr>
+        <senderaddr> SenderAddr </senderaddr>
         <mychainid> #ChainId(_) </mychainid>
         <nonce> #Nonce(?_ => ?_) </nonce>
     requires A >Int 0
+     andBool #EntrypointExists(Accounts, SourceAddr, %default, #Type(unit))
 
 
   claim <k>
@@ -59,14 +56,11 @@ module RETURN-SPEC
           PAIR .AnnotationList
         } => .K </k>
         <stack> [ (pair unit unit) Pair Unit Unit ] ; .Stack => [ (pair (list operation) unit) Pair .InternalList Unit ] ; .Stack </stack>
-        <paramtype> %default |-> unit .AnnotationList </paramtype>
-        <storagetype> unit .AnnotationList </storagetype>
-        <mybalance> #Mutez(0) </mybalance>
         <myamount> #Mutez(0) </myamount>
         <mynow> #Timestamp(0) </mynow>
-        <myaddr> #Address("OwnAddr") </myaddr>
-        <knownaddrs> #Address("SourceAddr") . %default |-> unit </knownaddrs>
-        <sourceaddr> #Address("SourceAddr") </sourceaddr>
-        <senderaddr> #Address("SenderAddr") </senderaddr>
+        <accounts> Accounts </accounts>
+        <sourceaddr> SourceAddr </sourceaddr>
+        <senderaddr> SenderAddr </senderaddr>
         <mychainid> #ChainId(_) </mychainid>
+    requires #EntrypointExists(Accounts, SourceAddr, %default, #Type(unit))
 endmodule
