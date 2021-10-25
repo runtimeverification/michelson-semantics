@@ -27,13 +27,29 @@ following to install all needed dependencies:
 
 ```sh
 sudo apt-get install rsync git m4 build-essential patch unzip bubblewrap wget  \
-pkg-config libgmp-dev libev-dev libhidapi-dev libmpfr-dev flex bison z3        \
-libz3-dev maven python3 cmake gcc zlib1g-dev libboost-test-dev libyaml-dev     \
+pkg-config libgmp-dev libev-dev libhidapi-dev libmpfr-dev flex bison           \
+maven python3 cmake gcc zlib1g-dev libboost-test-dev libyaml-dev               \
 libjemalloc-dev openjdk-8-jdk clang-8 lld-8 llvm-8-tools pcregrep cargo
 ```
 
 Note that the JDK and Clang packages referenced above typically can be
 substituted with more recent versions without any issues.
+
+K-Michelson requires Z3 version 4.8.11, which you may need to install from a
+source build if your package manager supplies a different version. To do so,
+follow the instructions
+[here](https://github.com/Z3Prover/z3#building-z3-using-make-and-gccclang) after
+checking out the correct tag in the Z3 repository:
+
+```sh
+git clone https://github.com/Z3Prover/z3.git
+cd z3
+git checkout z3-4.8.11
+python scripts/mk_make.py
+cd build
+make
+sudo make install
+```
 
 You will also need a recent version of
 [Haskell stack](https://docs.haskellstack.org/en/stable/install_and_upgrade).
