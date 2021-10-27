@@ -405,7 +405,7 @@ tests/%.cross: tests/% $(input_creator_kompiled) $(extractor_kompiled) $(contrac
 
 # Prove
 
-export KORE_EXEC_OPTS=--smt-timeout 1000
+export KORE_EXEC_OPTS=--smt-timeout 2000
 
 prove_tests         := $(wildcard tests/proofs/*-spec.md) $(wildcard tests/proofs/*-spec.k)
 prove_tests_failing := $(shell cat tests/failing.prove)
