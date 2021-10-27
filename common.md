@@ -111,9 +111,9 @@ We add functions for adding default entrypoints to a map or producing the defaul
   rule #AddDefaultEntry(AnnotMap,  Type) => %default |-> #Name(Type) AnnotMap
     [owise]
 
-  syntax FieldAnnotation ::= "%default"
-  // ----------------------------------
-  rule %default => #token("%default", "FieldAnnotation") [macro]
+  syntax FieldAnnotation ::= "%default" [macro]
+  // ------------------------------------------
+  rule %default => #token("%default", "FieldAnnotation")
 ```
 
 We have a function which extracts a unique field annotation from a type.
@@ -189,7 +189,7 @@ We represent values of collection types (lists, sets, maps) as follows:
   syntax InternalList ::= List{WrappedData, ";;"}
 
   syntax Int ::= size(InternalList) [function, functional, smtlib(listsize)]
-  // ----------------------------------------------------------
+  // -----------------------------------------------------------------------
   rule size(_ ;; L       ) => size(L) +Int 1
   rule size(.InternalList) => 0
 
