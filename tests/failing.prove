@@ -1,3 +1,2 @@
-tests/proofs/listsum-spec.k
 tests/proofs/sum-simple-spec.k
 tests/proofs/vote-spec.k
