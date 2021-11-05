@@ -21,7 +21,7 @@ endmodule
 module LQT-TOKEN-GETTOTALSUPPLY-SPEC
   imports LQT-TOKEN-VERIFICATION
 
-  claim <k> #runProof(GetTotalSupplyParams(Callback)) => .K ... </k>
+  claim <k> #runProof(GetTotalSupplyParams(Callback)) => .K </k>
         <stack> .Stack </stack>
         <totalSupply> TotalSupply </totalSupply>
         <nonce> #Nonce(Nonce => Nonce +Int 1) </nonce>
@@ -29,7 +29,7 @@ module LQT-TOKEN-GETTOTALSUPPLY-SPEC
         <myamount> #Mutez(Amount) </myamount>
     requires Amount ==Int 0
 
-  claim <k> #runProof(GetTotalSupplyParams(_)) => Aborted(?_, ?_, ?_, ?_) ... </k>
+  claim <k> #runProof(GetTotalSupplyParams(_)) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_:FailedStack </stack>
         <myamount> #Mutez(Amount) </myamount>
     requires notBool(Amount ==Int 0)
@@ -40,7 +40,7 @@ endmodule
 module LQT-TOKEN-GETBALANCE-SPEC
   imports LQT-TOKEN-VERIFICATION
 
-  claim <k> #runProof(GetBalanceParams(Address, Callback)) => .K ... </k>
+  claim <k> #runProof(GetBalanceParams(Address, Callback)) => .K </k>
         <stack> .Stack </stack>
         <tokens> Tokens </tokens>
         <nonce> #Nonce(Nonce => Nonce +Int 1) </nonce>
@@ -49,7 +49,7 @@ module LQT-TOKEN-GETBALANCE-SPEC
     requires Amount ==Int 0
      andBool Address in_keys(Tokens)
 
-  claim <k> #runProof(GetBalanceParams(Address, Callback)) => .K ... </k>
+  claim <k> #runProof(GetBalanceParams(Address, Callback)) => .K </k>
         <stack> .Stack </stack>
         <tokens> Tokens </tokens>
         <nonce> #Nonce(Nonce => Nonce +Int 1) </nonce>
@@ -58,7 +58,7 @@ module LQT-TOKEN-GETBALANCE-SPEC
     requires Amount ==Int 0
      andBool notBool Address in_keys(Tokens)
 
-  claim <k> #runProof(GetBalanceParams(_, _)) => Aborted(?_, ?_, ?_, ?_) ... </k>
+  claim <k> #runProof(GetBalanceParams(_, _)) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_:FailedStack </stack>
         <myamount> #Mutez(Amount) </myamount>
     requires notBool(Amount ==Int 0)
@@ -69,7 +69,7 @@ endmodule
 module LQT-TOKEN-GETALLOWANCE-SPEC
   imports LQT-TOKEN-VERIFICATION
 
-  claim <k> #runProof(GetAllowanceParams(Owner, Spender, Callback)) => .K ... </k>
+  claim <k> #runProof(GetAllowanceParams(Owner, Spender, Callback)) => .K </k>
         <stack> .Stack </stack>
         <allowances> Allowances </allowances>
         <nonce> #Nonce(Nonce => Nonce +Int 1) </nonce>
@@ -78,7 +78,7 @@ module LQT-TOKEN-GETALLOWANCE-SPEC
     requires Amount ==Int 0
      andBool (Pair Owner Spender) in_keys(Allowances)
 
-  claim <k> #runProof(GetAllowanceParams(Owner, Spender, Callback)) => .K ... </k>
+  claim <k> #runProof(GetAllowanceParams(Owner, Spender, Callback)) => .K </k>
         <stack> .Stack </stack>
         <allowances> Allowances </allowances>
         <nonce> #Nonce(Nonce => Nonce +Int 1) </nonce>
@@ -87,7 +87,7 @@ module LQT-TOKEN-GETALLOWANCE-SPEC
     requires Amount ==Int 0
      andBool notBool (Pair Owner Spender) in_keys(Allowances)
 
-  claim <k> #runProof(GetAllowanceParams(_, _, _)) => Aborted(?_, ?_, ?_, ?_) ... </k>
+  claim <k> #runProof(GetAllowanceParams(_, _, _)) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_:FailedStack </stack>
         <myamount> #Mutez(Amount) </myamount>
     requires notBool(Amount ==Int 0)
@@ -98,7 +98,7 @@ endmodule
 module LQT-TOKEN-MINTORBURN-SPEC
   imports LQT-TOKEN-VERIFICATION
 
-  claim <k> #runProof(MintOrBurnParams(Quantity, Address)) => .K ... </k>
+  claim <k> #runProof(MintOrBurnParams(Quantity, Address)) => .K </k>
         <stack> .Stack </stack>
         <tokens> Tokens => #incrementTokens(Tokens, Address, Quantity) </tokens>
         <myamount> #Mutez(Amount) </myamount>
@@ -122,7 +122,7 @@ module LQT-TOKEN-MINTORBURN-SPEC
      andBool Sender ==K Admin
      andBool #tokensFor(Tokens, Address) +Int Quantity >Int 0
 
-   claim <k> #runProof(MintOrBurnParams(Quantity, Address)) => Aborted(?_, ?_, ?_, ?_) ... </k>
+   claim <k> #runProof(MintOrBurnParams(Quantity, Address)) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_:FailedStack </stack>
         <tokens> Tokens </tokens>
         <myamount> #Mutez(Amount) </myamount>
@@ -141,7 +141,7 @@ module LQT-TOKEN-APPROVE-SPEC
 ```
 
 ```k
-  claim <k> #runProof(ApproveParams(Spender, Value)) => .K ... </k>
+  claim <k> #runProof(ApproveParams(Spender, Value)) => .K </k>
         <stack> .Stack </stack>
         <allowances> Allowances => #updateAllowances(Allowances, Sender, Spender, Value) </allowances>
         <myamount> #Mutez(Amount) </myamount>
@@ -186,7 +186,7 @@ module LQT-TOKEN-TRANSFER-DIRECT-SPEC
 ```
 
 ```k
-  claim <k> #runProof(TransferParams(From, To, Value)) => Aborted(?_, ?_, ?_, ?_) ... </k>
+  claim <k> #runProof(TransferParams(From, To, Value)) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_:FailedStack </stack>
         <tokens> Tokens </tokens>
         <allowances> Allowances </allowances>
@@ -223,7 +223,7 @@ module LQT-TOKEN-TRANSFER-PROXY-SPEC
      andBool Sender =/=K From
      andBool #allowanceFor(Allowances, From, Sender) >=Int Value
 
-  claim <k> #runProof(TransferParams(From, To, Value)) => Aborted(?_, ?_, ?_, ?_) ... </k>
+  claim <k> #runProof(TransferParams(From, To, Value)) => Aborted(?_, ?_, ?_, ?_) </k>
         <stack> .Stack => ?_:FailedStack </stack>
         <tokens> Tokens  </tokens>
         <allowances> Allowances </allowances>

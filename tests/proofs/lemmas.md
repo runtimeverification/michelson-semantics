@@ -14,14 +14,9 @@ requires "michelson.md"
 module LEMMAS
   imports MICHELSON
 
-  rule #Ceil(#DoCompare(@A:Int, @B:Int)) => #Ceil(@A) #And #Ceil(@B)
-    [anywhere, simplification]
-
-  rule #MichelineToNative(M:Map, map _ _ _, _, _) => M
-    [simplification]
-
-  rule size(_:InternalList)      >=Int 0 => true [simplification, smt-lemma]
-  rule size(_ ;; _:InternalList)  >Int 0 => true [simplification, smt-lemma]
+  rule X /Int 1          => X        [simplification]
+  rule X *Int 1          => X        [simplification]
+  rule X +Int (0 -Int Y) => X -Int Y [simplification]
 
 endmodule
 ```

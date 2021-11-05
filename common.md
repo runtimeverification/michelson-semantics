@@ -192,6 +192,9 @@ We represent values of collection types (lists, sets, maps) as follows:
   // ----------------------------------------------------------
   rule size(_ ;; L       ) => size(L) +Int 1
   rule size(.InternalList) => 0
+  
+  rule size(_:InternalList)      >=Int 0 => true [simplification, smt-lemma]
+  rule size(_ ;; _:InternalList)  >Int 0 => true [simplification, smt-lemma]
 
   syntax SimpleData ::= Set | Map | InternalList
 ```
