@@ -16,8 +16,8 @@ https://gitlab.com/dexter2tz/dexter2tz/-/blob/8a5792a56e0143042926c3ca8bff7d7068
 # The Dexter Smart Contract Code
 
 ```k
-  syntax Data ::= "#dexterCodeFA12" | "#dexterCodeFA2"
-  // --------------------------------------------------------
+  syntax Data ::= "#dexterCodeFA12" [macro] | "#dexterCodeFA2" [macro]
+  // -----------------------------------------------------------------
 
   syntax KItem ::= #dexterCode ( Bool )
   // ----------------------------------
@@ -32,30 +32,30 @@ The set of permissible annotations is infinite.
 Since we work with specific code that contains a finite number of annotations, we can represent each and give it a macro for wrapping it in the `#token(...)` production.
 
 ```k
-  syntax FieldAnnotation ::= "%balance_of"
-                           | "%deadline"
-                           | "%getBalance"
-                           | "%minTokensBought"
-                           | "%mintOrBurn"
-                           | "%quantity"
-                           | "%target"
-                           | "%to"
-                           | "%transfer"
-                           | "%updateTokenPoolInternal"
-                           | "%xtzToToken"
+  syntax FieldAnnotation ::= "%balance_of" [macro]
+                           | "%deadline" [macro]
+                           | "%getBalance" [macro]
+                           | "%minTokensBought" [macro]
+                           | "%mintOrBurn" [macro]
+                           | "%quantity" [macro]
+                           | "%target" [macro]
+                           | "%to" [macro]
+                           | "%transfer" [macro]
+                           | "%updateTokenPoolInternal" [macro]
+                           | "%xtzToToken" [macro]
  // --------------------------------------
 
-  rule %balance_of              => #token("%balance_of"             , "FieldAnnotation") [macro]
-  rule %deadline                => #token("%deadline"               , "FieldAnnotation") [macro]
-  rule %getBalance              => #token("%getBalance"             , "FieldAnnotation") [macro]
-  rule %minTokensBought         => #token("%minTokensBought"        , "FieldAnnotation") [macro]
-  rule %mintOrBurn              => #token("%mintOrBurn"             , "FieldAnnotation") [macro]
-  rule %quantity                => #token("%quantity"               , "FieldAnnotation") [macro]
-  rule %target                  => #token("%target"                 , "FieldAnnotation") [macro]
-  rule %to                      => #token("%to"                     , "FieldAnnotation") [macro]
-  rule %transfer                => #token("%transfer"               , "FieldAnnotation") [macro]
-  rule %updateTokenPoolInternal => #token("%updateTokenPoolInternal", "FieldAnnotation") [macro]
-  rule %xtzToToken              => #token("%xtzToToken"             , "FieldAnnotation") [macro]
+  rule %balance_of              => #token("%balance_of"             , "FieldAnnotation")
+  rule %deadline                => #token("%deadline"               , "FieldAnnotation")
+  rule %getBalance              => #token("%getBalance"             , "FieldAnnotation")
+  rule %minTokensBought         => #token("%minTokensBought"        , "FieldAnnotation")
+  rule %mintOrBurn              => #token("%mintOrBurn"             , "FieldAnnotation")
+  rule %quantity                => #token("%quantity"               , "FieldAnnotation")
+  rule %target                  => #token("%target"                 , "FieldAnnotation")
+  rule %to                      => #token("%to"                     , "FieldAnnotation")
+  rule %transfer                => #token("%transfer"               , "FieldAnnotation")
+  rule %updateTokenPoolInternal => #token("%updateTokenPoolInternal", "FieldAnnotation")
+  rule %xtzToToken              => #token("%xtzToToken"             , "FieldAnnotation")
 ```
 
 ## FA1.2
@@ -1361,7 +1361,6 @@ Since we work with specific code that contains a finite number of annotations, w
                            DIG 2 ;
                            CONS ;
                            PAIR } } } } }
-       [macro]
 ```
 
 ## FA2
@@ -2757,7 +2756,6 @@ Since we work with specific code that contains a finite number of annotations, w
                            DIG 2 ;
                            CONS ;
                            PAIR } } } } }
-       [macro]
 ```
 
 ```k

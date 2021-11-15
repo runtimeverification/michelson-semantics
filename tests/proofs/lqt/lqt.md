@@ -226,12 +226,11 @@ If the contract execution fails, storage is not updated.
 ## Proof Helper Functions
 
 ```k
-  syntax Bool ::= #EntrypointExists(Map, Address, FieldAnnotation, Type)
-// ---------------------------------------------------------------------
+  syntax Bool ::= #EntrypointExists(Map, Address, FieldAnnotation, Type) [macro]
+// -----------------------------------------------------------------------------
   rule #EntrypointExists(KnownAddresses, Addr, FieldAnnot, EntrypointType)
     => Addr . FieldAnnot  in_keys(KnownAddresses) andBool
        KnownAddresses[Addr . FieldAnnot] ==K #Name(EntrypointType)
-    [macro]
 ```
 
 ```k
@@ -245,9 +244,9 @@ If the contract execution fails, storage is not updated.
 ```
 
 ```k
-  syntax Pair ::= #allowanceKey(owner: Address, spender: Address)
-// -----------------------------------------------------------------
-  rule #allowanceKey(Owner, Spender) => (Pair Owner Spender) [macro]
+  syntax Pair ::= #allowanceKey(owner: Address, spender: Address) [macro]
+// ----------------------------------------------------------------------
+  rule #allowanceKey(Owner, Spender) => (Pair Owner Spender)
 
   syntax Map ::= #updateAllowances(Map, owner: Address, spender: Address, newValue: Int) [function, functional]
 // ------------------------------------------------------------------------------------------------------------
@@ -264,9 +263,9 @@ If the contract execution fails, storage is not updated.
        andBool ( (notBool #isPresent(Allowances, #allowanceKey(Sender, Spender))) impliesBool Allowance ==Int 0 )
     [simplification]
 
-  syntax Bool ::= #isPresent ( Map , Pair )
-// ----------------------------------------
-  rule #isPresent(M, K) => K in_keys(M) andBool isInt(M[K]) [macro]
+  syntax Bool ::= #isPresent ( Map , Pair ) [macro]
+// ------------------------------------------------
+  rule #isPresent(M, K) => K in_keys(M) andBool isInt(M[K])
 ```
 
 ## Putting It All Together

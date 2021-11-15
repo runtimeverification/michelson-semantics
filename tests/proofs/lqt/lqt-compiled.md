@@ -14,8 +14,8 @@ We have pasted the code verbatim:
 # The Liquidity Baking Smart Contract Code
 
 ```k
-  syntax Data ::= "#lqtTokenCode"
-  // -----------------------------------
+  syntax Data ::= "#lqtTokenCode" [macro]
+  // ------------------------------------
 ```
 
 ## Annotations and Addresses
@@ -351,7 +351,6 @@ Each Tezos account has an address. We make a macro which stores the null address
                  PAIR ;
                  NIL operation ;
                  PAIR } } }
-       [macro]
 ```
 
 ```k
