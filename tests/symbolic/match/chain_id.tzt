@@ -1,3 +1,0 @@
-input  { Stack_elt chain_id $VAL } ;
-code   { DUP } ;
-output { Stack_elt chain_id $VAL ; Stack_elt chain_id $VAL }
