@@ -109,7 +109,7 @@ as well as operations to serialize and deserialize the parameter.
 
 ```k
   syntax EntryPointParams ::= GetTotalSupplyParams(callback: Entrypoint)
-  rule wellTypedParams(GetTotalSupplyParams(_)) => true [simplification, anywhere]
+  rule wellTypedParams(GetTotalSupplyParams(_)) => true [simplification]
   rule #loadLqtParams(GetTotalSupplyParams(Callback)) => Left Right Right Pair Unit #Contract(Callback, nat)
 ```
 
@@ -117,7 +117,7 @@ as well as operations to serialize and deserialize the parameter.
 
 ```k
   syntax EntryPointParams ::= GetBalanceParams(owner: Address, callback: Entrypoint)
-  rule wellTypedParams(GetBalanceParams(_Address, _Callback)) => true [simplification, anywhere]
+  rule wellTypedParams(GetBalanceParams(_Address, _Callback)) => true [simplification]
   rule #loadLqtParams(GetBalanceParams(Address, Callback)) => Left Right Left Pair Address #Contract(Callback, nat)
 ```
 
@@ -125,7 +125,7 @@ as well as operations to serialize and deserialize the parameter.
 
 ```k
   syntax EntryPointParams ::= GetAllowanceParams(owner: Address, spender: Address, callback: Entrypoint)
-  rule wellTypedParams(GetAllowanceParams(_Owner, _Spender, _Callback)) => true [simplification, anywhere]
+  rule wellTypedParams(GetAllowanceParams(_Owner, _Spender, _Callback)) => true [simplification]
   rule #loadLqtParams(GetAllowanceParams(Owner, Spender, Callback)) => Left Left Right Pair (Pair Owner Spender) #Contract(Callback, nat)
 ```
 
@@ -133,7 +133,7 @@ as well as operations to serialize and deserialize the parameter.
 
 ```k
   syntax EntryPointParams ::= MintOrBurnParams(quantity: Int, target: Address)
-  rule wellTypedParams(MintOrBurnParams(_Quantity, _Target)) => true [simplification, anywhere]
+  rule wellTypedParams(MintOrBurnParams(_Quantity, _Target)) => true [simplification]
   rule #loadLqtParams(MintOrBurnParams(Quantity, Target)) => Right Left Pair Quantity Target
 ```
 
@@ -141,7 +141,7 @@ as well as operations to serialize and deserialize the parameter.
 
 ```k
   syntax EntryPointParams ::= ApproveParams(spender: Address, value: Int)
-  rule wellTypedParams(ApproveParams(_Spender, Value)) => Value >=Int 0 [simplification, anywhere]
+  rule wellTypedParams(ApproveParams(_Spender, Value)) => Value >=Int 0 [simplification]
   rule #loadLqtParams(ApproveParams(Spender, Value)) => Left Left Left Pair Spender Value
 ```
 
@@ -149,7 +149,7 @@ as well as operations to serialize and deserialize the parameter.
 
 ```k
   syntax EntryPointParams ::= TransferParams(from: Address, to: Address, value: Int)
-  rule wellTypedParams(TransferParams(_From, _To, Value)) => Value >=Int 0 [simplification, anywhere]
+  rule wellTypedParams(TransferParams(_From, _To, Value)) => Value >=Int 0 [simplification]
   rule #loadLqtParams(TransferParams(From, To, Value)) => Right Right Pair From Pair To Value
 ```
 
@@ -226,38 +226,46 @@ If the contract execution fails, storage is not updated.
 ## Proof Helper Functions
 
 ```k
-  syntax Bool ::= #EntrypointExists(Map, Address, FieldAnnotation, Type)
-// ---------------------------------------------------------------------
+  syntax Bool ::= #EntrypointExists(Map, Address, FieldAnnotation, Type) [macro]
+// -----------------------------------------------------------------------------
   rule #EntrypointExists(KnownAddresses, Addr, FieldAnnot, EntrypointType)
     => Addr . FieldAnnot  in_keys(KnownAddresses) andBool
        KnownAddresses[Addr . FieldAnnot] ==K #Name(EntrypointType)
-    [macro]
 ```
 
 ```k
   syntax Map ::= #incrementTokens(Map, Address, quantity: Int) [function, functional]
-  rule #incrementTokens(Tokens, Address, Quantity) => Tokens[ Address <- undef ]                                     requires         #tokensFor(Tokens, Address) +Int Quantity ==Int 0 [simplification, anywhere]
-  rule #incrementTokens(Tokens, Address, Quantity) => Tokens[ Address <- #tokensFor(Tokens, Address) +Int Quantity ] requires notBool #tokensFor(Tokens, Address) +Int Quantity ==Int 0 [simplification, anywhere]
+  rule #incrementTokens(Tokens, Address, Quantity) => Tokens[ Address <- undef ]                                     requires         #tokensFor(Tokens, Address) +Int Quantity ==Int 0 [simplification]
+  rule #incrementTokens(Tokens, Address, Quantity) => Tokens[ Address <- #tokensFor(Tokens, Address) +Int Quantity ] requires notBool #tokensFor(Tokens, Address) +Int Quantity ==Int 0 [simplification]
 
   syntax Int ::= #tokensFor(Map, owner: Address) [function, functional]
-  rule #tokensFor(Tokens, Owner) => {Tokens[Owner]}:>Int requires         Owner in_keys(Tokens) [simplification, anywhere]
-  rule #tokensFor(Tokens, Owner) => 0                    requires notBool Owner in_keys(Tokens) [simplification, anywhere]
+  rule #tokensFor(Tokens, Owner) => {Tokens[Owner]}:>Int requires         Owner in_keys(Tokens) [simplification]
+  rule #tokensFor(Tokens, Owner) => 0                    requires notBool Owner in_keys(Tokens) [simplification]
 ```
 
 ```k
-  syntax Pair ::= #allowanceKey(owner: Address, spender: Address)
-// -----------------------------------------------------------------
-  rule #allowanceKey(Owner, Spender) => (Pair Owner Spender) [macro]
+  syntax Pair ::= #allowanceKey(owner: Address, spender: Address) [macro]
+// ----------------------------------------------------------------------
+  rule #allowanceKey(Owner, Spender) => (Pair Owner Spender)
 
   syntax Map ::= #updateAllowances(Map, owner: Address, spender: Address, newValue: Int) [function, functional]
 // ------------------------------------------------------------------------------------------------------------
-  rule #updateAllowances(Allowances, Owner, Spender, NewValue) => Allowances[ #allowanceKey(Owner, Spender) <- undef ]    requires         NewValue ==K 0 [simplification, anywhere]
-  rule #updateAllowances(Allowances, Owner, Spender, NewValue) => Allowances[ #allowanceKey(Owner, Spender) <- NewValue ] requires notBool NewValue ==K 0 [simplification, anywhere]
+  rule #updateAllowances(Allowances, Owner, Spender, NewValue) => Allowances[ #allowanceKey(Owner, Spender) <- undef    ] requires         NewValue ==K 0 [simplification]
+  rule #updateAllowances(Allowances, Owner, Spender, NewValue) => Allowances[ #allowanceKey(Owner, Spender) <- NewValue ] requires notBool NewValue ==K 0 [simplification]
 
   syntax Int ::= #allowanceFor(Map, owner: Address, spender: Address) [function, functional]
 // -----------------------------------------------------------------------------------------
-  rule #allowanceFor(Allowances, Owner, Spender) => {Allowances[ #allowanceKey(Owner, Spender) ]}:>Int requires         (Pair Owner Spender) in_keys(Allowances) [simplification, anywhere]
-  rule [allowanceForZero] : #allowanceFor(Allowances, Owner, Spender) => 0                                                  requires notBool (Pair Owner Spender) in_keys(Allowances) [simplification, anywhere]
+  rule #allowanceFor((#allowanceKey(Owner, Spender) |-> Allowance:Int) _, Owner, Spender) => Allowance
+  rule #allowanceFor(_, _, _)                                                             => 0         [owise]
+
+  rule Allowance ==Int #allowanceFor(Allowances, Sender, Spender)
+    =>         (          #isPresent(Allowances, #allowanceKey(Sender, Spender))  impliesBool Allowance ==Int {Allowances [ #allowanceKey(Sender, Spender) ]}:>Int )
+       andBool ( (notBool #isPresent(Allowances, #allowanceKey(Sender, Spender))) impliesBool Allowance ==Int 0 )
+    [simplification]
+
+  syntax Bool ::= #isPresent ( Map , Pair ) [macro]
+// ------------------------------------------------
+  rule #isPresent(M, K) => K in_keys(M) andBool isInt(M[K])
 ```
 
 ## Putting It All Together

@@ -36,7 +36,7 @@ module RETURN-SPEC
         <sourceaddr> #Address("SourceAddr") </sourceaddr>
         <senderaddr> #Address("SenderAddr") </senderaddr>
         <mychainid> #ChainId(_) </mychainid>
-        <nonce> #Nonce(?_ => ?_) </nonce>
+        <nonce> #Nonce(_ => ?_) </nonce>
     requires A >Int 0
 
 

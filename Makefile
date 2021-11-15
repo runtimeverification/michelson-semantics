@@ -143,7 +143,7 @@ defn-k:      defn-llvm defn-prove defn-symbolic
 defn-compat: defn-contract-expander defn-extractor defn-input-creator defn-output-compare
 
 build:        build-k build-compat
-build-k:      build-llvm build-prove build-symbolic build-dexter build-lqt
+build-k:      build-llvm build-prove build-symbolic build-dexter build-lb build-lqt
 build-compat: build-contract-expander build-extractor build-input-creator build-output-compare
 
 # LLVM
@@ -415,7 +415,7 @@ test-prove:         $(prove_tests_passing:=.prove)
 test-prove-failing: $(prove_tests_failing:=.prove)
 
 tests/%.prove: tests/% $(prove_kompiled)
-	$(TEST) prove --backend prove $< $(KPROVE_MODULE) $(KPROVE_OPTIONS)
+	$(TEST) prove --backend prove $< $(KPROVE_MODULE) $(KPROVE_OPTIONS) -I $(CURDIR)
 
 # Dexter proofs
 
@@ -462,10 +462,10 @@ tests/%.dexter_prove: tests/% $(dexter_kompiled)
 # Liquidity baking proofs
 
 lb_spec_modules_failing = \
+                  LIQUIDITY-BAKING-ADDLIQUIDITY-POSITIVE-SPEC
 
 lb_spec_modules = LIQUIDITY-BAKING-SPEC                          \
                   LIQUIDITY-BAKING-ADDLIQUIDITY-NEGATIVE-SPEC    \
-                  LIQUIDITY-BAKING-ADDLIQUIDITY-POSITIVE-SPEC    \
                   LIQUIDITY-BAKING-DEFAULT-SPEC                  \
                   LIQUIDITY-BAKING-REMOVELIQUIDITY-NEGATIVE-SPEC \
                   LIQUIDITY-BAKING-REMOVELIQUIDITY-POSITIVE-SPEC \
@@ -496,15 +496,15 @@ tests/%.lb_prove: tests/% $(lb_kompiled)
 # LQT token proofs
 
 lqt_spec_modules_failing = \
+                   LQT-TOKEN-APPROVE-SPEC                           \
+                   LQT-TOKEN-MINTORBURN-SPEC                        \
+                   LQT-TOKEN-TRANSFER-DIRECT-SPEC                   \
+                   LQT-TOKEN-TRANSFER-PROXY-SPEC
 
 lqt_spec_modules = LQT-TOKEN-SPEC                                   \
-                   LQT-TOKEN-APPROVE-SPEC                           \
                    LQT-TOKEN-GETALLOWANCE-SPEC                      \
                    LQT-TOKEN-GETBALANCE-SPEC                        \
                    LQT-TOKEN-GETTOTALSUPPLY-SPEC                    \
-                   LQT-TOKEN-MINTORBURN-SPEC                        \
-                   LQT-TOKEN-TRANSFER-DIRECT-SPEC                   \
-                   LQT-TOKEN-TRANSFER-PROXY-SPEC                    \
 
 lqt_spec_file := tests/proofs/lqt/lqt-spec.md
 

@@ -41,9 +41,9 @@ We use the `numValidSigs` function to show each iteration maintains the invarian
 
 ```k
   syntax Int ::= numValidSigs(sigs: InternalList, keys: InternalList) [function, smtlib(numValidSigs)]
-  rule numValidSigs([ Some #Signature(_) ] ;; Sigs, [ #Key(_) ] ;; Keys) => 1 +Int numValidSigs(Sigs, Keys) [simplification, smt-lemma]
-  rule numValidSigs([ None ] ;; Sigs, _K ;; Keys) => numValidSigs(Sigs, Keys) [simplification, smt-lemma]
-  rule numValidSigs(_, .InternalList) => 0 [simplification, smt-lemma]
+  rule numValidSigs([ Some #Signature(_) ] ;; Sigs, [ #Key(_) ] ;; Keys) => 1 +Int numValidSigs(Sigs, Keys) [simplification]
+  rule numValidSigs([ None ] ;; Sigs, _K ;; Keys) => numValidSigs(Sigs, Keys) [simplification]
+  rule numValidSigs(_, .InternalList) => 0 [simplification]
 ```
 
 This lemma ensures `CHECK_SIGNATURE` always returns `True` when executing the
@@ -65,14 +65,14 @@ along. Firstly, we know that the number of valid signatures is always a
 non-negative number.
 
 ```k
-  rule numValidSigs(_, _) >=Int 0 => true [simplification, smt-lemma]
+  rule numValidSigs(_, _) >=Int 0 => true [simplification]
 ```
 
 Secondly, we add a lemma about the associativity of addition, specialized to
 the instance in which we need it.
 
 ```k
-  rule N:Int +Int ( 1 +Int numValidSigs(L0,L)) => (N:Int +Int 1) +Int numValidSigs(L0,L) [simplification, smt-lemma]
+  rule N:Int +Int ( 1 +Int numValidSigs(L0,L)) => (N:Int +Int 1) +Int numValidSigs(L0,L) [simplification]
 ```
 
 ```k

@@ -14,8 +14,8 @@ We have pasted the code verbatim:
 # The Liquidity Baking Smart Contract Code
 
 ```k
-  syntax Data ::= "#liquidityBakingCode"
-  // -----------------------------------
+  syntax Data ::= "#liquidityBakingCode" [macro]
+  // -------------------------------------------
 ```
 
 ## Annotations and Addresses
@@ -38,9 +38,9 @@ Since we work with specific code that contains a finite number of annotations, w
 Each Tezos account has an address. We make a macro which stores the null address to simplify our proof scripts.
 
 ```k
-  syntax Address ::= "null_address"
- // -------------------------------
-  rule null_address => #Address("tz1Ke2h7sDdakHJQh8WX4Z372du1KChsksyU") [macro]
+  syntax Address ::= "null_address" [macro]
+ // ---------------------------------------
+  rule null_address => #Address("tz1Ke2h7sDdakHJQh8WX4Z372du1KChsksyU")
 ```
 
 ```k
@@ -952,7 +952,6 @@ Each Tezos account has an address. We make a macro which stores the null address
                       DIG 2 ;
                       CONS ;
                       PAIR } } } }
-       [macro]
 ```
 
 ```k

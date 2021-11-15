@@ -8,7 +8,7 @@ module VERIFICATION
   imports LEMMAS
   imports MICHELSON-PRETTY-SYNTAX
 
-  syntax Data ::= "#testCode"
+  syntax Data ::= "#testCode" [macro]
   rule #testCode => { PUSH int 5 ;
                       DUP ;
                       DIG 1 ; 
@@ -18,11 +18,9 @@ module VERIFICATION
                       DIP { EMPTY_MAP timestamp key_hash ; DROP } ;
                       NONE map (set mutez) address ;
                       IF_NONE { } { } ;
-                      
                       PUSH bool True ;
                       DROP
                       }
-  [macro]
 
 endmodule
 ```
