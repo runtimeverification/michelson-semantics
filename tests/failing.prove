@@ -1,1 +1,3 @@
 tests/proofs/sum-simple-spec.k
+tests/proofs/multisig-spec.md
+tests/proofs/vote-spec.k

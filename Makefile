@@ -462,10 +462,10 @@ tests/%.dexter_prove: tests/% $(dexter_kompiled)
 # Liquidity baking proofs
 
 lb_spec_modules_failing = \
+                  LIQUIDITY-BAKING-ADDLIQUIDITY-POSITIVE-SPEC
 
 lb_spec_modules = LIQUIDITY-BAKING-SPEC                          \
                   LIQUIDITY-BAKING-ADDLIQUIDITY-NEGATIVE-SPEC    \
-                  LIQUIDITY-BAKING-ADDLIQUIDITY-POSITIVE-SPEC    \
                   LIQUIDITY-BAKING-DEFAULT-SPEC                  \
                   LIQUIDITY-BAKING-REMOVELIQUIDITY-NEGATIVE-SPEC \
                   LIQUIDITY-BAKING-REMOVELIQUIDITY-POSITIVE-SPEC \
@@ -496,15 +496,15 @@ tests/%.lb_prove: tests/% $(lb_kompiled)
 # LQT token proofs
 
 lqt_spec_modules_failing = \
+                   LQT-TOKEN-APPROVE-SPEC                           \
+                   LQT-TOKEN-MINTORBURN-SPEC                        \
+                   LQT-TOKEN-TRANSFER-DIRECT-SPEC                   \
+                   LQT-TOKEN-TRANSFER-PROXY-SPEC
 
 lqt_spec_modules = LQT-TOKEN-SPEC                                   \
-                   LQT-TOKEN-APPROVE-SPEC                           \
                    LQT-TOKEN-GETALLOWANCE-SPEC                      \
                    LQT-TOKEN-GETBALANCE-SPEC                        \
                    LQT-TOKEN-GETTOTALSUPPLY-SPEC                    \
-                   LQT-TOKEN-MINTORBURN-SPEC                        \
-                   LQT-TOKEN-TRANSFER-DIRECT-SPEC                   \
-                   LQT-TOKEN-TRANSFER-PROXY-SPEC                    \
 
 lqt_spec_file := tests/proofs/lqt/lqt-spec.md
 
