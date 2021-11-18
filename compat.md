@@ -64,12 +64,16 @@ module MICHELSON-UNPARSER
     " " +String
     #doUnparse(AL, false)
 
-
-  rule #doUnparse(Pair D1 D2, false) =>
+  rule #doUnparse(Pair D1 DL:PairDataList, false) =>
     "Pair " +String
     #doUnparse(D1, true) +String
     " " +String
-    #doUnparse(D2, true)
+    #doUnparse(DL, true)
+
+  rule #doUnparse(D1:Data DL:PairDataList, true) =>
+    #doUnparse(D1, true) +String
+    " " +String
+    #doUnparse(DL, true)
 
   rule #doUnparse(Left D, false) => "Left " +String #doUnparse(D, true)
   rule #doUnparse(Right D, false) => "Right " +String #doUnparse(D, true)
@@ -177,6 +181,18 @@ module MICHELSON-UNPARSER
 
   rule #doUnparse(TyName:BinaryTypeName AL:AnnotationList T1 T2, true) =>
     "(" +String #doUnparse(TyName AL T1 T2, false) +String ")"
+
+  rule #doUnparse(TyName:BinaryPlusTypeName AL:AnnotationList T1:Type TL:TypeList, false) =>
+    #doUnparse(TyName, false) +String
+    " " +String
+    #doUnparse(AL, false) +String
+    " " +String
+    #doUnparse(T1 TL, true)
+
+  rule #doUnparse(TyName:BinaryPlusTypeName AL:AnnotationList T1:Type TL:TypeList, true) =>
+    "(" +String #doUnparse(TyName AL T1 TL, false) +String ")"
+
+  rule #doUnparse(T1:Type TL:TypeList, B:Bool) => #doUnparse(T1, B) +String " " +String #doUnparse(TL, B)
 
   rule #doUnparse(DROP AList, _) => "DROP" +String #doUnparse(AList, false)
   rule #doUnparse(DROP AList I:Int, _) => "DROP" +String #doUnparse(AList, false) +String " " +String #doUnparse(I, true)
