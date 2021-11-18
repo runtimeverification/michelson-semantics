@@ -45,6 +45,8 @@ tests/unit/self_02.tzt
 tests/unit/self_03.tzt
 tests/unit/split_ticket_00.tzt
 tests/unit/split_ticket_01.tzt
+tests/unit/sub_timestamp-int_03.tzt
+tests/unit/sub_timestamp-int_04.tzt
 
 tests/macros/pair_00.tzt
 tests/macros/unpair_00.tzt
