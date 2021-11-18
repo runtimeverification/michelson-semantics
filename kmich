@@ -79,7 +79,12 @@ run_symbtest() {
 }
 
 run_cfg() {
-    python "$kmich_dir/ext/tezos-utils/tezos-utils" convert -i michelson -o dot "$@" -- "$run_file" -
+    if $(which python3 &> /dev/null); then
+      python_bin=python3
+    else
+      python_bin=python
+    fi
+    "$python_bin" "$kmich_dir/ext/tezos-utils/tezos-utils" convert -i michelson -o dot "$@" -- "$run_file" -
 }
 
 # Main
@@ -134,7 +139,7 @@ repl=false
 virtual_backend=false
 [[ ! "$run_command" == 'prove'    ]] || backend='prove'
 [[ ! "$run_command" == 'symbtest' ]] || backend='driver'
-[[ ! "$run_command" == 'cfg'      ]] || { backend='cfg'; virtual_backend=true; }
+[[ ! "$run_command" == 'cfg'      ]] || backend='virtual'
 args=()
 while [[ $# -gt 0 ]]; do
     arg="$1"
@@ -149,7 +154,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 set -- "${args[@]}" "$@"
-if [ "$virtual_backend" == false ]; then
+if [ "$backend" != "virtual" ]; then
   backend_dir="${backend_dir:-$defn_dir/$backend}"
   kompiled_dir=$(find $backend_dir -name '*-kompiled')
   [[ -d "$kompiled_dir" ]] || fatal "Could not find single *-kompiled directory in $backend_dir"
@@ -178,7 +183,7 @@ extra_args=()
 [[ ! "$backend" == "llvm" ]] \
     || extra_args+=(-cPATH="\"$(dirname $run_file)\"")
 
-[ "$virtual_backend" == false ] && export PATH="$kompiled_dir:$PATH"
+[ "$backend" == "virtual" ] || export PATH="$kompiled_dir:$PATH"
 
 case "$run_command-$backend" in
 
@@ -188,6 +193,6 @@ case "$run_command-$backend" in
     symbtest-driver                                                                           ) run_symbtest   "$@" ;;
     prove-@(prove|symbolic|dexter|lb|lqt)                                                     ) run_prove      "$@" ;;
     interpret-@(llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare) ) run_interpret  "$@" ;;
-    cfg-cfg                                                                                   ) run_cfg        "$@" ;;
+    cfg-virtual                                                                               ) run_cfg        "$@" ;;
     *) $0 help ; fatal "Unknown command on backend: $run_command $backend" ;;
 esac
