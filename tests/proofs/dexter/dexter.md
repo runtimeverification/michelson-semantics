@@ -267,7 +267,7 @@ Each entrypoint is given a unique abstract parameter type that we use to simplif
                           | validBalanceOfEntry(Data)          [function, functional]
             // ----------------------------------------------------------
             rule validBalanceOfParams(.InternalList) => true
-            rule validBalanceOfParams([ D:Data ] ;; IL:InternalList)
+            rule validBalanceOfParams([| D:Data |] ;; IL:InternalList)
               => validBalanceOfEntry(D) andBool validBalanceOfParams(IL)
 
             rule validBalanceOfEntry(Pair (Pair _:Address N1:Int) N2:Int)
@@ -562,8 +562,8 @@ If the contract execution fails, storage is not updated.
 ```k
   syntax Data ::= #UpdateTokenPoolTransferFrom(Bool, Address, Int) [function, functional]
  // -------------------------------------------------------------------------------------
-  rule #UpdateTokenPoolTransferFrom(IsFA2, SelfAddress, _TokenId) =>        SelfAddress                            requires notBool IsFA2 [simplification]
-  rule #UpdateTokenPoolTransferFrom(IsFA2, SelfAddress,  TokenId) => [ Pair SelfAddress TokenId ] ;; .InternalList requires         IsFA2 [simplification]
+  rule #UpdateTokenPoolTransferFrom(IsFA2, SelfAddress, _TokenId) =>         SelfAddress                             requires notBool IsFA2 [simplification]
+  rule #UpdateTokenPoolTransferFrom(IsFA2, SelfAddress,  TokenId) => [| Pair SelfAddress TokenId |] ;; .InternalList requires         IsFA2 [simplification]
 
   syntax Type ::= #TokenContractType(Bool) [function, functional]
  // -------------------------------------------------------------
@@ -577,8 +577,8 @@ If the contract execution fails, storage is not updated.
 
   syntax Data ::= #TokenTransferData(Bool, Address, Address, Int, Int) [function, functional]
  // -----------------------------------------------------------------------------------------
-  rule #TokenTransferData(false, From, To, _TokenID, TokenAmt) =>   Pair From    Pair To              TokenAmt [simplification]
-  rule #TokenTransferData(true,  From, To,  TokenID, TokenAmt) => [ Pair From ([ Pair To Pair TokenID TokenAmt ] ;; .InternalList)  ] ;; .InternalList [simplification]
+  rule #TokenTransferData(false, From, To, _TokenID, TokenAmt) =>    Pair From     Pair To              TokenAmt                                          [simplification]
+  rule #TokenTransferData(true,  From, To,  TokenID, TokenAmt) => [| Pair From ([| Pair To Pair TokenID TokenAmt |] ;; .InternalList) |] ;; .InternalList [simplification]
 
   syntax Entrypoint ::= #TokenBalanceEntrypoint(Address, Bool) [function, functional]
  // ---------------------------------------------------------------------------------
