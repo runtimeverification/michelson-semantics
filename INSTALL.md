@@ -1,7 +1,11 @@
 Building and Installation
 =========================
 
-To build K-Michelson, please follow the instructions below. Note that:
+To build the core K-Michelson tools, please follow the instructions below.
+We also include some miscellaneous Michelson source code transformation utilities.
+To make the utilities available, please see the following [installation instructions](ext/tezos-utils/README.md).
+
+Note that:
 
 - all commands should be executed in the K-Michelson software archive root
 - only Linux is officially supported; other systems may have limited support
