@@ -111,6 +111,7 @@ if [[ $# -le 0 ]] || [[ "$run_command" == 'help' ]] || [[ "$run_command" == '--h
                $0 symbtest                                                                                       <pgm>                  <K arg>*
                $0 prove     [--backend (symbolic|prove|dexter|lqt|lb)]                                           <spec> <def_module>    <K arg>*
                $0 interpret [--backend (llvm|symbolic|contract-expander|extractor|input-creator|output-compare)] <pgm>  <LLVM KRun arg>*
+               $0 cfg       <pgm>
 
                $0 [help|--help|version|--version]
 
@@ -119,6 +120,7 @@ if [[ $# -le 0 ]] || [[ "$run_command" == 'help' ]] || [[ "$run_command" == '--h
            $0 symbtest  : Run a Michelson symbolic test.
            $0 prove     : Run a Michelson K proof.
            $0 interpret : Run a single Michelson program using the fast bison parser.
+           $0 cfg       : Build a control flow graph corresponding to a Michelson program
 
            $0 help    : Display this help message.
            $0 version : Display the versions of KMichelson, K, Kore, and Z3 in use.
