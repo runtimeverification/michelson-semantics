@@ -54,6 +54,7 @@ export K_OPTS
         build-contract-expander build-extractor build-input-creator build-output-compare            \
         test test-unit test-unit-failing test-cross test-cross-faling                               \
         test-prove test-prove-failing test-symbolic test-symbolic-failing                           \
+        test-cfg                                                                                    \
         dexter-prove
 
 .SECONDARY:
@@ -352,8 +353,18 @@ $(output_compare_kompiled): $(output_compare_files)
 	                --main-module $(output_compare_main_module)     \
 	                --syntax-module $(output_compare_syntax_module)
 
-# Tests
-# -----
+# Utility Tests
+# -------------
+
+cfg_tests      := $(wildcard ext/tezos-utils/tests/input/*.tz)
+cfg_output_dir := ext/tezos-utils/tests/output
+test-cfg: $(cfg_tests:=.cfg)
+%.tz.cfg:
+	$(TEST) cfg "$*.tz" > "$(cfg_output_dir)/$(notdir $*).dotout"
+	diff -q "$(cfg_output_dir)/$(notdir $*).dotout" "$(cfg_output_dir)/$(notdir $*).dot"
+
+# Standard Tests
+# --------------
 
 TEST  := ./kmich
 CHECK := git --no-pager diff --no-index --ignore-all-space -R

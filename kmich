@@ -78,6 +78,15 @@ run_symbtest() {
        "$@"
 }
 
+run_cfg() {
+    if $(which python3 &> /dev/null); then
+      python_bin=python3
+    else
+      python_bin=python
+    fi
+    "$python_bin" "$kmich_dir/ext/tezos-utils/tezos-utils" convert -i michelson -o dot "$@" -- "$run_file" -
+}
+
 # Main
 # ----
 
@@ -102,6 +111,7 @@ if [[ $# -le 0 ]] || [[ "$run_command" == 'help' ]] || [[ "$run_command" == '--h
                $0 symbtest                                                                                       <pgm>                  <K arg>*
                $0 prove     [--backend (symbolic|prove|dexter|lqt|lb)]                                           <spec> <def_module>    <K arg>*
                $0 interpret [--backend (llvm|symbolic|contract-expander|extractor|input-creator|output-compare)] <pgm>  <LLVM KRun arg>*
+               $0 cfg       <pgm>
 
                $0 [help|--help|version|--version]
 
@@ -110,6 +120,7 @@ if [[ $# -le 0 ]] || [[ "$run_command" == 'help' ]] || [[ "$run_command" == '--h
            $0 symbtest  : Run a Michelson symbolic test.
            $0 prove     : Run a Michelson K proof.
            $0 interpret : Run a single Michelson program using the fast bison parser.
+           $0 cfg       : Build a control flow graph corresponding to a Michelson program
 
            $0 help    : Display this help message.
            $0 version : Display the versions of KMichelson, K, Kore, and Z3 in use.
@@ -127,8 +138,10 @@ fi
 backend="llvm"
 debug=false
 repl=false
+virtual_backend=false
 [[ ! "$run_command" == 'prove'    ]] || backend='prove'
 [[ ! "$run_command" == 'symbtest' ]] || backend='driver'
+[[ ! "$run_command" == 'cfg'      ]] || backend='virtual'
 args=()
 while [[ $# -gt 0 ]]; do
     arg="$1"
@@ -143,16 +156,18 @@ while [[ $# -gt 0 ]]; do
 done
 
 set -- "${args[@]}" "$@"
-backend_dir="${backend_dir:-$defn_dir/$backend}"
-kompiled_dir=$(find $backend_dir -name '*-kompiled')
-[[ -d "$kompiled_dir" ]] || fatal "Could not find single *-kompiled directory in $backend_dir"
+if [ "$backend" != "virtual" ]; then
+  backend_dir="${backend_dir:-$defn_dir/$backend}"
+  kompiled_dir=$(find $backend_dir -name '*-kompiled')
+  [[ -d "$kompiled_dir" ]] || fatal "Could not find single *-kompiled directory in $backend_dir"
+fi
 
 ! $repl || \
 [[ "$backend" == dexter ]] || \
 [[ "$backend" == lb     ]] || \
 [[ "$backend" == lqt    ]] || \
 [[ "$backend" == prove  ]] || \
-    fatal 'Option --repl only usable with `--backend prove` or `--backend dexter` !'
+    fatal 'Option --repl only usable with `--backend` values `prove`, `dexter`, `lb`, or `lqt` !'
 
 # get the run file
 run_file="$1" ; shift
@@ -170,7 +185,7 @@ extra_args=()
 [[ ! "$backend" == "llvm" ]] \
     || extra_args+=(-cPATH="\"$(dirname $run_file)\"")
 
-export PATH="$kompiled_dir:$PATH"
+[ "$backend" == "virtual" ] || export PATH="$kompiled_dir:$PATH"
 
 case "$run_command-$backend" in
 
@@ -180,5 +195,6 @@ case "$run_command-$backend" in
     symbtest-driver                                                                           ) run_symbtest   "$@" ;;
     prove-@(prove|symbolic|dexter|lb|lqt)                                                     ) run_prove      "$@" ;;
     interpret-@(llvm|prove|symbolic|contract-expander|extractor|input-creator|output-compare) ) run_interpret  "$@" ;;
+    cfg-virtual                                                                               ) run_cfg        "$@" ;;
     *) $0 help ; fatal "Unknown command on backend: $run_command $backend" ;;
 esac

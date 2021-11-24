@@ -1,0 +1,1 @@
+SUB ; ADD ; EXEC ; DUP ; FAILWITH ; DIP 2 { IF { SUB } { ADD } ; SWAP }

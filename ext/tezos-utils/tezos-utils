@@ -1,0 +1,313 @@
+#!/usr/bin/env python
+
+from enum import Enum
+import json
+import logging
+import sys
+
+import click
+import graphviz
+import pytezos
+
+michelson_to_micheline = pytezos.michelson_to_micheline
+micheline_to_michelson = pytezos.micheline_to_michelson
+parse_micheline_prim   = pytezos.michelson.micheline.parse_micheline_prim
+INPUT_FORMATS          = [ 'json', 'michelson' ]
+OUTPUT_FORMATS         = INPUT_FORMATS + [ 'dot' ]
+
+BRANCH_INSTRS       = [ 'IF', 'IF_CONS', 'IF_LEFT', 'IF_NONE' ]
+REVERT_INSTRS       = [ 'FAILWITH' ]
+LOOP_INSTRS         = [ 'ITER', 'LOOP', 'LOOP_LEFT', 'MAP' ]
+HIDDEN_BLOCK_INSTRS = [ 'EXEC' ]
+SPECIAL_INSTRS      = [ 'DIP', 'PUSH' ]
+
+class BlockType(Enum):
+    STD       = 1
+    SELFBREAK = 2
+    BREAK     = 3
+    JOIN      = 4
+
+class Block:
+    def __init__(self, prim_seq, depth=0):
+        # these attributes are used when building a block
+        self.code      = ""
+        self.next      = []
+        self.depth     = depth
+        self.id        = str(id(self))
+        self.sid       = self.id[-5:]
+        self.postBody  = None
+        self.revert    = False
+
+        # these attributes are used for block traversal later
+        self.parents   = []
+        self.visited   = False
+
+        if prim_seq != None: self.build(prim_seq)
+        logging.debug("Built block - {}".format(self.__repr__()))
+
+    def build(self, prim_seq):
+        if isinstance(prim_seq, list):
+            blockType, parentBlocks = BlockType.STD, []
+            while len(prim_seq) != 0:
+                logging.debug(f"Evaluating prim in sequence: {prim_seq[0]}")
+                if isinstance(prim_seq[0], list):
+                    prim_seq = prim_seq[0] + prim_seq[1:]
+                    logging.debug(f"Expand prefix to get new sequence {prim_seq}")
+                    continue
+                prim, prim_seq = prim_seq[0], prim_seq[1:]
+                blockType, parentBlocks = self.handle(prim)
+                if blockType != BlockType.STD: break
+            if blockType == BlockType.BREAK:
+                if len(prim_seq) != 0 and len(parentBlocks) != 0:
+                    nextBlock = Block(prim_seq, depth=self.depth)
+                    for parentBlock in parentBlocks:
+                        parentBlock.next += ([("", nextBlock)])
+                        parentBlock.postBody = nextBlock
+            elif blockType == BlockType.SELFBREAK:
+                assert(len(parentBlocks) == 0)
+                nextBlock = Block(prim_seq, depth=self.depth)
+                self.next += [('', nextBlock)]
+                self.postBody = nextBlock
+            elif blockType == BlockType.JOIN:
+                assert(len(parentBlocks) == 1)
+                joinBlock = parentBlocks[0]
+                joinBlock.build(prim_seq)
+
+        elif isinstance(prim_seq, dict):
+            logging.debug(f"Evaluating singleton prim: {prim_seq}")
+            self.handle(prim_seq)
+
+        else:
+            raise ValueError(f"Invalid prim seq. Expected: dict or list. Received: {prim_seq}")
+
+        self.code = self.code.strip()
+
+    def __repr__(self):
+        return "Block(id: {}, parents: {}, revert: {}, depth: {}, code: {}, next: {})".format(self.sid, [p[1].sid for p in self.parents], self.revert, self.depth, self.code.replace('\n',' '), [n[1].sid for n in self.next])
+
+    def handle(self, prim):
+        name = prim['prim']
+        args = prim.get('args',[])
+
+        if name in BRANCH_INSTRS:
+            assert(len(args) == 2)
+            prim['args'] = []
+            self.append(prim)
+
+            trueb  = Block(args[0], depth=self.depth)
+            falseb = Block(args[1], depth=self.depth)
+            joinb  = Block(None, depth=self.depth)
+
+            self.next += [('false', falseb), ('true', trueb)]
+            self.postBody = joinb
+            falseb.addPostEdges([("", joinb)])
+            trueb.addPostEdges([("", joinb)])
+
+            logging.debug("Creating join block - Current Block: {} True Block: {} False Block: {} Join Block: {}".format(self.sid, trueb.sid, falseb.sid, joinb.sid))
+
+            return BlockType.JOIN, [joinb]
+
+        elif name in REVERT_INSTRS:
+            self.append(prim)
+            self.revert = True
+            return BlockType.BREAK, []
+
+        elif name in LOOP_INSTRS:
+            assert(len(args) == 1)
+            # build loop entry
+            loop_entry = Block(None, depth=self.depth)
+            loop_entry.code += name
+            # build loop body
+            loop_body = Block(args[0], depth=self.depth)
+            # build loop end
+            loop_end = Block(None, depth=self.depth)
+            loop_end.code += name + " END"
+            # set edges
+            self.next += [("", loop_entry)]
+            self.postBody = loop_entry
+            loop_entry.next += [("enter", loop_body)]
+            loop_body.addPostEdges([("", loop_end)])
+            loop_end.next += [("", loop_entry)]
+            # mark loop end for invisible constraint
+            loop_entry.loopEnd = loop_end
+            # return loop entry
+            return BlockType.BREAK, [loop_entry]
+
+        elif name in HIDDEN_BLOCK_INSTRS:
+            self.append(prim)
+            hidden_block = Block({'prim' : '...' }, depth=self.depth)
+            self.next += [("", hidden_block)]
+            self.postBody = hidden_block
+            return BlockType.BREAK, [hidden_block]
+
+        elif name in SPECIAL_INSTRS:
+            if name == 'DIP':
+                assert(1 <= len(args) <= 2)
+                prim['args'] = []
+                self.append(prim)
+                if len(args) == 1: args = [{'int' : '1'}] + args
+                depth, dip_mcode = int(args[0]['int']), args[1]
+                dip_body = Block(dip_mcode, depth=depth)
+                self.next += [("", dip_body)]
+                self.postBody = dip_body
+                return BlockType.BREAK, [dip_body]
+            elif name == 'PUSH':
+                assert(len(args) == 2)
+                oldlen = len(self.code)
+                self.append(prim)
+                newlen = len(self.code)
+                if newlen - oldlen > 50:
+                    return BlockType.SELFBREAK, []
+                else:
+                    return BlockType.STD, []
+            else:
+                raise RuntimeError("Should be unreachable")
+
+        else: self.append(prim)
+
+        return BlockType.STD, []
+
+    def append(self, prim):
+        instr = micheline_to_michelson(prim)
+        self.code += "\n" + instr
+
+    def addPostEdges(self, nextBlocks):
+        if self.revert: return
+        curr = self
+        while (curr.postBody != None): curr = curr.postBody
+        if (curr.revert):
+            logging.debug("Skipping adding post block edge - Current Block: {} Post Block: {}".format(self.sid, curr.sid))
+            return
+        curr.next += nextBlocks
+        logging.debug("Adding post block edges - Current Block: {} Post Block: {} Successor Blocks: {}".format(self.sid, curr.sid, [n[1].sid for n in nextBlocks]))
+
+def get_code_section(mcode):
+    # in this case, we might have a contract literal
+    if isinstance(mcode, list) and len(mcode) == 3:
+        # check that section names are correct
+        sections = dict()
+        for prim in mcode:
+            name,val = prim['prim'], prim['args']
+            # if we encounter an unexpected name, stop
+            if name not in ['parameter', 'storage', 'code'] or name in sections.keys():
+                # our recordeded section names are non-empty, we must have a missing or duplicated contract section
+                if len(sections) != 0: raise ValueError(f"JSON representation of Michelson contract is ill-formed: {mcode}")
+                break
+            sections[name] = val
+        else:
+            # code section has single argument
+            assert(len(sections['code']) == 1)
+            code = sections['code'][0]
+            logging.debug(f"Get code section: {code}")
+            return code
+    # return entire sequence as code
+    return mcode
+
+def is_micheline(mcode):
+    if isinstance(mcode, dict):
+        try:
+            parse_micheline_prim(mcode)
+            return True
+        except:
+            return False
+    elif isinstance(mcode, list):
+        return all([is_micheline(prim) for prim in mcode])
+    else:
+        return False
+
+def micheline_to_dot(mcode, skipRevert = False):
+    mcode = get_code_section(mcode)
+    start = Block(mcode)
+    graph = graphviz.Digraph('Michelson')
+    graph.attr('node', shape='rectangle')
+    queue = [start]
+    names = dict()
+    nxtid = 0
+
+    while len(queue) != 0:
+        curr = queue.pop()
+
+        # skip node if no work to do and already visited
+        if (len(curr.parents) == 0 and curr.visited):
+            logging.debug("Build graph - SKIP block: {}".format(curr.__repr__()))
+            continue
+
+        logging.debug("Build graph - VISIT block: {}".format(curr.__repr__()))
+
+        # FAILWITH blocks cannot have successors
+        assert(not curr.revert or len(curr.next) == 0)
+
+        # do not create nodes for already visited blocks or skipped blocks
+        if not curr.visited and not (skipRevert and curr.revert):
+            # build node
+            depthpart = "depth: {}\n".format(curr.depth) if curr.depth > 0 else ""
+            codepart  = "SKIP" if len(curr.code) == 0 else curr.code
+            nodelabel = depthpart + codepart
+            if curr.id not in names:
+                names[curr.id], nxtid = str(nxtid), nxtid+1
+            node = graph.node(names[curr.id], nodelabel)
+
+            # mark that child nodes need to add edge and queue for processing
+            for edge in curr.next: edge[1].parents += [(edge[0], curr)]
+            queue = [n[1] for n in curr.next] + queue
+
+        # mark node as visited
+        curr.visited = True
+
+        # create edges to this block non-skipped blocks
+        if not (skipRevert and curr.revert):
+            # add edges from all known parent nodes and clear work queue
+            for edge_type, parent in curr.parents: graph.edge(names[parent.id], names[curr.id], edge_type)
+            curr.parents = []
+
+        logging.debug("Build graph - current queue: {}".format([n.sid for n in queue]))
+
+    return graph.source
+
+@click.group(help="Tezos utilities for CLI workflows")
+@click.option('-v', '--verbose', help="Print output verbosely", is_flag=True, default=False)
+def cli(verbose):
+    if verbose: logging.basicConfig(level=logging.DEBUG, force=True)
+    return
+
+@cli.command()
+@click.option('-i', '--input-format',  help="INPUT_FILE encoding",           type=click.Choice(INPUT_FORMATS), default='json',show_default=True)
+@click.option('-o', '--output-format', help="OUTPUT_FILE encoding",          type=click.Choice(OUTPUT_FORMATS),default='json',show_default=True)
+@click.option('-1', '--oneline',       help="Print output on a single line (json, michelson output only)", is_flag=True, default=False)
+@click.option('-n', '--no-revert',     help="Do not render FAILWITH blocks (dot output only)", is_flag=True, default=False)
+@click.argument('input-file')
+@click.argument('output-file')
+def convert(input_format, output_format, oneline, input_file, output_file, no_revert):
+    """Converts INPUT_FILE to OUTPUT_FILE, possibly changing the encoding.\n
+      If INPUT_FILE is a single dash ('-'), read from stdin.\n
+      If OUTPUT_FILE is a single dash ('-'), write to stdout.
+    """
+    ctx = click.get_current_context()
+    if output_format == "dot" and oneline:   ctx.fail('options --oneline and --output-format dot are incompatible')
+    if output_format != "dot" and no_revert: ctx.fail('option --no-revert is only compatible with --output-format dot')
+
+    input_handle  = sys.stdin  if input_file  == "-" else open(input_file,  'r')
+    output_handle = sys.stdout if output_file == "-" else open(output_file, 'w')
+    try:
+        read_data = input_handle.read()
+
+        if   input_format == "json":      data = json.loads(read_data)
+        elif input_format == "michelson": data = michelson_to_micheline(read_data)
+
+        if input_format == "json" and not is_micheline(data):
+            raise ValueError("JSON input is ill-formed")
+
+        if   output_format == "json":      write_data = json.dumps(data)
+        elif output_format == "michelson": write_data = micheline_to_michelson(data, inline=oneline)
+        elif output_format == "dot":       write_data = micheline_to_dot(data, skipRevert=no_revert)
+
+        if len(write_data) != 0 and write_data[-1] != '\n':
+            write_data += '\n'
+
+        output_handle.write(write_data)
+    finally:
+        input_handle.close()
+        output_handle.close()
+
+if __name__ == "__main__":
+    cli()

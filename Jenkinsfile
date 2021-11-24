@@ -26,6 +26,7 @@ pipeline {
         stage('Unit')             { steps { sh 'make test-unit     -j8' } }
         stage('Symbolic')         { steps { sh 'make test-symbolic -j2' } }
         stage('Prove')            { steps { sh 'make test-prove    -j2' } }
+        stage('Tezos-Utils')      { steps { sh 'make test-cfg      -j8' } }
       }
     }
     stage('Integration Proofs') { 

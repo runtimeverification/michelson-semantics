@@ -12,6 +12,7 @@ RUN    apt-get update                \
                 libhidapi-dev        \
                 libprocps-dev        \
                 libsecp256k1-dev     \
+                libsodium-dev        \
                 libssl-dev           \
                 npm                  \
                 opam                 \
@@ -19,6 +20,7 @@ RUN    apt-get update                \
                 pcregrep             \
                 pkg-config           \
                 python3              \
+                python3-pip          \
                 python-pygments      \
                 python3-recommonmark \
                 sphinx-common
@@ -36,6 +38,8 @@ RUN curl -sL https://deb.nodesource.com/setup_14.x | bash -
 RUN    apt-get update               \
     && apt-get upgrade --yes        \
     && apt-get install --yes nodejs
+
+RUN pip3 install click graphviz pytezos==3.2.11
 
 ARG USER_ID=1000
 ARG GROUP_ID=1000
