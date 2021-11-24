@@ -73,8 +73,8 @@ We have one case for when `#ceildiv` results in an upwards rounding, and one for
         <knownaddrs> KnownAddresses </knownaddrs>
         <paramtype> LocalEntrypoints </paramtype>
         <operations> _
-                  => [ Transfer_tokens #TokenTransferData(Sender, SelfAddress, #ceildiv(Amount *Int TokenAmount, XtzAmount)) #Mutez(0) TokenAddress . %transfer    Nonce ] ;;
-                     [ Transfer_tokens Pair ((Amount *Int OldLqt) /Int XtzAmount) Owner                                      #Mutez(0) LqtAddress   . %mintOrBurn (Nonce +Int 1) ] ;;
+                  => [| Transfer_tokens #TokenTransferData(Sender, SelfAddress, #ceildiv(Amount *Int TokenAmount, XtzAmount)) #Mutez(0) TokenAddress . %transfer    Nonce         |] ;;
+                     [| Transfer_tokens Pair ((Amount *Int OldLqt) /Int XtzAmount) Owner                                      #Mutez(0) LqtAddress   . %mintOrBurn (Nonce +Int 1) |] ;;
                      .InternalList
         </operations>
     requires CurrentTime <Int Deadline
@@ -158,9 +158,9 @@ module LIQUIDITY-BAKING-REMOVELIQUIDITY-POSITIVE-SPEC
         <knownaddrs> KnownAddresses </knownaddrs>
         <paramtype> LocalEntrypoints </paramtype>
         <operations> _
-                  => [ Transfer_tokens (Pair (0 -Int LqtBurned) Sender)                                              #Mutez(0)                                      LqtAddress . %mintOrBurn  Nonce         ] ;;
-                     [ Transfer_tokens #TokenTransferData(SelfAddress, To, (LqtBurned *Int TokenAmount) /Int OldLqt) #Mutez(0)                                      TokenAddress . %transfer (Nonce +Int 1) ] ;;
-                     [ Transfer_tokens Unit                                                                          #Mutez((LqtBurned *Int XtzAmount) /Int OldLqt) To . %default            (Nonce +Int 2) ] ;;
+                  => [| Transfer_tokens (Pair (0 -Int LqtBurned) Sender)                                              #Mutez(0)                                      LqtAddress . %mintOrBurn  Nonce         |] ;;
+                     [| Transfer_tokens #TokenTransferData(SelfAddress, To, (LqtBurned *Int TokenAmount) /Int OldLqt) #Mutez(0)                                      TokenAddress . %transfer (Nonce +Int 1) |] ;;
+                     [| Transfer_tokens Unit                                                                          #Mutez((LqtBurned *Int XtzAmount) /Int OldLqt) To . %default            (Nonce +Int 2) |] ;;
                      .InternalList
         </operations>
     requires CurrentTime <Int Deadline
@@ -287,9 +287,9 @@ even though the final mutez value that is actually used is smaller than or equal
         <nonce> #Nonce(N => N +Int 3) </nonce>
         <knownaddrs> KnownAddresses </knownaddrs>
         <operations> _
-                  => [ Transfer_tokens #TokenTransferData(Sender, SelfAddress, TokensSold) #Mutez(0)                                                               TokenAddress . %transfer N        ]
-                  ;; [ Transfer_tokens Unit                                                #Mutez(#XtzNetBurn(#CurrencyBought(XtzPool, TokenPool, TokensSold)))    To           . %default (N +Int 1)]
-                  ;; [ Transfer_tokens Unit                                                #Mutez(#XtzBurnAmount(#CurrencyBought(XtzPool, TokenPool, TokensSold))) null_address . %default (N +Int 2)]
+                  => [| Transfer_tokens #TokenTransferData(Sender, SelfAddress, TokensSold) #Mutez(0)                                                               TokenAddress . %transfer N        |]
+                  ;; [| Transfer_tokens Unit                                                #Mutez(#XtzNetBurn(#CurrencyBought(XtzPool, TokenPool, TokensSold)))    To           . %default (N +Int 1)|]
+                  ;; [| Transfer_tokens Unit                                                #Mutez(#XtzBurnAmount(#CurrencyBought(XtzPool, TokenPool, TokensSold))) null_address . %default (N +Int 2)|]
                   ;; .InternalList
         </operations>
      requires Amount ==Int 0
@@ -445,8 +445,8 @@ module LIQUIDITY-BAKING-XTZTOTOKEN-POSITIVE-SPEC
         <nonce> #Nonce(N => N +Int 2) </nonce>
         <knownaddrs> KnownAddresses </knownaddrs>
         <operations> _
-                  => [ Transfer_tokens #TokenTransferData(SelfAddress, To, #CurrencyBought(TokenPool, XtzPool, #XtzNetBurn(Amount))) #Mutez(0)                              TokenAddress . %transfer N        ]
-                  ;; [ Transfer_tokens Unit                                                                                          #Mutez(absInt(#XtzBurnAmount(Amount))) null_address . %default (N +Int 1)]
+                  => [| Transfer_tokens #TokenTransferData(SelfAddress, To, #CurrencyBought(TokenPool, XtzPool, #XtzNetBurn(Amount))) #Mutez(0)                              TokenAddress . %transfer N        |]
+                  ;; [| Transfer_tokens Unit                                                                                          #Mutez(absInt(#XtzBurnAmount(Amount))) null_address . %default (N +Int 1)|]
                   ;; .InternalList
         </operations>
     requires CurrentTime <Int Deadline
@@ -523,9 +523,9 @@ A buyer sends tokens to the Liquidity Baking contract, converts its to xtz, and 
         <nonce> #Nonce(N => N +Int 3) </nonce>
         <knownaddrs> KnownAddresses </knownaddrs>
         <operations> _
-                  => [ Transfer_tokens #TokenTransferData(Sender, SelfAddress, TokensSold) #Mutez(0)                                                               TokenAddress         . %transfer    N        ]
-                  ;; [ Transfer_tokens Pair To Pair MinTokensBought #Timestamp(Deadline)   #Mutez(#XtzNetBurn(#CurrencyBought(XtzPool, TokenPool, TokensSold)))    OutputDexterContract . %xtzToToken (N +Int 1)]
-                  ;; [ Transfer_tokens Unit                                                #Mutez(#XtzBurnAmount(#CurrencyBought(XtzPool, TokenPool, TokensSold))) null_address         . %default    (N +Int 2)]
+                  => [| Transfer_tokens #TokenTransferData(Sender, SelfAddress, TokensSold) #Mutez(0)                                                               TokenAddress         . %transfer    N        |]
+                  ;; [| Transfer_tokens Pair To Pair MinTokensBought #Timestamp(Deadline)   #Mutez(#XtzNetBurn(#CurrencyBought(XtzPool, TokenPool, TokensSold)))    OutputDexterContract . %xtzToToken (N +Int 1)|]
+                  ;; [| Transfer_tokens Unit                                                #Mutez(#XtzBurnAmount(#CurrencyBought(XtzPool, TokenPool, TokensSold))) null_address         . %default    (N +Int 2)|]
                   ;; .InternalList
         </operations>
      requires Amount ==Int 0
