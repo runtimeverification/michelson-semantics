@@ -22,8 +22,8 @@ RUN    apt-get update                \
                 pkg-config           \
                 python3              \
                 python3-pip          \
-                python-pygments      \
                 python3-recommonmark \
+                python-pygments      \
                 sphinx-common        \
                 zlib1g-dev
 

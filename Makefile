@@ -131,15 +131,15 @@ ifeq (,$(RELEASE))
 endif
 
 KOMPILE_LLVM = "kompile" --debug --backend llvm --md-selector "$(tangle_llvm)" \
-               --hook-namespaces "$(HOOK_NAMESPACES)"                        \
-               $(KOMPILE_OPTS)                                               \
-               $(KOMPILE_KRUN_OPTS)                                          \
+               --hook-namespaces "$(HOOK_NAMESPACES)"                          \
+               $(KOMPILE_OPTS)                                                 \
+               $(KOMPILE_KRUN_OPTS)                                            \
                $(addprefix -ccopt ,$(LLVM_KOMPILE_OPTS))
 
 HASKELL_KOMPILE_OPTS +=
 
 KOMPILE_HASKELL = "kompile" --debug --backend haskell --md-selector "$(tangle_haskell)" \
-                  $(KOMPILE_OPTS)                                                     \
+                  $(KOMPILE_OPTS)                                                       \
                   $(HASKELL_KOMPILE_OPTS)
 
 defn:        defn-k defn-compat
