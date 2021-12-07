@@ -146,8 +146,8 @@ Simple recursive data structures are defined as expected.
 
 ```k
   syntax Pair           ::= "Pair" Data NePairDataList
-  syntax NePairDataList ::= Data NePairDataList
-                          > Data
+  syntax NePairDataList ::= Data NePairDataList [avoid]
+                          | Data
 
   syntax OrData ::= "Left" Data
                   | "Right" Data
