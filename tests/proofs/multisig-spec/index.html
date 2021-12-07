@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="A Michelson semantics for Tezos built using the K Framework."
+/>
+<meta name="keywords" content="runtime, verification, rv, k" />
+<meta name="author" content="Michelson Semantics | Runtime Verification Inc" />
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../../assets/img/favicon.ico" /> -->
+
+<title>Michelson Semantics | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../../index.html"> Michelson Semantics </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/michelson-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../../">Homepage</a>
+      <a class="bd-toc-link" href="../../../INSTALL">Install</a>
+      <a class="bd-toc-link" href="../../../USER_GUIDE">User Guide</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><pre class="language-k"><code><span class="token keyword">requires</span> <span class="token string">&quot;lemmas.md&quot;</span>
+</code></pre>
+<h1 id="preamble">Preamble</h1>
+<p>The K Framework supports different features using different included tools:</p>
+<ul>
+<li>writing the semantics of languages and generating concrete/symbolic
+interpreters (kompile)</li>
+<li>running programs using a language semantics-based interpreter (krun)</li>
+<li>verifying properties about programs, or even about language semantics
+themselves (kprove)</li>
+</ul>
+<p>In this file, we specify a property about the Michelson multisig contract and
+verify it using the kprove tool. A kprove proof typically has three parts:</p>
+<ol>
+<li>some modules which specify the semantics of the language we are working</li>
+<li>some modules which specify lemmas as well as functions about our language
+that are needed for theorem proving purposes</li>
+<li>one module which specifies a set of claims that we wish to verify</li>
+</ol>
+<p>In our current proof, we have all three parts:</p>
+<ol>
+<li>module <code>MICHELSON</code> (in file <code>michelson.md</code> defines our language semantics)</li>
+<li>module <code>VERIFICATION</code> (see below) defines lemmas and predicates about the
+Michelson language that we will use</li>
+<li>module <code>MULTISIG-SPEC</code> (see below) specifies the claims we whish to verify
+about the multisig program</li>
+</ol>
+<pre class="language-k"><code><span class="token keyword">module</span> VERIFICATION
+  <span class="token keyword">import</span> LEMMAS <span class="token comment">// we import some basic lemmas which apply to most programs</span>
+</code></pre>
+<p>We define lemmas and functions below for our specific program:</p>
+<p>We use the <code>numValidSigs</code> function to show each iteration maintains the invariant
+<code>VerifiedKeys + numValidSigs(RemainingSigs, RemainingKeys) &gt;= Threshold</code>.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> <span class="token keyword">Int</span> <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> numValidSigs<span class="token punctuation">(</span>sigs<span class="token punctuation">:</span> InternalList<span class="token punctuation">,</span> keys<span class="token punctuation">:</span> InternalList<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> smtlib<span class="token punctuation">(</span>numValidSigs<span class="token punctuation">)</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> numValidSigs<span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token operator">|</span> Some #Signature<span class="token punctuation">(</span>_<span class="token punctuation">)</span> <span class="token operator">|</span><span class="token punctuation">]</span> <span class="token punctuation">;</span><span class="token punctuation">;</span> Sigs<span class="token punctuation">,</span> <span class="token punctuation">[</span><span class="token operator">|</span> #Key<span class="token punctuation">(</span>_<span class="token punctuation">)</span> <span class="token operator">|</span><span class="token punctuation">]</span> <span class="token punctuation">;</span><span class="token punctuation">;</span> Keys<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token number">1</span> <span class="token operator">+</span><span class="token keyword">Int</span> numValidSigs<span class="token punctuation">(</span>Sigs<span class="token punctuation">,</span> Keys<span class="token punctuation">)</span> <span class="token punctuation">[</span>simplification<span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> numValidSigs<span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token operator">|</span> None <span class="token operator">|</span><span class="token punctuation">]</span> <span class="token punctuation">;</span><span class="token punctuation">;</span> Sigs<span class="token punctuation">,</span> _K <span class="token punctuation">;</span><span class="token punctuation">;</span> Keys<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> numValidSigs<span class="token punctuation">(</span>Sigs<span class="token punctuation">,</span> Keys<span class="token punctuation">)</span> <span class="token punctuation">[</span>simplification<span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> numValidSigs<span class="token punctuation">(</span>_<span class="token punctuation">,</span> <span class="token punctuation">.</span>InternalList<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token number">0</span> <span class="token punctuation">[</span>simplification<span class="token punctuation">]</span>
+</code></pre>
+<p>This lemma ensures <code>CHECK_SIGNATURE</code> always returns <code>True</code> when executing the
+multisig program --- this represents that our signature list is valid.</p>
+<pre class="language-k"><code>  <span class="token keyword">rule</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>k</span><span class="token punctuation">&gt;</span></span> CHECK_SIGNATURE _A <span class="token operator">=&gt;</span> <span class="token punctuation">.</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>k</span><span class="token punctuation">&gt;</span></span>
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>stack</span><span class="token punctuation">&gt;</span></span> <span class="token punctuation">[</span> key #Key<span class="token punctuation">(</span>_<span class="token punctuation">)</span> <span class="token punctuation">]</span>
+             <span class="token punctuation">;</span> <span class="token punctuation">[</span> signature #Signature<span class="token punctuation">(</span>_<span class="token punctuation">)</span> <span class="token punctuation">]</span>
+             <span class="token punctuation">;</span> <span class="token punctuation">[</span> bytes #Packed<span class="token punctuation">(</span>_<span class="token punctuation">,</span>_<span class="token punctuation">)</span> <span class="token punctuation">]</span>
+             <span class="token punctuation">;</span> SS
+            <span class="token operator">=&gt;</span> <span class="token punctuation">[</span> bool <span class="token boolean">true</span> <span class="token punctuation">]</span>
+             <span class="token punctuation">;</span> SS
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>stack</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<p>We add a few more lemmas about the <code>numValidSigs</code> function to help our prover
+along. Firstly, we know that the number of valid signatures is always a
+non-negative number.</p>
+<pre class="language-k"><code>  <span class="token keyword">rule</span> numValidSigs<span class="token punctuation">(</span>_<span class="token punctuation">,</span> _<span class="token punctuation">)</span> <span class="token operator">&gt;=</span><span class="token keyword">Int</span> <span class="token number">0</span> <span class="token operator">=&gt;</span> <span class="token boolean">true</span> <span class="token punctuation">[</span>simplification<span class="token punctuation">]</span>
+</code></pre>
+<p>Secondly, we add a lemma about the associativity of addition, specialized to
+the instance in which we need it.</p>
+<pre class="language-k"><code>  <span class="token keyword">rule</span> N<span class="token punctuation">:</span><span class="token keyword">Int</span> <span class="token operator">+</span><span class="token keyword">Int</span> <span class="token punctuation">(</span> <span class="token number">1</span> <span class="token operator">+</span><span class="token keyword">Int</span> numValidSigs<span class="token punctuation">(</span>L0<span class="token punctuation">,</span>L<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token punctuation">(</span>N<span class="token punctuation">:</span><span class="token keyword">Int</span> <span class="token operator">+</span><span class="token keyword">Int</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token operator">+</span><span class="token keyword">Int</span> numValidSigs<span class="token punctuation">(</span>L0<span class="token punctuation">,</span>L<span class="token punctuation">)</span> <span class="token punctuation">[</span>simplification<span class="token punctuation">]</span>
+</code></pre>
+<pre class="language-k"><code><span class="token keyword">endmodule</span>
+</code></pre>
+<h1 id="claim-definition">Claim Definition</h1>
+<p>We proceed to define the claims we will make about the program. We will need
+two claims:</p>
+<ol>
+<li>a claim which describes the intended behavior of the entire program</li>
+<li>a claim which describes the intended behavior of the loop</li>
+</ol>
+<p>The second claim is needed to prevent symbolic execution from looping forever
+while trying to summarize the behavior over the infinitude of possibile loop
+iterations.</p>
+<p>Before proceeding, we create a new module to store our claims.</p>
+<pre class="language-k"><code><span class="token keyword">module</span> MULTISIG<span class="token operator">-</span>SPEC
+  <span class="token keyword">imports</span> VERIFICATION
+</code></pre>
+<h2 id="claim-structure">Claim Structure</h2>
+<p>The claims that we make have the following structure:</p>
+<pre class="language-text"><code>claim &lt;k&gt; InitialSourceFragment =&gt; FinalSourceFragment &lt;/k&gt;
+      &lt;stack&gt; InitialStack =&gt; FinalStack &lt;/stack&gt;
+      &lt;paramtype&gt; %default |-&gt; ContractParameterType &lt;/paramtype&gt;
+      &lt;myamount&gt; AmountPassedToContract &lt;/myamount&gt;
+      requires Preconditions
+      ensures Postconditions
+</code></pre>
+<p>In a claim, the different cells (e.g. the <code>&lt;k&gt;</code> cell) represent the state of
+an abstract Michelson interpreter. Arrows inside cells describes what the
+initial abstract interpreter state and the final abstract interpreter state.
+Cells without arrows represent constant fragments of the abstract interpreter
+state.
+The claim asserts that any instance of the abstract interpreter initial state
+that satisfies the preconditions, i.e., an instance of the following:</p>
+<pre class="language-text"><code>&lt;k&gt; InitialSourceFragment &lt;/k&gt;
+&lt;stack&gt; InitialStack  &lt;/stack&gt;
+&lt;paramtype&gt; %default |-&gt; ContractParameterType &lt;/paramtype&gt;
+&lt;myamount&gt; AmountPassedToContract &lt;/myamount&gt;
+</code></pre>
+<p>which satisfies the predicates <code>Preconditions</code> will always reach a final state
+which is an instance of:</p>
+<pre class="language-text"><code>&lt;k&gt; FinalSourceFragment &lt;/k&gt;
+&lt;stack&gt; FinalStack &lt;/stack&gt;
+&lt;paramtype&gt; %default |-&gt; ContractParameterType &lt;/paramtype&gt;
+&lt;myamount&gt; AmountPassedToContract &lt;/myamount&gt;
+</code></pre>
+<p>which satisfies the predicates <code>Preconditions</code> and also <code>Postconditions</code>.</p>
+<h2 id="main-claim">Main claim</h2>
+<p>Our main claim asserts that the contract completes successfully when:</p>
+<ul>
+<li>
+<p>the storage contains:</p>
+<pre class="language-text"><code>(Pair Count:Int (Pair Threshold:Int KeyList:InternalList))
+</code></pre>
+</li>
+<li>
+<p>the initial parameter value is the following (see legend below)</p>
+<pre class="language-text"><code>Right
+ (Pair
+   (Pair Count:Int                           // (1)
+         (Left uninterpreted(Id:Int, unit))) // (2)
+   SigList:InternalList)                     // (2)
+</code></pre>
+<p>Value (1) is a counter identical to the current value in storage.
+Value (2) are the operations to be authorized by the multisig contract.
+Value (3) is the list of the signatures passed to the contract for
+verification purposes.</p>
+</li>
+</ul>
+<p>In order for the contract to complete successfully, we must ensure that it does
+not abort. Thus, we must avoid the following conditions that could lead to
+aborting (note all locations marked in the contract):</p>
+<ul>
+<li>(1) if a non-zero amount is passed to the contract</li>
+<li>(2) if any of the first size(KeyList) signatures are invalid</li>
+<li>(3) if the size(SigList) &lt;= size(KeyList)</li>
+<li>(4) if the number of signatures verified is less than Threshold</li>
+<li>(5) if extra signatures were passed to the contract</li>
+</ul>
+<p>We handle these issues as follows:</p>
+<ul>
+<li>(1) is handeled by side condition (a)</li>
+<li>(3), (5) by side condition (b)</li>
+<li>(4) by side condition (c)</li>
+<li>(2) is taken care of by the <code>CHECK_SIGNATURE</code> lemma above</li>
+</ul>
+<p>The side conditions are defined as follows (and marked in the claim below):</p>
+<ul>
+<li>(a) Amount == 0</li>
+<li>(b) size(SigList) == size(KeyList)</li>
+<li>(c) numValidSigs(SigList, KeyList) &gt;= Threshold</li>
+</ul>
+<pre class="language-k"><code>  <span class="token keyword">claim</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>k</span><span class="token punctuation">&gt;</span></span> UNPAIR <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">;</span>
+           IF_LEFT <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">{</span> DROP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">;</span>
+                                     NIL <span class="token punctuation">.</span>AnnotationList operation <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">;</span>
+                                     PAIR <span class="token punctuation">.</span>AnnotationList
+                                   <span class="token punctuation">}</span>
+                                   <span class="token punctuation">{</span> PUSH <span class="token punctuation">.</span>AnnotationList mutez <span class="token punctuation">.</span>AnnotationList <span class="token number">0</span> <span class="token punctuation">;</span>
+                                     AMOUNT <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">;</span>
+                                     ASSERT_CMPEQ <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">;</span> <span class="token comment">// ---------------------------------------------------------------- (1)</span>
+                                     SWAP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">;</span>
+                                     DUP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">;</span>
+                                     DIP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">{</span> SWAP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">}</span> <span class="token punctuation">;</span>
+                                     DIP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">{</span> UNPAIR <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">;</span>
+                                     DUP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">;</span>
+                                     SELF <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">;</span>
+                                     ADDRESS <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">;</span>
+                                     CHAIN_ID <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">;</span>
+                                     PAIR <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">;</span>
+                                     PAIR <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">;</span>
+                                     PACK <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">;</span>
+                                     DIP <span class="token punctuation">.</span>AnnotationList
+                                     <span class="token punctuation">{</span> UNPAIR  <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">;</span>
+                                       DIP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">{</span> SWAP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">}</span>
+                                     <span class="token punctuation">}</span> <span class="token punctuation">;</span>
+                                     SWAP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">}</span> <span class="token punctuation">;</span>
+                                     UNPAIR  <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">;</span>
+                                     DIP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">{</span> SWAP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">}</span> <span class="token punctuation">;</span>
+                                     ASSERT_CMPEQ <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">;</span>
+                                     DIP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">{</span> SWAP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">}</span> <span class="token punctuation">;</span>
+                                     UNPAIR   <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">;</span>
+                                     DIP <span class="token punctuation">.</span>AnnotationList
+                                     <span class="token punctuation">{</span> PUSH  <span class="token punctuation">.</span>AnnotationList nat <span class="token punctuation">.</span>AnnotationList <span class="token number">0</span> <span class="token punctuation">;</span>
+                                       SWAP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">;</span>
+                                       ITER <span class="token punctuation">.</span>AnnotationList
+                                       <span class="token punctuation">{</span>
+                                         DIP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">{</span> SWAP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">}</span> <span class="token punctuation">;</span>
+                                         SWAP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">;</span>
+                                         IF_CONS <span class="token punctuation">.</span>AnnotationList
+                                         <span class="token punctuation">{</span> IF_SOME <span class="token punctuation">.</span>AnnotationList
+                                           <span class="token punctuation">{</span> SWAP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">;</span>
+                                             DIP <span class="token punctuation">.</span>AnnotationList
+                                             <span class="token punctuation">{</span> SWAP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">;</span>
+                                               DIP <span class="token punctuation">.</span>AnnotationList <span class="token number">2</span> <span class="token punctuation">{</span> DUP <span class="token punctuation">.</span>AnnotationList <span class="token number">2</span> <span class="token punctuation">}</span> <span class="token punctuation">;</span>
+                                               <span class="token punctuation">{</span> DUP <span class="token punctuation">.</span>AnnotationList <span class="token number">3</span> <span class="token punctuation">;</span>
+                                                 DIP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">{</span> CHECK_SIGNATURE <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">}</span> <span class="token punctuation">;</span>
+                                                 SWAP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">;</span>
+                                                 IF <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">{</span> DROP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">}</span> <span class="token punctuation">{</span> FAILWITH <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">}</span> <span class="token comment">// ------ (2)</span>
+                                                <span class="token punctuation">}</span> <span class="token punctuation">;</span>
+                                               PUSH <span class="token punctuation">.</span>AnnotationList nat <span class="token punctuation">.</span>AnnotationList <span class="token number">1</span> <span class="token punctuation">;</span>
+                                               ADD  <span class="token punctuation">.</span>AnnotationList
+                                             <span class="token punctuation">}</span>
+                                           <span class="token punctuation">}</span>
+                                           <span class="token punctuation">{</span> SWAP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">;</span> DROP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">}</span>
+                                         <span class="token punctuation">}</span>
+                                         <span class="token punctuation">{</span> FAIL <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">}</span> <span class="token punctuation">;</span> <span class="token comment">// ------------------------------------------------------------ (3)</span>
+                                         SWAP <span class="token punctuation">.</span>AnnotationList
+                                       <span class="token punctuation">}</span>
+                                     <span class="token punctuation">}</span> <span class="token punctuation">;</span>
+                                     ASSERT_CMPLE <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">;</span> <span class="token comment">// ------------------------------------------------------------ (4)</span>
+                                     IF_CONS <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">{</span> FAIL <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">}</span> <span class="token punctuation">{</span> <span class="token punctuation">}</span> <span class="token punctuation">;</span> <span class="token comment">// ------------------------------------ (5)</span>
+                                     DROP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">;</span>
+                                     DIP <span class="token punctuation">.</span>AnnotationList
+                                     <span class="token punctuation">{</span> UNPAIR <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">;</span>
+                                       PUSH <span class="token punctuation">.</span>AnnotationList nat <span class="token punctuation">.</span>AnnotationList <span class="token number">1</span> <span class="token punctuation">;</span>
+                                       ADD  <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">;</span>
+                                       PAIR <span class="token punctuation">.</span>AnnotationList
+                                     <span class="token punctuation">}</span> <span class="token punctuation">;</span>
+                                     IF_LEFT <span class="token punctuation">.</span>AnnotationList
+                                     <span class="token punctuation">{</span> UNIT <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">;</span> EXEC <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">}</span>
+                                     <span class="token punctuation">{</span> DIP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">{</span> CAR <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">}</span> <span class="token punctuation">;</span>
+                                       SWAP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">;</span>
+                                       PAIR <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">;</span>
+                                       NIL <span class="token punctuation">.</span>AnnotationList operation <span class="token punctuation">.</span>AnnotationList
+                                     <span class="token punctuation">}</span> <span class="token punctuation">;</span>
+                                     PAIR <span class="token punctuation">.</span>AnnotationList
+                                <span class="token punctuation">}</span>
+      <span class="token operator">=&gt;</span> <span class="token punctuation">.</span>K
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>k</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>stack</span><span class="token punctuation">&gt;</span></span> <span class="token punctuation">[</span> pair <span class="token punctuation">(</span>or unit                                           <span class="token comment">// default operation</span>
+                       pair <span class="token punctuation">(</span>pair nat                                 <span class="token comment">// counter</span>
+                                  <span class="token punctuation">(</span>or <span class="token punctuation">(</span>lambda unit <span class="token punctuation">(</span>list operation<span class="token punctuation">)</span><span class="token punctuation">)</span>  <span class="token comment">// requested action</span>
+                                      pair nat                        <span class="token comment">// change keys - new threshold</span>
+                                           <span class="token punctuation">(</span>list key<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>               <span class="token comment">// change keys - new key list</span>
+                            <span class="token punctuation">(</span>list <span class="token punctuation">(</span>option signature<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+                   <span class="token punctuation">(</span>pair nat                                          <span class="token comment">// stored counter</span>
+                         <span class="token punctuation">(</span>pair nat                                    <span class="token comment">// threshold</span>
+                               <span class="token punctuation">(</span>list key<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>                           <span class="token comment">// list of keys</span>
+             <span class="token comment">// ---------------------------------------------------------------------</span>
+              Pair
+                <span class="token punctuation">(</span>Right
+                  <span class="token punctuation">(</span>Pair
+                    <span class="token punctuation">(</span>Pair Count<span class="token punctuation">:</span><span class="token keyword">Int</span>
+                          <span class="token punctuation">(</span>Left #Lambda<span class="token punctuation">(</span>unit<span class="token punctuation">,</span> list operation<span class="token punctuation">,</span> <span class="token punctuation">{</span> #Uninterpreted<span class="token punctuation">(</span><span class="token keyword">Id</span><span class="token punctuation">,</span> unit<span class="token punctuation">,</span> list operation<span class="token punctuation">)</span> <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+                    SigList<span class="token punctuation">:</span>InternalList<span class="token punctuation">)</span><span class="token punctuation">)</span>
+                <span class="token punctuation">(</span>Pair Count<span class="token punctuation">:</span><span class="token keyword">Int</span> <span class="token punctuation">(</span>Pair Threshold<span class="token punctuation">:</span><span class="token keyword">Int</span> KeyList<span class="token punctuation">:</span>InternalList<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token punctuation">]</span> <span class="token punctuation">;</span> <span class="token punctuation">.</span>Stack
+         <span class="token comment">// -----------------------------------------------------------------</span>
+         <span class="token operator">=&gt;</span> <span class="token punctuation">[</span> pair <span class="token punctuation">(</span> list operation <span class="token punctuation">)</span> pair nat pair nat list key Pair uninterpreted <span class="token punctuation">(</span> <span class="token keyword">Id</span> <span class="token punctuation">,</span> Unit <span class="token punctuation">)</span> Pair Count <span class="token operator">+</span><span class="token keyword">Int</span> <span class="token number">1</span> Pair Threshold KeyList<span class="token punctuation">:</span>InternalList <span class="token punctuation">]</span> <span class="token punctuation">;</span> <span class="token punctuation">.</span>Stack
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>stack</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>myamount</span><span class="token punctuation">&gt;</span></span> #Mutez<span class="token punctuation">(</span>Amount<span class="token punctuation">:</span><span class="token keyword">Int</span><span class="token punctuation">)</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>myamount</span><span class="token punctuation">&gt;</span></span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>paramtype</span><span class="token punctuation">&gt;</span></span> <span class="token operator">%</span>default <span class="token operator">|</span><span class="token operator">-</span>&gt; <span class="token punctuation">(</span>or <span class="token punctuation">.</span>AnnotationList unit <span class="token punctuation">.</span>AnnotationList
+                   pair <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">(</span>pair <span class="token punctuation">.</span>AnnotationList nat <span class="token punctuation">.</span>AnnotationList
+                              <span class="token punctuation">(</span>or <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">(</span>lambda <span class="token punctuation">.</span>AnnotationList unit <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">(</span>list <span class="token punctuation">.</span>AnnotationList operation <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">)</span><span class="token punctuation">)</span>
+                                  pair <span class="token punctuation">.</span>AnnotationList nat <span class="token punctuation">.</span>AnnotationList
+                                       <span class="token punctuation">(</span>list <span class="token punctuation">.</span>AnnotationList key <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+                        <span class="token punctuation">(</span>list <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">(</span>option <span class="token punctuation">.</span>AnnotationList signature <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>paramtype</span><span class="token punctuation">&gt;</span></span>
+    <span class="token keyword">requires</span> Amount <span class="token operator">==</span><span class="token keyword">Int</span> <span class="token number">0</span>  <span class="token comment">// --------------------------------------------------------------------------------------------------- (a)</span>
+     andBool size<span class="token punctuation">(</span>SigList<span class="token punctuation">)</span> <span class="token operator">==</span><span class="token keyword">Int</span> size<span class="token punctuation">(</span>KeyList<span class="token punctuation">)</span>  <span class="token comment">// -------------------------------------------------------------------------------- (b)</span>
+     andBool numValidSigs<span class="token punctuation">(</span>SigList<span class="token punctuation">,</span> KeyList<span class="token punctuation">)</span> <span class="token operator">&gt;=</span><span class="token keyword">Int</span> Threshold <span class="token comment">// -------------------------------------------------------------------- (c)</span>
+</code></pre>
+<h2 id="circularity">Circularity</h2>
+<p>This circularity is needed to show that the invariant</p>
+<p><code>VerifiedKeys +Int size(KeyList) &gt;=Int ?VerifiedKeysFinal</code></p>
+<p>is preserved by the loop, where <code>VerifiedKeys</code> stores the number of keys we
+have already verified during loop execution and <code>?VerifiedKeysFinal</code> stores the
+final number of verified keys after loop execution.</p>
+<p>Note that variables which appear on the right-hand side only and which are
+preceded by a question mark are existentially quantified; all other variables
+are univerally quantified.</p>
+<p>The initial source fragment in the circularity contains just the fragment of
+the contract source code describing the loop. The <code>...</code> at the end of the
+<code>&lt;k&gt;</code> cell means that this claim describes how an initial contract fragment
+evolves that may be followed by other code (which we do not care about here).</p>
+<p>The initial stack pattern for the circularity shows the stack at the head of
+the loop. The final stack pattern shows the stack after the loop completes.</p>
+<p>Our preconditions are similar to our main claim except that instead of
+asserting that <code>numValidSigs() &gt;= Threshold</code>, we assume that we are in
+the middle of the loop and have already verified that some keys our valid,
+so that we need to check:</p>
+<p><code>VerifiedKeys + numValidSigs(SigList, KeyList) &gt;= Threshold</code></p>
+<p>where <code>SigList</code> and <code>KeyList</code> are (possibly) smaller than the ones present at
+the start of the program and <code>VerifiedKeys</code> stores how many keys we have
+already verified.</p>
+<p>Here we also have some postconditions which assert claims our existentially
+quantified variable <code>?VerifiedKeysFinal</code> which describes the total number of
+verified keys after the loop completes. We must assert that:</p>
+<pre class="language-text"><code>?VerifiedKeysFinal &gt;= Threshold
+</code></pre>
+<p>in order for the contract to go through. The other postconditions are helpful
+for symbolic reasoning.</p>
+<pre class="language-k"><code>  <span class="token keyword">claim</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>k</span><span class="token punctuation">&gt;</span></span> ITER <span class="token punctuation">.</span>AnnotationList
+            <span class="token punctuation">{</span>
+              DIP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">{</span> SWAP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">}</span> <span class="token punctuation">;</span>
+              SWAP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">;</span>
+              IF_CONS <span class="token punctuation">.</span>AnnotationList
+              <span class="token punctuation">{</span> IF_SOME <span class="token punctuation">.</span>AnnotationList
+                <span class="token punctuation">{</span> SWAP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">;</span>
+                  DIP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">{</span> SWAP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">;</span>
+                                        DIP <span class="token punctuation">.</span>AnnotationList <span class="token number">2</span> <span class="token punctuation">{</span> DUP <span class="token punctuation">.</span>AnnotationList <span class="token number">2</span> <span class="token punctuation">}</span> <span class="token punctuation">;</span>
+                                        <span class="token punctuation">{</span> DUP <span class="token punctuation">.</span>AnnotationList <span class="token number">3</span> <span class="token punctuation">;</span>
+                                          DIP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">{</span> CHECK_SIGNATURE <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">}</span> <span class="token punctuation">;</span>
+                                          SWAP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">;</span>
+                                          IF <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">{</span> DROP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">}</span> <span class="token punctuation">{</span> FAILWITH <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">}</span> <span class="token comment">// ---- (1)</span>
+                                         <span class="token punctuation">}</span> <span class="token punctuation">;</span>
+                                        PUSH <span class="token punctuation">.</span>AnnotationList nat <span class="token punctuation">.</span>AnnotationList <span class="token number">1</span> <span class="token punctuation">;</span>
+                                        ADD  <span class="token punctuation">.</span>AnnotationList
+                                      <span class="token punctuation">}</span>
+                <span class="token punctuation">}</span>
+                <span class="token punctuation">{</span> SWAP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">;</span> DROP <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">}</span>
+              <span class="token punctuation">}</span>
+              <span class="token punctuation">{</span> FAIL <span class="token punctuation">.</span>AnnotationList <span class="token punctuation">}</span> <span class="token punctuation">;</span>
+              SWAP <span class="token punctuation">.</span>AnnotationList
+            <span class="token punctuation">}</span> <span class="token operator">=&gt;</span> <span class="token punctuation">.</span>K
+            <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>k</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>stack</span><span class="token punctuation">&gt;</span></span> <span class="token punctuation">[</span> list key KeyList<span class="token punctuation">:</span>InternalList <span class="token punctuation">]</span>
+              <span class="token punctuation">;</span> <span class="token punctuation">[</span> nat VerifiedKeys <span class="token punctuation">]</span>
+              <span class="token punctuation">;</span> <span class="token punctuation">[</span> list option signature SigList<span class="token punctuation">:</span>InternalList <span class="token punctuation">]</span>
+              <span class="token punctuation">;</span> <span class="token punctuation">[</span> bytes #Packed <span class="token punctuation">(</span> pair <span class="token punctuation">(</span> pair chain_id address <span class="token punctuation">)</span> pair nat or <span class="token punctuation">(</span> lambda unit list operation <span class="token punctuation">)</span> pair nat list key <span class="token punctuation">,</span> Pair Pair #ChainId <span class="token punctuation">(</span> ChainId <span class="token punctuation">)</span> MyAddr<span class="token punctuation">:</span>Address Pair Count<span class="token punctuation">:</span><span class="token keyword">Int</span> Left #Lambda <span class="token punctuation">(</span> unit <span class="token punctuation">,</span> list operation <span class="token punctuation">,</span> <span class="token punctuation">{</span> #Uninterpreted<span class="token punctuation">(</span><span class="token keyword">Id</span><span class="token punctuation">,</span> unit<span class="token punctuation">,</span> list operation<span class="token punctuation">)</span> <span class="token punctuation">}</span> <span class="token punctuation">)</span> <span class="token punctuation">)</span> <span class="token punctuation">]</span>
+              <span class="token punctuation">;</span> <span class="token punctuation">[</span> or <span class="token punctuation">(</span> lambda unit list operation <span class="token punctuation">)</span> pair nat list key Left #Lambda <span class="token punctuation">(</span> unit <span class="token punctuation">,</span> list operation <span class="token punctuation">,</span> <span class="token punctuation">{</span> #Uninterpreted<span class="token punctuation">(</span><span class="token keyword">Id</span><span class="token punctuation">,</span> unit<span class="token punctuation">,</span> list operation<span class="token punctuation">)</span> <span class="token punctuation">}</span> <span class="token punctuation">)</span> <span class="token punctuation">]</span>
+              <span class="token punctuation">;</span> <span class="token punctuation">[</span> pair nat pair nat list key Pair Count<span class="token punctuation">:</span><span class="token keyword">Int</span> Pair Threshold<span class="token punctuation">:</span><span class="token keyword">Int</span> KeyListInit<span class="token punctuation">:</span>InternalList <span class="token punctuation">]</span>
+              <span class="token punctuation">;</span> <span class="token punctuation">.</span>Stack
+             <span class="token operator">=&gt;</span> <span class="token punctuation">[</span> nat <span class="token operator">?</span>VerifiedKeysFinal <span class="token punctuation">]</span>
+              <span class="token punctuation">;</span> <span class="token punctuation">[</span> list option signature <span class="token punctuation">.</span>InternalList <span class="token punctuation">]</span>
+              <span class="token punctuation">;</span> <span class="token punctuation">[</span> bytes #Packed <span class="token punctuation">(</span> pair <span class="token punctuation">(</span> pair chain_id address <span class="token punctuation">)</span> pair nat or <span class="token punctuation">(</span> lambda unit list operation <span class="token punctuation">)</span> pair nat list key <span class="token punctuation">,</span> Pair Pair #ChainId <span class="token punctuation">(</span> ChainId <span class="token punctuation">)</span> MyAddr<span class="token punctuation">:</span>Address Pair Count<span class="token punctuation">:</span><span class="token keyword">Int</span> Left #Lambda <span class="token punctuation">(</span> unit <span class="token punctuation">,</span> list operation <span class="token punctuation">,</span> <span class="token punctuation">{</span> #Uninterpreted<span class="token punctuation">(</span><span class="token keyword">Id</span><span class="token punctuation">,</span> unit<span class="token punctuation">,</span> list operation<span class="token punctuation">)</span> <span class="token punctuation">}</span> <span class="token punctuation">)</span> <span class="token punctuation">)</span> <span class="token punctuation">]</span>
+              <span class="token punctuation">;</span> <span class="token punctuation">[</span> or <span class="token punctuation">(</span> lambda unit list operation <span class="token punctuation">)</span> pair nat list key Left #Lambda <span class="token punctuation">(</span> unit <span class="token punctuation">,</span> list operation <span class="token punctuation">,</span> <span class="token punctuation">{</span> #Uninterpreted<span class="token punctuation">(</span><span class="token keyword">Id</span><span class="token punctuation">,</span> unit<span class="token punctuation">,</span> list operation<span class="token punctuation">)</span> <span class="token punctuation">}</span> <span class="token punctuation">)</span> <span class="token punctuation">]</span>
+              <span class="token punctuation">;</span> <span class="token punctuation">[</span> pair nat pair nat list key Pair Count<span class="token punctuation">:</span><span class="token keyword">Int</span> Pair Threshold<span class="token punctuation">:</span><span class="token keyword">Int</span> KeyListInit<span class="token punctuation">:</span>InternalList <span class="token punctuation">]</span>
+              <span class="token punctuation">;</span> <span class="token punctuation">.</span>Stack
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>stack</span><span class="token punctuation">&gt;</span></span>
+        <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>myamount</span><span class="token punctuation">&gt;</span></span> #Mutez<span class="token punctuation">(</span>Amount<span class="token punctuation">:</span><span class="token keyword">Int</span><span class="token punctuation">)</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>myamount</span><span class="token punctuation">&gt;</span></span>
+    <span class="token keyword">requires</span> Amount <span class="token operator">==</span><span class="token keyword">Int</span> <span class="token number">0</span>
+     andBool size<span class="token punctuation">(</span>SigList<span class="token punctuation">)</span> <span class="token operator">==</span><span class="token keyword">Int</span> size<span class="token punctuation">(</span>KeyList<span class="token punctuation">)</span>
+     andBool VerifiedKeys <span class="token operator">&gt;=</span><span class="token keyword">Int</span> <span class="token number">0</span>
+     andBool VerifiedKeys <span class="token operator">+</span><span class="token keyword">Int</span> numValidSigs<span class="token punctuation">(</span>SigList<span class="token punctuation">,</span> KeyList<span class="token punctuation">)</span> <span class="token operator">&gt;=</span><span class="token keyword">Int</span> Threshold
+
+     ensures <span class="token operator">?</span>VerifiedKeysFinal <span class="token operator">&gt;=</span><span class="token keyword">Int</span> VerifiedKeys
+     andBool <span class="token operator">?</span>VerifiedKeysFinal <span class="token operator">&gt;=</span><span class="token keyword">Int</span> Threshold
+     andBool VerifiedKeys <span class="token operator">+</span><span class="token keyword">Int</span> size<span class="token punctuation">(</span>KeyList<span class="token punctuation">)</span> <span class="token operator">&gt;=</span><span class="token keyword">Int</span> <span class="token operator">?</span>VerifiedKeysFinal
+</code></pre>
+<pre class="language-k"><code><span class="token keyword">endmodule</span>
+</code></pre>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#preamble"
+                class="bd-toc-link"
+                style="padding-left: 0px;;"
+              >
+                Preamble
+              </a></div><details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#claim-definition" class="bd-toc-link">Claim Definition</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#claim-structure"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Claim Structure
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#main-claim"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Main claim
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#circularity"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Circularity
+              </a></div>
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Typist/1.2/typist.min.js"></script>
+    <script src="../../../assets/js/index.js"></script>
+  </body>
+</html>
