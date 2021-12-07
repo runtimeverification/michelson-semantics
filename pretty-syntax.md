@@ -220,7 +220,7 @@ We get around this problem by explicitly declaring every `NullaryTypeName` a `Ty
 
   rule N:UnaryTypeName      T     => N .AnnotationList T
   rule N:BinaryTypeName     T1 T2 => N .AnnotationList T1 T2
-  rule N:BinaryPlusTypeName T TL => N .AnnotationList T TL
+  rule N:BinaryPlusTypeName T TL  => N .AnnotationList T TL
 ```
 
 ## Literals
