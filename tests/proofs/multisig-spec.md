@@ -41,8 +41,8 @@ We use the `numValidSigs` function to show each iteration maintains the invarian
 
 ```k
   syntax Int ::= numValidSigs(sigs: InternalList, keys: InternalList) [function, smtlib(numValidSigs)]
-  rule numValidSigs([ Some #Signature(_) ] ;; Sigs, [ #Key(_) ] ;; Keys) => 1 +Int numValidSigs(Sigs, Keys) [simplification]
-  rule numValidSigs([ None ] ;; Sigs, _K ;; Keys) => numValidSigs(Sigs, Keys) [simplification]
+  rule numValidSigs([| Some #Signature(_) |] ;; Sigs, [| #Key(_) |] ;; Keys) => 1 +Int numValidSigs(Sigs, Keys) [simplification]
+  rule numValidSigs([| None |] ;; Sigs, _K ;; Keys) => numValidSigs(Sigs, Keys) [simplification]
   rule numValidSigs(_, .InternalList) => 0 [simplification]
 ```
 

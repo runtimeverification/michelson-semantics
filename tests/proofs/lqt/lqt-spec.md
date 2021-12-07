@@ -25,7 +25,7 @@ module LQT-TOKEN-GETTOTALSUPPLY-SPEC
         <stack> .Stack </stack>
         <totalSupply> TotalSupply </totalSupply>
         <nonce> #Nonce(Nonce => Nonce +Int 1) </nonce>
-        <operations> _ => [ Transfer_tokens TotalSupply #Mutez(0) Callback (Nonce) ] ;; .InternalList </operations>
+        <operations> _ => [| Transfer_tokens TotalSupply #Mutez(0) Callback (Nonce) |] ;; .InternalList </operations>
         <myamount> #Mutez(Amount) </myamount>
     requires Amount ==Int 0
 
@@ -44,7 +44,7 @@ module LQT-TOKEN-GETBALANCE-SPEC
         <stack> .Stack </stack>
         <tokens> Tokens </tokens>
         <nonce> #Nonce(Nonce => Nonce +Int 1) </nonce>
-        <operations> _ => [ Transfer_tokens {Tokens[Address]}:>Int #Mutez(0) Callback (Nonce) ] ;; .InternalList </operations>
+        <operations> _ => [| Transfer_tokens {Tokens[Address]}:>Int #Mutez(0) Callback (Nonce) |] ;; .InternalList </operations>
         <myamount> #Mutez(Amount) </myamount>
     requires Amount ==Int 0
      andBool Address in_keys(Tokens)
@@ -53,7 +53,7 @@ module LQT-TOKEN-GETBALANCE-SPEC
         <stack> .Stack </stack>
         <tokens> Tokens </tokens>
         <nonce> #Nonce(Nonce => Nonce +Int 1) </nonce>
-        <operations> _ => [ Transfer_tokens 0 #Mutez(0) Callback (Nonce) ] ;; .InternalList </operations>
+        <operations> _ => [| Transfer_tokens 0 #Mutez(0) Callback (Nonce) |] ;; .InternalList </operations>
         <myamount> #Mutez(Amount) </myamount>
     requires Amount ==Int 0
      andBool notBool Address in_keys(Tokens)
@@ -73,7 +73,7 @@ module LQT-TOKEN-GETALLOWANCE-SPEC
         <stack> .Stack </stack>
         <allowances> Allowances </allowances>
         <nonce> #Nonce(Nonce => Nonce +Int 1) </nonce>
-        <operations> _ => [ Transfer_tokens {Allowances[Pair Owner Spender]}:>Int #Mutez(0) Callback (Nonce) ] ;; .InternalList </operations>
+        <operations> _ => [| Transfer_tokens {Allowances[Pair Owner Spender]}:>Int #Mutez(0) Callback (Nonce) |] ;; .InternalList </operations>
         <myamount> #Mutez(Amount) </myamount>
     requires Amount ==Int 0
      andBool (Pair Owner Spender) in_keys(Allowances)
@@ -82,7 +82,7 @@ module LQT-TOKEN-GETALLOWANCE-SPEC
         <stack> .Stack </stack>
         <allowances> Allowances </allowances>
         <nonce> #Nonce(Nonce => Nonce +Int 1) </nonce>
-        <operations> _ => [ Transfer_tokens 0 #Mutez(0) Callback (Nonce) ] ;; .InternalList </operations>
+        <operations> _ => [| Transfer_tokens 0 #Mutez(0) Callback (Nonce) |] ;; .InternalList </operations>
         <myamount> #Mutez(Amount) </myamount>
     requires Amount ==Int 0
      andBool notBool (Pair Owner Spender) in_keys(Allowances)

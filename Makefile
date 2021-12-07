@@ -107,13 +107,14 @@ SOURCE_FILES       := compat    \
 EXTRA_SOURCE_FILES :=
 ALL_FILES          := $(patsubst %, %.md, $(SOURCE_FILES) $(EXTRA_SOURCE_FILES))
 
-tangle_haskell := k | symbolic
-tangle_llvm    := k | concrete
+tangle_haskell := k|symbolic
+tangle_llvm    := k|concrete
 
 HOOK_NAMESPACES := TIME
 
 # NOTE: -W useless-rule check is quite expensive (increasing compilation times by several times), use -Wno useless-rule unless this check is needed!!!
-KOMPILE_OPTS += --hook-namespaces "$(HOOK_NAMESPACES)" --gen-bison-parser --emit-json -w all -Wno unused-symbol -Wno useless-rule
+KOMPILE_OPTS += -w all -Wno unused-symbol -Wno useless-rule
+KOMPILE_KRUN_OPTS += --gen-bison-parser
 
 ifneq (,$(RELEASE))
     KOMPILE_OPTS += -O3
@@ -129,14 +130,16 @@ ifeq (,$(RELEASE))
     LLVM_KOMPILE_OPTS += -g
 endif
 
-KOMPILE_LLVM = kompile --debug --backend llvm --md-selector "$(tangle_llvm)" \
-               $(KOMPILE_OPTS)                                               \
+KOMPILE_LLVM = "kompile" --debug --backend llvm --md-selector "$(tangle_llvm)" \
+               --hook-namespaces "$(HOOK_NAMESPACES)"                          \
+               $(KOMPILE_OPTS)                                                 \
+               $(KOMPILE_KRUN_OPTS)                                            \
                $(addprefix -ccopt ,$(LLVM_KOMPILE_OPTS))
 
 HASKELL_KOMPILE_OPTS +=
 
-KOMPILE_HASKELL = kompile --debug --backend haskell --md-selector "$(tangle_haskell)" \
-                  $(KOMPILE_OPTS)                                                     \
+KOMPILE_HASKELL = "kompile" --debug --backend haskell --md-selector "$(tangle_haskell)" \
+                  $(KOMPILE_OPTS)                                                       \
                   $(HASKELL_KOMPILE_OPTS)
 
 defn:        defn-k defn-compat
@@ -252,7 +255,7 @@ driver_pattern_parser := $(driver_dir)/$(notdir $(driver_main_file))-kompiled/pa
 defn-driver:  $(driver_files)
 build-driver: $(driver_kompiled) $(driver_pattern_parser)
 
-$(driver_kompiled): tangle_haskell := k | driver
+$(driver_kompiled): tangle_haskell := k|driver
 $(driver_kompiled): $(driver_files)
 	$(KOMPILE_LLVM) $(driver_main_file).md                  \
 	                --directory $(driver_dir) -I $(CURDIR)  \
@@ -260,7 +263,7 @@ $(driver_kompiled): $(driver_files)
 	                --syntax-module $(driver_syntax_module)
 
 $(driver_pattern_parser): $(driver_files) $(driver_kompiled)
-	kast --gen-parser --directory $(driver_dir) --sort Pattern $@
+	"kast" --gen-parser --directory $(driver_dir) --sort Pattern $@
 
 ### Symbolic
 
@@ -274,12 +277,13 @@ symbolic_kompiled      := $(symbolic_dir)/$(notdir $(symbolic_main_file))-kompil
 defn-symbolic:  $(symbolic_files)
 build-symbolic: $(symbolic_kompiled) build-driver
 
-$(symbolic_kompiled): tangle_haskell := k | symbolic | internalized-rl
+$(symbolic_kompiled): tangle_haskell := k|symbolic|internalized-rl
 $(symbolic_kompiled): $(symbolic_files)
 	$(KOMPILE_HASKELL) $(symbolic_main_file).md                  \
 	                   --directory $(symbolic_dir) -I $(CURDIR)  \
 	                   --main-module $(symbolic_main_module)     \
-	                   --syntax-module $(symbolic_syntax_module)
+	                   --syntax-module $(symbolic_syntax_module) \
+	                   $(KOMPILE_KRUN_OPTS)
 
 # Compat Contract Expander
 
