@@ -85,14 +85,19 @@ Types are defined as expected.
 
   syntax MapTypeName ::= "map" | "big_map"
 
-  syntax BinaryTypeName  ::= "pair"
-                           | "or"
+  syntax BinaryTypeName  ::= "or"
                            | "lambda"
                            | MapTypeName
 
-  syntax Type ::= NullaryTypeName AnnotationList
-                | UnaryTypeName   AnnotationList Type
-                | BinaryTypeName  AnnotationList Type Type
+  syntax BinaryPlusTypeName ::= "pair"
+
+  syntax Type ::= NullaryTypeName    AnnotationList
+                | UnaryTypeName      AnnotationList Type
+                | BinaryTypeName     AnnotationList Type Type
+                | BinaryPlusTypeName AnnotationList Type NeTypeList
+
+  syntax NeTypeList ::= Type
+                      > Type NeTypeList
 ```
 
 ### Data Literal Syntax
@@ -140,7 +145,9 @@ At parse time, `mutez` and `address` literals are read in as ints and strings.
 Simple recursive data structures are defined as expected.
 
 ```k
-  syntax Pair ::= "Pair" Data Data
+  syntax Pair           ::= "Pair" Data NePairDataList
+  syntax NePairDataList ::= Data NePairDataList [avoid]
+                          | Data
 
   syntax OrData ::= "Left" Data
                   | "Right" Data

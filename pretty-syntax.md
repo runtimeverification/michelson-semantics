@@ -216,9 +216,11 @@ We get around this problem by explicitly declaring every `NullaryTypeName` a `Ty
 ```k
   syntax Type ::= UnaryTypeName   Type [macro]
                 | BinaryTypeName  Type Type [macro]
+                | BinaryPlusTypeName Type NeTypeList [macro]
 
-  rule N:UnaryTypeName  T     => N .AnnotationList T
-  rule N:BinaryTypeName T1 T2 => N .AnnotationList T1 T2
+  rule N:UnaryTypeName      T     => N .AnnotationList T
+  rule N:BinaryTypeName     T1 T2 => N .AnnotationList T1 T2
+  rule N:BinaryPlusTypeName T TL  => N .AnnotationList T TL
 ```
 
 ## Literals

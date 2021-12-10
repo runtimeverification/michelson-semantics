@@ -25,7 +25,7 @@ module RETURN-SPEC
           } ;
           PAIR .AnnotationList
         } => .K </k>
-        <stack> [ (pair unit unit) Pair Unit Unit ] ; .Stack => [ (pair (list operation) unit) Pair [ Transfer_tokens Unit #Mutez(A) #Address("SourceAddr") . %default ?_ ] ;; .InternalList Unit ] ; .Stack </stack>
+        <stack> [ (pair unit unit) Pair Unit Unit ] ; .Stack => [ (pair (list operation) unit) Pair [| Transfer_tokens Unit #Mutez(A) #Address("SourceAddr") . %default ?_ |] ;; .InternalList Unit ] ; .Stack </stack>
         <paramtype> %default |-> unit .AnnotationList </paramtype>
         <storagetype> unit .AnnotationList </storagetype>
         <mybalance> #Mutez(0) </mybalance>

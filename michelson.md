@@ -327,7 +327,7 @@ The following unit test groups are not supported by the symbolic interpreter.
 
   rule #ConvertBigMapsToNative(.Map) => .Map
   rule #ConvertBigMapsToNative(I |-> #BigMap(D, T) BigMaps)
-   => I |-> #MichelineToNative(D, T, .Map, .Map) #ConvertBigMapsToNative(BigMaps)
+   => (I |-> #MichelineToNative(D, T, .Map, .Map))::Map #ConvertBigMapsToNative(BigMaps)
 ```
 
 ```k
@@ -1180,7 +1180,7 @@ The `#DoCompare` function requires additional lemmas for symbolic execution.
   syntax String ::= #ConcatStrings(InternalList, String) [function]
   // --------------------------------------------------------------
   rule #ConcatStrings(.InternalList, A) => A
-  rule #ConcatStrings([ S1 ] ;; DL,  A) => #ConcatStrings(DL, A +String S1)
+  rule #ConcatStrings([| S1 |] ;; DL,  A) => #ConcatStrings(DL, A +String S1)
 ```
 
 The actual out of bounds conditions here are determined by experimentation.
@@ -1234,7 +1234,7 @@ distinguish this case from lists of strings.
   syntax Bytes ::= #ConcatBytes(InternalList, Bytes) [function]
   // ----------------------------------------------------------
   rule #ConcatBytes(.InternalList, A) => A
-  rule #ConcatBytes([ B ] ;; DL,   A) => #ConcatBytes(DL, A +Bytes B)
+  rule #ConcatBytes([| B |] ;; DL,   A) => #ConcatBytes(DL, A +Bytes B)
 ```
 
 `SIZE` is relatively simple, except that we must remember to divide by two,
@@ -1531,7 +1531,7 @@ since it does not need to track the new map while keeping it off the stack.
 
 ```k
   rule <k> CONS _A => .  ... </k>
-       <stack> [T V] ; [list T L] ; SS => [list T [ V ] ;; L] ; SS </stack>
+       <stack> [T V] ; [list T L] ; SS => [list T [| V |] ;; L] ; SS </stack>
 
   rule <k> NIL _A T => .  ... </k>
        <stack> SS => [list #Name(T) .InternalList] ; SS </stack>
@@ -1541,7 +1541,7 @@ since it does not need to track the new map while keeping it off the stack.
         ~> BT
            ...
        </k>
-       <stack> [list T [ E ] ;; L] ; SS => [T E] ; [list T L] ; SS </stack>
+       <stack> [list T [| E |] ;; L] ; SS => [T E] ; [list T L] ; SS </stack>
 
   rule <k> IF_CONS _A _  BF => BF ... </k>
        <stack> [list _ .InternalList ] ; SS => SS </stack>
@@ -1559,7 +1559,7 @@ since it does not need to track the new map while keeping it off the stack.
         ~> ITER .AnnotationList Body
            ...
        </k>
-       <stack> [list T [ E ] ;; L] ; SS => [T E] ; SS </stack>
+       <stack> [list T [| E |] ;; L] ; SS => [T E] ; SS </stack>
 ```
 
 The `MAP` operation over `list`s is defined in terms of a helper function.
@@ -1577,7 +1577,7 @@ The `MAP` operation over `list`s is defined in terms of a helper function.
   rule <k> #DoMap(T, NT, .InternalList, Acc, _) => .K ... </k>
        <stack> SS => [list #DefaultType(NT,T) #ReverseList(Acc, .InternalList)] ; SS </stack>
 
-  rule <k> #DoMap(T, NT, [ E ] ;; L, Acc, B)
+  rule <k> #DoMap(T, NT, [| E |] ;; L, Acc, B)
         => B
         ~> #DoMapAux(T, NT, L, Acc, B)
            ...
@@ -1585,7 +1585,7 @@ The `MAP` operation over `list`s is defined in terms of a helper function.
        <stack> SS => [T E] ; SS </stack>
 
   rule <k> #DoMapAux(T, NT, L, Acc, B)
-        => #DoMap(T, NT', L, [ E ] ;; Acc, B)
+        => #DoMap(T, NT', L, [| E |] ;; Acc, B)
            ...
        </k>
        <stack> [NT' E] ; SS => SS </stack>
