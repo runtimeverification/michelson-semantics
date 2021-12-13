@@ -1,7 +1,0 @@
-digraph Michelson {
-	node [shape=rectangle]
-	0 [label="DROP
-UNIT
-NIL operation
-PAIR"]
-}

@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="A Michelson semantics for Tezos built using the K Framework."
+/>
+<meta name="keywords" content="runtime, verification, rv, k" />
+<meta name="author" content="Michelson Semantics | Runtime Verification Inc" />
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../assets/img/favicon.ico" /> -->
+
+<title>Michelson Semantics | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../index.html"> Michelson Semantics </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/michelson-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../">Homepage</a>
+      <a class="bd-toc-link" href="../INSTALL">Install</a>
+      <a class="bd-toc-link" href="../USER_GUIDE">User Guide</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="user-guide">User Guide</h1>
+<p>Welcome to K-Michelson: a formal verification framework for Michelson using
+assertions written in Michelson!</p>
+<p>This guide assumes you have successfully installed K-Michelson according to
+the instructions in <a href="../INSTALL/">INSTALL.md</a>.</p>
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol>
+<li><a href="#table-of-contents">Table of Contents</a></li>
+<li><a href="#introduction-to-k-michelson">Introduction to K-Michelson</a></li>
+<li><a href="#quick-start-and-examples">Quick start and examples</a></li>
+<li><a href="#writing-your-own-k-michelson-tests">Writing Your Own K-Michelson Tests</a></li>
+<li><a href="#cross-validating-k-michelson">Cross-Validating K-Michelson</a></li>
+<li><a href="#k-michelson-test-grammar-reference">K-Michelson Test Grammar Reference</a></li>
+</ol>
+<h2 id="introduction-to-k-michelson">Introduction to K-Michelson</h2>
+<p>The main purpose of this toolkit is to enable Michelson smart contract
+developers to test their contracts more easily and thoroughly.</p>
+<p>Testing with K-Michelson is easier because it is a local client with a simple
+test format (<code>.tzt</code>) which is just a slight extension of Tezos scripts (<code>.tz</code>) that
+you are used to writing. That means you do <em>not</em> need to:</p>
+<ul>
+<li>
+<p>spin up a local test net;</p>
+</li>
+<li>
+<p>define a transaction set to produce your desired blockchain state;</p>
+</li>
+<li>
+<p>bake any blocks.</p>
+</li>
+</ul>
+<p>Testing with K-Michelson is more thorough because it enables you to:</p>
+<ul>
+<li>
+<p>test at a finer level of granularity than is possible with (<code>.tz</code>) tests,
+i.e., Michelson expressions that are not valid scripts can be tested;</p>
+</li>
+<li>
+<p>test <code>operation</code> and <code>big_map</code> emitting instructions, which is difficult
+to achieve normally because we cannot <code>COMPARE</code> such values;</p>
+</li>
+<li>
+<p>verify correctness of <em>concrete and symbolic</em> Michelson programs.
+That is, while traditional testing allows checking pairs of input and output values,
+K-Michelson allows testing over classes of inputs (such as all integers).
+This is explained in greater detail in the <a href="#symbolic-tests">symbolic test below.</a></p>
+</li>
+</ul>
+<p>A secondary purpose of K-Michelson is to provide a formal, executable, and
+human-readable semantics of the Michelson blockchain programming language
+using the K Framework. In this sense, it acts as:</p>
+<ul>
+<li>
+<p>a programming language design aid. Since K semantics are easy to modify
+and extend, it can be used to explore modifications to the language. Since
+K semantics are exectuable, it can be used to test potential
+modifications.</p>
+</li>
+<li>
+<p>an additional reference implementation for cross-validation testing
+purposes; by cross-validating alternate Michelson interpreter results,
+we can increase confidence in the language design correctness.</p>
+</li>
+</ul>
+<p>See <a href="#cross-validating-k-michelson">Cross-Validating K-Michelson</a> for more
+information.</p>
+<h2 id="quick-start-and-examples">Quick start and examples</h2>
+<p>The <code>tzt</code> test format is similar to the Tezos script format.
+A minimal test must include the <code>code</code>, <code>input</code> and <code>output</code> parameters.
+The  <code>code</code> field specifies the Michelson expression to be tested.
+The <code>input</code> field specifies the initial stack.
+The <code>output</code> field specifies the expected final stack.</p>
+<p>For example, this test asserts adding <code>5</code> to <code>5</code> produces <code>10</code>.</p>
+<pre class="language-text"><code># add_5_5.tzt
+code { ADD } ;
+input { Stack_elt int 5 ; Stack_elt int 5 } ;
+output { Stack_elt int 10 }
+</code></pre>
+<p>These <code>tzt</code> tests we may be run with the <code>interpret</code> subcommand of the <code>kmich</code> script:</p>
+<pre class="language-text"><code>./kmich interpret add_5_5.tzt
+</code></pre>
+<p>When the <code>kmich</code> script finishes executing a test, it returns an exit code
+indicating whether an error occurred, i.e., <code>0</code> indicates success and a
+non-zero code indicates an error.</p>
+<p>This script is a thin wrapper around K tools such as <code>krun</code>, <code>kprove</code>, and
+provides a more user friendly, but constrained interface, for running tests.
+To see the full range of options avaialable, run:</p>
+<pre class="language-text"><code>./kmich help
+</code></pre>
+<p>Additional example concrete unit tests reside in the <code>/tests/unit</code> folder in this archive.
+The file <code>/tests/unit/concate_bytes_00.tzt</code> is a unit test for the <code>CONCAT</code>
+instruction.</p>
+<pre class="language-text"><code>code { CONCAT } ;
+input { Stack_elt bytes 0xFF ; Stack_elt bytes 0xcd } ;
+output { Stack_elt bytes 0xffcd }
+</code></pre>
+<p>These may be run using a similar command:</p>
+<pre class="language-text"><code>./kmich interpret tests/unit/concat_bytes_00.tzt
+</code></pre>
+<p>The test runner will consider a concrete test passed (i.e. return a <code>0</code> exit
+code) if and only if:</p>
+<ol>
+<li>The test file follows the <code>.tzt</code> format properly;</li>
+<li>The <code>code</code> block is well-typed with respect to the <code>input</code> and <code>output</code>
+stacks;</li>
+<li>Given the provided <code>input</code>, after executing the <code>code</code>, the Michelson
+interpreter returns exactly the <code>output</code> stack.</li>
+</ol>
+<h4 id="symbolic-tests">Symbolic tests</h4>
+<p>Tests may also be run over classes of inputs instead of particular concrete values.
+To do so, we may use &quot;symbolic variables&quot; in the <code>input</code> and <code>output</code> fields such as <code>$N</code> in the next example.
+We call tests that use symbolic variables &quot;symbolic tests&quot;, and all other tests &quot;concrete tests&quot;.
+Concrete tests are already sufficient to explore a wide range of script behaviors and can be executed much more quickly.
+Symbolic tests allow us to perform a full <em>proof of correctness</em> when required, but are much more expensive to run.</p>
+<p>In the next test, we assert that <code>N + 1 &gt; 0</code> for any natural number <code>N</code>:</p>
+<pre class="language-text"><code># n_plus_1.tzt
+code { ADD ; CMPGT }
+input { Stack_elt nat $N ; Stack_elt nat 1 ; Stack_elt nat 0 ; }
+output { Stack_elt bool True }
+</code></pre>
+<p>Symbolic unit tests are run using the <code>kmich symbtest</code> subcommand:</p>
+<pre class="language-text"><code>./kmich symbtest n_plus_1.tzt
+</code></pre>
+<p>For tests that use loops, K-Michelson needs each loop to be annotated with a
+&quot;loop invariant&quot;. Invariants are required to hold when the program reaches the
+loop, and also at the end of each loop iteration.</p>
+<pre class="language-text"><code>input { Stack_elt nat $N0 } ;
+code { INT ;
+       DUP ;
+       PUSH nat 0 ;
+       SWAP ;
+       GT ;
+       LOOP @I {
+           PUSH nat 1 ;
+           ADD ;
+           DIP {
+             PUSH nat 1 ;
+             SWAP ;
+             SUB
+           } ;
+           DUP 2 ;
+           GT
+       } ;
+       DIP { DROP }
+} ;
+invariant @I
+  { Stack_elt bool $GUARD ; Stack_elt nat $C ; Stack_elt int $N }
+  { { PUSH int $N ; PUSH nat $N0 ; INT ; CMPGE ; PUSH int $N ; GE ; AND }
+  ; { PUSH int $N ; PUSH nat $N0 ; SUB ; PUSH nat $C ; INT ; CMPEQ }
+  ; { PUSH int $N ; GT ; PUSH bool $GUARD ; CMPEQ }
+  } ;
+output { Stack_elt nat $C } ;
+postcondition { { PUSH nat $N0 ; PUSH nat $C ; COMPARE ; EQ } }
+</code></pre>
+<p>We can use the <code>precondition</code> field (not shown above) to specify test preconditions,
+i.e., a list of boolean functions that must hold before <code>code</code> executes for the test to succeed;
+in particular, preconditions can constrain symbolic input values.
+The  <code>postcondition</code> field specifies the test postconditions, i.e., a list of boolean
+functions that must hold after <code>code</code> executes for the test to succeed;
+in particular, postconditions can constrian symbolic output values.
+The <code>invariant</code> field specifies loop invariants for <code>LOOP</code> and <code>LOOP_LEFT</code>; in
+particular, loop invariants are necessary when looping with symbolic
+values. One <code>invariant</code> field is required for each loop in the code.</p>
+<p>Additional example symbolic unit tests reside in the <code>/tests/symbolic</code> folder in this archive.
+The file <code>/tests/symbolic/add-party.tzt</code> is a unit test which tests whether
+adding two numbers of opposite parity (an even and odd number) always produces
+an odd number:</p>
+<pre class="language-text"><code>code { ADD } ;
+input { Stack_elt nat $I1 ; Stack_elt nat $I2 } ;
+output { Stack_elt nat $I3 } ;
+
+precondition { { PUSH nat 2 ; PUSH nat $I1 ; EDIV ;
+                 IF_NONE { PUSH bool False }
+                         { CDR ; PUSH nat 1 ; COMPARE ; EQ } } ;
+
+               { PUSH nat 2 ; PUSH nat $I2 ; EDIV ;
+                 IF_NONE { PUSH bool False }
+                         { CDR ; PUSH nat 0 ; COMPARE ; EQ } } } ;
+
+postcondition { { PUSH nat 2 ; PUSH nat $I3 ; EDIV ;
+                  IF_NONE { PUSH bool False }
+                          { CDR ; PUSH nat 1 ; COMPARE ; EQ } } }
+</code></pre>
+<p>These may be run similarly:</p>
+<pre class="language-text"><code>./kmich symbtest tests/symbolic/add-parity.tzt
+</code></pre>
+<p>Since K-Michelson is derived from the K Framework, it also allows us to use the
+full power <code>kprove</code> for more advanced proofs, but a full definition of such
+tests is outside the scope of this document. Consult the K Framework
+documentation for more details if needed.</p>
+<p>The test runner will consider a symbolic test passed (i.e. return a <code>0</code> exit
+code) if and only if:</p>
+<ol>
+<li>The test file follows the extended <code>.tzt</code> format properly;</li>
+<li>The <code>code</code> block is well-typed with respect to the (possibly symbolic)
+<code>input</code> and <code>output</code> stacks;</li>
+<li>Given the provided <code>input</code> stack:
+<ul>
+<li>each predicate <code>p</code> in the <code>precondition</code> holds;</li>
+<li>symbolically executing the <code>code</code> produces actual output stack <code>S</code></li>
+<li>the expected <code>output</code> stack <em>matches</em> actual output stack <code>S</code>
+with assignment &#x3B1;;</li>
+<li>each predicate <code>q</code> in the <code>postcondition</code>, after applying substitution
+&#x3B1;, holds.</li>
+</ul>
+</li>
+</ol>
+<p>Clearly, the satisfaction conditions for symbolic tests are much more complex
+than concrete tests. On the flip side, symbolic tests have much more
+expressive power than concrete tests; they can <em>prove</em> correctness of a
+program for <em>any</em> valid input as opposed to just <em>some</em> valid input.</p>
+<h2 id="writing-your-own-k-michelson-tests">Writing Your Own K-Michelson Tests</h2>
+<p>As mentioned above, K-Michelson supports concrete and symbolic tests.
+We consider both cases separately.</p>
+<h3 id="concrete-tests">Concrete Tests</h3>
+<p>Writing your own concrete tests is as simple as writing three fields:</p>
+<ol>
+<li>an input stack</li>
+<li>a code block to execute using (1)</li>
+<li>an expected output stack after executing (2)</li>
+</ol>
+<p>An easy way to get started is to copy the concrete test template below and
+replace each instance of <code>FIXME</code> with a valid expression of the correct type
+such that the resulting Michelson expression in the <code>code</code> field is well-typed
+with respect to the input stack and output stack.</p>
+<p>See the <a href="#field-types">field type reference</a> for more information.</p>
+<pre class="language-text"><code>input { FIXME } ;
+code { FIXME } ;
+output { FIXME }
+</code></pre>
+<p>For example, suppose we have the following simple concrete test:</p>
+<pre class="language-text"><code># simple_v1 - passing test
+input { Stack_elt int 5 ; Stack_elt int 9 } ;
+code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD } ;
+output { Stack_elt int 7 }
+</code></pre>
+<p>In words, this test does the following:</p>
+<ol>
+<li>Check if the first stack element is less than the second;</li>
+<li>If yes, return the first stack element plus two;</li>
+<li>Otherwise, return the first stack element minus two.</li>
+</ol>
+<p>This test passes according to our definition of successful concrete test
+because, given the input stack, we observe that <code>5 &lt; 9</code>, and so obtain the
+final output stack <code>5 + 2</code> which equals <code>7</code>.</p>
+<p>When we swap the two input stack elements (as shown below), it also succeeds:</p>
+<pre class="language-text"><code># simple_v2 - passing test with swapped stack
+input { Stack_elt int 9 ; Stack_elt int 5 } ;
+code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD } ;
+output { Stack_elt int 7 }
+</code></pre>
+<p>This is because, given the input stack, we see that <code>9 &lt; 5</code> is <em>not</em> true, and
+so obtain the final output stack <code>9 - 2</code> which also equals <code>7</code>.</p>
+<p>On the other hand, the following test fails:</p>
+<pre class="language-text"><code># simple_v3 - failing test
+input { Stack_elt int 5 ; Stack_elt int 9 } ;
+code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD } ;
+output { Stack_elt int 8 }
+</code></pre>
+<p>This is because, our final actual output stack is <code>7</code> but our expected output
+stack is <code>8</code>.</p>
+<h3 id="symbolic-tests-1">Symbolic Tests</h3>
+<p>For symbolic tests, the situation is slightly more complex. As in the concrete
+case, the three fields above are required. However, in the case of symbolic
+tests, the <code>input</code> and <code>output</code> fields are slightly more flexible, because
+they support symbolic as well as concrete stacks. Before we continue, it will
+be helpful to review what concrete and symbolic stacks look like and what
+we can do with them.</p>
+<h4 id="symbolic-stacks-and-matching">Symbolic Stacks and Matching</h4>
+<p>In K-Michelson, we use the following stack notation:</p>
+<pre class="language-text"><code>{ Stack_elt type-1 value-1 ; Stack_elt type-2 value-2 ; ... }
+</code></pre>
+<p>where <code>value-1</code> occurs at the top of the stack, <code>value-2</code> is
+the second from the top, etc. We divide our stacks into
+concrete and symbolic variants. Let us describe them below.
+As a simple example, the following stack is <em>concrete</em>:</p>
+<pre class="language-text"><code># Concrete Stack A
+{ Stack_elt bool true ; Stack_elt int -15 ; Stack_elt nat 87 }
+</code></pre>
+<p>On the other hand, the following stack is <em>symbolic</em> (we interchangeably use
+the word <em>abstract</em>):</p>
+<pre class="language-text"><code># Abstract Stack B
+{ Stack_elt bool $T ; Stack_elt int -15 ; Stack_elt nat $P }
+</code></pre>
+<p>Why? Because it has two variables, <code>T</code> and <code>P</code>. Concrete stacks have no
+variables, by definition.</p>
+<p>Furthermore, we say that a stack called <code>B</code> <em>matches</em> a stack called <code>A</code> if
+and only if:</p>
+<ol>
+<li>each concrete value in stack <code>B</code> is equivalent to a concrete element in
+the corresponding position in stack <code>A</code></li>
+<li>each variable in stack <code>B</code> matches the type of the element in the
+corresponding position in stack <code>A</code>.</li>
+<li>if a variable in stack <code>B</code> occurs more than once, the corresponding values
+at each position in <code>A</code> are equivalent.</li>
+</ol>
+<p>In the example above, <code>B</code> does indeed match <code>A</code> becuase:</p>
+<ol>
+<li>
+<p>The only concrete value <code>-15</code> with type <code>int</code> occurs as position 2
+in both stack <code>B</code> and stack <code>A</code>.</p>
+</li>
+<li>
+<p>Variable <code>T</code> in stack <code>B</code> at position 1 has type <code>bool</code>. The concrete
+value <code>true</code> in stack <code>A</code> at position 1 also has type <code>bool</code>.
+Similarly, the variable <code>P</code> in stack <code>B</code> at position 3 has type <code>nat</code> and
+the element at position 3 in stack <code>A</code> also has type <code>nat</code>.</p>
+</li>
+<li>
+<p>Since no variables are duplicated in this example, this condition
+holds trivially.</p>
+</li>
+</ol>
+<h4 id="writing-tests-by-abstraction">Writing Tests by Abstraction</h4>
+<p>A common way that symbolic tests are written is through <em>abstraction</em>, that is,
+we replace concrete values in the input and output stacks with more general symbolic
+values. For example, suppose we want to abstract the simple concrete test we
+saw above:</p>
+<pre class="language-text"><code># simple_v1 - passing test
+input { Stack_elt int 5 ; Stack_elt int 9 } ;
+code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD } ;
+output { Stack_elt int 7 }
+</code></pre>
+<h5 id="input-stack-abstraction">Input Stack Abstraction</h5>
+<p>We could try abstracting the test&apos;s input stack as follows:</p>
+<pre class="language-text"><code># simple_v4 - failing test with abstracted input stack
+input { Stack_elt int $I ; Stack_elt int $J } ;
+code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD } ;
+output { Stack_elt int 7 }
+</code></pre>
+<p>Clearly, at this point, the test is incorrect. Why? In the abstracted stack,
+information about the relationship between the two stack values is lost.
+This means, for one thing, that both branches of the <code>IF</code> are possible, depending on whether <code>I &lt; J</code> is true or false.</p>
+<p>Additionally, we need to sure that for any two integers <code>I</code> and <code>J</code> that:</p>
+<ul>
+<li>if <code>I &lt; J</code> is true, then <code>7 = I + 2</code></li>
+<li>if <code>I &lt; J</code> is <em>not</em> true, then <code>7 = I - 2</code></li>
+</ul>
+<p>But we can find examples where this does not follow. For example, let <code>I</code>
+equal <code>4</code>.</p>
+<ul>
+<li>if <code>J</code> equals <code>5</code>, then <code>I &lt; J</code> is true but <code>7 != 4 + 2</code></li>
+<li>if <code>J</code> equals <code>2</code>, then <code>I &lt; J</code> is <em>not</em> true but <code>7 != 4 - 2</code></li>
+</ul>
+<p>For this reason, we need to introduce <em>preconditions</em> to constrain our input
+stack. For example, we may want to reintroduce the constraint that the second
+stack element is greater than the first. We can add this constraint using a
+precondition:</p>
+<pre class="language-text"><code># simple_v5 - failing test with abstracted and constrained input stack
+input { Stack_elt int $I ; Stack_elt int $J } ;
+precondition {
+               { PUSH int $J ; PUSH int $I ; CMPLT }
+             } ;
+code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD } ;
+output { Stack_elt int 7 }
+</code></pre>
+<p>Note that when we <code>PUSH</code> elements onto our stack, they appear in reverse
+order relative to our stack notation, i.e., if we have the stack:</p>
+<pre class="language-text"><code>{ Stack_elt int 1 ; Stack_elt int 0 }
+</code></pre>
+<p>and then perform a <code>PUSH int 2</code>, we would have the result stack:</p>
+<pre class="language-text"><code>{ Stack_elt int 2 ; Stack_elt int 1 ; Stack_elt int 0 }
+</code></pre>
+<p>With this explanation, bbserve that, given this precondition, the
+second branch of the <code>IF</code> expression is no longer viable.
+Thus, we have simplified our test state space.
+However, our test is still incorrect, since the counterexample that we saw
+above where <code>I</code> equals <code>4</code> and <code>J</code> equals <code>5</code> still holds.</p>
+<p>To resolve this problem, we also need to abstract our output stack.</p>
+<h5 id="output-stack-abstraction">Output Stack Abstraction</h5>
+<p>We can abstract our output stack using the same mechanism we saw for
+abstracting our input stack:</p>
+<pre class="language-text"><code># simple_v6 - passing test with:
+# - abstracted and constrained input stack
+# - abstracted output stack
+input { Stack_elt int $I ; Stack_elt int $J } ;
+precondition {
+               { PUSH int $J ; PUSH int $I ; CMPLT }
+             } ;
+code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD } ;
+output { Stack_elt int $K }
+</code></pre>
+<p>Here, the concrete value <code>7</code> was replaced by the variable <code>K</code>. Perhaps
+surprisingly, this test now <em>passes</em>. Why? There is a fundamental asymmetry
+between abstracting the input stack and the output stack.</p>
+<p>When we abstract the input stack, we need to check that the test passes for
+<em>all</em> possible instances of our input variables.</p>
+<p>When we abstract the expected output stack, we only need to check that the
+test passes for <em>any</em> possible instance of our output variables.</p>
+<p>The upshot of all of this is: for this version of our symbolic test, the test
+will pass if it well-typed, that is, if it produces a singleton stack with an
+integer.</p>
+<p>We may rightly feel that this test is too weak, since we can type-check
+Michelson contracts directly using the type-checker; a complex test like
+ours is entirely unnecessary.</p>
+<p>Instead, much as we did for input stacks, we can constrain our output stack
+with <em>postconditions</em>. Let&apos;s add a postcondition that makes our test more
+meaningful:</p>
+<pre class="language-text"><code># simple_v7 - passing test with:
+# - abstracted and constrained input stack
+# - abstracted and constrained output stack
+input { Stack_elt int $I ; Stack_elt int $J } ;
+precondition {
+               { PUSH int $J ; PUSH int $I ; CMPLT }
+             } ;
+code { DUP ; DIP { CMPLT } ; SWAP ; IF { PUSH int 2 } { PUSH int -2 } ; ADD } ;
+output { Stack_elt int $K } ;
+postcondition {
+                { PUSH int $I ; PUSH int $K ; CMPGT }
+              }
+</code></pre>
+<p>This postcondition (correctly) asserts that our output value <code>K</code> has a value
+which is greater than our input argument <code>I</code>. It must hold because, by our
+precondition, the exact value of our output stack will be <code>I + 2</code>.
+When we substitute <code>K</code> for <code>I + 2</code> by stack matching, we see that <code>I + 2 &gt; I</code>,
+as required.</p>
+<h5 id="aside-on-stack-abstraction-and-constraints">Aside on Stack Abstraction and Constraints</h5>
+<p>In general, due to the asymmetry between abstracted input and output stacks:</p>
+<ul>
+<li>abstracting our input stack makes a test <em>less</em> likely to pass;</li>
+<li>abstracting our output stack makes a test <em>more</em> likely to pass.</li>
+</ul>
+<p>In the end, if we fully abstract both our input and output stacks with unique
+and non-repeated variable names, a successful test run just means that our
+Michelson expression was well-typed.</p>
+<p>To compensate for the imprecision introduced by abstraction, we can add
+constraints via preconditions and postconditions, as we did above. These
+constraints reverse the trends above, that is:</p>
+<ul>
+<li>adding more constraints via preconditions to an abstract input stack makes
+a test <em>more</em> likely to pass:</li>
+<li>adding more constraints via postconditions to an abstract output stack
+makes a test <em>less</em> likely to pass.</li>
+</ul>
+<p>One way to think about constraints is that they make an abstract stack
+<em>less abstract</em>, because the constraints forbid some assignments of variables
+to values that would otherwise be permitted.</p>
+<p>For example, the abstract stack <code>{ Stack_elt int $I }</code> permits <code>I</code> to be any
+integer, including, for example, <code>-5</code>. Adding the constraint
+<code>{ PUSH int $I ; ISNAT }</code>
+means that all negative (non-natural) values are forbidden, and thus, the
+assignment of <code>I</code> to <code>-5</code> is forbidden.</p>
+<h4 id="symbolic-tests-with-loops">Symbolic Tests with Loops</h4>
+<p>Note that our simple test did not have any loops. That was intentional. Adding
+loops almost always complicates the analysis and verification of programs. The
+problem can observed even in short programs:</p>
+<pre class="language-text"><code># loop-parity.tzt - test which infinitely loops
+input { Stack_elt nat $N_INIT ; Stack_elt bool True } ; # N E
+code { DUP ;                                            # N N E
+       INT ; GT ;                                       # (N&gt;0) N E
+       LOOP { DIP { NOT } ;                             # N &#xAC;E
+              PUSH int 1 ; SWAP ; SUB ;                 # (N-1) &#xAC;E
+              DUP ;                                     # (N-1) (N-1) &#xAC;E
+              GT                                        # (N-1&gt;0) (N-1) &#xAC;E
+            } ;                                         # N E
+       DROP                                             # E
+     } ;
+output { Stack_elt bool $EVENNESS_RESULT }
+</code></pre>
+<p>The code for program is only 7 lines long.
+For readability, we have annotated each line with a representation of the
+stack which results from executing that line of code, where the leftmost
+item represents the stack top and the rightmost item represents the stack
+bottom.
+The program consists of a simple loop which counts down from <code>N_INIT</code> to 0.
+Each time the loop iterates once, it flips the value of the boolean <code>E</code> (for evenness) in the
+second position of the input stack.</p>
+<p>Here is our burning question: is the final value of that boolean, i.e., the
+value of the variable <code>$EVENNESS_RESULT</code>, <code>True</code> or <code>False</code>?</p>
+<p>Given just the information in the test above, it seems that there may be cases when it is <code>True</code>, and others when it is <code>False</code>.
+With some careful thought, we may realize that if we additionally know whether
+the value <code>N</code> is even or odd, we can compute the final value of the program.
+That is, the result is <code>True</code> if <code>N</code> is even and <code>False</code> if <code>N</code> is odd.
+We can express this requirement as a postcondition:</p>
+<pre class="language-text"><code># loop-parity.tzt - test which infinitely loops with
+# - postcondition
+input { Stack_elt nat $N_INIT ; Stack_elt bool True } ; # N E
+code { INT ; DUP ;                                      # N N E
+       GT ;                                             # (N&gt;0) N E
+       LOOP @I { DIP { NOT } ;                          # N &#xAC;E
+                 PUSH int 1 ; SWAP ; SUB ;              # (N-1) &#xAC;E
+                 DUP ;                                  # (N-1) (N-1) &#xAC;E
+                 GT                                     # (N-1&gt;0) (N-1) &#xAC;E
+               } ;                                      # N E
+       DROP                                             # E
+     } ;
+output { Stack_elt bool $EVENNESS_RESULT } ;
+postcondition { # EVENNESS_RESULT = (N % 2) == 0
+                { PUSH nat 2 ; PUSH nat $N_INIT ;
+                  EDIV ; ASSERT_SOME ; CDR ;
+                  PUSH nat 0 ; CMPEQ ;
+                  PUSH bool $EVENNESS_RESULT ; CMPEQ } }
+</code></pre>
+<p>Unfortunately, even after adding a postcondition, we still cannot complete the
+proof.
+This is because the K-Michelson verifies
+programs using symbolic execution, i.e., by executing the program all
+possible ways and checking that we get the result we want each time.
+In particular, this means the framework does <em>not know how many</em> times to
+execute a loop.
+Depending on the initial value of variable <code>N</code>, we may need to execute the loop body 100 times, or 500.
+This means we will never be sure we have executed the loop <em>all possible ways</em>, and the runner will get stuck executing the program for larger and larger values of <code>N</code>.</p>
+<p>How can we escape this endless cycle?
+It seems clear that we shouldn&apos;t need to execute the loop in all possible ways --
+we can argue by induction that the post-condition holds.
+We claim that the current value of <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>E</mi></mrow><annotation encoding="application/x-tex">E</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.68333em;vertical-align:0em;"></span><span class="mord mathnormal" style="margin-right:0.05764em;">E</span></span></span></span> equals <code>True</code> if the difference between <code>N</code> and it&apos;s current value is even, otherwise it is <code>False</code>.
+When <code>N</code>&apos;s initial value is <code>0</code> its clear that this since <code>E</code> is initially <code>True</code>, and the body is not executed.
+When <code>N</code> is greater than <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>0</mn></mrow><annotation encoding="application/x-tex">0</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.64444em;vertical-align:0em;"></span><span class="mord">0</span></span></span></span>, the body reduces the value of <code>N</code> by <code>1</code> and flips <code>E</code>.
+By applying the inductive hypothesis, our claim must hold.</p>
+<p>This is called a <em>loop invariant</em> . It allows us to summarize the properties of an loop we care about, so that we do not need to execute it to arbitrary depth.
+in a finite way.</p>
+<p>In K-Michelson, we write loop invariants in a two step process:</p>
+<ol>
+<li>in the <code>code</code> field, we must annotate each symbolic loop with a unique
+name, e.g. <code>@MYLOOP</code>;</li>
+<li>for each named symbolic loop, we introduce an <code>invariant</code> field of the
+form <code>invariant @MYLOOP</code> which defines the loop invariant for loop
+<code>@MYLOOP</code> using a stack predicate list (see the
+<a href="#field-types">field types reference</a> for more info).</li>
+</ol>
+<p>In general, it is impossible to develop a method that will always give us the
+loop invariants that we want, so writing good loop invariants will always be
+somewhat of an art.</p>
+<p>As an example, we can extend our previous test case to add a loop invariant:</p>
+<pre class="language-text"><code># loop-parity.tzt - failing test with
+# - postcondition
+# - loop invariant
+input { Stack_elt nat $N ; Stack_elt bool True } ; # N E
+code { INT ; DUP ;                                 # N N E
+       GT ;                                        # (N&gt;0) N E
+       LOOP @I { DIP { NOT } ;                     # N &#xAC;E
+                 PUSH int +1 ; SWAP ; SUB ;        # (N-1) &#xAC;E
+                 DUP ;                             # (N-1) (N-1) &#xAC;E
+                 GT                                # (N-1&gt;0) (N-1) &#xAC;E
+               } ;                                 # N E
+       DROP                                        # E
+     } ;
+output { Stack_elt bool $EVENNESS_RESULT } ;
+postcondition { # EVENNESS_RESULT = (N % 2) == 0
+                { PUSH nat 2 ; PUSH nat $N ;
+                  EDIV ; ASSERT_SOME ; CDR ;
+                  PUSH nat 0 ; CMPEQ ;
+                  PUSH bool $EVENNESS_RESULT ; CMPEQ } } ;
+invariant @I
+          { Stack_elt bool $GUARD ; Stack_elt int $CURRENT ; Stack_elt bool $EVENNESS }
+          {  # CURRENT &gt;= 0
+           ; { PUSH int 0 ; PUSH int $CURRENT ; CMPGE }
+
+             # GUARD = CURRENT &gt; 0
+           ; { PUSH int $CURRENT ; GT ; PUSH bool $GUARD ; CMPEQ }
+
+             # EVENNESS = (N - CURRENT) % 2 == 0
+           ; { PUSH nat 2 ;
+               PUSH int $CURRENT ; PUSH nat $N ; INT ; SUB ;
+               EDIV ; ASSERT_SOME ; CDR ;
+               PUSH nat 0 ; CMPEQ ; PUSH bool $EVENNESS ; CMPEQ }
+          }
+</code></pre>
+<p>The invariant has three parts:</p>
+<ol>
+<li>
+<p>a name written with an at-sign <code>@</code> followed by an alphanumeric pattern
+(above the name is <code>@I</code>)</p>
+</li>
+<li>
+<p>a stack pattern describing the stack shape when the looping instruction is
+encountered (above the stack pattern is
+<code>{ Stack_elt bool $GUARD ; Stack_elt int $CURRENT ; Stack_elt bool $EVENNESS }</code>)</p>
+</li>
+<li>
+<p>an invariant specification which is a list of Michelson blocks which
+consume an empty stack and produce a stack with a single boolean value on
+top (above the invariant specification has three clauses representing the
+predicates <code>CURRENT &gt;= 0</code>, <code>GUARD = CURRENT &gt; 0</code>, and
+<code>EVENNESS = (N - CURRENT) % 2 == 0</code>);
+note that invariant specification blocks may reference any variables which
+are bound by the stack pattern</p>
+</li>
+</ol>
+<p>The most important part is (3) whose purpose is to serve as a <em>finite</em> summary
+of the infinite loop behavior.
+The exact criteria that are needed for a loop invariant are beyond the scope
+of this tutorial.
+Intuitively, a loop invariant defines <em>what must be true immediately before
+the loop and also after each loop iteration</em>.
+We then can replace the loop execution by its summarized logical form in our
+proof.</p>
+<p>In the above example, we carefully chose our three predicates in our invariant
+specification to precisely describe our loop behavior.
+Let us consider each of them briefly below:</p>
+<ol>
+<li>
+<p><code>CURRENT &gt;= 0</code> - This invariant follows from a straightforward analysis of
+the loop; since the value of <code>CURRENT</code> varies between the positive-valued
+<code>N</code> and <code>0</code>, it must always be greater than <code>0</code> during loop execution.</p>
+</li>
+<li>
+<p><code>GUARD = CURRENT &gt; 0</code> - This invariant defines the value of loop guard
+variable (i.e., the loop will continue as long as the guard is true); we
+see that the <code>GUARD</code> holds if and only <code>CURRENT &gt; 0</code>.</p>
+</li>
+<li>
+<p><code>EVENNESS = (N - CURRENT) % 2 == 0</code> - This is the key component of the
+invariant; it describes the partially computed <code>EVENNESS_RESULT</code>.
+After any number of loop iterations, <code>EVENNESS</code> will be true if and only
+if <code>N - CURRENT</code> is even.</p>
+</li>
+</ol>
+<p>To complete our proof, we must show that our postcondition
+<code>EVENNESS_RESULT = (N % 2) == 0</code> is true.
+We can do so by the following chain of deduction:</p>
+<ol>
+<li>
+<p>Since we know that the loop will terminate when <code>GUARD</code> is false, putting
+invariants (1) and (2) together lets us determine that when the loop
+terminates, <code>CURRENT = 0</code>.</p>
+</li>
+<li>
+<p>By plugging this assignment into (3), we know that when the loop
+terminates, <code>EVENNESS = (N - 0) % 2 == 0</code> which reduces to
+<code>EVENNESS = (N % 2) == 0</code>.</p>
+</li>
+<li>
+<p>The value of <code>EVENNESS_RESULT</code> is identical to <code>EVENNESS</code> at loop
+termination, i.e., <code>EVENNESS_RESULT = EVENNESS</code>.</p>
+</li>
+<li>
+<p>Using the assignment dervied in (3), we can replace each occurence of
+<code>EVENNESS_RESULT</code> in our postcondition by <code>EVENNESS</code>. But then, note that
+this is exactly the fact we derived in (2).
+<a href="https://en.wikipedia.org/wiki/Q.E.D." target="_blank" rel="noopener">QED</a>.</p>
+</li>
+</ol>
+<h5 id="final-words-on-loop-invariants">Final Words on Loop Invariants</h5>
+<p>There is one other detail one should be aware of when write loop invariants.
+In particular, one must be careful to check that the loop invariant is truly
+an invariant, i.e., that the invariant always holds immediately before the
+loop and after each loop iteration.
+For more information on this advanced topic, see our
+<a href="../loop-invariants/">primer on loop invariants</a></p>
+<h2 id="cross-validating-k-michelson">Cross-Validating K-Michelson</h2>
+<p>As part of its goal to be a human-readable language semantics and aid
+programming language design, K-Michelson supports a cross-valdiation test
+mode. In this mode, concrete unit tests (under <code>/tests/unit</code>) are executed
+in the following manner:</p>
+<ol>
+<li>
+<p>The unit test is executed by K-Michelson.</p>
+</li>
+<li>
+<p>The same unit test is executed by <code>tezos-client</code>, the reference Michelson
+interpreter.</p>
+</li>
+<li>
+<p>The results are compared. If they are identical, the test succeeds;
+otherwise, the test fails.</p>
+</li>
+</ol>
+<p>To use this mode, use the <code>/lib/tezos-client-unit-test</code> command, e.g.,</p>
+<pre class="language-text"><code>./lib/tezos-client-unit-test tests/unit/concat_bytes_00.tzt
+</code></pre>
+<p>Note that this mode has additional dependencies and build requirements
+compared to the concrete or symbolic unit tests. See <a href="../INSTALL/">INSTALL.md</a>
+for details.</p>
+<h2 id="k-michelson-test-grammar-reference">K-Michelson Test Grammar Reference</h2>
+<p>Type (1)-(2) tests use the <code>.tzt</code> format, first defined in
+<a href="https://gitlab.com/tezos/tezos/-/merge_requests/1487/diffs" target="_blank" rel="noopener">here</a>.
+The <code>.tzt</code> format is a slight extension of the <code>.tz</code> format.
+For convenience, we briefly explain the <code>.tzt</code> grammar here.</p>
+<p>The <code>.tzt</code> format can be understood as schemas applied to the
+<a href="http://tezos.gitlab.io/whitedoc/micheline.html" target="_blank" rel="noopener">Micheline format</a>.
+More abstractly, it is an unordered set of typed fields that optionally
+contain associated data.</p>
+<h4 id="michelson-grammar-extensions">Michelson Grammar Extensions</h4>
+<p>In the standard Michelson grammar, there are no literals for the <code>operation</code>
+and <code>big_map</code> types. The <code>.tzt</code> format adds support for these literals because
+tests may need to refer to these kinds of values.</p>
+<ol>
+<li>
+<p><code>operation</code> literals have the following form:</p>
+<ul>
+<li>
+<p><code>Create_contract contract (option key_hash) mutez T byte</code> where
+<code>contract</code>&apos;s storage type is <code>T</code></p>
+</li>
+<li>
+<p><code>Transfer_tokens T mutez address byte</code> where the <code>contract</code> value at
+<code>address</code> has parameter type <code>T</code></p>
+</li>
+<li>
+<p><code>Set_delegate (option key_hash) byte</code></p>
+</li>
+</ul>
+<p>where in each case the final <code>byte</code> argument represents a cryptographic
+nonce.</p>
+</li>
+<li>
+<p><code>big_map</code> literals have the following form:</p>
+<ul>
+<li>
+<p>a natural number identifier referring to an indexed <code>big_map</code> in
+the <code>big_maps</code> field (see description below)</p>
+<p>Ex. <code>2</code></p>
+</li>
+<li>
+<p>a standard <code>map</code> literal</p>
+<p>Ex. <code>{ Elt 1 True ; Elt 3 False }</code> (literal of type <code>big_map nat bool</code>)</p>
+</li>
+<li>
+<p>a pair of a <code>big_map</code> identifier and a map literal (the map literal
+represents a difference list)</p>
+<p>Ex. <code>Pair 2 { Elt 1 False }</code> (refers to the <code>big_map</code>
+<code>{ Elt 1 False ; Elt 3 False }</code> if <code>2</code> identifies the map
+<code>{ Elt 1 True  ; Elt 3 False }</code>)</p>
+</li>
+</ul>
+</li>
+</ol>
+<h4 id="field-types">Field Types</h4>
+<p>We list the set of possible types below. Note that each field can accept only
+<em>one</em> type.</p>
+<ul>
+<li>
+<p>expression - an arbitrary Michelson expression</p>
+<p>Ex. <code>{ PUSH int 1; PUSH int -2; ADD }</code></p>
+<p>Ex. <code>{}</code></p>
+</li>
+<li>
+<p>stack - a typed Michelson stack which is equivalent to a list of stack
+stack elements of the form <code>Stack_elt type value</code></p>
+<p>Ex. <code>{ Stack_elt int -1 ; Stack_elt (set int) { Elt 0 ; Elt 3 } }</code></p>
+<p>Ex. <code>{ Stack_elt bool True }</code></p>
+<p>Ex. <code>{}</code></p>
+</li>
+<li>
+<p>result stack - a typed Michelson stack or a stack representing a failed
+computation which comes in four forms:</p>
+<p>Ex. Any stack literal</p>
+<p>Ex. <code>(Failed D)</code> where <code>D</code> is any Michelson data literal</p>
+<p>Ex. <code>(MutezOverflow I J)</code> where <code>I</code> and <code>J</code> are mutez literals</p>
+<p>Ex. <code>(MutezUnderflow I J)</code> where <code>I</code> and <code>J</code> are mutez literals</p>
+<p>Ex. <code>(GeneralOverflow I J)</code> where <code>I</code> and <code>J</code> are number literals</p>
+</li>
+<li>
+<p>type - any Michelson type</p>
+<p>Ex. <code>bool :flag</code></p>
+<p>Ex. <code>pair nat int</code></p>
+</li>
+<li>
+<p>timestamp - a Michelson timestamp literal</p>
+<p>Ex. <code>0</code></p>
+<p>Ex. <code>&quot;2019-09-26T10:59:51Z&quot;</code></p>
+</li>
+<li>
+<p>mutez - a Michelson mutez literal</p>
+<p>Ex. <code>0</code> (minimum value)</p>
+<p>Ex. <code>9223372036854775807</code> (maximum value)</p>
+</li>
+<li>
+<p>address - a Michelson address literal</p>
+<p>Ex. <code>&quot;tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx&quot;</code></p>
+<p>Ex. <code>&quot;KT1BEqzn5Wx8uJrZNvuS9DVHmLvG9td3fDLi&quot;</code></p>
+</li>
+<li>
+<p>chain_id - a Michelson chain_id literal</p>
+<p>Ex. <code>0x00000000</code> (minimum value)</p>
+<p>Ex. <code>0xFFFFFFFF</code> (maximum value)</p>
+</li>
+<li>
+<p>contract type map - a map of contract addresses to their parameter types
+where each map entry has the form <code>Contract address type</code></p>
+<p>Ex. <code>{ Contract &quot;KT1BEqzn5Wx8uJrZNvuS9DVHmLvG9td3fDLi&quot; nat ;        Contract &quot;KT1HgAM3pNzkqd1Ps8iunMGNopFRFKHWoPdW&quot; (list int) }</code></p>
+<p>Ex. <code>{ Contract &quot;KT1BEqzn5Wx8uJrZNvuS9DVHmLvG9td3fDLi&quot; nat }</code></p>
+<p>Ex. <code>{}</code></p>
+</li>
+<li>
+<p>big_map index map - a map of natural number indices to big_map literals
+where each map entry has the form <code>Big_map nat type type map_literal</code></p>
+<p>Ex. <code>{ Big_map 1 string int  { Elt &quot;bar&quot; 1 ; Elt &quot;foo&quot; 2 } ;        Big_map 2 string bool { Elt &quot;a&quot; True ; Elt &quot;b&quot; False } }</code></p>
+<p>Ex. <code>{}</code></p>
+</li>
+<li>
+<p>predicate list - a list of Michelson predicates where each predicate
+has the form <code>{ expression }</code> where the expression takes an empty input
+stack and produces a stack containing a single boolean</p>
+<p>Ex. <code>{ { PUSH int $I ; EQ } ;        { PUSH list int $L ; SIZE ; GT } }</code></p>
+<p>Ex. <code>{}</code></p>
+<p>Ex. <code>{ { ADD ; EQ } }</code> (<strong>invalid</strong>: input stack type non-empty)</p>
+<p>Ex. <code>{ { PUSH nat 0 ; PUSH bool True } }</code> (<strong>invalid</strong>: output stack is
+not single boolean value)</p>
+</li>
+<li>
+<p>stack predicate list - a pair of a stack binder, i.e. a fully symbolic
+stack, and a predicate list such that the bound stack variables are
+available in the predicate list</p>
+<p>Ex.</p>
+<pre class="language-text"><code>{ Stack_elt bool $CONT ; Stack_elt nat $N }
+{ { PUSH nat $N ; INT ; GT ; PUSH bool $CONT ; CMPEQ } }
+</code></pre>
+<p>(this stack predicate list describes, e.g., a loop variable <code>N</code> with loop
+continuation guard <code>CONT</code>, such that the loop will continue to iterate
+while <code>N &gt; 0</code>)</p>
+</li>
+</ul>
+<h4 id="field-list">Field List</h4>
+<p>The set of required fields and their types is listed below:</p>
+<ul>
+<li>
+<p><code>code</code> (expression) the Michelson code to be tested</p>
+</li>
+<li>
+<p><code>input</code> (stack) the input stack supplied to the code in the <code>code</code> field</p>
+</li>
+<li>
+<p><code>output</code> (result stack) the expected output stack of the <code>code</code> field
+given the input stack defined in <code>input</code></p>
+</li>
+</ul>
+<p>The format also allows for optional fields which have default values. The set
+of optional fields is defined below:</p>
+<ul>
+<li>
+<p><code>parameter</code> (type, default <code>unit</code>) defines the contract type pushed by the
+<code>SELF</code> instruction</p>
+</li>
+<li>
+<p><code>now</code> (timestamp, default <code>0</code>) defines the result timestamp of the <code>NOW</code>
+instruction</p>
+</li>
+<li>
+<p><code>sender</code> (address, default <code>&quot;tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx&quot;</code>)
+defines the result of the <code>SENDER</code> instruction</p>
+</li>
+<li>
+<p><code>source</code> (address, default <code>&quot;tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx&quot;</code>)
+defines the result of the <code>SOURCE</code> instruction</p>
+</li>
+<li>
+<p><code>chain_id</code> (chain_id, default <code>0x7a06a770</code>) defines the result of the
+<code>CHAIN_ID</code> instruction</p>
+</li>
+<li>
+<p><code>self</code> (address, default <code>&quot;KT1BEqzn5Wx8uJrZNvuS9DVHmLvG9td3fDLi&quot;</code>) defines
+the address of the contract pushed by the <code>SELF</code> instruction</p>
+</li>
+<li>
+<p><code>amount</code> (mutez, default <code>0</code>) defines the amount of mutez returned by the
+<code>AMOUNT</code> instruction</p>
+</li>
+<li>
+<p><code>balance</code> (mutez, default <code>0</code>) defines the amount of mutez returned by the
+<code>BALANCE</code> instruction</p>
+</li>
+<li>
+<p><code>other_contracts</code> (contract type map, default <code>{}</code>) defines the set of
+other contracts which are available for this contract to invoke.</p>
+</li>
+<li>
+<p><code>big_maps</code> (big_map index map, default <code>{}</code>) defines a mapping from
+natural number indices to <code>big_map</code> literals; this allows us to write
+<code>big_map</code> literals in the other fields as just an index.</p>
+<p>This feature is helpful when the <code>big_map</code> literal is large.</p>
+</li>
+<li>
+<p><code>precondition</code> (predicate list, default <code>{}</code>) defines a list of predicates
+which constrain any symbolic values in the <code>input</code> stack.</p>
+</li>
+<li>
+<p><code>postcondition</code> (predicate list, default <code>{}</code>) defines a list of predicates
+which constrain any symbolic values in the <code>output</code> stack.</p>
+</li>
+<li>
+<p><code>invariant @L</code> (stack predicate list, default <code>{} {}</code>) defines a loop
+invariant for a <code>LOOP</code> or <code>LOOP_LEFT</code> instruction annotated with a
+special <code>@L</code> annotation.</p>
+</li>
+</ul>
+<p>The format admits some fields which are <em>ignored</em> for compatibility reasons.
+The set of ignored fields is defined below:</p>
+<ul>
+<li><code>storage</code> (type) defines the storage type of the contract in <code>.tz</code> files</li>
+</ul>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#user-guide" class="bd-toc-link">User Guide</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#table-of-contents"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Table of Contents
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#introduction-to-k-michelson"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Introduction to K-Michelson
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#quick-start-and-examples"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Quick start and examples
+              </a></div><details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#writing-your-own-k-michelson-tests" class="bd-toc-link">Writing Your Own K-Michelson Tests</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#concrete-tests"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Concrete Tests
+              </a></div><details style="padding:0.25rem 0;;padding-left: 16px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#symbolic-tests-1" class="bd-toc-link">Symbolic Tests</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#symbolic-stacks-and-matching"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                Symbolic Stacks and Matching
+              </a></div><details style="padding:0.25rem 0;;padding-left: 24px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#writing-tests-by-abstraction" class="bd-toc-link">Writing Tests by Abstraction</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#input-stack-abstraction"
+                class="bd-toc-link"
+                style="padding-left: 32px;;"
+              >
+                Input Stack Abstraction
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#output-stack-abstraction"
+                class="bd-toc-link"
+                style="padding-left: 32px;;"
+              >
+                Output Stack Abstraction
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#aside-on-stack-abstraction-and-constraints"
+                class="bd-toc-link"
+                style="padding-left: 32px;;"
+              >
+                Aside on Stack Abstraction and Constraints
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 24px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#symbolic-tests-with-loops" class="bd-toc-link">Symbolic Tests with Loops</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#final-words-on-loop-invariants"
+                class="bd-toc-link"
+                style="padding-left: 32px;;"
+              >
+                Final Words on Loop Invariants
+              </a></div>
+            </div>
+          </details>
+        
+            </div>
+          </details>
+        
+            </div>
+          </details>
+        <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#cross-validating-k-michelson"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Cross-Validating K-Michelson
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#k-michelson-test-grammar-reference"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                K-Michelson Test Grammar Reference
+              </a></div>
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/NYzr2iKpXMgEmQ2F6" target="_blank"
+            >102 E Main St #500, Urbana, IL 61801</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2021 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Typist/1.2/typist.min.js"></script>
+    <script src="../assets/js/index.js"></script>
+  </body>
+</html>
