@@ -493,7 +493,7 @@ We handle sequence and block semantics here.
 
 ```k
   rule I:Instruction ; Is => I ~> Is [structural]
-  rule {}                 => .K      [structrual]
+  rule {}                 => .K      [structural]
   rule { Is:DataList }    => Is      [structural]
 ```
 
