@@ -1,3 +1,0 @@
-code { PUSH (pair (pair nat string) string nat) (Pair (Pair 5 "Hello") "World" 6) ; DROP } ;
-input  { } ;
-output { }
