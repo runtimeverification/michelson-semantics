@@ -58,7 +58,7 @@ run_prove() {
     export K_OPTS=-Xmx8G
 
     ! $debug || set -x
-    kprovex --directory "$backend_dir" "$run_file" --def-module "$def_module" "${additional_proof_args[@]}" "${extra_args[@]}" "$@"
+    kprovex --directory "$backend_dir" "$run_file" "${additional_proof_args[@]}" "${extra_args[@]}" "$@"
 }
 
 run_interpret() {
