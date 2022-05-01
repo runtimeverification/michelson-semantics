@@ -23,6 +23,11 @@ On Ubuntu Linux derivatives, the system dependencies include:
 For other distributions, you will need to find the appropriate packages.
 
 The Python dependencies are all available available via PyPI packages and can be installed via `pip`:
+First install this dependency:
+
+-   wheel
+
+Then, install these dependencies:
 
 -   click
 -   graphviz
