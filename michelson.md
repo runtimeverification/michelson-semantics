@@ -1700,7 +1700,7 @@ These instructions push blockchain state on the stack.
   syntax Instruction ::= SELF(FieldAnnotation)
   rule <k> SELF AL:AnnotationList => SELF(#GetFieldAnnot(AL)) ... </k>
 
-  rule <k> SELF(FA) => .K ... </k>
+  rule <k> SELF(FA::FieldAnnotation) => .K ... </k>
        <stack> SS
             => [contract {LocalEntrypointMap [ FA ]}:>TypeName
                 #Contract(A . FA, {LocalEntrypointMap [ FA ]}:>TypeName)]
