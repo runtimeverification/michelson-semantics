@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="A Michelson semantics for Tezos built using the K Framework."
+/>
+<meta name="keywords" content="runtime, verification, rv, k" />
+<meta name="author" content="Michelson Semantics | Runtime Verification Inc" />
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../../../assets/img/favicon.ico" /> -->
+
+<title>Michelson Semantics | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../../../index.html"> Michelson Semantics </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/michelson-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../../../">Homepage</a>
+      <a class="bd-toc-link" href="../../../../INSTALL">Install</a>
+      <a class="bd-toc-link" href="../../../../USER_GUIDE">User Guide</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="lqt-token-proofs">LQT Token Proofs</h1>
+<p>In this document, we prove the properties of the Lqt Token contract needed
+to verify the Dexter system. These properties are:</p>
+<ol>
+<li>
+<p>The MintOrBurn() entrypoint updates total liquidity if prerequisites are met.</p>
+<pre class="language-text"><code>claim [lqt-mint-burn]:
+    &lt;operations&gt; ( [ Transaction DEXTER LQT Amount MintOrBurn(_, Value) ] =&gt; .List ) ;; _ &lt;/operations&gt;
+    &lt;tokens&gt; Tokens =&gt; Tokens&apos; &lt;/tokens&gt;
+    &lt;totalSupply&gt; S =&gt; S +Int Value &lt;/totalSupply&gt;
+  requires Amount ==Int 0
+  andBool Tokens[Address] + Value  &gt;= 0
+</code></pre>
+</li>
+<li>
+<p><code>[only-lqt-mint-burn]</code>:</p>
+<ul>
+<li>Only MintOrBurn() can update the total liquidity supply,</li>
+<li>only Dexter is permitted to call this entrypoint</li>
+<li>MintOrBurn doesn&apos;t emit any operations.</li>
+</ul>
+<pre class="language-text"><code>claim [only-lqt-mint-burn]:
+    &lt;operations&gt; (Transaction Sender To Amount Op =&gt; .List) ;; _ &lt;/operations&gt;
+    &lt;adminAddress&gt; DEXTER &lt;/adminAddress&gt;
+    &lt;tokens&gt; Tokens =&gt; Tokens&apos; &lt;/tokens&gt;
+    &lt;totalSupply&gt; S =&gt; S&apos; &lt;/totalSupply&gt;
+  ensures  S&apos; =/=Int S impliesBool  ( Op     == MintOrBurn(Address, Quantity)
+                                  and To     == Lqt
+                                  and Amount == 0
+                                  and S&apos; ==Int S +Int Quantity
+                                  and Sender == Dexter
+                                    )
+</code></pre>
+</li>
+</ol>
+<p>These are proved in the following subsections.</p>
+<h2 id="lemmas">Lemmas</h2>
+<p>First, we need a lemma to prove our main properties:
+&quot;The sum of the balances in all accounts equals <code>totalSupply</code>&quot; is an invariant.</p>
+<pre class="language-text"><code>syntax Int ::= Sum(Map) [function]
+rule Sum(.Map) =&gt; 0
+rule Sum(_ |-&gt; N Rest) =&gt; N +Int Sum(Rest)
+</code></pre>
+<pre class="language-text"><code>claim [sum-of-increment]: Sum(#incrementTokens(M, Addr, Quantity)) =&gt; Sum(M) +Int Quantity
+proof:
+    - Induction on structure of M
+        - case M == .Map
+            - We have Sum(#incrementTokens(.Map, Addr, Quantity)) == Sum(Addr |-&gt; Quantity) == Quantity == Sum(.Map) + Quantity
+        - case M == (Addr |-&gt; OldValue) M&apos;
+            - case OldValue &lt;&gt; -Quantity
+                - We have Sum(#incrementTokens((Addr |-&gt; OldValue) M&apos;, Addr, Quantity))
+                       == Sum((Addr |-&gt; OldValue +Int Quantity) M&apos;)
+                       == OldValue + Quantity + Sum(M&apos;)
+                       == Sum(Addr |-&gt; OldValue, M&apos;) + Quantity
+                       == Sum(M) + Quantity
+            - case OldValue == -Quantity
+                - We have Sum(#incrementTokens((Addr |-&gt; OldValue) M&apos;, Addr, Quantity))
+                       == Sum(M&apos;)
+                       == OldValue + Quantity + Sum(M&apos;)
+                       == Sum(Addr |-&gt; OldValue, M&apos;) + Quantity
+                       == Sum(M) + Quantity
+        - case M == (Addr&apos; |-&gt; Value) M&apos; and Addr&apos; =/= Addr
+            - We have Sum(#incrementTokens((Addr&apos; |-&gt; Value) M&apos;, Addr, Quantity))
+                   == Sum((Addr&apos; |-&gt; Value) #incrementTokens(M&apos;, Addr, Quantity))
+                   == Value + Sum(#incrementTokens(M&apos;, Addr, Quantity))
+                   == Value + Quantity + Sum(M&apos;)
+                   == Quantity + Sum(M)
+</code></pre>
+<pre class="language-text"><code>claim [inv-totalSupply-is-sum]:
+    &lt;operations&gt;  ( [ Transaction Sender LQT Amount CallParams ] #as Op =&gt; Ops&apos; ) ;; Ops &lt;/operations&gt;
+    &lt;totalSupply&gt; TotalSupply =&gt; TotalSupply&apos; &lt;/totalSupply&gt;
+    &lt;tokens&gt; Tokens  =&gt; Tokens&apos;  &lt;/tokens&gt;
+  requires TotalSupply  ==Int Sum(Tokens)
+  ensures  TotalSupply&apos; ==Int Sum(Tokens&apos;)
+</code></pre>
+<pre class="language-text"><code>proof:
+  - split CallParams
+      - case CallParams == TransferParams(From, To, Value)
+          - case From == Sender
+              - unify RHS
+              - apply [LQT-TOKEN-TRANSFER-DIRECT-SPEC]
+                - case Aborted:
+                  We have TotalSupply == TotalSupply&apos;
+                      and Tokens  == Tokens&apos;
+                - else:
+                    apply [sum-of-increment]
+                    apply [sum-of-increment]
+          - case From &lt;&gt; Sender
+              - apply [LQT-TOKEN-TRANSFER-PROXY-SPEC]
+                - case Aborted:
+                    We have TotalSupply == TotalSupply&apos;
+                        and Tokens  == Tokens&apos;
+                - else:
+                    apply [sum-of-increment]
+                    apply [sum-of-increment]
+      - case CallParams == MintOrBurn(Quantity, Address)
+          - apply [LQT-TOKEN-MINTORBURN-SPEC]
+            - case Aborted:
+                We have TotalSupply == TotalSupply&apos;
+                    and Tokens  == Tokens&apos;
+            - else:
+                apply [sum-of-increment]
+      - else:
+          - We have TotalSupply == TotalSupply&apos;
+                and Tokens  == Tokens&apos;
+</code></pre>
+<h2 id="only-mintorburn-entrypoint-can-change-the-total-liquidity">Only <code>MintOrBurn</code> entrypoint can change the total liquidity</h2>
+<pre class="language-text"><code>claim [only-lqt-mint-burn]:
+    &lt;operations&gt; (Transaction Sender To Amount Op =&gt; _) ;; _ &lt;/operations&gt;
+    &lt;adminAddress&gt; DEXTER &lt;/adminAddress&gt;
+    &lt;tokens&gt; Tokens =&gt; Tokens&apos; &lt;/tokens&gt;
+    &lt;totalSupply&gt; S =&gt; S&apos; &lt;/totalSupply&gt;
+  ensures  S&apos; =/=Int S impliesBool  ( Op     == MintOrBurn(Address, Quantity)
+                                  and To     == Lqt
+                                  and Amount == 0
+                                  and S&apos; ==Int S +Int Quantity
+                                  and Sender == Dexter
+                                    )
+</code></pre>
+<pre class="language-text"><code>proof
+ - case To &lt;&gt; Lqt
+     - Lqt storage cannot be changed by other contracts directly
+ - case To == Lqt
+    - case Op == MintOrBurn
+         - case Amount == 0 and Sender == DEXTER
+            - apply [LQT-TOKEN-MINTORBURN-SPEC]
+                - case Aborted:
+                    We have S&apos; == S
+                - else:
+                    We have  S&apos; == absInt(TotalSupply +Int Quantity)
+                        and  Tokens[Address] +Int Quantity &gt;= 0
+                    By well-typedness we have: Tokens[*] &gt;= 0 
+                    By [inv-totalSupply-is-sum] we get: TotalSupply == Sum
+                    proving: S&apos; == TotalSupply +Int Quantity
+         - case Amount &lt;&gt; 0 and Sender &lt;&gt; DEXTER
+             We have Aborted ==&gt; S == S&apos;
+    - else:
+        - apply [LQT-TOKEN-*-SPEC]
+          we have S&apos; == S
+</code></pre>
+<h2 id="the-mintorburn-updates-liquidity-if-prerequisites-are-met">The <code>MintOrBurn</code> updates liquidity if prerequisites are met</h2>
+<pre class="language-text"><code>claim [lqt-mint-burn]:
+    &lt;operations&gt; ( [ Transaction DEXTER LQT Amount MintOrBurn(_, Value) ] =&gt; .List ) ;; _ &lt;/operations&gt;
+    &lt;tokens&gt; Tokens =&gt; Tokens&apos; &lt;/tokens&gt;
+    &lt;totalSupply&gt; S =&gt; S +Int Value &lt;/totalSupply&gt;
+  requires Amount ==Int 0
+  andBool Tokens[Address] + Value  &gt;= 0
+</code></pre>
+<pre class="language-text"><code>proof:
+- apply [LQT-TOKEN-MINTORBURN-SPEC]
+</code></pre>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#lqt-token-proofs" class="bd-toc-link">LQT Token Proofs</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#lemmas"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Lemmas
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#only-mintorburn-entrypoint-can-change-the-total-liquidity"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Only <code>MintOrBurn</code> entrypoint can change the total liquidity
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#the-mintorburn-updates-liquidity-if-prerequisites-are-met"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                The <code>MintOrBurn</code> updates liquidity if prerequisites are met
+              </a></div>
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/hKLtCjeEd6yqfzwx5" target="_blank"
+            >1807 S Neil Street, Champaign, IL 61820</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2022 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Typist/1.2/typist.min.js"></script>
+    <script src="../../../../assets/js/index.js"></script>
+  </body>
+</html>

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="A Michelson semantics for Tezos built using the K Framework."
+/>
+<meta name="keywords" content="runtime, verification, rv, k" />
+<meta name="author" content="Michelson Semantics | Runtime Verification Inc" />
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../assets/img/favicon.ico" /> -->
+
+<title>Michelson Semantics | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../index.html"> Michelson Semantics </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/michelson-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../">Homepage</a>
+      <a class="bd-toc-link" href="../INSTALL">Install</a>
+      <a class="bd-toc-link" href="../USER_GUIDE">User Guide</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="building-and-installation">Building and Installation</h1>
+<p>To build the core K-Michelson tools, please follow the instructions below.
+We also include some miscellaneous Michelson source code transformation utilities.
+To make the utilities available, please see the following <a href="../ext/tezos-utils/">installation instructions</a>.</p>
+<p>Note that:</p>
+<ul>
+<li>all commands should be executed in the K-Michelson software archive root</li>
+<li>only Linux is officially supported; other systems may have limited support</li>
+</ul>
+<p>K-Michelson has two direct dependencies:</p>
+<ol>
+<li><a href="https://github.com/kframework/k" target="_blank" rel="noopener">K framework</a> - for building the K-Michelson
+interpreter and executing Michelson code using the K-Michelson interpreter</li>
+<li><a href="http://tezos.gitlab.io/index.html" target="_blank" rel="noopener">Tezos client</a> for cross-validation of
+K-Michelson test execution against test execution on the reference Michelson
+interpreter.</li>
+</ol>
+<p>To simplify installation, we package pinned versions of (1-2) under the <code>/ext</code>
+directory. As part of the installation process, we must first build these
+dependencies.</p>
+<h2 id="installing-the-prerequisites">Installing the Prerequisites</h2>
+<p>The K framework and Tezos client each have a number of their own dependencies
+that must be installed before they can be built. On an Ubuntu system, do the
+following to install all needed dependencies:</p>
+<pre class="language-text"><code>sudo apt-get install rsync git m4 build-essential patch unzip bubblewrap wget  \
+pkg-config libgmp-dev libev-dev libhidapi-dev libmpfr-dev flex bison           \
+maven python3 cmake gcc zlib1g-dev libboost-test-dev libyaml-dev               \
+libjemalloc-dev openjdk-8-jdk clang-8 lld-8 llvm-8-tools pcregrep cargo
+</code></pre>
+<p>Note that the JDK and Clang packages referenced above typically can be
+substituted with more recent versions without any issues.</p>
+<p>K-Michelson requires Z3 version 4.8.15, which you may need to install from a
+source build if your package manager supplies a different version. To do so,
+follow the instructions
+<a href="https://github.com/Z3Prover/z3#building-z3-using-make-and-gccclang" target="_blank" rel="noopener">here</a> after
+checking out the correct tag in the Z3 repository:</p>
+<pre class="language-text"><code>git clone https://github.com/Z3Prover/z3.git
+cd z3
+git checkout z3-4.8.15
+python scripts/mk_make.py
+cd build
+make
+sudo make install
+</code></pre>
+<p>You will also need a recent version of
+<a href="https://docs.haskellstack.org/en/stable/install_and_upgrade" target="_blank" rel="noopener">Haskell stack</a>.
+You can either install the Ubuntu package and upgrade it locally:</p>
+<pre class="language-text"><code>sudo apt-get install haskell-stack
+stack upgrade --binary-only
+</code></pre>
+<p>or else get the latest version with their installer script by doing:</p>
+<pre class="language-text"><code>curl -sSL https://get.haskellstack.org/ | sh
+</code></pre>
+<p>You will additionally need to install a recent version of the
+<a href="https://opam.ocaml.org/doc/Install.html" target="_blank" rel="noopener">OCaml package manager, opam</a>. For
+Ubuntu, the recommended installation steps are:</p>
+<pre class="language-text"><code>sudo apt-get install software-properties-common
+sudo add-apt-repository ppa:avsm/ppa
+sudo apt-get install opam
+</code></pre>
+<p>For other Linux distributions, you may need to adapt the above instructions,
+especially package names and package installation commands.
+Consult your distribution documentation for details as well as the links
+above for guidance on installing Haskell Stack as well as opam.</p>
+<h2 id="building-k-michelson">Building K-Michelson</h2>
+<p>Build the K Framework (if you don&apos;t have a global install) and Tezos
+dependencies:</p>
+<pre class="language-text"><code>git submodule update --init --recursive
+make deps
+</code></pre>
+<p>The following command will build all versions of the semantics including:</p>
+<ul>
+<li>The LLVM backend for running Michelson unit tests (<code>.tzt</code> extension);</li>
+<li>The Haskell backend for running symbolic Michelson unit tests (also <code>.tzt</code>
+extension);</li>
+<li>The compatibility layers for validating the semantics against the Tezos
+reference client.</li>
+</ul>
+<pre class="language-text"><code>make build -j8
+</code></pre>
+<h2 id="running-test-suites">Running Test Suites</h2>
+<p>There are three major test-suites you may be interested in running.</p>
+<p>The unit tests (running individual <code>*.tzt</code> programs and checking their exit
+code):</p>
+<pre class="language-text"><code>make test-unit -j8
+</code></pre>
+<p>The symbolic unit tests (running individual <code>*.tzt</code> programs and checking their
+output using <code>lib/michelson-test-check</code>). Note that their are three flavours of
+symbolic unit tests. Those with the <code>stuck.tzt</code> extension, test ill-formed
+programs and are expected to get stuck before completing exectution. Those with
+the <code>fail.tzt</code> extension, are &quot;broken&quot; tests where assertions are expected to
+fail.</p>
+<pre class="language-text"><code>make test-symbolic -j8
+</code></pre>
+<p>The validation tests against the Tezos reference client:</p>
+<pre class="language-text"><code>make test-cross -j8
+</code></pre>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#building-and-installation" class="bd-toc-link">Building and Installation</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#installing-the-prerequisites"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Installing the Prerequisites
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#building-k-michelson"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Building K-Michelson
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#running-test-suites"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Running Test Suites
+              </a></div>
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/hKLtCjeEd6yqfzwx5" target="_blank"
+            >1807 S Neil Street, Champaign, IL 61820</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2022 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Typist/1.2/typist.min.js"></script>
+    <script src="../assets/js/index.js"></script>
+  </body>
+</html>
