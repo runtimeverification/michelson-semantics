@@ -1,5 +1,0 @@
-# Uses a STOP psuedo-instruction to force the semantics to get stuck
-
-code { STOP } ;
-input { Stack_elt nat $I1  } ;
-output { Stack_elt nat $I1 } ;
