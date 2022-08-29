@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="A Michelson semantics for Tezos built using the K Framework."
+/>
+<meta name="keywords" content="runtime, verification, rv, k" />
+<meta name="author" content="Michelson Semantics | Runtime Verification Inc" />
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../assets/img/favicon.ico" /> -->
+
+<title>Michelson Semantics | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../index.html"> Michelson Semantics </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/michelson-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../">Homepage</a>
+      <a class="bd-toc-link" href="../../INSTALL">Install</a>
+      <a class="bd-toc-link" href="../../USER_GUIDE">User Guide</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h2 id="overview">Overview</h2>
+<blockquote>
+<ol>
+<li>What is K-Michelson?</li>
+<li>Introduction to \K</li>
+<li>Deep-dive: What the semantics look like</li>
+<li>Demo: Proving things</li>
+</ol>
+</blockquote>
+<p>. . .</p>
+<p 1em="">\vspace</p>
+<p>Please ask questions as we go.</p>
+<h1 id="k-michelson%3A-intro-and-road-map">K-Michelson: Intro and road map</h1>
+<h2 id="k-michelson">K-Michelson</h2>
+<blockquote>
+<ul>
+<li>K-Michelson is the project name for <strong>specifying</strong> Michelson in \lK.</li>
+<li>\K is a framework for creating <strong>executable specifications</strong> of programming languages.</li>
+<li>\K uses rewrite based semantics, very similar to the current documentation.</li>
+<li>The goal is to use the executable spec to <strong>formally verify</strong> aspects of blockchain runtimes and smart contracts.</li>
+<li>We have semantics for other blockchain languages. KEVM is mature for proving, and KWasm is being ramped up.</li>
+</ul>
+</blockquote>
+<h2 id="design">Design</h2>
+<p>A very faithful translation of Michelson spec (\K and Michelson both use rewrite semantics). Some differences:</p>
+<p>. . .</p>
+<blockquote>
+<ul>
+<li>Official spec uses <code>iff</code> in side conditions, in a way that is not obviously computational. In \K we use function calls instead.</li>
+<li>Makes some state explicit that is implicit in the docs. Example: Mutez balance.</li>
+<li>Separation of typing semantics and execution semantics.</li>
+</ul>
+</blockquote>
+<h2 id="goals">Goals</h2>
+<ul>
+<li>Verify contracts</li>
+<li>We would like to build a repository of verified code using K-Michelson. There is such a repository for KEVM:</li>
+</ul>
+<p><a href="https://github.com/runtimeverification/verified-smart-contracts" target="_blank" rel="noopener"><img src="media/img/github-verified-contracts-screenshot.png" alt=""></a></p>
+<h2 id="status">Status</h2>
+<blockquote>
+<ul>
+<li>Bulk of the semantics are done.</li>
+<li>Incorporating protocol changes as they happen.</li>
+<li>Macros, annotation are underway, bytes operations left out for now.</li>
+</ul>
+</blockquote>
+<p>. . .</p>
+<h3 id="successes">Successes</h3>
+<p>. . .</p>
+<blockquote>
+<ul>
+<li>Performant interpreter (LLVM).</li>
+<li>Can complete some non-trivial proofs (Haskell).</li>
+</ul>
+</blockquote>
+<p>. . .</p>
+<p>Both the prover and interpreter are derived from the same specification!</p>
+<p>. . .</p>
+<p>\center\huge DEMO!</p>
+<h2 id="is-it-fast%3F">Is it fast?</h2>
+<pre class="language-text"><code>$contract {
+   code { LEFT nat ;
+          LOOP_LEFT { DUP ; DIP { CDR } ; CAR ; DUP ;
+                      DIP { ADD } ; PUSH nat 1 ; SWAP ;
+                      SUB ; ISNAT ;
+                      IF_NONE
+                        { RIGHT pair nat nat }
+                        { PAIR ; LEFT nat }
+                    } ;
+          NIL operation ;
+          PAIR } ;
+   parameter nat ;
+   storage nat ; } ;
+...
+$param 10 ^Int 5 ;     &lt;--- 100,000 iterations.
+$storage 0 ;
+</code></pre>
+<h2 id="reasonably-fast!">Reasonably fast!</h2>
+<p>About 5.5 seconds, roughly half spent parsing (which is multi-core).</p>
+<pre class="language-text"><code>$ time ./michelson.py run demo/sum-to-n.tz
+  &lt;k&gt;
+    .
+  &lt;/k&gt;
+  &lt;stack&gt;
+    Pair .List 5000050000
+  &lt;/stack&gt;
+  ...
+</code></pre>
+<p 1em="">\vspace</p>
+<p>12.66s user 1.14s system 248% cpu 5.566 total</p>
+<h1 id="introduction-to-%5Ck">Introduction to \K</h1>
+<h2 id="the-vision%3A-language-independence">The Vision: Language Independence</h2>
+<p><img src="media/img/k-overview.png" alt="\K Tooling Overview"></p>
+<h2 id="%5Ck-tooling%2Flanguages">\K Tooling/Languages</h2>
+<h3 id="tools">Tools</h3>
+<ul>
+<li>Parser</li>
+<li>Interpreter</li>
+<li>Debugger</li>
+<li>Reachability Logic Prover [@stefanescu-park-yuwen-li-rosu-reachability-prover]</li>
+<li>...</li>
+</ul>
+<p>. . .</p>
+<h3 id="languages">Languages</h3>
+<ul>
+<li>Java 1.4 - 2015 [@bogdanas-rosu-k-java]</li>
+<li>C11 - 2015 [@hathhorn-ellison-rosu-k-c]</li>
+<li>KJS - 2015 [@park-stefanescu-rosu-k-js]</li>
+<li>KEVM - 2018 [@hildenbrandt-saxena-zhu-rosu-k-evm]</li>
+<li>KWasm - <a href="https://github.com/kframework/wasm-semantics" target="_blank" rel="noopener">https://github.com/kframework/wasm-semantics</a></li>
+<li>KLLVM <a href="https://github.com/kframework/llvm-semantics" target="_blank" rel="noopener">https://github.com/kframework/llvm-semantics</a></li>
+<li>KX86-64 <a href="https://github.com/kframework/X86-64-semantics" target="_blank" rel="noopener">https://github.com/kframework/X86-64-semantics</a></li>
+<li>In progress (external groups):
+<ul>
+<li>Solidity <a href="https://github.com/kframework/solidity-semantics" target="_blank" rel="noopener">https://github.com/kframework/solidity-semantics</a></li>
+<li>Rust</li>
+</ul>
+</li>
+</ul>
+<h2 id="parts-of-a-%5Ck-specification">Parts of a \K specification</h2>
+<p>A language spec in \K consists of 3 things</p>
+<ul>
+<li>Syntax</li>
+<li>Configuration ("state")</li>
+<li>Operational semantics as <strong>rewrite rules</strong></li>
+</ul>
+<h2 id="%5Ck-specifications%3A-syntax">\K Specifications: Syntax</h2>
+<p>Concrete syntax built using EBNF style:</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> Instruction <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> Block
+                       <span class="token operator">|</span> <span class="token string">"DROP"</span>
+                       <span class="token operator">|</span> <span class="token string">"DUP"</span>
+                       <span class="token operator">|</span> <span class="token string">"SWAP"</span>
+                       <span class="token operator">|</span> <span class="token string">"PUSH"</span> Type Data
+                       <span class="token operator">|</span> <span class="token string">"SOME"</span>
+                       <span class="token operator">|</span> <span class="token string">"NONE"</span> Type
+                       <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+
+  <span class="token keyword">syntax</span> InstructionList <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> List<span class="token punctuation">{</span>Instruction<span class="token punctuation">,</span> <span class="token string">";"</span><span class="token punctuation">}</span>
+
+  <span class="token keyword">syntax</span> Block <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"{"</span> InstructionList <span class="token string">"}"</span>
+</code></pre>
+<h2 id="%5Ck-specifications%3A-configuration">\K Specifications: Configuration</h2>
+<p>Tell \K about the structure of your execution state.</p>
+<pre class="language-k"><code>  <span class="token keyword">configuration</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>k</span><span class="token punctuation">&gt;</span></span> $PGM<span class="token punctuation">:</span>Pgm <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>k</span><span class="token punctuation">&gt;</span></span>
+                <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>stack</span><span class="token punctuation">&gt;</span></span> <span class="token punctuation">.</span>K <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>stack</span><span class="token punctuation">&gt;</span></span>
+                <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>paramtype</span><span class="token punctuation">&gt;</span></span> #NotSet <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>paramtype</span><span class="token punctuation">&gt;</span></span>
+                <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>storagetype</span><span class="token punctuation">&gt;</span></span> #NotSet <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>storagetype</span><span class="token punctuation">&gt;</span></span>
+                <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>balance</span><span class="token punctuation">&gt;</span></span> #Mutez<span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>balance</span><span class="token punctuation">&gt;</span></span>
+                <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>amount</span><span class="token punctuation">&gt;</span></span> #Mutez<span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>amount</span><span class="token punctuation">&gt;</span></span>
+                <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>now</span><span class="token punctuation">&gt;</span></span> #Timestamp<span class="token punctuation">(</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>now</span><span class="token punctuation">&gt;</span></span>
+                <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>myaddr</span><span class="token punctuation">&gt;</span></span> #Address<span class="token punctuation">(</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>myaddr</span><span class="token punctuation">&gt;</span></span>
+                <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>knownaddrs</span><span class="token punctuation">&gt;</span></span> <span class="token punctuation">.</span>Map <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>knownaddrs</span><span class="token punctuation">&gt;</span></span>
+                <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>sourceaddr</span><span class="token punctuation">&gt;</span></span> #Address<span class="token punctuation">(</span><span class="token operator">-</span><span class="token number">2</span><span class="token punctuation">)</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>sourceaddr</span><span class="token punctuation">&gt;</span></span>
+                <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>senderaddr</span><span class="token punctuation">&gt;</span></span> #Address<span class="token punctuation">(</span><span class="token operator">-</span><span class="token number">3</span><span class="token punctuation">)</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>senderaddr</span><span class="token punctuation">&gt;</span></span>
+                <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>chainid</span><span class="token punctuation">&gt;</span></span> #ChainId<span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>chainid</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<p>. . .</p>
+<blockquote>
+<ul>
+<li><code>&lt;k&gt;</code> will contain the initial parsed program.</li>
+<li>Based on the values in the program invocation, the other cells get populated.</li>
+</ul>
+</blockquote>
+<h2 id="%5Ck-specifications%3A-transition-rules">\K Specifications: Transition Rules</h2>
+<p>Using the above grammar and configuration:</p>
+<p>. . .</p>
+<h3 id="push-to-stack">Push to Stack</h3>
+<p verbatim="">\begin{Verbatim}[]
+rule <k> PUSH _ X =&gt; . ... </k>
+<stack> . =&gt; X ... </stack>
+\end</p>
+<p>. . .</p>
+<blockquote>
+<ul>
+<li><code>=&gt;</code> is the rewrite arrow.</li>
+</ul>
+</blockquote>
+<ul>
+<li><code>_</code> is a wildcard (matches any value).</li>
+</ul>
+<blockquote>
+<ul>
+<li>Words in all caps are variables.</li>
+<li>We match on and rewrite the front of the cell contents, and <code>...</code> matches the rest of the cell.</li>
+<li>We don't need to mention the cells we don't use or modify.</li>
+<li>Rewriting to <code>.</code> is erasing.</li>
+<li>We can rewrite several cells at once.</li>
+</ul>
+</blockquote>
+<h2 id="%5Ck-specifications%3A-transition-rules-1">\K Specifications: Transition Rules</h2>
+<h3 id="helper-functions%3A">Helper functions:</h3>
+<p [function]="">\begin{Verbatim}[]
+syntax List ::= #ReverseList(List) \textcolor{blue}</p>
+<p [function]="">syntax List ::= #ReverseListAux(List, List) \textcolor{blue}</p>
+<p verbatim="">rule #ReverseList(L) =&gt; #ReverseListAux(L, .List)
+rule #ReverseListAux(ListItem(L1) Ls, Acc) =&gt; #ReverseListAux(Ls, ListItem(L1) Acc)
+rule #ReverseListAux(.List, Acc) =&gt; Acc
+\end</p>
+<p>. . .</p>
+<p 1em="">\vspace</p>
+<blockquote>
+<ul>
+<li>The <code>[function]</code> annotation means the rule applies regardless of context.</li>
+<li>Lets you do regular functional programming.</li>
+</ul>
+</blockquote>
+<h2 id="%5Ck-specifications%3A-transition-rules-2">\K Specifications: Transition Rules</h2>
+<h3 id="binary-operators">Binary operators</h3>
+<p>\begin{Verbatim}[]
+rule <k> SLICE =&gt; . ... </k>
+<stack> O ~&gt; L ~&gt; S =&gt; Some substrString(S, O, O +Int L) ... </stack>
+\textcolor{blue}{requires} O &gt;=Int 0
+andBool L &gt;=Int 0
+andBool (O +Int L) &lt;Int lengthString(S)</p>
+<p verbatim="">rule <k> SLICE =&gt; . ... </k>
+<stack> O ~&gt; L ~&gt; S =&gt; None ... </stack>
+\textcolor{blue}{requires} notBool(O &gt;=Int 0
+andBool L &gt;=Int 0
+andBool (O +Int L) &lt;Int lengthString(S))
+\end</p>
+<p 1em="">\vspace</p>
+<p>. . .</p>
+<blockquote>
+<ul>
+<li><code>requires</code> specifies side conditions.</li>
+<li>\K builtin predicates and operators are not polymorphic, so they are specialized by type, e.g. <code>&gt;=Int, notBool</code></li>
+</ul>
+</blockquote>
+<h2 id="%5Ck-specifications%3A-transition-rules-3">\K Specifications: Transition Rules</h2>
+<h3 id="maps">Maps</h3>
+<p>\begin{Verbatim}[]
+syntax Data ::= Map</p>
+<p>rule <k> EMPTY_MAP _ _ =&gt; . ... </k>
+<stack> . =&gt; \textcolor{blue}{.Map} ... </stack></p>
+<p verbatim="">rule <k> GET =&gt; . ... </k>
+<stack> X ~&gt; M =&gt; Some \textcolor{blue}{{M[X]}:&gt;Data} ... </stack>
+requires X in_keys(M)
+\end</p>
+<p 1em="">\vspace</p>
+<p>. . .</p>
+<blockquote>
+<ul>
+<li><code>Map</code> is a builtin data structure, which is an associative-commutative key-value pairs.</li>
+<li><code>M[X]</code> fetches an element in the Map.</li>
+<li><code>{V}:&gt;T</code> is a cast of value <code>V</code> to type <code>T</code>.</li>
+</ul>
+</blockquote>
+<h2 id="%5Ck-specifications%3A-transition-rules-4">\K Specifications: Transition Rules</h2>
+<h3 id="maps-1">Maps</h3>
+<p>\begin{Verbatim}[]
+rule <k> UPDATE =&gt; . ... </k>
+<stack> K ~&gt; Some V ~&gt; M:Map =&gt; \textcolor{blue}{M[K &lt;- V]} ... </stack></p>
+<p verbatim="">rule <k> UPDATE =&gt; . ... </k>
+<stack> K ~&gt; None ~&gt; M:Map =&gt; \textcolor{blue}{M[K &lt;- undef]} ... </stack>
+\end</p>
+<p 1em="">\vspace</p>
+<p>. . .</p>
+<ul>
+<li><code>M[K &lt;- V]</code> is a map update. The special value <code>undef</code> clears the entry.</li>
+</ul>
+<h1 id="repo-tour">Repo Tour</h1>
+<h2 id="repo-layout">Repo layout</h2>
+<ul>
+<li><code>michelson.k</code>: The semantics.</li>
+<li><code>michelson-syntax.k</code>: Separate module for the grammar.</li>
+<li><code>test-michelson.k</code> and <code>test-michelson-syntax.k</code>: Extra syntax and semantics for unit testing.</li>
+</ul>
+<h2 id="simple-instructions">Simple Instructions</h2>
+<p><img src="media/img/michelson-spec-simple.png" alt=""></p>
+<h2 id="more-complex-instructions">More Complex Instructions</h2>
+<p><img src="media/img/michelson-spec-complex.png" alt=""></p>
+<h1 id="proving">Proving</h1>
+<h2 id="verifying-michelson-programs">Verifying Michelson programs</h2>
+<blockquote>
+<ol>
+<li>From the K-Michelson semantics, \K generates a parser and a deductive program verifier.</li>
+<li>A verification claim is written like a rewrite rule. <code>rule A =&gt; B</code> should be read as "<code>A</code> will eventually always evaluate to <code>B</code>".</li>
+<li>The automatic prover tries to construct a proof (with the help of Z3 to check constraint satisfiability) that every possible execution path starting in <code>A</code> eventually rewrites to <code>B</code>.</li>
+<li>If prover fails, examine output. Is spec incorrect, program incorrect, or does the prover need help?</li>
+</ol>
+</blockquote>
+<p>. . .</p>
+<p>\vfill</p>
+<p>\center\huge DEMO!</p>
+<h2 id="a-simple-proof">A simple proof</h2>
+<pre class="language-text"><code>  rule &lt;k&gt; {  DUP ;
+              DIP { CDR } ;
+              CAR ;
+              ADD ;
+              NIL operation ; PAIR }
+       =&gt; .
+     &lt;/k&gt;
+     &lt;stack&gt; Pair A:Int B:Int
+          =&gt; Pair .List (A +Int B)
+     &lt;/stack&gt;
+</code></pre>
+<p 1em="">\vspace</p>
+<p>. . .</p>
+<p>This goes through.</p>
+<h2 id="a-bad-proof">A bad proof</h2>
+<pre class="language-text"><code>  rule &lt;k&gt; {  DUP ;
+              DIP { CDR } ;
+              CAR ;
+              ADD ;
+              NIL operation ; PAIR }
+       =&gt; .
+     &lt;/k&gt;
+     &lt;stack&gt; Pair A:Int B:Int
+          =&gt; Pair .List X
+     &lt;/stack&gt;
+
+    ensures X &gt;Int A
+</code></pre>
+<p 1em="">\vspace</p>
+<p>. . .</p>
+<p>State a requested final property.</p>
+<h2 id="prover-complains">Prover complains</h2>
+<pre class="language-text"><code>$ ./michelson.py prove demo/sum-simple.k
+  #Not ( {
+    A +Int B &gt;Int A
+  #Equals
+    true
+  } )
+#And
+    &lt;k&gt;
+      .
+    &lt;/k&gt;
+    &lt;stack&gt;
+      Pair .List A +Int B
+    &lt;/stack&gt;
+    ...
+</code></pre>
+<p 1em="">\vspace</p>
+<p>. . .</p>
+<p>It's saying, "what if <em>not</em> A + B &gt; A"?</p>
+<h2 id="fix">Fix</h2>
+<pre class="language-text"><code>  rule &lt;k&gt; {  DUP ;
+              DIP { CDR } ;
+              CAR ;
+              ADD ;
+              NIL operation ; PAIR }
+       =&gt; .
+     &lt;/k&gt;
+     &lt;stack&gt; Pair A:Int B:Int
+          =&gt; Pair .List X
+     &lt;/stack&gt;
+    requires B &gt;Int 0
+    ensures X &gt;Int A
+</code></pre>
+<p 1em="">\vspace</p>
+<p>. . .</p>
+<p>This passes.</p>
+<h2 id="proving-1">Proving</h2>
+<p>Happy to demo more for you on K proving.</p>
+<h1 id="conclusion">Conclusion</h1>
+<h2 id="interested%3F">Interested?</h2>
+<p>Runtime Verification specializes in formalizing languages in \lK.[^1]</p>
+<p>From a single spec you can derive a host of tools. The tools are under constant development and we can help customize them for your needs.[^2]</p>
+<p><strong>If you are interested in specifying your language in \lK, talk to us.</strong></p>
+<p><a href="mailto:rikard.hjort@runtimeverification.com" target="_blank" rel="noopener">rikard.hjort@runtimeverification.com</a></p>
+<p>[^1]: We have formalized all kinds of languages: imperative, stack-based, register-based, OO, functional, logic. We have done low-level -- LLVM, EVM, Wasm -- and high-level -- C, Java, JavaScript.
+[^2]:  The tools have competative performance, sometimes outperforming handwritten tools.</p>
+<h1 id="questions%3F">Questions?</h1>
+<h2 id="thanks!">Thanks!</h2>
+<ul>
+<li>Thanks for listening!</li>
+</ul>
+<h2 id="references">References</h2>
+<p>\tiny</p>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#k-michelson%3A-intro-and-road-map" class="bd-toc-link">K-Michelson: Intro and road map</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#k-michelson"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                K-Michelson
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#design"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Design
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#goals"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Goals
+              </a></div><details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#status" class="bd-toc-link">Status</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#successes"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Successes
+              </a></div>
+            </div>
+          </details>
+        <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#is-it-fast%3F"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Is it fast?
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#reasonably-fast!"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Reasonably fast!
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#introduction-to-%5Ck" class="bd-toc-link">Introduction to \K</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#the-vision%3A-language-independence"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                The Vision: Language Independence
+              </a></div><details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5Ck-tooling%2Flanguages" class="bd-toc-link">\K Tooling/Languages</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#tools"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Tools
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#languages"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Languages
+              </a></div>
+            </div>
+          </details>
+        <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#parts-of-a-%5Ck-specification"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Parts of a \K specification
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#%5Ck-specifications%3A-syntax"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                \K Specifications: Syntax
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#%5Ck-specifications%3A-configuration"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                \K Specifications: Configuration
+              </a></div><details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5Ck-specifications%3A-transition-rules" class="bd-toc-link">\K Specifications: Transition Rules</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#push-to-stack"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Push to Stack
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5Ck-specifications%3A-transition-rules-1" class="bd-toc-link">\K Specifications: Transition Rules</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#helper-functions%3A"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Helper functions:
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5Ck-specifications%3A-transition-rules-2" class="bd-toc-link">\K Specifications: Transition Rules</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#binary-operators"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Binary operators
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5Ck-specifications%3A-transition-rules-3" class="bd-toc-link">\K Specifications: Transition Rules</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#maps"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Maps
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#%5Ck-specifications%3A-transition-rules-4" class="bd-toc-link">\K Specifications: Transition Rules</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#maps-1"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Maps
+              </a></div>
+            </div>
+          </details>
+        
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#repo-tour" class="bd-toc-link">Repo Tour</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#repo-layout"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Repo layout
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#simple-instructions"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Simple Instructions
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#more-complex-instructions"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                More Complex Instructions
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#proving" class="bd-toc-link">Proving</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#verifying-michelson-programs"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Verifying Michelson programs
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#a-simple-proof"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                A simple proof
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#a-bad-proof"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                A bad proof
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#prover-complains"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Prover complains
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#fix"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Fix
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#proving-1"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Proving
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#conclusion" class="bd-toc-link">Conclusion</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#interested%3F"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Interested?
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#questions%3F" class="bd-toc-link">Questions?</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#thanks!"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Thanks!
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#references"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                References
+              </a></div>
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/hKLtCjeEd6yqfzwx5" target="_blank"
+            >1807 S Neil Street, Champaign, IL 61820</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2022 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Typist/1.2/typist.min.js"></script>
+    <script src="../../assets/js/index.js"></script>
+  </body>
+</html>

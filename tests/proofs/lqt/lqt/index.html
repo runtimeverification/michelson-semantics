@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="A Michelson semantics for Tezos built using the K Framework."
+/>
+<meta name="keywords" content="runtime, verification, rv, k" />
+<meta name="author" content="Michelson Semantics | Runtime Verification Inc" />
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../../../assets/img/favicon.ico" /> -->
+
+<title>Michelson Semantics | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../../../index.html"> Michelson Semantics </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/michelson-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../../../">Homepage</a>
+      <a class="bd-toc-link" href="../../../../INSTALL">Install</a>
+      <a class="bd-toc-link" href="../../../../USER_GUIDE">User Guide</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="lqt-verification">LQT Verification</h1>
+<h2 id="prologue">Prologue</h2>
+<p>Our verification subject is the Michelson code corresponding to the LIGO <a href="https://gitlab.com/dexter2tz/dexter2tz/-/tree/liquidity_baking" target="_blank" rel="noopener">LQT contract</a> at <a href="https://gitlab.com/dexter2tz/dexter2tz/-/tree/d98643881fe14996803997f1283e84ebd2067e35" target="_blank" rel="noopener">commit id d9864388</a>.</p>
+<p>The goal of this project is to produce:</p>
+<ul>
+<li>a series of proofs which specify that the intended behavior of each individual LIGO function is correct (which implies that the LIGO-to-Michelson compilation process is also correct in this case)</li>
+<li>a series of proofs which demonstate high-level invariants over sequences of contract calls hold (e.g. it is not possible to produce a profit by exploiting rounding errors)</li>
+</ul>
+<p>In this project, we will model the entrypoints in the LQT Token contract code and extract their high-level properties.
+Note that we will base our high-level descriptions of each function of the LIGO contract code,
+Lqthile our verification will be performed at the the level of the compiled Michelson versions.</p>
+<p>We begin start our verification project by opening a new module context in which our verification will be performed.</p>
+<pre class="language-k"><code><span class="token keyword">requires</span> <span class="token string">"../lemmas.md"</span>
+<span class="token keyword">requires</span> <span class="token string">"lqt-compiled.md"</span>
+
+<span class="token keyword">module</span> LQT<span class="token operator">-</span>TOKEN<span class="token operator">-</span>VERIFICATION<span class="token operator">-</span>SYNTAX
+  <span class="token keyword">imports</span> MICHELSON<span class="token operator">-</span>INTERNAL<span class="token operator">-</span>SYNTAX
+</code></pre>
+<pre class="language-k"><code><span class="token keyword">endmodule</span>
+</code></pre>
+<h2 id="lqt-token-lemmas">LQT Token Lemmas</h2>
+<pre class="language-k"><code><span class="token keyword">module</span> LQT<span class="token operator">-</span>TOKEN<span class="token operator">-</span>LEMMAS
+  <span class="token keyword">imports</span> MICHELSON
+</code></pre>
+<pre class="language-k"><code>  <span class="token keyword">rule</span> X <span class="token operator">/</span><span class="token keyword">Int</span> <span class="token number">1</span> <span class="token operator">=&gt;</span> X <span class="token punctuation">[</span>simplification<span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> X <span class="token operator">*</span><span class="token keyword">Int</span> <span class="token number">1</span> <span class="token operator">=&gt;</span> X <span class="token punctuation">[</span>simplification<span class="token punctuation">]</span>
+
+  <span class="token keyword">rule</span> X <span class="token operator">+</span><span class="token keyword">Int</span> <span class="token punctuation">(</span><span class="token number">0</span> <span class="token operator">-</span><span class="token keyword">Int</span> Y<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> X <span class="token operator">-</span><span class="token keyword">Int</span> Y <span class="token punctuation">[</span>simplification<span class="token punctuation">]</span>
+</code></pre>
+<pre class="language-k"><code><span class="token keyword">endmodule</span>
+</code></pre>
+<pre class="language-k"><code><span class="token keyword">module</span> LQT<span class="token operator">-</span>TOKEN<span class="token operator">-</span>VERIFICATION
+  <span class="token keyword">imports</span> LQT<span class="token operator">-</span>TOKEN<span class="token operator">-</span>COMPILED
+  <span class="token keyword">imports</span> LQT<span class="token operator">-</span>TOKEN<span class="token operator">-</span>VERIFICATION<span class="token operator">-</span>SYNTAX
+  <span class="token keyword">imports</span> LQT<span class="token operator">-</span>TOKEN<span class="token operator">-</span>LEMMAS
+</code></pre>
+<h2 id="terminology-prerequisites">Terminology Prerequisites</h2>
+<h3 id="entrypoints">Entrypoints</h3>
+<p>Note that we are slightly abusing language in the preceding sentence because Michelson has no native notion of separate contract function entrypoints.
+Instead, different entrypoints are modelled by making the global contract input parameter a disjoint union of the parameter types for each possible entrypoint, and then dispatching to different code blocks based on which entry of the disjoint union was selected.
+Due to Michelon's design, this means that each entrypoint can be understood to have the following typing:</p>
+<pre class="language-text"><code>entrypoint_input_type * storage_type -&gt; (operation list) * storage_type
+</code></pre>
+<p>where:</p>
+<ol>
+<li>each <code>entrypoint_input_type</code> is a member of the disjoint union which is the global contract parameter type;</li>
+<li>each <code>operation</code> is a callback to be placed in a FIFO queue of callbacks that are executed once the current contract execution terminates.</li>
+</ol>
+<p>By abuse of notation, we identify an entrypoint's typing rule with its corresponding <code>entrypoint_input_type</code>, since the other parts of the typing rule are constant.
+We may abbreviate <code>entrypoint_input_type</code> to just <code>input</code> when it is clear from context.</p>
+<h3 id="storage-type">Storage Type</h3>
+<p>In our proofs, we will use the following abstract representation of the LQT contract storage state.</p>
+<p>Calling functions produces not only storage changes but also a list of callbacks.
+We serialize these to the <code>&lt;operations&gt;</code> cell for ease of writing specifications.</p>
+<pre class="language-k"><code><span class="token keyword">configuration</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>dexterTop</span><span class="token punctuation">&gt;</span></span>
+                <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>michelsonTop</span><span class="token punctuation">/&gt;</span></span>
+                <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>storage</span><span class="token punctuation">&gt;</span></span>
+                  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>tokens</span><span class="token punctuation">&gt;</span></span> <span class="token punctuation">.</span>Map <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>tokens</span><span class="token punctuation">&gt;</span></span>
+                  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>allowances</span><span class="token punctuation">&gt;</span></span> <span class="token punctuation">.</span>Map <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>allowances</span><span class="token punctuation">&gt;</span></span>
+                  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>adminAddress</span><span class="token punctuation">&gt;</span></span> #Address<span class="token punctuation">(</span><span class="token string">""</span><span class="token punctuation">)</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>adminAddress</span><span class="token punctuation">&gt;</span></span>
+                  <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>totalSupply</span><span class="token punctuation">&gt;</span></span> <span class="token number">0</span><span class="token punctuation">:</span><span class="token keyword">Int</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>totalSupply</span><span class="token punctuation">&gt;</span></span>
+                <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>storage</span><span class="token punctuation">&gt;</span></span>
+                <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>operations</span><span class="token punctuation">&gt;</span></span> <span class="token punctuation">.</span>InternalList <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>operations</span><span class="token punctuation">&gt;</span></span>
+              <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>dexterTop</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h2 id="entrypoint-summaries">Entrypoint Summaries</h2>
+<p>We define our list of entrypoints below.
+Each entrypoint is given a unique abstract parameter type that we use to simplify our proof structure,
+as well as operations to serialize and deserialize the parameter.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> EntryPointParams
+
+  <span class="token keyword">syntax</span> <span class="token keyword">Bool</span> <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> wellTypedParams<span class="token punctuation">(</span>EntryPointParams<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">]</span>
+  <span class="token keyword">syntax</span> Data <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #loadLqtParams<span class="token punctuation">(</span>EntryPointParams<span class="token punctuation">)</span>  <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">]</span>
+</code></pre>
+<h3 id="gettotalsupply">GetTotalSupply</h3>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> EntryPointParams <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> GetTotalSupplyParams<span class="token punctuation">(</span>callback<span class="token punctuation">:</span> Entrypoint<span class="token punctuation">)</span>
+  <span class="token keyword">rule</span> wellTypedParams<span class="token punctuation">(</span>GetTotalSupplyParams<span class="token punctuation">(</span>_<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token boolean">true</span> <span class="token punctuation">[</span>simplification<span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> #loadLqtParams<span class="token punctuation">(</span>GetTotalSupplyParams<span class="token punctuation">(</span>Callback<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> Left Right Right Pair Unit #Contract<span class="token punctuation">(</span>Callback<span class="token punctuation">,</span> nat<span class="token punctuation">)</span>
+</code></pre>
+<h3 id="getbalance">GetBalance</h3>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> EntryPointParams <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> GetBalanceParams<span class="token punctuation">(</span>owner<span class="token punctuation">:</span> Address<span class="token punctuation">,</span> callback<span class="token punctuation">:</span> Entrypoint<span class="token punctuation">)</span>
+  <span class="token keyword">rule</span> wellTypedParams<span class="token punctuation">(</span>GetBalanceParams<span class="token punctuation">(</span>_Address<span class="token punctuation">,</span> _Callback<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token boolean">true</span> <span class="token punctuation">[</span>simplification<span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> #loadLqtParams<span class="token punctuation">(</span>GetBalanceParams<span class="token punctuation">(</span>Address<span class="token punctuation">,</span> Callback<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> Left Right Left Pair Address #Contract<span class="token punctuation">(</span>Callback<span class="token punctuation">,</span> nat<span class="token punctuation">)</span>
+</code></pre>
+<h3 id="getallowence">GetAllowence</h3>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> EntryPointParams <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> GetAllowanceParams<span class="token punctuation">(</span>owner<span class="token punctuation">:</span> Address<span class="token punctuation">,</span> spender<span class="token punctuation">:</span> Address<span class="token punctuation">,</span> callback<span class="token punctuation">:</span> Entrypoint<span class="token punctuation">)</span>
+  <span class="token keyword">rule</span> wellTypedParams<span class="token punctuation">(</span>GetAllowanceParams<span class="token punctuation">(</span>_Owner<span class="token punctuation">,</span> _Spender<span class="token punctuation">,</span> _Callback<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token boolean">true</span> <span class="token punctuation">[</span>simplification<span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> #loadLqtParams<span class="token punctuation">(</span>GetAllowanceParams<span class="token punctuation">(</span>Owner<span class="token punctuation">,</span> Spender<span class="token punctuation">,</span> Callback<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> Left Left Right Pair <span class="token punctuation">(</span>Pair Owner Spender<span class="token punctuation">)</span> #Contract<span class="token punctuation">(</span>Callback<span class="token punctuation">,</span> nat<span class="token punctuation">)</span>
+</code></pre>
+<h3 id="mintorburn">MintOrBurn</h3>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> EntryPointParams <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> MintOrBurnParams<span class="token punctuation">(</span>quantity<span class="token punctuation">:</span> <span class="token keyword">Int</span><span class="token punctuation">,</span> target<span class="token punctuation">:</span> Address<span class="token punctuation">)</span>
+  <span class="token keyword">rule</span> wellTypedParams<span class="token punctuation">(</span>MintOrBurnParams<span class="token punctuation">(</span>_Quantity<span class="token punctuation">,</span> _Target<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token boolean">true</span> <span class="token punctuation">[</span>simplification<span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> #loadLqtParams<span class="token punctuation">(</span>MintOrBurnParams<span class="token punctuation">(</span>Quantity<span class="token punctuation">,</span> Target<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> Right Left Pair Quantity Target
+</code></pre>
+<h3 id="approve">Approve</h3>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> EntryPointParams <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> ApproveParams<span class="token punctuation">(</span>spender<span class="token punctuation">:</span> Address<span class="token punctuation">,</span> value<span class="token punctuation">:</span> <span class="token keyword">Int</span><span class="token punctuation">)</span>
+  <span class="token keyword">rule</span> wellTypedParams<span class="token punctuation">(</span>ApproveParams<span class="token punctuation">(</span>_Spender<span class="token punctuation">,</span> Value<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> Value <span class="token operator">&gt;=</span><span class="token keyword">Int</span> <span class="token number">0</span> <span class="token punctuation">[</span>simplification<span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> #loadLqtParams<span class="token punctuation">(</span>ApproveParams<span class="token punctuation">(</span>Spender<span class="token punctuation">,</span> Value<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> Left Left Left Pair Spender Value
+</code></pre>
+<h3 id="transfer">Transfer</h3>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> EntryPointParams <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> TransferParams<span class="token punctuation">(</span>from<span class="token punctuation">:</span> Address<span class="token punctuation">,</span> to<span class="token punctuation">:</span> Address<span class="token punctuation">,</span> value<span class="token punctuation">:</span> <span class="token keyword">Int</span><span class="token punctuation">)</span>
+  <span class="token keyword">rule</span> wellTypedParams<span class="token punctuation">(</span>TransferParams<span class="token punctuation">(</span>_From<span class="token punctuation">,</span> _To<span class="token punctuation">,</span> Value<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> Value <span class="token operator">&gt;=</span><span class="token keyword">Int</span> <span class="token number">0</span> <span class="token punctuation">[</span>simplification<span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> #loadLqtParams<span class="token punctuation">(</span>TransferParams<span class="token punctuation">(</span>From<span class="token punctuation">,</span> To<span class="token punctuation">,</span> Value<span class="token punctuation">)</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> Right Right Pair From Pair To Value
+</code></pre>
+<h2 id="state-abstraction">State Abstraction</h2>
+<p>We use a few helper routines to convert between our abstract and concrete proof state.
+We first define functions which build our parameter and our storage types.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> TypeName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #lqtParamType<span class="token punctuation">(</span><span class="token punctuation">)</span>  <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">]</span>
+  <span class="token comment">// --------------------------------------------------------------------</span>
+  <span class="token keyword">rule</span> #lqtParamType<span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token operator">=&gt;</span> <span class="token punctuation">(</span>or <span class="token punctuation">(</span>or <span class="token punctuation">(</span>or <span class="token punctuation">(</span>pair <span class="token punctuation">(</span>address<span class="token punctuation">)</span> <span class="token punctuation">(</span>nat<span class="token punctuation">)</span><span class="token punctuation">)</span>
+                  <span class="token punctuation">(</span>pair
+                       <span class="token punctuation">(</span>pair <span class="token punctuation">(</span>address<span class="token punctuation">)</span> <span class="token punctuation">(</span>address<span class="token punctuation">)</span><span class="token punctuation">)</span>
+                       <span class="token punctuation">(</span>contract nat<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+               <span class="token punctuation">(</span>or <span class="token punctuation">(</span>pair <span class="token punctuation">(</span>address<span class="token punctuation">)</span> <span class="token punctuation">(</span>contract nat<span class="token punctuation">)</span><span class="token punctuation">)</span>
+                   <span class="token punctuation">(</span>pair <span class="token punctuation">(</span>unit<span class="token punctuation">)</span> <span class="token punctuation">(</span>contract nat<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+           <span class="token punctuation">(</span>or <span class="token punctuation">(</span>pair <span class="token punctuation">(</span>int<span class="token punctuation">)</span> <span class="token punctuation">(</span>address<span class="token punctuation">)</span><span class="token punctuation">)</span>
+               <span class="token punctuation">(</span>pair <span class="token punctuation">(</span>address<span class="token punctuation">)</span> <span class="token punctuation">(</span>pair <span class="token punctuation">(</span>address<span class="token punctuation">)</span> <span class="token punctuation">(</span>nat<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+
+  <span class="token keyword">syntax</span> TypeName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #lqtStorageType<span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">]</span>
+  <span class="token comment">// ---------------------------------------------------------------------</span>
+  <span class="token keyword">rule</span> #lqtStorageType<span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token operator">=&gt;</span> <span class="token punctuation">(</span>pair <span class="token punctuation">(</span>big_map address nat<span class="token punctuation">)</span>
+             <span class="token punctuation">(</span>pair <span class="token punctuation">(</span>big_map <span class="token punctuation">(</span>pair <span class="token punctuation">(</span>address<span class="token punctuation">)</span> <span class="token punctuation">(</span>address<span class="token punctuation">)</span><span class="token punctuation">)</span> nat<span class="token punctuation">)</span>
+                   <span class="token punctuation">(</span>pair <span class="token punctuation">(</span>address<span class="token punctuation">)</span>
+                         <span class="token punctuation">(</span>nat<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+</code></pre>
+<p>We also define a functions that serialize and deserialize our abstract parameters and state.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> KItem <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #loadLqtState<span class="token punctuation">(</span>EntryPointParams<span class="token punctuation">)</span>
+  <span class="token comment">// ---------------------------------------------------------</span>
+  <span class="token keyword">rule</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>k</span><span class="token punctuation">&gt;</span></span> #loadLqtState<span class="token punctuation">(</span>Params<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token punctuation">.</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>k</span><span class="token punctuation">&gt;</span></span>
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>stack</span><span class="token punctuation">&gt;</span></span> <span class="token punctuation">.</span>Stack
+            <span class="token operator">=&gt;</span> <span class="token punctuation">[</span> pair #lqtParamType<span class="token punctuation">(</span><span class="token punctuation">)</span> #lqtStorageType<span class="token punctuation">(</span><span class="token punctuation">)</span>
+                 Pair #loadLqtParams<span class="token punctuation">(</span>Params<span class="token punctuation">)</span>
+                   Pair TokensMap
+                     Pair AllowanceMap
+                       Pair AdminAddress
+                            TotalSupply <span class="token punctuation">]</span>
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>stack</span><span class="token punctuation">&gt;</span></span>
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>tokens</span><span class="token punctuation">&gt;</span></span> TokensMap <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>tokens</span><span class="token punctuation">&gt;</span></span>
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>allowances</span><span class="token punctuation">&gt;</span></span> AllowanceMap <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>allowances</span><span class="token punctuation">&gt;</span></span>
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>adminAddress</span><span class="token punctuation">&gt;</span></span> AdminAddress <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>adminAddress</span><span class="token punctuation">&gt;</span></span>
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>totalSupply</span><span class="token punctuation">&gt;</span></span> TotalSupply <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>totalSupply</span><span class="token punctuation">&gt;</span></span>
+
+  <span class="token keyword">syntax</span> KItem <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #storeLqtState<span class="token punctuation">(</span><span class="token punctuation">)</span>
+  <span class="token comment">// ------------------------------------------</span>
+  <span class="token keyword">rule</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>k</span><span class="token punctuation">&gt;</span></span> #storeLqtState<span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token punctuation">.</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>k</span><span class="token punctuation">&gt;</span></span>
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>stack</span><span class="token punctuation">&gt;</span></span>  <span class="token punctuation">[</span> pair list operation _
+                 Pair OpList
+                   Pair TokensMap
+                     Pair AllowanceMap
+                       Pair AdminAddress
+                            TotalSupply <span class="token punctuation">]</span>
+            <span class="token operator">=&gt;</span> <span class="token punctuation">.</span>Stack
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>stack</span><span class="token punctuation">&gt;</span></span>
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>tokens</span><span class="token punctuation">&gt;</span></span> _ <span class="token operator">=&gt;</span> TokensMap <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>tokens</span><span class="token punctuation">&gt;</span></span>
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>allowances</span><span class="token punctuation">&gt;</span></span> _ <span class="token operator">=&gt;</span> AllowanceMap <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>allowances</span><span class="token punctuation">&gt;</span></span>
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>adminAddress</span><span class="token punctuation">&gt;</span></span> _ <span class="token operator">=&gt;</span> AdminAddress <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>adminAddress</span><span class="token punctuation">&gt;</span></span>
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>totalSupply</span><span class="token punctuation">&gt;</span></span> _ <span class="token operator">=&gt;</span> TotalSupply <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>totalSupply</span><span class="token punctuation">&gt;</span></span>
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>operations</span><span class="token punctuation">&gt;</span></span> _ <span class="token operator">=&gt;</span> OpList <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>operations</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<p>If the contract execution fails, storage is not updated.</p>
+<pre class="language-k"><code>  <span class="token keyword">rule</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>k</span><span class="token punctuation">&gt;</span></span> Aborted<span class="token punctuation">(</span>_<span class="token punctuation">,</span> _<span class="token punctuation">,</span> _<span class="token punctuation">,</span> _<span class="token punctuation">)</span> <span class="token operator">~&gt;</span> <span class="token punctuation">(</span>#storeLqtState<span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token punctuation">.</span><span class="token punctuation">)</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>k</span><span class="token punctuation">&gt;</span></span>
+</code></pre>
+<h2 id="proof-helper-functions">Proof Helper Functions</h2>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> <span class="token keyword">Bool</span> <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #EntrypointExists<span class="token punctuation">(</span>Map<span class="token punctuation">,</span> Address<span class="token punctuation">,</span> FieldAnnotation<span class="token punctuation">,</span> Type<span class="token punctuation">)</span> <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+<span class="token comment">// -----------------------------------------------------------------------------</span>
+  <span class="token keyword">rule</span> #EntrypointExists<span class="token punctuation">(</span>KnownAddresses<span class="token punctuation">,</span> Addr<span class="token punctuation">,</span> FieldAnnot<span class="token punctuation">,</span> EntrypointType<span class="token punctuation">)</span>
+    <span class="token operator">=&gt;</span> Addr <span class="token punctuation">.</span> FieldAnnot  in_keys<span class="token punctuation">(</span>KnownAddresses<span class="token punctuation">)</span> andBool
+       KnownAddresses<span class="token punctuation">[</span>Addr <span class="token punctuation">.</span> FieldAnnot<span class="token punctuation">]</span> <span class="token operator">==</span>K #Name<span class="token punctuation">(</span>EntrypointType<span class="token punctuation">)</span>
+</code></pre>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> Map <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #incrementTokens<span class="token punctuation">(</span>Map<span class="token punctuation">,</span> Address<span class="token punctuation">,</span> quantity<span class="token punctuation">:</span> <span class="token keyword">Int</span><span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> #incrementTokens<span class="token punctuation">(</span>Tokens<span class="token punctuation">,</span> Address<span class="token punctuation">,</span> Quantity<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> Tokens<span class="token punctuation">[</span> Address &lt;<span class="token operator">-</span> undef <span class="token punctuation">]</span>                                     <span class="token keyword">requires</span>         #tokensFor<span class="token punctuation">(</span>Tokens<span class="token punctuation">,</span> Address<span class="token punctuation">)</span> <span class="token operator">+</span><span class="token keyword">Int</span> Quantity <span class="token operator">==</span><span class="token keyword">Int</span> <span class="token number">0</span> <span class="token punctuation">[</span>simplification<span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> #incrementTokens<span class="token punctuation">(</span>Tokens<span class="token punctuation">,</span> Address<span class="token punctuation">,</span> Quantity<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> Tokens<span class="token punctuation">[</span> Address &lt;<span class="token operator">-</span> #tokensFor<span class="token punctuation">(</span>Tokens<span class="token punctuation">,</span> Address<span class="token punctuation">)</span> <span class="token operator">+</span><span class="token keyword">Int</span> Quantity <span class="token punctuation">]</span> <span class="token keyword">requires</span> notBool #tokensFor<span class="token punctuation">(</span>Tokens<span class="token punctuation">,</span> Address<span class="token punctuation">)</span> <span class="token operator">+</span><span class="token keyword">Int</span> Quantity <span class="token operator">==</span><span class="token keyword">Int</span> <span class="token number">0</span> <span class="token punctuation">[</span>simplification<span class="token punctuation">]</span>
+
+  <span class="token keyword">syntax</span> <span class="token keyword">Int</span> <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #tokensFor<span class="token punctuation">(</span>Map<span class="token punctuation">,</span> owner<span class="token punctuation">:</span> Address<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> #tokensFor<span class="token punctuation">(</span>Tokens<span class="token punctuation">,</span> Owner<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token punctuation">{</span>Tokens<span class="token punctuation">[</span>Owner<span class="token punctuation">]</span><span class="token punctuation">}</span><span class="token punctuation">:</span>&gt;<span class="token keyword">Int</span> <span class="token keyword">requires</span>         Owner in_keys<span class="token punctuation">(</span>Tokens<span class="token punctuation">)</span> <span class="token punctuation">[</span>simplification<span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> #tokensFor<span class="token punctuation">(</span>Tokens<span class="token punctuation">,</span> Owner<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token number">0</span>                    <span class="token keyword">requires</span> notBool Owner in_keys<span class="token punctuation">(</span>Tokens<span class="token punctuation">)</span> <span class="token punctuation">[</span>simplification<span class="token punctuation">]</span>
+</code></pre>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> Pair <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #allowanceKey<span class="token punctuation">(</span>owner<span class="token punctuation">:</span> Address<span class="token punctuation">,</span> spender<span class="token punctuation">:</span> Address<span class="token punctuation">)</span> <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+<span class="token comment">// ----------------------------------------------------------------------</span>
+  <span class="token keyword">rule</span> #allowanceKey<span class="token punctuation">(</span>Owner<span class="token punctuation">,</span> Spender<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token punctuation">(</span>Pair Owner Spender<span class="token punctuation">)</span>
+
+  <span class="token keyword">syntax</span> Map <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #updateAllowances<span class="token punctuation">(</span>Map<span class="token punctuation">,</span> owner<span class="token punctuation">:</span> Address<span class="token punctuation">,</span> spender<span class="token punctuation">:</span> Address<span class="token punctuation">,</span> newValue<span class="token punctuation">:</span> <span class="token keyword">Int</span><span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">]</span>
+<span class="token comment">// ------------------------------------------------------------------------------------------------------------</span>
+  <span class="token keyword">rule</span> #updateAllowances<span class="token punctuation">(</span>Allowances<span class="token punctuation">,</span> Owner<span class="token punctuation">,</span> Spender<span class="token punctuation">,</span> NewValue<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> Allowances<span class="token punctuation">[</span> #allowanceKey<span class="token punctuation">(</span>Owner<span class="token punctuation">,</span> Spender<span class="token punctuation">)</span> &lt;<span class="token operator">-</span> undef    <span class="token punctuation">]</span> <span class="token keyword">requires</span>         NewValue <span class="token operator">==</span>K <span class="token number">0</span> <span class="token punctuation">[</span>simplification<span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> #updateAllowances<span class="token punctuation">(</span>Allowances<span class="token punctuation">,</span> Owner<span class="token punctuation">,</span> Spender<span class="token punctuation">,</span> NewValue<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> Allowances<span class="token punctuation">[</span> #allowanceKey<span class="token punctuation">(</span>Owner<span class="token punctuation">,</span> Spender<span class="token punctuation">)</span> &lt;<span class="token operator">-</span> NewValue <span class="token punctuation">]</span> <span class="token keyword">requires</span> notBool NewValue <span class="token operator">==</span>K <span class="token number">0</span> <span class="token punctuation">[</span>simplification<span class="token punctuation">]</span>
+
+  <span class="token keyword">syntax</span> <span class="token keyword">Int</span> <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #allowanceFor<span class="token punctuation">(</span>Map<span class="token punctuation">,</span> owner<span class="token punctuation">:</span> Address<span class="token punctuation">,</span> spender<span class="token punctuation">:</span> Address<span class="token punctuation">)</span> <span class="token punctuation">[</span>function<span class="token punctuation">,</span> functional<span class="token punctuation">]</span>
+<span class="token comment">// -----------------------------------------------------------------------------------------</span>
+  <span class="token keyword">rule</span> #allowanceFor<span class="token punctuation">(</span><span class="token punctuation">(</span>#allowanceKey<span class="token punctuation">(</span>Owner<span class="token punctuation">,</span> Spender<span class="token punctuation">)</span> <span class="token operator">|</span><span class="token operator">-</span>&gt; Allowance<span class="token punctuation">:</span><span class="token keyword">Int</span><span class="token punctuation">)</span> _<span class="token punctuation">,</span> Owner<span class="token punctuation">,</span> Spender<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> Allowance
+  <span class="token keyword">rule</span> #allowanceFor<span class="token punctuation">(</span>_<span class="token punctuation">,</span> _<span class="token punctuation">,</span> _<span class="token punctuation">)</span>                                                             <span class="token operator">=&gt;</span> <span class="token number">0</span>         <span class="token punctuation">[</span>owise<span class="token punctuation">]</span>
+
+  <span class="token keyword">rule</span> Allowance <span class="token operator">==</span><span class="token keyword">Int</span> #allowanceFor<span class="token punctuation">(</span>Allowances<span class="token punctuation">,</span> Sender<span class="token punctuation">,</span> Spender<span class="token punctuation">)</span>
+    <span class="token operator">=&gt;</span>         <span class="token punctuation">(</span>          #isPresent<span class="token punctuation">(</span>Allowances<span class="token punctuation">,</span> #allowanceKey<span class="token punctuation">(</span>Sender<span class="token punctuation">,</span> Spender<span class="token punctuation">)</span><span class="token punctuation">)</span>  impliesBool Allowance <span class="token operator">==</span><span class="token keyword">Int</span> <span class="token punctuation">{</span>Allowances <span class="token punctuation">[</span> #allowanceKey<span class="token punctuation">(</span>Sender<span class="token punctuation">,</span> Spender<span class="token punctuation">)</span> <span class="token punctuation">]</span><span class="token punctuation">}</span><span class="token punctuation">:</span>&gt;<span class="token keyword">Int</span> <span class="token punctuation">)</span>
+       andBool <span class="token punctuation">(</span> <span class="token punctuation">(</span>notBool #isPresent<span class="token punctuation">(</span>Allowances<span class="token punctuation">,</span> #allowanceKey<span class="token punctuation">(</span>Sender<span class="token punctuation">,</span> Spender<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span> impliesBool Allowance <span class="token operator">==</span><span class="token keyword">Int</span> <span class="token number">0</span> <span class="token punctuation">)</span>
+    <span class="token punctuation">[</span>simplification<span class="token punctuation">]</span>
+
+  <span class="token keyword">syntax</span> <span class="token keyword">Bool</span> <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #isPresent <span class="token punctuation">(</span> Map <span class="token punctuation">,</span> Pair <span class="token punctuation">)</span> <span class="token punctuation">[</span><span class="token class-name">macro</span><span class="token punctuation">]</span>
+<span class="token comment">// ------------------------------------------------</span>
+  <span class="token keyword">rule</span> #isPresent<span class="token punctuation">(</span>M<span class="token punctuation">,</span> K<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> K in_keys<span class="token punctuation">(</span>M<span class="token punctuation">)</span> andBool isInt<span class="token punctuation">(</span>M<span class="token punctuation">[</span>K<span class="token punctuation">]</span><span class="token punctuation">)</span>
+</code></pre>
+<h2 id="putting-it-all-together">Putting It All Together</h2>
+<p>All contract call specifications have common steps:</p>
+<ol>
+<li>Load parameters and storage onto the stack.</li>
+<li>Execute the LQT contract code.</li>
+<li>Save the resulting storage.</li>
+</ol>
+<p>If all steps are completed, only the LQT specific storage is updated.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> KItem <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> #runProof<span class="token punctuation">(</span>EntryPointParams<span class="token punctuation">)</span>
+ <span class="token comment">// ------------------------------------------</span>
+  <span class="token keyword">rule</span> <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;</span>k</span><span class="token punctuation">&gt;</span></span> #runProof<span class="token punctuation">(</span>Params<span class="token punctuation">)</span>
+        <span class="token operator">=&gt;</span> #loadLqtState<span class="token punctuation">(</span>Params<span class="token punctuation">)</span>
+        <span class="token operator">~&gt;</span> #lqtTokenCode
+        <span class="token operator">~&gt;</span> #storeLqtState<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>
+       <span class="token tag"><span class="token tag"><span class="token punctuation">&lt;/</span>k</span><span class="token punctuation">&gt;</span></span>
+    ensures wellTypedParams<span class="token punctuation">(</span>Params<span class="token punctuation">)</span>
+</code></pre>
+<h2 id="epilogue">Epilogue</h2>
+<p>We close out our module context now, which contains all of the information necessary to complete our proof.</p>
+<pre class="language-k"><code><span class="token keyword">endmodule</span>
+</code></pre>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#lqt-verification" class="bd-toc-link">LQT Verification</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#prologue"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Prologue
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#lqt-token-lemmas"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                LQT Token Lemmas
+              </a></div><details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#terminology-prerequisites" class="bd-toc-link">Terminology Prerequisites</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#entrypoints"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Entrypoints
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#storage-type"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Storage Type
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#entrypoint-summaries" class="bd-toc-link">Entrypoint Summaries</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#gettotalsupply"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                GetTotalSupply
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#getbalance"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                GetBalance
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#getallowence"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                GetAllowence
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#mintorburn"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                MintOrBurn
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#approve"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Approve
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#transfer"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Transfer
+              </a></div>
+            </div>
+          </details>
+        <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#state-abstraction"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                State Abstraction
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#proof-helper-functions"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Proof Helper Functions
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#putting-it-all-together"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Putting It All Together
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#epilogue"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Epilogue
+              </a></div>
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/hKLtCjeEd6yqfzwx5" target="_blank"
+            >1807 S Neil Street, Champaign, IL 61820</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2022 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Typist/1.2/typist.min.js"></script>
+    <script src="../../../../assets/js/index.js"></script>
+  </body>
+</html>
