@@ -221,7 +221,7 @@ Let us assume `L * m = sqrt(X*Y)`.
 Now, scale both sides as indicated by rule `(*)` above.
 We want to show that `L*q * m = sqrt((X*q)*(Y*q))`.
 By arithmetic, we have `L*q * m = sqrt((X*q)*(Y*q)) = sqrt(X*Y*q^2) = q*sqrt(X*Y)`.
-Finally, we divide both sides by `q` to obtain the equality we already assumed: `L* m = sqrt(X*Y)`.
+Finally, we divide both sides by `q` to obtain the equality we already assumed: `L * m = sqrt(X*Y)`.
 
 In words, our answer is *liquidity scales proportionally with the geometric mean of X and Y*.
 

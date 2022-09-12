@@ -203,7 +203,7 @@ def get_code_section(mcode):
         # check that section names are correct
         sections = dict()
         for prim in mcode:
-            name,val = prim['prim'], prim['args']
+            name,val = prim['prim'], prim.get('args',[])
             # skip view functions
             if name == 'view': continue
             # if we encounter an unexpected name, stop
@@ -211,6 +211,8 @@ def get_code_section(mcode):
                 # our recordeded section names are non-empty, we must have a missing or duplicated contract section
                 if len(sections) != 0: raise ValueError(f"JSON representation of Michelson contract is ill-formed: {mcode}")
                 break
+            if len(val) == 0:
+                raise ValueError("Ill-formed value")
             sections[name] = val
         else:
             # code section has single argument
