@@ -1,5 +1,0 @@
-code { SELF %root } ;
-input { } ;
-parameter %root (or (int %foo) (bool %bar)) ;
-self "KT1BEqzn5Wx8uJrZNvuS9DVHmLvG9td3fDLi" ;
-output { Stack_elt (contract (or (int %foo) (bool %bar))) "KT1BEqzn5Wx8uJrZNvuS9DVHmLvG9td3fDLi%root" }

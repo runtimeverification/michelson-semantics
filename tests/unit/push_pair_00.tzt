@@ -1,3 +1,0 @@
-code { PUSH (pair string string string) (Pair "Hello" "World" "!") ; DROP } ;
-input  { } ;
-output { }

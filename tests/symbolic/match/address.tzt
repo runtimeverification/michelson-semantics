@@ -1,3 +1,0 @@
-input  { Stack_elt address $VAL } ;
-code   { DUP } ;
-output { Stack_elt address $VAL ; Stack_elt address $VAL } ;
