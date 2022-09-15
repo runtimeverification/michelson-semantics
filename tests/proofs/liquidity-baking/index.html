@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="A Michelson semantics for Tezos built using the K Framework."
+/>
+<meta name="keywords" content="runtime, verification, rv, k" />
+<meta name="author" content="Michelson Semantics | Runtime Verification Inc" />
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../../../assets/img/favicon.ico" /> -->
+
+<title>Michelson Semantics | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../../../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../../../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../../../index.html"> Michelson Semantics </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/michelson-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../../../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../../../">Homepage</a>
+      <a class="bd-toc-link" href="../../../INSTALL">Install</a>
+      <a class="bd-toc-link" href="../../../USER_GUIDE">User Guide</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="background">Background</h1>
+<p>The liquidity baking (LB) system is a Uniswap-style constant product market maker (CPMM) for two assets: Tez and wrapped Bitcoin (tzBTC) where arbitary users can decide to become a liquidity provider (LP) and obtain liquidity share tokens by providing reserves of each asset to the CPMM.
+The system actually consists of three separate smart contracts which work together in concert:</p>
+<pre class="language-text"><code>      [Dexter]
+         |
+[LQT]---------[tzBTC]
+</code></pre>
+<ul>
+<li>the main contract <em>Dexter</em> is responsible for:
+<ul>
+<li>all system entrypoints (i.e. users interacting with the system should <em>only</em> need to interact with this contract)</li>
+<li>the CPMM logic</li>
+<li>managing the Tez asset reserves</li>
+</ul>
+</li>
+<li>the <em>LQT</em> contract is a <em>FA1.2</em> contract (with an additional <code>%mintOrBurn</code> entrypoint) responsible for managing the liquidity share tokens (as far as we can tell, <em>LQT</em> stands for liquidity token)</li>
+<li>the <em>tzBTC</em> contract is a <em>FA1.2</em> contract responsible for managing the tzBTC asset reserves</li>
+</ul>
+<p>In this report, we use the K Framework and K Michelson semantics to verify two important safety properties of LB which we first state informally below:</p>
+<ol>
+<li><em>Liquidity share value security</em> - LP shares never decrease in <em>redemption value</em> (note this is <em>different</em> from <em>monetary value</em>, see below)</li>
+<li><em>Operation safety</em> - all trades and liquidity redemptions/deposits have a bounded exchange rate and time in which they are applicable.</li>
+</ol>
+<p>Before we formally define these properties, we describe how CPMMs work using a simple state machine model.
+This simple state machine model is <em>not</em> equivalent to any smart contract.
+Instead, it provides an intuition which ideally helps lay people and experts understand why the safety properties above are sufficient.
+We conclude this section by discussing where to go from here.</p>
+<h2 id="constant-product-market-makers-in-theory">Constant Product Market Makers in Theory</h2>
+<p><strong>Introduction:</strong>
+A constant product market maker (CPMM) is an exchange for two assets <em>A</em> and <em>B</em> that holds a varying amount of both assets, as long as both amounts have a constant product.
+Let the ordered 2-tuple <em>(X,Y)</em> denote a CPMM where naturals <em>X</em> and <em>Y</em> represent the exchange-held reserves of assets <em>A</em> and <em>B</em> respectively.
+We also have the exchange function <em>E</em> which is defined as follows:</p>
+<pre class="language-text"><code>            V * w
+E(w,U,V) =  -----
+            U + w
+</code></pre>
+<p>where <em>U</em> and <em>V</em> are the amounts of assets <em>A</em> or <em>B</em>.</p>
+<p>Network participants interact with the CPMM in a two-step, asynchronous, and unordered manner.
+For example, suppose both Alice and Bob wish to perform trades on the exchange.
+They will both need to <em>submit</em> their trade operations to the exchange operation pool.
+Some time later, the exchange will <em>apply</em> their operations.
+In this example, suppose Alice submits operation <em>o_1</em> first and then Bob submits operation <em>o_2</em>.
+The exchange may apply <em>o_1</em> first; on the other hand, it is just as likely that it will apply <em>o_2</em> first.
+It all depends on network conditions.
+For this reason, we use the notation <em>{o_1, o_2 ... o_k}</em> to represent the pending set of <em>submitted</em> operations.
+We let <em>...</em> represent a (possibly empty) subset of a set.
+Thus, the notation <em>{o ...}</em> represents a set with an element <em>o</em> and does <em>not</em> mean that the first element in set is <em>o</em> (in any case, sets are unordered).
+Let <em>valid(o_k)</em> be a predicate that defines the set of valid operations.</p>
+<p>Finally, to properly model asynchronous operations, our exchange is equipped with a clock <em>[T]</em> where <em>T</em> is a natural number which represents the current exchange time.</p>
+<p><strong>Model:</strong>
+Now we can describe CPMMs as a state machine starting from state <code>init</code> with the following rules:</p>
+<pre class="language-text"><code>rule init =&gt; (X, Y)[0]{ } requires X &gt; 0 /\ Y &gt; 0
+rule (X, Y)[T]{ ... } =&gt; (X, Y)[T + 1]{ ... }
+rule (X, Y)[T]{ ... } =&gt; (X, Y)[T]{ ... o } requires valid(o)
+rule (X, Y)[T]{ sell-A(x) ... } =&gt; (X + x, Y - E(x,X,Y))[T]{ ... } requires x &lt;= X
+rule (X, Y)[T]{ sell-B(y) ... } =&gt; (X - E(y,Y,X), Y + y)[T]{ ... } requires y &lt;= Y
+rule (X, Y)[T]{ redeem    ... } =&gt; (0, 0)               [T]{ ... }
+</code></pre>
+<p>We give a brief description of each rule in order:</p>
+<ol>
+<li>A liquidity provider (LP) may use their assets to create a CPMM with an initially empty operation set.</li>
+<li>The system clock may tick forward.</li>
+<li>A network participant may <em>submit</em> a valid operation to the CPMM.</li>
+<li>The exchange may apply a trade operation selling asset <em>A</em> to obtain <em>B</em>.</li>
+<li>Symmetrically, the exchange may apply a trade operation selling asset <em>B</em> to obtain <em>A</em>.</li>
+<li>The exchange may apply an LP redemption operation, i.e., the LP redeems their stored assets and shuts down the CPMM exchange.
+At this point, all applicable trades are zero-valued and effectively no-ops.</li>
+</ol>
+<p><strong>Exchange-rate Analysis:</strong>
+Any good exchange-rate function should be monotonic, i.e., we should get more units of money out if we put more units of moeny in.
+Formally, we want to check that:</p>
+<p><code>w &lt;= w' =&gt; E(w,U,V) &lt;= E(w',U,V)</code></p>
+<p>The result follows by a chain of inequalities:</p>
+<pre class="language-text"><code>E(w,U,V) &lt;= E(w',U,V) =&gt; (V * w) / (U + w) &lt;= (V * w') / (U + w')
+                      =&gt; w / (U + w)       &lt;= w' / (U + w')
+                      =&gt; w * (U + w')      &lt;= w' * (U + w)
+                      =&gt; w * U + w * w'    &lt;= w' * U + w * w'
+                      =&gt; w * U             &lt;= w' * U
+                      =&gt; w                 &lt;= w'
+</code></pre>
+<p>assuming that <em>U &gt; 0</em> and <em>V &gt; 0</em> since otherwise the two division steps (i.e. dividing by <em>V</em> and dividing <em>U</em>) become impossible.</p>
+<p><strong>Invariant Analysis:</strong>
+Note that the exchange function is designed so that trades preserve the constant product, i.e., for the <code>sell-A(x)</code> operation we have:</p>
+<pre class="language-text"><code>X * Y = [X + x] * [Y - E(x,X,Y)]
+      = [X + x] * [ Y - {Y * x / (X + x)}]
+      = {[X + x] * Y} - Y * x
+      = X * Y + (Y * x) - (Y * x)
+      = X * Y
+</code></pre>
+<p>The case for the <code>sell-B(y)</code> follows by a symmetric calculation.</p>
+<p><strong>Remarks:</strong>
+While our theoretical model is convenient and illustrates the sense in which CPMMs have a <em>constant</em> product, it has a few serious drawbacks:</p>
+<ol>
+<li>(incentive) there is no immediate incentive to provide assets (i.e. liquidity) to the exchange, limiting CPMM creation and operation</li>
+<li>(scalability) the entire amount of liquidity must be provided by one party, limiting the growth of the exchange reserves</li>
+</ol>
+<h2 id="constant-product-market-makers-in-practice">Constant Product Market Makers in Practice</h2>
+<p><strong>Introduction:</strong>
+To counteract the incentive and scalability issues, pratical CPMMs make two slight adjustments to the theoretical model:</p>
+<ol>
+<li>fees are assessed on every transaction (i.e. a percentage of the amount sold in terms of either asset <em>A</em> or <em>B</em>) and added to the exchange reserves</li>
+<li>a system of shares is created that allows multiple parties to:
+<ul>
+<li>provide both assets to the exchange reserves in proportion and obtain a corresponding amount of shares</li>
+<li>destory shares and redeem a corresponding amount of exchange-held reserves</li>
+</ul>
+</li>
+</ol>
+<p>Let us reformulate our CPMM model in light of the above considerations.
+A CPMM is now an ordered 4-tuple <em>(L,P,X,Y)</em> where:</p>
+<ul>
+<li>natural <em>L</em> is total number of <em>liquidity</em> shares</li>
+<li><em>P</em> is in the range <em>[0,1]</em> is the trade scaling factor and represents the percentage of trades paid into the exchange reserves as a <em>fee</em>, e.g., if there is a 25% fee on trades, then <em>P=.75</em>, and if there are no fees, then <em>P=1</em></li>
+<li>naturals <em>X</em> and <em>Y</em> represent the exchange-held <em>reserves</em> of assets <em>A</em> and <em>B</em> respectively.</li>
+</ul>
+<p>To account for fees, we develop a new exchange function:</p>
+<p><code>E(w,P,U,V) = E(w * P,U,V)</code></p>
+<p><strong>Model:</strong>
+Now we refine our previous CPMM state machine model:</p>
+<pre class="language-text"><code>rule init =&gt; (l, p, x, y)[0]{ } requires l &gt; 0 /\ p \in [0,1] /\ x &gt; 0 /\ y &gt; 0
+rule (X, Y)[T]{ ... } =&gt; (X, Y)[T + 1]{ ... }
+rule (L, P, X, Y)[T]{ ... } =&gt; (L, P, X, Y)[T]{ ... o } requires valid(o)
+rule (L, P, X, Y)[T]{ sell-A(x) ... } =&gt; (L, P, X + x, Y - E(x,P,X,Y)) [T]{ ... } requires x &lt;= X
+rule (L, P, X, Y)[T]{ sell-B(y) ... } =&gt; (L, P, X - E(y,P,Y,X), Y + y) [T]{ ... } requires y &lt;= Y
+rule (L, P, X, Y)[T]{ redeem(n) ... } =&gt; (L - L*n, P, X - X*n, Y - Y*n)[T]{ ... } requires 0 &lt;= n &lt;= 1
+rule (L, P, X, Y)[T]{ add(n)    ... } =&gt; (L + L*n, P, X + X*n, Y + Y*n)[T]{ ... } requires 0 &lt;= n
+</code></pre>
+<p>These rules are very similar to our original rules, with a few distinctions:</p>
+<ul>
+<li>The <code>init</code> rule now creates a 4-tuple CPMM.</li>
+<li>The <code>sell-A(x)</code> and <code>sell-B(y)</code> operations now compute exchange rates using a fee.</li>
+<li>The <code>redeem(n)</code> operation is parametric on the amount <code>n</code> of liquidity shares redeemed.
+When <code>n = 1</code>, this is equivalent to shutting down the exchange, i.e., the last LP removed their remaining liquidity; afterwards, all applicable trades and liquidity redemptions/additions are no-ops.</li>
+<li>The new <code>add(n)</code> rule describes how an LP can mint new liquidity shares by storing assets in the reserves in exchange for new shares.</li>
+</ul>
+<p>The above model is equivalent to our original model under the following conditions:</p>
+<ol>
+<li>When initializing a new exchange, the only allowed trade scaling factor is <em>P = 1</em>;</li>
+<li>The <code>redeem(n)</code> operation is only applied when <em>n = 1</em>;</li>
+<li>The <code>add(n)</code> operation is <em>never</em> applied.</li>
+</ol>
+<p><strong>Exchange-rate with Fees Analysis</strong>:
+We want to understand how the exchange rate function <em>E()</em> varies as the trade scaling factor <em>P</em> grows or shrinks.
+Using the equality <em>E(w,P,U,V) = E(w * P,U,V)</em> and monotonicity, observe that <em>E(w,P,U,V)</em> shrinks as <em>P</em> shrinks.
+Again, this result only holds when <em>U</em> and <em>V</em> are both greater than <em>0</em>.
+Finally, note that <em>E(w,1,U,V) = E(w * 1,U,V) = E(w,U,V)</em>.</p>
+<p><strong>Invariant Analysis:</strong>
+Recall that our theoretical CPMM model without fees satisfied the <em>constant product</em> invariant after trades.
+In case of CPMMs with fees, is the the product of the pre-trade assets always equal to the product of the post-trade assets?
+Suppose we started off in a state <code>(L, P, X, Y)</code> with product <em>k = X * Y</em>.
+Then suppose the <code>sell-B(b)</code> operation was applied to obtain the resulting state:</p>
+<p><code>(L, P, X - E(y,P,Y,X), Y + y)</code></p>
+<p>Thus, we have:</p>
+<pre class="language-text"><code>X * Y =  [ X - E(y,Y,X)     ] * [ Y + y ]
+      &lt;= [ X - E(y * P,Y,X) ] * [ Y + y ]
+      =  [ X - E(y,P,Y,X)   ] * [ Y + y ]
+</code></pre>
+<p>Thus, we see that the answer to our question is:</p>
+<ul>
+<li>if <em>P = 1</em>, then the product is constant in both states.</li>
+<li>if <em>P &lt; 1</em>, then the product <em>increases</em> by monotonicity of the exchange-rate function.</li>
+</ul>
+<p>A symmetric calculations shows that the same rule applies in the case of the <code>sell-A(a)</code> operation.
+In either case, this derivation shows us by applying trades, the redemeption value of liquidity shares <em>never decreases</em>.</p>
+<p><strong>Liquidity Shares vs. Exchange Reserves Analysis:</strong>
+If our CPMM state is <code>(L, P, X, Y)</code>, during <code>redeem</code> or <code>add</code> operations, how do liquidity shares <em>L</em> scale with respect to the product of our exchange reserves <code>X*Y</code>?
+Let us consider the <code>redeem</code> and <code>add</code> operations in turn.</p>
+<p>First suppose we apply a <code>redeem(n)</code> operation.
+Then our updated state tuple is:</p>
+<p><code>(L - L*n, P, X - X*n, Y - Y*n) = (L * (1 - n), P, X * (1 - n), Y * (1 - n))</code>.</p>
+<p>In other words, we update <em>L</em>, <em>X</em>, and <em>Y</em> by the constant factor <em>q = 1 - n</em> such that <em>0 &lt;= n &lt;= 1</em> which gives <em>0 &lt;= q &lt;= 1</em>.
+Now suppose we apply an <code>add(n)</code> operation.
+Then our updated state tuple is:</p>
+<p><code>(L + L*n, P, X + X*n, Y + Y*n) = (L * (1 + n), P, X * (1 + n), Y * (1 + n))</code>.</p>
+<p>Symmetrically, this means we update <em>L</em>, <em>X</em>, and <em>Y</em> by the constant factor <em>q = 1 + n</em> such that <em>0 &lt;= n</em> which gives <em>1 &lt;= q</em>.
+By this reasoning, we see that the disjunction of these two rules is equivalent to the rule below:</p>
+<p><em>(*)</em> <code>rule (L, P, X, Y) =&gt; (L * q, P, X * q, Y * q) requires 0 &lt;= q</code>.</p>
+<p>Thus, as <code>L</code> scales to <code>L*q</code>, we see that the product of our exchange reserves <code>X*Y</code> scales to <code>(X*q)*(Y*q)</code> or <code>(X*Y)*q^2</code>.
+Thus, <code>L</code> scales proportionally with <code>sqrt(X*Y)</code>, i.e., the <em>geoemtric mean of X and Y</em>.</p>
+<p>If the reader is unconvinced, we can carry our a simple calculation to verify our intuition.
+Let us assume <code>L * m = sqrt(X*Y)</code>.
+Now, scale both sides as indicated by rule <code>(*)</code> above.
+We want to show that <code>L*q * m = sqrt((X*q)*(Y*q))</code>.
+By arithmetic, we have <code>L*q * m = sqrt((X*q)*(Y*q)) = sqrt(X*Y*q^2) = q*sqrt(X*Y)</code>.
+Finally, we divide both sides by <code>q</code> to obtain the equality we already assumed: <code>L* m = sqrt(X*Y)</code>.</p>
+<p>In words, our answer is <em>liquidity scales proportionally with the geometric mean of X and Y</em>.</p>
+<p><strong>Remarks:</strong>
+The new model is clearly an improvement over the previous model because it addressed the incentive and scalability issues.
+However, it still has non-trivial and non-obvious issues which relate to the asynchronous nature of operations:</p>
+<ol>
+<li>(slippage) in the time between trade/redeem/add operation submission and application, exchange rates may vary, making such operations incredibly risky</li>
+<li>(time-unboundedness) after an operation is submitted, it may be applied at <em>any</em> time in the future, even when that makes no sense for the submitter</li>
+</ol>
+<p>To counteract this risk of price variance, practical implementations allow operations to inlcude both: exchange rates and time bounds.</p>
+<p><strong>Revised Rules:</strong>
+We can formalize this notion by revising our trade and liquidity redemption/addition operations to include explicit bounds.
+These four rules will then replace the last four rules of the former model.</p>
+<pre class="language-text"><code>rule (L, P, X, Y)[T]{ sell-A(d,e,x)   ... } =&gt; (L, P, X + x, Y - E(x,P,X,Y)) [T]{ ... }
+  requires x &lt;= X /\ T &lt;= d /\ E(x,P,X,Y) &gt;= x*e
+rule (L, P, X, Y)[T]{ sell-B(d,e,y)   ... } =&gt; (L, P, X - E(y,P,Y,X), Y + y) [T]{ ... }
+  requires y &lt;= Y /\ T &lt;= d /\ E(y,P,Y,X) &gt;= y*e
+rule (L, P, X, Y)[T]{ redeem(d,a,b,n) ... } =&gt; (L - L*n, P, X - X*n, Y - Y*n)[T]{ ... }
+  requires 0 &lt;= n &lt;= 1 /\ T &lt;= d /\ X*n &gt;= a /\ Y*n &gt;= b
+rule (L, P, X, Y)[T]{ add(d,a,b,n)    ... } =&gt; (L + L*n, P, X + X*n, Y + Y*n)[T]{ ... }
+  requires 0 &lt;= n /\ T &lt;= d /\ X*n &lt;= a /\ Y*n &lt;= b
+</code></pre>
+<p>These revised operations are identical to their former counterparts except:</p>
+<ul>
+<li>all operations now include an explicit deadline, denoted by variable <code>d</code></li>
+<li>the <code>sell-A(d,e,x)</code> and <code>sell-B(d,e,y)</code> operations now include a minimum exchange rate parameter <code>e</code></li>
+<li>the <code>redeem(d,a,b,n)</code> operation now includes parameters <code>a</code> and <code>b</code>, the <em>minimum</em> redeemed units of asset <em>A</em> and <em>B</em> respectively</li>
+<li>the <code>add(d,a,b,n)</code> operation now includes parameters <code>a</code> and <code>b</code>, the <em>maximum</em> stored units of asset <em>A</em> and <em>B</em> respectively</li>
+</ul>
+<h2 id="safety-property-formalization">Safety Property Formalization</h2>
+<p>We now come back to our two safety properties that we state informally in the beginning of our document:</p>
+<ol>
+<li><em>Liquidity share value security</em> - LP shares never decrease in <em>redemption value</em></li>
+<li><em>Operation safety</em> - all trades and liquidity redemptions/deposits have a bounded exchange rate and time in which they are applicable.</li>
+</ol>
+<p>We can now formalize these properties using our model.
+Consider an arbitrary CPMM in the form <code>(L, P, X, Y)</code>.</p>
+<ol>
+<li>
+<p><em>Liquidity share value security</em></p>
+<p>If <code>(L, P, X, Y)[T]{ ... } =&gt;* (L', P, X', Y')[T']{ ... }</code> then:</p>
+<p><code>X' * Y' / X * Y &gt;= L'^2 / L^2</code></p>
+</li>
+<li>
+<p><em>Operation safety</em></p>
+<p>All operations have bounded exchange rates and application deadlines.
+In other words:</p>
+<p>If <code>(L, P, X, Y)[T]{ o ... } =&gt; (L', P, X', Y')[T]{ ... }</code> then:</p>
+<pre class="language-text"><code>t &lt;= deadline(o) /\ bounded-exchange(P,X,Y,o)
+</code></pre>
+<p>where <code>deadline(o)</code> projects the deadline from an operation and <code>bounded-exchange(P,X,Y,o)</code> is defined as:</p>
+<pre class="language-text"><code>bounded-exchange(P,X,Y,sell-A(d,e,x))   = E(x,P,X,Y) &gt;= x*e
+bounded-exchange(P,X,Y,sell-B(d,e,y))   = E(y,P,Y,X) &gt;= y*e
+bounded-exchange(P,X,Y,redeem(d,a,b,n)) = X*n &gt;= a /\ Y*n &gt;= b
+bounded-exchange(P,X,Y,add(d,a,b,n))    = X*n &lt;= a /\ Y*n &lt;= b
+</code></pre>
+</li>
+</ol>
+<p>Both properties are satisfied by our simplified model.
+Property (1) follows by an induction argument while property (2) follows by definition.</p>
+<h2 id="integer-arithmetic-considerations">Integer Arithmetic Considerations</h2>
+<p>In computer programs, we do not have access to infinite precision numbers (i.e. real numbers).
+We typically either use fixed-width or arbitrary width integers (with rounding or truncation) or floating point numbers.
+In this section, we discuss which of the properties that we proved above hold when we restrict ourselves to arbitrary width integer arithmetic with truncation.
+Note that some of the expressions we used above do not work well (or at all) in the realm of integer arithmetic because they contain fractional values.
+In such cases, we can use algebra to re-formulate such expressions to minimize division operations (and thus, minimize rounding error).
+By doing so, we may also gain performance, since division is a fairly expensive operation.
+For the purposes of this section, let</p>
+<pre class="language-text"><code> a
+---
+ b
+</code></pre>
+<p>and:</p>
+<p><code>a / b</code></p>
+<p>denote fractions using <em>real</em> division and let:</p>
+<pre class="language-text"><code> a
+---I
+ b
+</code></pre>
+<p>and:</p>
+<p><code>a // b</code></p>
+<p>denote fractions using <em>integer</em> division with truncation.</p>
+<p><strong>Invariant Analysis without Fees:</strong>:
+Recall that our original exchange rate function <code>E(w,U,V)</code> was chosen so that:</p>
+<p><code>[ X - E(y,Y,X) ] * [ Y + y ] == X * Y</code></p>
+<p>However, in the world of integer arithmetic, the above equality no longer holds, becase integer division is not exact.
+As a counter example, suppose our exchange has two assets with reserves of asset A and B set to <em>10</em> and <em>10</em> respectively.
+Now suppose we wish to by as many units of asset A as possible for <em>5</em> units of asset B.
+When we plug these values into our formula, we obtain:</p>
+<pre class="language-text"><code>[ 10 - E(5,10,10) ] * [ 10 + 5 ] = [ 10 - ( 10 * 5 / 10 + 15 ) ] * 15
+                                 = [ 10 - ( 50 / 15 ) ] * 15
+                                 = [ 10 - ( 10 / 3 ) ] * 15
+                                 = [ 10 - 3.333... ] * 15
+                                 = [ 10 - 3 ] * 15
+                                 = 7 * 15
+                                 = 105
+                                 &gt; 100
+                                 = 10 * 10
+</code></pre>
+<p>The crucial problem arises because we must truncate the division <em>10 / 3</em>, which gives us <em>3</em> instead of the infinite decimal expansion <em>3.333...</em>
+In fact, because we are truncating a number that is subtracted, the end result is that, in case of arbitrary-width integer arithmetic with truncation, even <em>without a fee</em>, the product of our asset reserves <em>never decreases, but may increase</em>.</p>
+<p><strong>Exchange-rate with Fees Analysis:</strong>:
+Recall that our exchange rate function with fees was:</p>
+<pre class="language-text"><code>              V * w * P
+E(w,P,U,V) =  ---------
+              U + w * P
+</code></pre>
+<p>where <em>P</em> is a scaling factor in the range <em>[0,1]</em>.
+To make this operation usable under integer arithmetic, we can rewrite the exchange function as follows:</p>
+<pre class="language-text"><code>                        V * w * Q
+Ei(w,P = Q/R,U,V) =  ---------------I
+                     (U * R) + w * Q
+</code></pre>
+<p>where the division operator <code>---I</code>, as mentioned above, is integer division with truncation.
+By a straightforward calculation, we can show that the above is provably equal to our original function when using real division, i.e.,</p>
+<pre class="language-text"><code>   V * w * Q       (1 / R)    V * w * Q/R   V * w * P
+--------------- * --------- = ----------- = --------- = E(w,P = Q/R,U,V)
+(U * R) + w * Q    (1 / R)    U + w * Q/R   U + w * P
+</code></pre>
+<p>We also note that:</p>
+<pre class="language-text"><code>                       V * w * Q           V * w * Q
+Ei(w,P = Q/R,U,V) = ---------------I &lt;= --------------- = E(w,P = Q/R,U,V)
+                    (U * R) + w * Q     (U * R) + w * Q
+</code></pre>
+<p>since integer division will truncate the fractional part, giving a smaller value.</p>
+<p><strong>Exchange-rate with Compounded Fees Analysis:</strong>
+Suppose that, instead of our exchange function applying a fee which is a single scaling factor, it applies the same scaling factor twice in succession?
+That is, suppose we have this exchange function with a compound fee:</p>
+<pre class="language-text"><code>                                           V * w * P^2
+EC(w,P = Q/R,U,V) = E(w,P = Q^2/R^2,U,V) = ----------- = E((w * Q) / R,P = Q/R,U,V)
+                                           U + w * P^2
+</code></pre>
+<p>Now suppose that we reformulate it in the world of integer arithmetic using the following formulation:</p>
+<pre class="language-text"><code>                        V * ((w * Q) // R) * Q
+ECi(w,P = Q/R,U,V) = -----------------------------I = Ei((w * Q) // R,P = Q/R,U,V)
+                     (U * R) + ((w * Q) // R)  * Q
+</code></pre>
+<p>Note that this formulation <em>does not</em> minimize rounding error, but, as shown above, <em>does</em> allow us to re-use our exchange function we defined earlier.
+With our above knowledge, we can <em>almost</em> prove the following:</p>
+<pre class="language-text"><code>ECi(w,P = Q/R,U,V) =  Ei((w * Q) // R,P = Q/R,U,V)
+                   &lt;= E ((w * Q) // R,P = Q/R,U,V)
+                   &lt;= E ((w * Q) /  R,P = Q/R,U,V)
+                   =  EC(w,P = Q/R,U,V)
+</code></pre>
+<p>The first, second, and fourth steps follow all by either definition or by our analysis in the subsection above.
+The second step follows because <code>(w * Q) // R &lt;= (w * Q) / R</code> by integer division truncation and monotonicity.</p>
+<p><strong>Invariant Analysis with Fees or Compounded Fees:</strong>
+Given our exchange-rate analysis in the preceeding subsections, we have:</p>
+<pre class="language-text"><code>X * Y =  [ X - E(y,Y,X)                     ] * [ Y + y ]
+      &lt;= [ X - E((y * Q) / R,Y,X)           ] * [ Y + y ]
+      =  [ X - E(y,P = Q/R,Y,X)             ] * [ Y + y ]
+      &lt;= [ X - Ei(y,P = Q/R,Y,X)            ] * [ Y + y ]
+      &lt;= [ X - Ei((y * Q) // R,P = Q/R,Y,X) ] * [ Y + y ]
+      =  [ X - ECi(y,P = Q/R,Y,X)           ] * [ Y + y ]
+</code></pre>
+<p>where:</p>
+<ol>
+<li>the equality steps follow by definition;</li>
+<li>the second and third inequality steps follow by monotonicity;</li>
+<li>the first inequality follows by our exchange rate with fees analysis.</li>
+</ol>
+<p><strong>Exchange Reserves Non-negativity Analysis:</strong>
+After trades, are the exhange reserves always non-negative?
+The answer to this is: yes.
+It can be shown by examining the exchange function directly, but there is an easier proof.
+We have already shown that product of our exchange reserves can <em>never decrease</em>.
+That is, if our exchange currently has asset reserves <em>X</em> and <em>Y</em> and a series of trades is performed producing reserves <em>X'</em> and <em>Y'</em>, we know that <em>X * Y &lt;= X' * Y'</em>.
+Since our exchange reserves are assumed to be non-negative integers, this means that we know:</p>
+<p><code>0 &lt;= X * Y &lt;= [ X - Ei(y,P,Y,X) ] * [ Y + y ]</code>.</p>
+<p>By <em>Y</em> and <em>y</em> being non-negative, we also know:</p>
+<p><code>Y + y &gt; 0</code>.</p>
+<p>If <code>X - Ei(y,P,Y,X)</code> could be negative, then we would have the contradiction:</p>
+<p><code>0 &lt;= X * Y &lt;= [ X - Ei(y,P,Y,X) ] * [ Y + y ] &lt; 0</code>.</p>
+<p>Thus, our exchange function to convert asset <em>B</em> into asset <em>A</em> can never exceed the total units of asset <em>A</em>.</p>
+<h2 id="next-steps">Next Steps</h2>
+<p>The simplified models in this section ignore critical features needed in real implementations such as:</p>
+<ul>
+<li>authorization logic for performing various actions</li>
+<li>logic for maintaining an account's balance in assets <em>A</em> and <em>B</em></li>
+<li>means of integrating the CPMM with the underlying assets (which are either blockchain primitives or smart contracts)</li>
+<li>logic to programmatically issue transactions to interact with other smart contracts (if necessary)</li>
+<li>etc...</li>
+</ul>
+<p>Our functional specification proofs in K and hand-proofs cover these additional details (and more) needed to provide a complete proof of our two safety properties list above.</p>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#background" class="bd-toc-link">Background</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#constant-product-market-makers-in-theory"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Constant Product Market Makers in Theory
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#constant-product-market-makers-in-practice"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Constant Product Market Makers in Practice
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#safety-property-formalization"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Safety Property Formalization
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#integer-arithmetic-considerations"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Integer Arithmetic Considerations
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#next-steps"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Next Steps
+              </a></div>
+            </div>
+          </details>
+        
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/hKLtCjeEd6yqfzwx5" target="_blank"
+            >1807 S Neil Street, Champaign, IL 61820</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2022 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Typist/1.2/typist.min.js"></script>
+    <script src="../../../assets/js/index.js"></script>
+  </body>
+</html>

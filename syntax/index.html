@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+/>
+<meta
+  name="description"
+  content="A Michelson semantics for Tezos built using the K Framework."
+/>
+<meta name="keywords" content="runtime, verification, rv, k" />
+<meta name="author" content="Michelson Semantics | Runtime Verification Inc" />
+<meta name="robots" content="index, follow" />
+
+<!--favicon icon-->
+<!-- <link rel="icon" type="image/png" href="../assets/img/favicon.ico" /> -->
+
+<title>Michelson Semantics | Runtime Verification Inc</title>
+
+<!-- <base href="/k/" /> -->
+
+<!--web fonts-->
+<link
+  href="https://fonts.googleapis.com/css?family=Nunito:300,400,600,700,800"
+  rel="stylesheet"
+/>
+<link
+  href="https://fonts.googleapis.com/css?family=Lora:400i"
+  rel="stylesheet"
+/>
+
+<link
+  href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.14.0/css/all.min.css"
+  rel="stylesheet"
+/>
+
+<link href="../assets/css/index.css" rel="stylesheet" />
+
+<!--[if (gt IE 9) |!(IE)]><!-->
+<!--<link rel="stylesheet" href="/assets/vendor/custom-nav/css/effects/fade-menu.css"/>-->
+<!-- <link rel="stylesheet" href="../assets/k/vl-nav/css/effects/slide-menu.css" /> -->
+<!--<![endif]-->
+
+  </head>
+
+  <body>
+<header
+  class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar"
+>
+  <a class="logo-link" href="../index.html"> Michelson Semantics </a>
+  <ul class="navbar-nav ml-md-auto">
+    <li class="nav-item">
+      <a
+        class="nav-link pl-2 pr-1 mx-1 py-3 my-n2"
+        href="https://github.com/runtimeverification/michelson-semantics"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  </ul>
+  <!--
+  <a
+    class="btn btn-rv-blue d-none d-lg-inline-block mb-3 mb-md-0 ml-md-3"
+    href="../downloads"
+    >Download</a
+  >
+  -->
+</header>
+
+
+    <div class="container-fluid">
+      <div class="row flex-xl-nowrap">
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar mb-3">
+  <form
+    role="search"
+    class="bd-search d-flex align-items-center justify-content-between"
+  >
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search..."
+      aria-label="Search for..."
+      autocomplete="false"
+      id="search-box"
+    />
+    <button
+      class="btn bd-search-docs-toggle d-md-none p-0 ml-3 collapsed"
+      type="button"
+      aria-label="Toggle docs navigation"
+      style="font-size: 1.4rem"
+    >
+      <i class="fas fa-bars"></i>
+    </button>
+  </form>
+  <nav class="collapse bd-links" aria-label="Main navigation">
+    <div class="bd-toc-item">
+      <a class="bd-toc-link" href="../">Homepage</a>
+      <a class="bd-toc-link" href="../INSTALL">Install</a>
+      <a class="bd-toc-link" href="../USER_GUIDE">User Guide</a>
+    </div>
+  </nav>
+</div>
+
+        <main
+          class="col-12 col-md-6 col-xl-8 py-md-3 pl-md-5 bd-content"
+          role="main"
+        >
+          <div class="markdown-preview"><html><head></head><body><h1 id="michelson-syntax">Michelson Syntax</h1>
+<p>This module declares the syntax of a K-Michelson input file. In particular, it
+contains the syntax of a Michelson contract and the additional data necessary
+to fully specify a contract execution.</p>
+<h2 id="michelson-parser-syntax">Michelson Parser Syntax</h2>
+<p>This module defines the core parser of Michelson programs.
+Unit test file syntax is defined as a slight extension of this file.</p>
+<pre class="language-k"><code><span class="token keyword">module</span> MICHELSON<span class="token operator">-</span>SYNTAX
+  <span class="token keyword">imports</span> MICHELSON<span class="token operator">-</span>COMMON<span class="token operator">-</span>SYNTAX
+
+  <span class="token keyword">syntax</span> MichelsonBoolToken <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"True"</span>  <span class="token punctuation">[</span><span class="token class-name">token</span><span class="token punctuation">]</span>
+                              <span class="token operator">|</span> <span class="token string">"False"</span> <span class="token punctuation">[</span><span class="token class-name">token</span><span class="token punctuation">]</span>
+
+  <span class="token keyword">syntax</span> MichelsonBytesToken <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> r<span class="token string">"0x([0-9a-fA-F]{2})*"</span> <span class="token punctuation">[</span><span class="token class-name">token</span><span class="token punctuation">]</span>
+
+  <span class="token keyword">syntax</span> Groups <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> Group <span class="token string">";"</span> <span class="token punctuation">[</span><span class="token class-name">klabel</span><span class="token punctuation">(</span>groupSemicolon<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token class-name">symbol</span><span class="token punctuation">]</span>
+
+  <span class="token keyword">syntax</span> TypeAnnotation <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> r<span class="token string">":([_a-zA-Z][_0-9a-zA-Z\\.]*)?"</span> <span class="token punctuation">[</span><span class="token class-name">token</span><span class="token punctuation">]</span>
+  <span class="token keyword">syntax</span> VariableAnnotation <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> r<span class="token string">"@(%|%%|[_a-zA-Z][_0-9a-zA-Z\\.]*)?"</span> <span class="token punctuation">[</span><span class="token class-name">token</span><span class="token punctuation">]</span>
+  <span class="token keyword">syntax</span> FieldAnnotation <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> r<span class="token string">"%(@|[_a-zA-Z][_0-9a-zA-Z\\.]*)?"</span> <span class="token punctuation">[</span><span class="token class-name">token</span><span class="token punctuation">]</span>
+
+  <span class="token keyword">syntax</span> Wildcard <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> r<span class="token string">"_"</span> <span class="token punctuation">[</span><span class="token class-name">token</span><span class="token punctuation">]</span>
+
+  <span class="token comment">// NB: This special token defines the syntax to be ignored by the parser</span>
+  <span class="token keyword">syntax</span> #Layout <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> r<span class="token string">"(#.*)|[\\n \\t\\r]*"</span> <span class="token punctuation">[</span><span class="token class-name">token</span><span class="token punctuation">]</span>
+<span class="token keyword">endmodule</span>
+</code></pre>
+<h2 id="michelson-common-syntax">Michelson Common Syntax</h2>
+<p>Common syntax is shared between the parser and the internal semantic
+representation.</p>
+<pre class="language-k"><code><span class="token keyword">module</span> MICHELSON<span class="token operator">-</span>COMMON<span class="token operator">-</span>SYNTAX
+  <span class="token keyword">imports</span> INT<span class="token operator">-</span>SYNTAX
+  <span class="token keyword">imports</span> STRING<span class="token operator">-</span>SYNTAX
+</code></pre>
+<h3 id="type-syntax">Type Syntax</h3>
+<p>Type annotations only exist as tokens in the internal representation.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> TypeAnnotation <span class="token punctuation">[</span><span class="token class-name">token</span><span class="token punctuation">]</span>
+  <span class="token keyword">syntax</span> VariableAnnotation <span class="token punctuation">[</span><span class="token class-name">token</span><span class="token punctuation">]</span>
+  <span class="token keyword">syntax</span> FieldAnnotation <span class="token punctuation">[</span><span class="token class-name">token</span><span class="token punctuation">]</span>
+  <span class="token keyword">syntax</span> Annotation <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> TypeAnnotation <span class="token operator">|</span> VariableAnnotation <span class="token operator">|</span> FieldAnnotation
+
+  <span class="token keyword">syntax</span> AnnotationList <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> List<span class="token punctuation">{</span>Annotation<span class="token punctuation">,</span> <span class="token string">""</span><span class="token punctuation">}</span>
+</code></pre>
+<p>Types are defined as expected.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> NumTypeName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"int"</span> <span class="token operator">|</span> <span class="token string">"nat"</span>
+
+  <span class="token keyword">syntax</span> NullaryTypeName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> NumTypeName
+                           <span class="token operator">|</span> <span class="token string">"string"</span>
+                           <span class="token operator">|</span> <span class="token string">"bytes"</span>
+                           <span class="token operator">|</span> <span class="token string">"mutez"</span>
+                           <span class="token operator">|</span> <span class="token string">"bool"</span>
+                           <span class="token operator">|</span> <span class="token string">"key_hash"</span>
+                           <span class="token operator">|</span> <span class="token string">"timestamp"</span>
+                           <span class="token operator">|</span> <span class="token string">"address"</span>
+                           <span class="token operator">|</span> <span class="token string">"key"</span>
+                           <span class="token operator">|</span> <span class="token string">"unit"</span>
+                           <span class="token operator">|</span> <span class="token string">"signature"</span>
+                           <span class="token operator">|</span> <span class="token string">"operation"</span>
+                           <span class="token operator">|</span> <span class="token string">"chain_id"</span>
+
+  <span class="token keyword">syntax</span> UnaryTypeName   <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"option"</span>
+                           <span class="token operator">|</span> <span class="token string">"list"</span>
+                           <span class="token operator">|</span> <span class="token string">"set"</span>
+                           <span class="token operator">|</span> <span class="token string">"contract"</span>
+                           <span class="token operator">|</span> <span class="token string">"ticket"</span>
+
+  <span class="token keyword">syntax</span> MapTypeName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"map"</span> <span class="token operator">|</span> <span class="token string">"big_map"</span>
+
+  <span class="token keyword">syntax</span> BinaryTypeName  <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"or"</span>
+                           <span class="token operator">|</span> <span class="token string">"lambda"</span>
+                           <span class="token operator">|</span> MapTypeName
+
+  <span class="token keyword">syntax</span> BinaryPlusTypeName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"pair"</span>
+
+  <span class="token keyword">syntax</span> Type <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> NullaryTypeName    AnnotationList
+                <span class="token operator">|</span> UnaryTypeName      AnnotationList Type
+                <span class="token operator">|</span> BinaryTypeName     AnnotationList Type Type
+                <span class="token operator">|</span> BinaryPlusTypeName AnnotationList Type NeTypeList
+
+  <span class="token keyword">syntax</span> NeTypeList <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> Type
+                      &gt; Type NeTypeList
+</code></pre>
+<h3 id="data-literal-syntax">Data Literal Syntax</h3>
+<p>Simple data literals have efficiently detectable normal forms at runtime.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> SimpleData <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token keyword">Int</span>
+  <span class="token keyword">syntax</span> SimpleData <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token keyword">String</span>
+  <span class="token keyword">syntax</span> SimpleData <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> MichelsonBool
+  <span class="token keyword">syntax</span> SimpleData <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> MichelsonBytes
+  <span class="token keyword">syntax</span> SimpleData <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"Unit"</span>
+  <span class="token keyword">syntax</span> SimpleData <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> Mutez
+  <span class="token keyword">syntax</span> SimpleData <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> Address
+  <span class="token keyword">syntax</span> Data <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> SimpleData
+
+  <span class="token keyword">syntax</span> Address
+  <span class="token keyword">syntax</span> Mutez
+</code></pre>
+<p>This declaration instructs the compiler to consider SimpleData literals to be
+in normal form.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> KResult <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> SimpleData
+</code></pre>
+<p>At parse time, <code>mutez</code> and <code>address</code> literals are read in as ints and strings.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> MutezLiteral   <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token keyword">Int</span>
+  <span class="token keyword">syntax</span> AddressLiteral <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token keyword">String</span>
+</code></pre>
+<p><code>bytes</code> and <code>bool</code> literals must be converted from Michelson to K syntax.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> MichelsonBytesToken <span class="token punctuation">[</span><span class="token class-name">token</span><span class="token punctuation">]</span>
+  <span class="token keyword">syntax</span> MichelsonBytes <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> MichelsonBytesToken <span class="token punctuation">[</span><span class="token class-name">klabel</span><span class="token punctuation">(</span>MichelsonBytesToken<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token class-name">symbol</span><span class="token punctuation">,</span> function<span class="token punctuation">,</span> <span class="token class-name">avoid</span><span class="token punctuation">]</span>
+
+  <span class="token keyword">syntax</span> MichelsonBoolToken <span class="token punctuation">[</span><span class="token class-name">token</span><span class="token punctuation">]</span>
+  <span class="token keyword">syntax</span> MichelsonBool <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> MichelsonBoolToken <span class="token punctuation">[</span><span class="token class-name">klabel</span><span class="token punctuation">(</span>MichelsonBoolToken<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token class-name">symbol</span><span class="token punctuation">,</span> function<span class="token punctuation">,</span> <span class="token class-name">avoid</span><span class="token punctuation">]</span>
+</code></pre>
+<p>Simple recursive data structures are defined as expected.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> Pair           <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"Pair"</span> Data NePairDataList
+  <span class="token keyword">syntax</span> NePairDataList <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> Data NePairDataList <span class="token punctuation">[</span><span class="token class-name">avoid</span><span class="token punctuation">]</span>
+                          <span class="token operator">|</span> Data
+
+  <span class="token keyword">syntax</span> OrData <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"Left"</span> Data
+                  <span class="token operator">|</span> <span class="token string">"Right"</span> Data
+
+  <span class="token keyword">syntax</span> OptionData <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"Some"</span> Data
+                      <span class="token operator">|</span> <span class="token string">"None"</span>
+
+  <span class="token keyword">syntax</span> Data <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> Pair <span class="token operator">|</span> OrData <span class="token operator">|</span> OptionData
+</code></pre>
+<p>Collection sorts (maps, lists, and sets) are defined below.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> EmptyBlock <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"{"</span> <span class="token string">"}"</span>
+
+  <span class="token keyword">syntax</span> MapEntry <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"Elt"</span> Data Data
+  <span class="token keyword">syntax</span> MapEntryList <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> MapEntry <span class="token operator">|</span> MapEntry <span class="token string">";"</span> MapEntryList
+  <span class="token keyword">syntax</span> NeMapLiteral <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"{"</span> MapEntryList <span class="token string">"}"</span>
+  <span class="token keyword">syntax</span> MapLiteral <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> NeMapLiteral <span class="token operator">|</span> EmptyBlock
+  <span class="token keyword">syntax</span> Data <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> MapLiteral
+
+  <span class="token keyword">syntax</span> DataList <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> Data <span class="token operator">|</span> Data <span class="token string">";"</span> DataList
+  <span class="token keyword">syntax</span> Block <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"{"</span> DataList <span class="token string">"}"</span> <span class="token operator">|</span> EmptyBlock
+  <span class="token keyword">syntax</span> Data <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> Block
+</code></pre>
+<p>The <code>contract</code> literal syntax definition is somewhat redundant due to parser
+limitations.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> CodeDecl <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"code"</span> Block
+  <span class="token keyword">syntax</span> StorageDecl <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"storage"</span> Type
+  <span class="token keyword">syntax</span> ParameterDecl <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"parameter"</span> Type
+                         <span class="token operator">|</span> <span class="token string">"parameter"</span> FieldAnnotation Type
+
+  <span class="token keyword">syntax</span> Contract <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> CodeDecl <span class="token string">";"</span> StorageDecl <span class="token string">";"</span> ParameterDecl <span class="token string">";"</span>
+                    <span class="token operator">|</span> CodeDecl <span class="token string">";"</span> ParameterDecl <span class="token string">";"</span> StorageDecl <span class="token string">";"</span>
+                    <span class="token operator">|</span> StorageDecl <span class="token string">";"</span> CodeDecl <span class="token string">";"</span> ParameterDecl <span class="token string">";"</span>
+                    <span class="token operator">|</span> ParameterDecl <span class="token string">";"</span> CodeDecl <span class="token string">";"</span> StorageDecl <span class="token string">";"</span>
+                    <span class="token operator">|</span> StorageDecl <span class="token string">";"</span> ParameterDecl <span class="token string">";"</span> CodeDecl <span class="token string">";"</span>
+                    <span class="token operator">|</span> ParameterDecl <span class="token string">";"</span> StorageDecl <span class="token string">";"</span> CodeDecl <span class="token string">";"</span>
+
+  <span class="token keyword">syntax</span> Contract <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> CodeDecl <span class="token string">";"</span> StorageDecl <span class="token string">";"</span> ParameterDecl
+                    <span class="token operator">|</span> CodeDecl <span class="token string">";"</span> ParameterDecl <span class="token string">";"</span> StorageDecl
+                    <span class="token operator">|</span> StorageDecl <span class="token string">";"</span> CodeDecl <span class="token string">";"</span> ParameterDecl
+                    <span class="token operator">|</span> ParameterDecl <span class="token string">";"</span> CodeDecl <span class="token string">";"</span> StorageDecl
+                    <span class="token operator">|</span> StorageDecl <span class="token string">";"</span> ParameterDecl <span class="token string">";"</span> CodeDecl
+                    <span class="token operator">|</span> ParameterDecl <span class="token string">";"</span> StorageDecl <span class="token string">";"</span> CodeDecl
+</code></pre>
+<h3 id="instruction-syntax">Instruction Syntax</h3>
+<p>Note that, because of <code>lambda</code> data literals, instructions are also data.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> Data <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> Instruction
+</code></pre>
+<p>Most instructions are defined via particular arity, except for blocks, which
+are a kind of psuedo-instruction, and special instructions, i.e., instructions
+with a unique arity.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> Instruction <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> Block
+                       <span class="token operator">|</span> NullaryInstName AnnotationList
+                       <span class="token operator">|</span> UnaryIntInstName AnnotationList <span class="token keyword">Int</span>
+                       <span class="token operator">|</span> UnaryTypeInstName AnnotationList Type
+                       <span class="token operator">|</span> UnaryBlockInstName AnnotationList Block
+                       <span class="token operator">|</span> BinaryTypeInstName AnnotationList Type Type
+                       <span class="token operator">|</span> BinaryBlockInstName AnnotationList Block Block
+                       <span class="token operator">|</span> SpecialInstruction
+</code></pre>
+<h4 id="nullary-instructions">Nullary Instructions</h4>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"DROP"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"DUP"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"SWAP"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"SOME"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"UNIT"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"PAIR"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"UNPAIR"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"CAR"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"CDR"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"CONS"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"SIZE"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"MEM"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"GET"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"UPDATE"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"EXEC"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"APPLY"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"FAILWITH"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"CAST"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"RENAME"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"CONCAT"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"SLICE"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"PACK"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"ADD"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"SUB"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"MUL"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"EDIV"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"ABS"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"ISNAT"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"INT"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"NEG"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"LSL"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"LSR"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"OR"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"AND"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"XOR"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"NOT"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"COMPARE"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"EQ"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"NEQ"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"LT"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"GT"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"LE"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"GE"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"SELF"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"TRANSFER_TOKENS"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"SET_DELEGATE"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"CREATE_ACCOUNT"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"IMPLICIT_ACCOUNT"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"NOW"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"CHAIN_ID"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"AMOUNT"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"BALANCE"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"CHECK_SIGNATURE"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"BLAKE2B"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"SHA256"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"SHA512"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"HASH_KEY"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"STEPS_TO_QUOTA"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"SOURCE"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"SENDER"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"ADDRESS"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"TICKET"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"READ_TICKET"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"JOIN_TICKETS"</span>
+  <span class="token keyword">syntax</span> NullaryInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"SPLIT_TICKET"</span>
+</code></pre>
+<h4 id="unary-instructions">Unary Instructions</h4>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> UnaryIntInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"DROP"</span>
+  <span class="token keyword">syntax</span> UnaryIntInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"DIG"</span>
+  <span class="token keyword">syntax</span> UnaryIntInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"DUG"</span>
+
+  <span class="token keyword">syntax</span> UnaryTypeInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"NONE"</span>
+  <span class="token keyword">syntax</span> UnaryTypeInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"LEFT"</span>
+  <span class="token keyword">syntax</span> UnaryTypeInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"RIGHT"</span>
+  <span class="token keyword">syntax</span> UnaryTypeInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"NIL"</span>
+  <span class="token keyword">syntax</span> UnaryTypeInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"EMPTY_SET"</span>
+  <span class="token keyword">syntax</span> UnaryTypeInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"UNPACK"</span>
+  <span class="token keyword">syntax</span> UnaryTypeInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"CONTRACT"</span>
+
+  <span class="token keyword">syntax</span> UnaryBlockInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"MAP"</span>
+  <span class="token keyword">syntax</span> UnaryBlockInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"ITER"</span>
+  <span class="token keyword">syntax</span> UnaryBlockInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"LOOP"</span>
+  <span class="token keyword">syntax</span> UnaryBlockInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"LOOP_LEFT"</span>
+  <span class="token keyword">syntax</span> UnaryBlockInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"DIP"</span>
+</code></pre>
+<h4 id="binary-instructions">Binary Instructions</h4>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> BinaryTypeInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"EMPTY_MAP"</span>
+  <span class="token keyword">syntax</span> BinaryTypeInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"EMPTY_BIG_MAP"</span>
+
+  <span class="token keyword">syntax</span> BinaryBlockInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"IF_NONE"</span>
+  <span class="token keyword">syntax</span> BinaryBlockInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"IF_LEFT"</span>
+  <span class="token keyword">syntax</span> BinaryBlockInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"IF_CONS"</span>
+  <span class="token keyword">syntax</span> BinaryBlockInstName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"IF"</span>
+</code></pre>
+<h4 id="special-instructions">Special Instructions</h4>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> SpecialInstruction <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"PUSH"</span> AnnotationList Type Data
+  <span class="token keyword">syntax</span> SpecialInstruction <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"LAMBDA"</span> AnnotationList Type Type Block
+  <span class="token keyword">syntax</span> SpecialInstruction <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"CREATE_CONTRACT"</span> AnnotationList <span class="token string">"{"</span> Contract <span class="token string">"}"</span>
+  <span class="token keyword">syntax</span> SpecialInstruction <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"DIP"</span> AnnotationList <span class="token keyword">Int</span> Block
+</code></pre>
+<h4 id="debugging-instructions">Debugging Instructions</h4>
+<p>The following instructions are an extension of the core Michelson instruction
+set used for debugging purposes.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> Instruction <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"STOP"</span>
+  <span class="token keyword">syntax</span> Instruction <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"PAUSE"</span>
+  <span class="token keyword">syntax</span> Instruction <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> PAUSE<span class="token punctuation">(</span><span class="token keyword">String</span><span class="token punctuation">)</span>
+  <span class="token keyword">syntax</span> Instruction <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> TRACE<span class="token punctuation">(</span><span class="token keyword">String</span><span class="token punctuation">)</span>
+</code></pre>
+<h3 id="macro-syntax">Macro Syntax</h3>
+<p>All macros are instructions.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> Instruction <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> Macro
+</code></pre>
+<p>Some macros have syntax that can be validated at parse-time. Other macros need
+additional runtime processing. The following macros require such processing.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> DIPMacro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> r<span class="token string">"DII+P"</span> <span class="token punctuation">[</span><span class="token class-name">token</span><span class="token punctuation">]</span>
+  <span class="token keyword">syntax</span> DUPMacro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> r<span class="token string">"DUU+P"</span> <span class="token punctuation">[</span><span class="token class-name">token</span><span class="token punctuation">]</span>
+  <span class="token keyword">syntax</span> CDARMacro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> r<span class="token string">"C[A,D]{2,}R"</span> <span class="token punctuation">[</span><span class="token class-name">token</span><span class="token punctuation">]</span>
+  <span class="token keyword">syntax</span> SetCDARMacro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> r<span class="token string">"SET_C[AD]{2,}R"</span> <span class="token punctuation">[</span><span class="token class-name">token</span><span class="token punctuation">]</span>
+  <span class="token keyword">syntax</span> MapCDARMacro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> r<span class="token string">"MAP_C[AD]{2,}R"</span> <span class="token punctuation">[</span><span class="token class-name">token</span><span class="token punctuation">]</span>
+
+  <span class="token keyword">syntax</span> NullaryMacroToken <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> DUPMacro
+                             <span class="token operator">|</span> CDARMacro
+                             <span class="token operator">|</span> SetCDARMacro
+
+  <span class="token keyword">syntax</span> UnaryMacroToken <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> DIPMacro
+                           <span class="token operator">|</span> MapCDARMacro
+
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> NullaryMacroToken AnnotationList
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> UnaryMacroToken AnnotationList Block
+</code></pre>
+<p>Note: these macros require special runtime processing but are currently
+<em>unimplemented</em>. Trying to use them will result in a parse error.</p>
+<pre class="language-text"><code>  syntax NullaryMacroToken ::= PairMacro | UnpairMacro
+  syntax PairMacro ::= r"P[AIP]+R" [token]
+  syntax UnpairMacro ::= r"UNP[AIP]+R" [token]
+</code></pre>
+<p>The following macros can be validated at parse-time.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"DUP"</span> AnnotationList <span class="token keyword">Int</span>
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"CMPEQ"</span> AnnotationList
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"CMPNEQ"</span> AnnotationList
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"CMPLT"</span> AnnotationList
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"CMPGT"</span> AnnotationList
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"CMPLE"</span> AnnotationList
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"CMPGE"</span> AnnotationList
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"IFEQ"</span> AnnotationList Block Block
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"IFNEQ"</span> AnnotationList Block Block
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"IFLT"</span> AnnotationList Block Block
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"IFGT"</span> AnnotationList Block Block
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"IFLE"</span> AnnotationList Block Block
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"IFGE"</span> AnnotationList Block Block
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"IFCMPEQ"</span> AnnotationList Block Block
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"IFCMPNEQ"</span> AnnotationList Block Block
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"IFCMPLT"</span> AnnotationList Block Block
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"IFCMPGT"</span> AnnotationList Block Block
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"IFCMPLE"</span> AnnotationList Block Block
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"IFCMPGE"</span> AnnotationList Block Block
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"FAIL"</span> AnnotationList
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"ASSERT"</span> AnnotationList
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"ASSERT_EQ"</span> AnnotationList
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"ASSERT_NEQ"</span> AnnotationList
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"ASSERT_LT"</span> AnnotationList
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"ASSERT_LE"</span> AnnotationList
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"ASSERT_GT"</span> AnnotationList
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"ASSERT_GE"</span> AnnotationList
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"ASSERT_CMPEQ"</span> AnnotationList
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"ASSERT_CMPNEQ"</span> AnnotationList
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"ASSERT_CMPLT"</span> AnnotationList
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"ASSERT_CMPLE"</span> AnnotationList
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"ASSERT_CMPGT"</span> AnnotationList
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"ASSERT_CMPGE"</span> AnnotationList
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"ASSERT_NONE"</span> AnnotationList
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"ASSERT_SOME"</span> AnnotationList
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"ASSERT_LEFT"</span> AnnotationList
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"ASSERT_RIGHT"</span> AnnotationList
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"IF_SOME"</span> AnnotationList Block Block
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"IF_RIGHT"</span> AnnotationList Block Block
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"SET_CAR"</span> AnnotationList
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"SET_CDR"</span> AnnotationList
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"MAP_CAR"</span> AnnotationList Block
+  <span class="token keyword">syntax</span> Macro <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"MAP_CDR"</span> AnnotationList Block
+</code></pre>
+<h3 id="primitive-applications">Primitive Applications</h3>
+<p>We do not correctly parse Micheline primitive applications; we currently work
+around the issue by allowing extra parens around potential primitive arguments.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> OptionData <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"("</span> OptionData <span class="token string">")"</span> <span class="token punctuation">[</span><span class="token class-name">bracket</span><span class="token punctuation">]</span>
+  <span class="token keyword">syntax</span> Data       <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"("</span> Data <span class="token string">")"</span>       <span class="token punctuation">[</span><span class="token class-name">bracket</span><span class="token punctuation">]</span>
+  <span class="token keyword">syntax</span> Type       <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"("</span> Type <span class="token string">")"</span>       <span class="token punctuation">[</span><span class="token class-name">bracket</span><span class="token punctuation">]</span>
+</code></pre>
+<h3 id="input-file-syntax">Input File Syntax</h3>
+<p>At the top level, input files consist of groups which specify:</p>
+<ul>
+<li>parameters affecting the operation of the Michelson interpreter</li>
+<li>parameters affecting the execution of Michelson unit tests</li>
+</ul>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> Groups <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> Group
+                  <span class="token operator">|</span> Group <span class="token string">";"</span> Groups
+  <span class="token keyword">syntax</span> Pgm <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> Groups
+</code></pre>
+<h4 id="group-syntax">Group Syntax</h4>
+<p>Typically, but not always, one loading group defined here corresponds to the
+action of one instruction.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> ContractGroup <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"contract"</span> <span class="token string">"{"</span> Contract <span class="token string">"}"</span>
+  <span class="token keyword">syntax</span> NowGroup <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"now"</span> <span class="token keyword">Int</span>
+  <span class="token keyword">syntax</span> SenderGroup <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"sender"</span> <span class="token keyword">String</span>
+  <span class="token keyword">syntax</span> SourceGroup <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"source"</span> <span class="token keyword">String</span>
+  <span class="token keyword">syntax</span> ChainGroup <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"chain_id"</span> MichelsonBytes
+  <span class="token keyword">syntax</span> SelfGroup <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"self"</span> <span class="token keyword">String</span>
+  <span class="token keyword">syntax</span> AmountGroup <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"amount"</span> <span class="token keyword">Int</span>
+  <span class="token keyword">syntax</span> BalanceGroup <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"balance"</span> <span class="token keyword">Int</span>
+  <span class="token keyword">syntax</span> ParameterValueGroup <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"parameter_value"</span> Data
+  <span class="token keyword">syntax</span> StorageValueGroup <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"storage_value"</span> Data
+
+  <span class="token keyword">syntax</span> ContractsGroup <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"other_contracts"</span> <span class="token string">"{"</span> OtherContractsMapEntryList <span class="token string">"}"</span>
+  <span class="token keyword">syntax</span> OtherContractsMapEntry <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"Contract"</span> <span class="token keyword">String</span> Type
+  <span class="token keyword">syntax</span> OtherContractsMapEntryList <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> List<span class="token punctuation">{</span>OtherContractsMapEntry<span class="token punctuation">,</span> <span class="token string">";"</span><span class="token punctuation">}</span> <span class="token punctuation">[</span><span class="token class-name">klabel</span><span class="token punctuation">(</span>OtherContractsMapEntryList<span class="token punctuation">)</span><span class="token punctuation">]</span>
+
+  <span class="token keyword">syntax</span> BigMapGroup <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"big_maps"</span> <span class="token string">"{"</span> BigMapEntryList <span class="token string">"}"</span>
+  <span class="token keyword">syntax</span> BigMapEntry <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"Big_map"</span> <span class="token keyword">Int</span> Type Type NeMapLiteral
+                       <span class="token operator">|</span> <span class="token string">"Big_map"</span> <span class="token keyword">Int</span> Type Type EmptyBlock
+  <span class="token keyword">syntax</span> BigMapEntryList <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> List<span class="token punctuation">{</span>BigMapEntry<span class="token punctuation">,</span> <span class="token string">";"</span><span class="token punctuation">}</span> <span class="token punctuation">[</span><span class="token class-name">klabel</span><span class="token punctuation">(</span>BigMapEntryList<span class="token punctuation">)</span><span class="token punctuation">]</span>
+
+  <span class="token keyword">syntax</span> Group <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> ContractGroup
+                 <span class="token operator">|</span> ParameterValueGroup
+                 <span class="token operator">|</span> StorageValueGroup
+                 <span class="token operator">|</span> NowGroup
+                 <span class="token operator">|</span> SenderGroup
+                 <span class="token operator">|</span> SourceGroup
+                 <span class="token operator">|</span> ChainGroup
+                 <span class="token operator">|</span> SelfGroup
+                 <span class="token operator">|</span> AmountGroup
+                 <span class="token operator">|</span> BalanceGroup
+                 <span class="token operator">|</span> ContractsGroup
+                 <span class="token operator">|</span> BigMapGroup
+</code></pre>
+<pre class="language-k"><code><span class="token keyword">endmodule</span>
+</code></pre>
+<h1 id="michelson-internal-syntax">Michelson Internal Syntax</h1>
+<p>Michelson internal syntax describes an extension of the base Michelson grammar
+to allow for defining values of types which are unrepresentable in the
+standard Michelson syntax.</p>
+<pre class="language-k"><code><span class="token keyword">module</span> MICHELSON<span class="token operator">-</span>INTERNAL<span class="token operator">-</span>SYNTAX
+  <span class="token keyword">imports</span> MICHELSON<span class="token operator">-</span>COMMON<span class="token operator">-</span>SYNTAX
+</code></pre>
+<h2 id="operation-literals">Operation literals</h2>
+<p>Here we define literals of type <code>operation</code> which correspond to values
+produced by the <code>CREATE_CONTRACT</code>, <code>TRANSFER_TOKENS</code>, and <code>SET_DELEGATE</code>
+instructions.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> SimpleData <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> BlockchainOperation
+</code></pre>
+<ol>
+<li>
+<p>Values produced by the <code>CREATE_CONTRACT</code> instruction:</p>
+<pre class="language-k"><code><span class="token keyword">syntax</span> BlockchainOperation <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span>
+  <span class="token string">"Create_contract"</span> <span class="token string">"{"</span> Contract <span class="token string">"}"</span> OptionData MutezLiteral Data Data
+</code></pre>
+<ul>
+<li>Contract (<code>contract</code>) The source code of the contract to originate; the
+type of this contract determines storage type.</li>
+<li>Delegate (<code>option key_hash</code>) An optional delegate specified by key hash.</li>
+<li>Initial Balance (<code>mutez</code>) An initial balance to transfer to the new
+contract.</li>
+<li>Initial Storage (<code>T</code>) An initial storage value of the correct type.</li>
+<li>Nonce (<code>byte</code>): A unique cryptographic nonce for this operation.</li>
+</ul>
+</li>
+<li>
+<p>Values produced by the <code>TRANSFER_TOKENS</code> instruction:</p>
+<pre class="language-k"><code><span class="token keyword">syntax</span> BlockchainOperation <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"Transfer_tokens"</span> Data MutezLiteral AddressLiteral Data
+</code></pre>
+<ul>
+<li>Parameter (<code>T</code>) The parameter passed to the contract being invoked
+(or <code>Unit</code>, if the target contract is an implicit account).</li>
+<li>Amount (<code>mutez</code>) The amount of mutez to transfer to the target contract.</li>
+<li>Address (<code>address</code>) The address of the target contract.</li>
+<li>Nonce (<code>byte</code>): A unique cryptographic nonce for this operation.</li>
+</ul>
+</li>
+<li>
+<p>Values produced by the <code>SET_DELEGATE</code> instruction:</p>
+<pre class="language-k"><code><span class="token keyword">syntax</span> BlockchainOperation <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"Set_delegate"</span> OptionData Data
+</code></pre>
+<ul>
+<li>Delegate (<code>option key_hash</code>) An optional new delegate specified by
+key hash; if <code>None</code>, then this operation clears the current delegate.</li>
+<li>Nonce (<code>byte</code>): A unique cryptographic nonce for this operation.</li>
+</ul>
+</li>
+</ol>
+<h2 id="failed-stack-literals">Failed Stack Literals</h2>
+<p>We need to represent the stack of Michelson code when execution fails.
+We have failed stack literals for the following exceptional conditions:</p>
+<ol>
+<li>
+<p>Exceuting a <code>FAILWITH</code> instruction; its argument is the value passed to
+<code>FAILWITH</code>.</p>
+<pre class="language-k"><code><span class="token keyword">syntax</span> FailedStack <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"("</span> <span class="token string">"Failed"</span> Data <span class="token string">")"</span>
+</code></pre>
+</li>
+<li>
+<p>Executing an instruction that causes a <code>mutez</code> value to overflow
+(producing a mutez value greater than 2^63-1); its arguments are the
+mutez inputs to the instruction which overflowed.</p>
+<pre class="language-k"><code><span class="token keyword">syntax</span> FailedStack <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"("</span> <span class="token string">"MutezOverflow"</span> <span class="token keyword">Int</span> <span class="token keyword">Int</span> <span class="token string">")"</span>
+</code></pre>
+</li>
+<li>
+<p>Executing an instruction that causes a <code>mutez</code> value to underflow
+(producing a mutez value less than 0); its arguments are the mutez inputs
+to the instruction which underflowed.</p>
+<pre class="language-k"><code><span class="token keyword">syntax</span> FailedStack <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"("</span> <span class="token string">"MutezUnderflow"</span> <span class="token keyword">Int</span> <span class="token keyword">Int</span> <span class="token string">")"</span>
+</code></pre>
+</li>
+<li>
+<p>Executing an instruction which produces a non-mutez out-of-bound value
+(e.g. the <code>LSL</code> and <code>LSR</code> instructions); its arguments are the numeric
+inputs to the overflowing instruction.</p>
+<pre class="language-k"><code><span class="token keyword">syntax</span> FailedStack <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"("</span> <span class="token string">"GeneralOverflow"</span> <span class="token keyword">Int</span> <span class="token keyword">Int</span> <span class="token string">")"</span>
+</code></pre>
+</li>
+</ol>
+<h2 id="michelson-assertions">Michelson Assertions</h2>
+<p>When running Michelson unit tests, we store pre- and post-conditions as lists
+of Michelson sequences that produce a stack of the form <code>Stack_elt bool</code>.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> BlockList <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> List<span class="token punctuation">{</span>Block<span class="token punctuation">,</span> <span class="token string">";"</span><span class="token punctuation">}</span> <span class="token punctuation">[</span><span class="token class-name">klabel</span><span class="token punctuation">(</span>BlockList<span class="token punctuation">)</span><span class="token punctuation">]</span>
+</code></pre>
+<h2 id="trailing-semicolons">Trailing semicolons</h2>
+<p>Trailing semicolons are optional removed:</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> Groups <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> groupSemicolon<span class="token punctuation">(</span>Group<span class="token punctuation">)</span> <span class="token punctuation">[</span><span class="token class-name">klabel</span><span class="token punctuation">(</span>groupSemicolon<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token class-name">symbol</span><span class="token punctuation">]</span>
+  <span class="token keyword">rule</span> groupSemicolon<span class="token punctuation">(</span>G<span class="token punctuation">)</span> <span class="token operator">=&gt;</span> G <span class="token punctuation">[</span>anywhere<span class="token punctuation">]</span>
+</code></pre>
+<pre class="language-k"><code><span class="token keyword">endmodule</span>
+</code></pre>
+<h1 id="unit-test-syntax">Unit Test Syntax</h1>
+<p>This module extends the Michelson script grammar to the <code>.tzt</code> <a href="https://gitlab.com/tezos/tezos/-/merge_requests/1487/diffs" target="_blank" rel="noopener">unit test
+grammar</a>.</p>
+<pre class="language-k"><code><span class="token keyword">module</span> UNIT<span class="token operator">-</span>TEST<span class="token operator">-</span>SYNTAX
+  <span class="token keyword">imports</span> UNIT<span class="token operator">-</span>TEST<span class="token operator">-</span>COMMON<span class="token operator">-</span>SYNTAX
+  <span class="token keyword">imports</span> MICHELSON<span class="token operator">-</span>SYNTAX
+
+<span class="token keyword">endmodule</span>
+</code></pre>
+<pre class="language-k"><code><span class="token keyword">module</span> UNIT<span class="token operator">-</span>TEST<span class="token operator">-</span>COMMON<span class="token operator">-</span>SYNTAX
+  <span class="token keyword">imports</span> MICHELSON<span class="token operator">-</span>COMMON<span class="token operator">-</span>SYNTAX
+  <span class="token keyword">imports</span> MICHELSON<span class="token operator">-</span>INTERNAL<span class="token operator">-</span>SYNTAX
+</code></pre>
+<h2 id="michelson-stack-syntax">Michelson Stack Syntax</h2>
+<p>A stack is a Micheline sequence whose elements have the form <code>Stack_elt ty x</code>
+where <code>x</code> is a Michelson value and <code>ty</code> is its type, e.g.</p>
+<p><code>{ Stack_elt bool True ; Stack_elt nat 42 }</code></p>
+<p>is a stack of length 2 whose top element is <code>True</code> and bottom element <code>42</code>.
+We require that input stacks are well-formed. However, output stacks include
+the degenerate case of failed stacks.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> StackElementLiteral <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"Stack_elt"</span> Type Data
+  <span class="token keyword">syntax</span> StackElementList <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> List<span class="token punctuation">{</span> StackElementLiteral<span class="token punctuation">,</span> <span class="token string">";"</span> <span class="token punctuation">}</span> <span class="token punctuation">[</span><span class="token class-name">klabel</span><span class="token punctuation">(</span>StackElementList<span class="token punctuation">)</span><span class="token punctuation">]</span>
+  <span class="token keyword">syntax</span> LiteralStack <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"{"</span> StackElementList <span class="token string">"}"</span>
+
+  <span class="token keyword">syntax</span> OutputStack <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> LiteralStack <span class="token operator">|</span> FailedStack
+</code></pre>
+<p>The wildcard pattern <code>_</code> can be used to omit part of the output stack. This is
+typically used to omit the cryprographic nonce in <code>operation</code> values.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> Wildcard <span class="token punctuation">[</span><span class="token class-name">token</span><span class="token punctuation">]</span>
+  <span class="token keyword">syntax</span> Data <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> Wildcard
+</code></pre>
+<h2 id="unit-test-groups">Unit Test Groups</h2>
+<p>Unit test files allow the following additional groups.</p>
+<h3 id="mandatory-groups">Mandatory Groups</h3>
+<ul>
+<li>
+<p><code>input</code> the initial stack to pass to the <code>code</code> block or instruction.</p>
+<pre class="language-k"><code><span class="token keyword">syntax</span> Group <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> InputGroup
+<span class="token keyword">syntax</span> InputGroup <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"input"</span> LiteralStack
+</code></pre>
+</li>
+<li>
+<p><code>code</code> the instruction or instruction sequence to test.</p>
+<pre class="language-k"><code><span class="token keyword">syntax</span> Group <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> CodeGroup
+<span class="token keyword">syntax</span> CodeGroup <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> CodeDecl
+</code></pre>
+</li>
+<li>
+<p><code>output</code> the expected output stack.</p>
+<pre class="language-k"><code><span class="token keyword">syntax</span> Group <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> OutputGroup
+<span class="token keyword">syntax</span> OutputGroup <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"output"</span> OutputStack
+</code></pre>
+</li>
+</ul>
+<h3 id="optional-groups">Optional Groups</h3>
+<ul>
+<li>
+<p><code>test</code> wraps tests allowing for multiple tests in one file</p>
+<pre class="language-k"><code><span class="token keyword">syntax</span> Group <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> TestGroup
+<span class="token keyword">syntax</span> TestGroup <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"test"</span> TestName <span class="token string">"{"</span> Groups <span class="token string">"}"</span>
+<span class="token keyword">syntax</span> TestName <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token keyword">String</span>
+</code></pre>
+</li>
+<li>
+<p><code>parameter</code> (default <code>unit</code>) the type of the parameter of the contract
+pushed by the <code>SELF</code> instruction.</p>
+<pre class="language-k"><code><span class="token keyword">syntax</span> Group <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> ParameterGroup
+<span class="token keyword">syntax</span> ParameterGroup <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> ParameterDecl
+</code></pre>
+</li>
+<li>
+<p><code>import</code> groups map test fragments in files to strings for future usage</p>
+<pre class="language-k"><code><span class="token keyword">syntax</span> Group <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> ImportGroup
+<span class="token keyword">syntax</span> ImportGroup <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"import"</span> <span class="token keyword">String</span> <span class="token string">"as"</span> <span class="token keyword">String</span>
+</code></pre>
+</li>
+<li>
+<p><code>include</code> groups load either imported test fragments or raw files</p>
+<pre class="language-k"><code><span class="token keyword">syntax</span> Group <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> IncludeGroup
+<span class="token keyword">syntax</span> IncludeGroup <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"include"</span> <span class="token keyword">String</span>
+                      <span class="token operator">|</span> <span class="token string">"include-file"</span> <span class="token keyword">String</span>
+</code></pre>
+</li>
+</ul>
+<pre class="language-k"><code><span class="token keyword">endmodule</span>
+</code></pre>
+<h1 id="symbolic-unit-test-syntax">Symbolic Unit Test Syntax</h1>
+<p>We further extend the unit-test syntax with additional groups for representing
+pre- and post-conditions as well as invariants to enable verification.</p>
+<pre class="language-k"><code><span class="token keyword">module</span> SYMBOLIC<span class="token operator">-</span>UNIT<span class="token operator">-</span>TEST<span class="token operator">-</span>SYNTAX
+  <span class="token keyword">imports</span> UNIT<span class="token operator">-</span>TEST<span class="token operator">-</span>SYNTAX
+  <span class="token keyword">imports</span> SYMBOLIC<span class="token operator">-</span>UNIT<span class="token operator">-</span>TEST<span class="token operator">-</span>COMMON<span class="token operator">-</span>SYNTAX
+
+  <span class="token keyword">syntax</span> SymbolicData <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> r<span class="token string">"$[_a-zA-Z][_0-9a-zA-Z]*"</span> <span class="token punctuation">[</span><span class="token class-name">token</span><span class="token punctuation">]</span>
+<span class="token keyword">endmodule</span>
+</code></pre>
+<pre class="language-k"><code><span class="token keyword">module</span> SYMBOLIC<span class="token operator">-</span>UNIT<span class="token operator">-</span>TEST<span class="token operator">-</span>COMMON<span class="token operator">-</span>SYNTAX
+  <span class="token keyword">imports</span> UNIT<span class="token operator">-</span>TEST<span class="token operator">-</span>COMMON<span class="token operator">-</span>SYNTAX
+</code></pre>
+<p>We extend <code>Data</code> to allow symbolic variables.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> SymbolicData <span class="token punctuation">[</span><span class="token class-name">token</span><span class="token punctuation">]</span>
+  <span class="token keyword">syntax</span> Data <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> SymbolicData
+</code></pre>
+<p>We represent pre- and post-conditions as lists of blocks, where each block
+contains a well-typed Michelson expression that consumes an empty input stack
+and produces an output stack of type <code>Stack_elt bool _</code>.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> PreconditionGroup <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"precondition"</span> <span class="token string">"{"</span> BlockList <span class="token string">"}"</span>
+  <span class="token keyword">syntax</span> PostconditionGroup <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"postcondition"</span> <span class="token string">"{"</span> BlockList <span class="token string">"}"</span>
+  <span class="token keyword">syntax</span> Group <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> PreconditionGroup <span class="token operator">|</span> PostconditionGroup
+</code></pre>
+<p>An invariant is an annotated pair of a stack shape (represented as a
+<code>LiteralStack</code>) and a list of predicates (represented as <code>BlockList</code>).
+The annotation determines to which looping instruction sequence (i.e. <code>LOOP</code>,
+<code>LOOP_LEFT</code>, or <code>ITER</code>) an invariant corresponds.
+When the program reaches the head of an annotated loop, we check that the actual
+stack matches the specified stack shape.
+Any symbolic variables in the stack shape are bound to the corresponding values
+in the actual stack.
+The predicate list represents invariants that must hold over all bound symbolic
+variables.</p>
+<pre class="language-k"><code>  <span class="token keyword">syntax</span> InvariantsGroup <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> <span class="token string">"invariant"</span> VariableAnnotation Invariant
+  <span class="token keyword">syntax</span> Invariant <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> LiteralStack <span class="token string">"{"</span> BlockList <span class="token string">"}"</span>
+  <span class="token keyword">syntax</span> Group <span class="token punctuation">:</span><span class="token punctuation">:</span><span class="token operator">=</span> InvariantsGroup
+</code></pre>
+<pre class="language-k"><code><span class="token keyword">endmodule</span>
+</code></pre>
+</body></html></div>
+        </main>
+
+        <!-- Page ToC -->
+        <div class="col-12 col-md-3 col-xl-2 py-md-3 bd-sidebar page-toc mb-3">
+          
+<div>
+<details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#michelson-syntax" class="bd-toc-link">Michelson Syntax</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#michelson-parser-syntax"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Michelson Parser Syntax
+              </a></div><details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#michelson-common-syntax" class="bd-toc-link">Michelson Common Syntax</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#type-syntax"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Type Syntax
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#data-literal-syntax"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Data Literal Syntax
+              </a></div><details style="padding:0.25rem 0;;padding-left: 16px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#instruction-syntax" class="bd-toc-link">Instruction Syntax</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#nullary-instructions"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                Nullary Instructions
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#unary-instructions"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                Unary Instructions
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#binary-instructions"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                Binary Instructions
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#special-instructions"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                Special Instructions
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#debugging-instructions"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                Debugging Instructions
+              </a></div>
+            </div>
+          </details>
+        <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#macro-syntax"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Macro Syntax
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#primitive-applications"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Primitive Applications
+              </a></div><details style="padding:0.25rem 0;;padding-left: 16px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#input-file-syntax" class="bd-toc-link">Input File Syntax</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#group-syntax"
+                class="bd-toc-link"
+                style="padding-left: 24px;;"
+              >
+                Group Syntax
+              </a></div>
+            </div>
+          </details>
+        
+            </div>
+          </details>
+        
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#michelson-internal-syntax" class="bd-toc-link">Michelson Internal Syntax</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#operation-literals"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Operation literals
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#failed-stack-literals"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Failed Stack Literals
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#michelson-assertions"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Michelson Assertions
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#trailing-semicolons"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Trailing semicolons
+              </a></div>
+            </div>
+          </details>
+        <details style="padding:0.25rem 0;;padding-left: 0px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#unit-test-syntax" class="bd-toc-link">Unit Test Syntax</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#michelson-stack-syntax"
+                class="bd-toc-link"
+                style="padding-left: 8px;;"
+              >
+                Michelson Stack Syntax
+              </a></div><details style="padding:0.25rem 0;;padding-left: 8px;" open>
+            <summary class="bd-toc-link-wrapper">
+              <a href="#unit-test-groups" class="bd-toc-link">Unit Test Groups</a>
+              </summary>
+            <div>
+              <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#mandatory-groups"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Mandatory Groups
+              </a></div><div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#optional-groups"
+                class="bd-toc-link"
+                style="padding-left: 16px;;"
+              >
+                Optional Groups
+              </a></div>
+            </div>
+          </details>
+        
+            </div>
+          </details>
+        <div class="bd-toc-link-wrapper" style="padding:0.25rem 0;">
+              <a
+                href="#symbolic-unit-test-syntax"
+                class="bd-toc-link"
+                style="padding-left: 0px;;"
+              >
+                Symbolic Unit Test Syntax
+              </a></div>
+</div>
+
+        </div>
+        <div class="btn btn-rv-blue page-toc-toggle-btn"></div>
+        <!-- End Page ToC -->
+      </div>
+    </div>
+<!-- The footer is now controlled by the k-web-theme git submodule -->
+<footer id="rvsite-footer" class="app-footer text-md-left text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-md-4 mb-md-0 mb-4">
+        <a href="https://runtimeverification.com/" target="_blank">
+          <picture>
+            <source
+              srcset="
+                https://runtimeverification.com/assets/img/rv-logo-dark.png
+              "
+              media="(prefers-color-scheme: dark)"
+            />
+            <img
+              class="logo-dark"
+              src="https://runtimeverification.com/assets/img/rv-logo.png"
+              alt="Runtime Verification logo"
+              style="height: 32px"
+            /> </picture
+        ></a>
+        <p class="mt-2 text-md-left copyright">
+          <a href="https://goo.gl/maps/hKLtCjeEd6yqfzwx5" target="_blank"
+            >1807 S Neil Street, Champaign, IL 61820</a
+          >
+        </p>
+      </div>
+      <div class="col-md-4 text-md-center mb-md-0 mb-4"></div>
+      <div class="col-md-4 mb-md-0 mb-4 text-md-right">
+        <p class="copyright">2022 © all rights reserved</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Typist/1.2/typist.min.js"></script>
+    <script src="../assets/js/index.js"></script>
+  </body>
+</html>
