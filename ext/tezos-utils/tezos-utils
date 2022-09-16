@@ -21,6 +21,10 @@ LOOP_INSTRS         = [ 'ITER', 'LOOP', 'LOOP_LEFT', 'MAP' ]
 HIDDEN_BLOCK_INSTRS = [ 'EXEC' ]
 SPECIAL_INSTRS      = [ 'DIP', 'PUSH' ]
 
+def truncate(s, l):
+    if len(s) <= l: return s
+    else: return s[:l] + "..."
+
 class BlockType(Enum):
     STD       = 1
     SELFBREAK = 2
@@ -28,15 +32,16 @@ class BlockType(Enum):
     JOIN      = 4
 
 class Block:
-    def __init__(self, prim_seq, depth=0):
+    def __init__(self, prim_seq, depth=0, type_length=None):
         # these attributes are used when building a block
-        self.code      = ""
-        self.next      = []
-        self.depth     = depth
-        self.id        = str(id(self))
-        self.sid       = self.id[-5:]
-        self.postBody  = None
-        self.revert    = False
+        self.code        = ""
+        self.next        = []
+        self.depth       = depth
+        self.id          = str(id(self))
+        self.sid         = self.id[-5:]
+        self.postBody    = None
+        self.revert      = False
+        self.type_length = type_length
 
         # these attributes are used for block traversal later
         self.parents   = []
@@ -59,13 +64,13 @@ class Block:
                 if blockType != BlockType.STD: break
             if blockType == BlockType.BREAK:
                 if len(prim_seq) != 0 and len(parentBlocks) != 0:
-                    nextBlock = Block(prim_seq, depth=self.depth)
+                    nextBlock = Block(prim_seq, depth=self.depth, type_length=self.type_length)
                     for parentBlock in parentBlocks:
                         parentBlock.next += ([("", nextBlock)])
                         parentBlock.postBody = nextBlock
             elif blockType == BlockType.SELFBREAK:
                 assert(len(parentBlocks) == 0)
-                nextBlock = Block(prim_seq, depth=self.depth)
+                nextBlock = Block(prim_seq, depth=self.depth, type_length=self.type_length)
                 self.next += [('', nextBlock)]
                 self.postBody = nextBlock
             elif blockType == BlockType.JOIN:
@@ -94,9 +99,9 @@ class Block:
             prim['args'] = []
             self.append(prim)
 
-            trueb  = Block(args[0], depth=self.depth)
-            falseb = Block(args[1], depth=self.depth)
-            joinb  = Block(None, depth=self.depth)
+            trueb  = Block(args[0], depth=self.depth, type_length=self.type_length)
+            falseb = Block(args[1], depth=self.depth, type_length=self.type_length)
+            joinb  = Block(None, depth=self.depth, type_length=self.type_length)
 
             self.next += [('false', falseb), ('true', trueb)]
             self.postBody = joinb
@@ -115,12 +120,12 @@ class Block:
         elif name in LOOP_INSTRS:
             assert(len(args) == 1)
             # build loop entry
-            loop_entry = Block(None, depth=self.depth)
+            loop_entry = Block(None, depth=self.depth, type_length=self.type_length)
             loop_entry.code += name
             # build loop body
-            loop_body = Block(args[0], depth=self.depth)
+            loop_body = Block(args[0], depth=self.depth, type_length=self.type_length)
             # build loop end
-            loop_end = Block(None, depth=self.depth)
+            loop_end = Block(None, depth=self.depth, type_length=self.type_length)
             loop_end.code += name + " END"
             # set edges
             self.next += [("", loop_entry)]
@@ -135,7 +140,7 @@ class Block:
 
         elif name in HIDDEN_BLOCK_INSTRS:
             self.append(prim)
-            hidden_block = Block({'prim' : '...' }, depth=self.depth)
+            hidden_block = Block({'prim' : '...' }, depth=self.depth, type_length=self.type_length)
             self.next += [("", hidden_block)]
             self.postBody = hidden_block
             return BlockType.BREAK, [hidden_block]
@@ -147,7 +152,7 @@ class Block:
                 self.append(prim)
                 if len(args) == 1: args = [{'int' : '1'}] + args
                 depth, dip_mcode = int(args[0]['int']), args[1]
-                dip_body = Block(dip_mcode, depth=depth)
+                dip_body = Block(dip_mcode, depth=depth, type_length=self.type_length)
                 self.next += [("", dip_body)]
                 self.postBody = dip_body
                 return BlockType.BREAK, [dip_body]
@@ -168,7 +173,18 @@ class Block:
         return BlockType.STD, []
 
     def append(self, prim):
-        instr = micheline_to_michelson(prim)
+        name = prim['prim']
+        max_len = self.type_length
+        instr = None
+        if max_len and name == 'PUSH':
+            type_arg = truncate(micheline_to_michelson(prim['args'][0]), max_len)
+            val_arg  = micheline_to_michelson(prim['args'][1])
+            instr = f"{name} {type_arg} {val_arg}"
+        elif max_len and name == 'UNPACK':
+            type_arg = truncate(micheline_to_michelson(prim['args'][0]), max_len)
+            instr = f"{name} {type_arg}"
+        else:
+            instr = micheline_to_michelson(prim)
         self.code += "\n" + instr
 
     def addPostEdges(self, nextBlocks):
@@ -183,16 +199,20 @@ class Block:
 
 def get_code_section(mcode):
     # in this case, we might have a contract literal
-    if isinstance(mcode, list) and len(mcode) == 3:
+    if isinstance(mcode, list) and len(mcode) >= 3:
         # check that section names are correct
         sections = dict()
         for prim in mcode:
-            name,val = prim['prim'], prim['args']
+            name,val = prim['prim'], prim.get('args',[])
+            # skip view functions
+            if name == 'view': continue
             # if we encounter an unexpected name, stop
             if name not in ['parameter', 'storage', 'code'] or name in sections.keys():
                 # our recordeded section names are non-empty, we must have a missing or duplicated contract section
                 if len(sections) != 0: raise ValueError(f"JSON representation of Michelson contract is ill-formed: {mcode}")
                 break
+            if len(val) == 0:
+                raise ValueError("Ill-formed value")
             sections[name] = val
         else:
             # code section has single argument
@@ -200,6 +220,7 @@ def get_code_section(mcode):
             code = sections['code'][0]
             logging.debug(f"Get code section: {code}")
             return code
+    logging.debug("The code was not a JSON-encoded Micheline representation of a contract; fallback")
     # return entire sequence as code
     return mcode
 
@@ -215,9 +236,9 @@ def is_micheline(mcode):
     else:
         return False
 
-def micheline_to_dot(mcode, skipRevert = False):
+def micheline_to_dot(mcode, skipRevert = False, type_length=None):
     mcode = get_code_section(mcode)
-    start = Block(mcode)
+    start = Block(mcode, type_length=type_length)
     graph = graphviz.Digraph('Michelson')
     graph.attr('node', shape='rectangle')
     queue = [start]
@@ -275,16 +296,19 @@ def cli(verbose):
 @click.option('-o', '--output-format', help="OUTPUT_FILE encoding",          type=click.Choice(OUTPUT_FORMATS),default='json',show_default=True)
 @click.option('-1', '--oneline',       help="Print output on a single line (json, michelson output only)", is_flag=True, default=False)
 @click.option('-n', '--no-revert',     help="Do not render FAILWITH blocks (dot output only)", is_flag=True, default=False)
+@click.option('-l', '--type-length',   help="When rendering some instructions which contain type names, cut-off type descriptions longer than N (dot output only)", type=click.IntRange(min=0))
 @click.argument('input-file')
 @click.argument('output-file')
-def convert(input_format, output_format, oneline, input_file, output_file, no_revert):
+def convert(input_format, output_format, oneline, input_file, output_file, no_revert, type_length):
     """Converts INPUT_FILE to OUTPUT_FILE, possibly changing the encoding.\n
       If INPUT_FILE is a single dash ('-'), read from stdin.\n
       If OUTPUT_FILE is a single dash ('-'), write to stdout.
     """
     ctx = click.get_current_context()
-    if output_format == "dot" and oneline:   ctx.fail('options --oneline and --output-format dot are incompatible')
-    if output_format != "dot" and no_revert: ctx.fail('option --no-revert is only compatible with --output-format dot')
+    if output_format == "dot" and oneline: ctx.fail('options --oneline and --output-format dot are incompatible')
+    if output_format != "dot":
+        if no_revert: ctx.fail('option --no-revert is only compatible with --output-format dot')
+        if type_length: ctx.fail('option --type-length is only compatible with --output-format dot')
 
     input_handle  = sys.stdin  if input_file  == "-" else open(input_file,  'r')
     output_handle = sys.stdout if output_file == "-" else open(output_file, 'w')
@@ -299,7 +323,7 @@ def convert(input_format, output_format, oneline, input_file, output_file, no_re
 
         if   output_format == "json":      write_data = json.dumps(data)
         elif output_format == "michelson": write_data = micheline_to_michelson(data, inline=oneline)
-        elif output_format == "dot":       write_data = micheline_to_dot(data, skipRevert=no_revert)
+        elif output_format == "dot":       write_data = micheline_to_dot(data, skipRevert=no_revert, type_length=type_length)
 
         if len(write_data) != 0 and write_data[-1] != '\n':
             write_data += '\n'
